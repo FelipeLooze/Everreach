@@ -10,6 +10,7 @@ class JournalEvent(BaseModel):
     actor_id: str
     world_minute: int
     importance: int
+    payload: dict
     created_at: datetime
 
 

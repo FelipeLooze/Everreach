@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,6 +12,15 @@ from app.schemas.journal import JournalEvent, JournalMemory, JournalResponse
 from app.services.event_log import recent_events
 
 router = APIRouter(prefix="/api/campaigns", tags=["journal"])
+
+
+def _event_payload(payload_json: str) -> dict:
+    try:
+        payload = json.loads(payload_json)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
+    return payload if isinstance(payload, dict) else {}
 
 
 @router.get("/{campaign_id}/journal", response_model=JournalResponse)
@@ -37,6 +48,7 @@ def get_journal(
                 actor_id=event.actor_id,
                 world_minute=event.world_minute,
                 importance=event.importance,
+                payload=_event_payload(event.payload_json),
                 created_at=event.created_at,
             )
             for event in events

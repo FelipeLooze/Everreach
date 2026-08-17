@@ -317,6 +317,112 @@ def test_unknown_location_does_not_leak_into_spatial_knowledge(db_session):
     assert forest.name not in spatial_section
 
 
+def test_current_location_canonical_names_are_not_known_automatically(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    knowledge_section = context.split(
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        1,
+    )[1].split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[0]
+
+    assert (
+        "Current location canonical name known to player: NO"
+        in knowledge_section
+    )
+
+    assert (
+        "Current region canonical name known to player: NO"
+        in knowledge_section
+    )
+
+    assert "Known location name: Cardal" not in knowledge_section
+    assert "Known region name: Vale Verdejante" not in knowledge_section
+
+
+def test_known_location_fact_authorizes_canonical_location_and_region_names(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        "cardal_is_village",
+        KnowerType.PLAYER,
+        character.id,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    knowledge_section = context.split(
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        1,
+    )[1].split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[0]
+
+    assert (
+        "Current location canonical name known to player: YES"
+        in knowledge_section
+    )
+
+    assert "Known location name: Cardal" in knowledge_section
+
+    assert (
+        "Current region canonical name known to player: YES"
+        in knowledge_section
+    )
+
+    assert "Known region name: Vale Verdejante" in knowledge_section
+
+
+def test_visited_location_does_not_automatically_reveal_its_name(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        state.location.id,
+        DiscoveryStatus.VISITED,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    knowledge_section = context.split(
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        1,
+    )[1].split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[0]
+
+    assert "Current location discovery status: VISITED" in knowledge_section
+
+    assert (
+        "Current location canonical name known to player: NO"
+        in knowledge_section
+    )
+
+
 class _InventingLLM(LLMService):
     def __init__(self) -> None:
         self.calls = 0

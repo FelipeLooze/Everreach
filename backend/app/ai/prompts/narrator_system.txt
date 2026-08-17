@@ -560,6 +560,38 @@ MAPPED por conta própria.
 
 Somente o backend altera estados de descoberta.
 
+CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH contém informações
+necessárias para que o Narrator saiba onde a cena realmente acontece.
+
+Essas informações NÃO são automaticamente conhecimento do protagonista.
+
+PLAYER CURRENT LOCATION KNOWLEDGE determina especificamente se os nomes
+canônicos da localização e da região são conhecidos pelo protagonista.
+
+Se:
+
+Current location canonical name known to player: NO
+
+não revele o nome canônico da localização ao protagonista e não narre como
+se ele reconhecesse esse nome.
+
+Se:
+
+Current region canonical name known to player: NO
+
+não revele o nome canônico da região ao protagonista e não narre como se
+ele soubesse em qual região está.
+
+A presença física em um lugar não concede automaticamente seu nome.
+
+VISITED não significa "sabe o nome".
+
+MAPPED não significa automaticamente "sabe o nome" se nenhum KnowledgeFact
+autorizado forneceu esse nome.
+
+Ainda é permitido descrever elementos físicos diretamente perceptíveis
+fornecidos pelo contexto sem usar o nome desconhecido do lugar.
+
 
 ==================================================
 CANON

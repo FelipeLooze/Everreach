@@ -18,7 +18,11 @@ from app.db.models.location import (
     LocationFeature,
 )
 from app.game.game_state import GameStateSnapshot
-from app.game.npcs.service import KnownFact, relevant_known_facts
+from app.game.npcs.service import (
+    KnownFact,
+    known_facts,
+    relevant_known_facts,
+)
 from app.ai.memory_manager import get_relevant_memories
 from app.game.relationships.service import get_character_npc_relationship
 
@@ -147,6 +151,23 @@ def _build_input_canon_check(
             )
 
     return checks or ["- no conflict or unsupported persistent claim detected"]
+
+
+def _explicit_name_known(
+    facts: Sequence[KnownFact],
+    name: str | None,
+) -> bool:
+    """Return whether player knowledge explicitly contains this canonical name."""
+
+    if not name:
+        return False
+
+    normalized_name = name.casefold()
+
+    return any(
+        normalized_name in fact.statement.casefold()
+        for fact in facts
+    )
 
 
 def _known_connection_lines(
@@ -282,6 +303,43 @@ def build_context(
         player_input=player_input,
         limit=MAX_CONTEXT_FACTS_PER_KNOWER,
     )
+    all_player_facts = known_facts(
+        db,
+        state.campaign_id,
+        KnowerType.PLAYER,
+        state.character.id,
+    )
+    location_name_known = (
+        state.location is not None
+        and _explicit_name_known(
+            all_player_facts,
+            state.location.name,
+        )
+    )
+    region_name_known = (
+        state.region is not None
+        and _explicit_name_known(
+            all_player_facts,
+            state.region.name,
+        )
+    )
+    current_location_discovery = (
+        db.query(CharacterLocationDiscovery)
+        .filter(
+            CharacterLocationDiscovery.character_id
+            == state.character.id,
+            CharacterLocationDiscovery.location_id
+            == state.location.id,
+        )
+        .first()
+        if state.location is not None
+        else None
+    )
+    current_location_status = (
+        current_location_discovery.status
+        if current_location_discovery is not None
+        else DiscoveryStatus.UNKNOWN.value
+    )
     npc_facts = (
         relevant_known_facts(
             db,
@@ -384,7 +442,42 @@ def build_context(
         ]
     )
 
-    location_lines = ["CANONICAL LOCATION CONTEXT"]
+    current_location_knowledge_lines = [
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        f"Current location discovery status: {current_location_status}",
+    ]
+
+    if state.location is None:
+        current_location_knowledge_lines.append(
+            "Current location canonical name known to player: NO"
+        )
+    else:
+        current_location_knowledge_lines.append(
+            "Current location canonical name known to player: "
+            + ("YES" if location_name_known else "NO")
+        )
+
+        if location_name_known:
+            current_location_knowledge_lines.append(
+                f"Known location name: {state.location.name}"
+            )
+
+    if state.region is None:
+        current_location_knowledge_lines.append(
+            "Current region canonical name known to player: NO"
+        )
+    else:
+        current_location_knowledge_lines.append(
+            "Current region canonical name known to player: "
+            + ("YES" if region_name_known else "NO")
+        )
+
+        if region_name_known:
+            current_location_knowledge_lines.append(
+                f"Known region name: {state.region.name}"
+            )
+
+    location_lines = ["CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH"]
     if state.location is None:
         location_lines.append("Current location: unknown")
     else:
@@ -489,6 +582,7 @@ def build_context(
         player_section,
         world_section,
         "\n".join(location_lines),
+        "\n".join(current_location_knowledge_lines),
         spatial_knowledge_section,
         "\n".join(visible_lines),
         "\n".join(active_lines),

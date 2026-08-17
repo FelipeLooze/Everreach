@@ -12,7 +12,7 @@ from app.game.character.service import create_character
 from app.game.game_state import build_game_state
 from app.game.quests.service import start_quest
 from app.game.world.seed import create_campaign, seed_initial_region
-from app.db.models.quest import Quest
+from app.db.models.quest import Quest, QuestObjective
 from app.game.npcs import service as npcs_service
 from app.services.event_log import log_event
 
@@ -54,8 +54,26 @@ def test_apply_intent_move_does_not_reveal_unknown_location(db_session):
 
 def test_apply_intent_talk_completes_matching_quest_objective(db_session):
     campaign, region, village, character = _setup(db_session)
-    quest = db_session.query(Quest).filter(Quest.region_id == region.id).first()
+
+    quest = Quest(
+        region_id=region.id,
+        name="Falar com o Ancião",
+        description="Quest criada exclusivamente para testar objetivos de conversa.",
+    )
+    db_session.add(quest)
+    db_session.flush()
+
+    objective = QuestObjective(
+        quest_id=quest.id,
+        description="Falar com Osgar Vell em Cardal.",
+        order=0,
+    )
+    db_session.add(objective)
+    db_session.flush()
+
     start_quest(db_session, character.id, quest.id)
+
+    
     db_session.commit()
 
     state = build_game_state(db_session, campaign.id, character.id)

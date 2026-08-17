@@ -8,10 +8,8 @@ from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.db.models.character import Character
 from app.db.models.location import Location
-from app.db.models.quest import Quest
 from app.db.models.region import Region
 from app.game.character.service import create_character
-from app.game.quests.service import start_quest
 from app.game.world.seed import create_campaign, grant_initial_player_knowledge, seed_initial_region
 from app.game.world.reset import delete_campaign
 from app.services.event_log import log_event
@@ -86,28 +84,23 @@ def delete_campaign_route(campaign_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{campaign_id}/characters", response_model=CharacterResponse)
-def create_character_route(campaign_id: str, body: CharacterCreateRequest, db: Session = Depends(get_db)):
+@router.post("/{campaign_id}/characters", response_model=CharacterResponse)
+def create_character_route(
+    campaign_id: str,
+    body: CharacterCreateRequest,
+    db: Session = Depends(get_db),
+):
     campaign = db.get(Campaign, campaign_id)
     if campaign is None:
         raise HTTPException(status_code=404, detail="Campanha não encontrada")
-
-    region = db.query(Region).filter(Region.campaign_id == campaign_id).first()
-    village = None
-    if region is not None:
-        village = db.query(Location).filter(Location.region_id == region.id, Location.type == "village").first()
 
     character = create_character(
         db,
         campaign_id,
         body.name,
-        region.id if region else None,
-        village.id if village else None,
+        None,
+        None,
     )
-
-    if region is not None:
-        quest = db.query(Quest).filter(Quest.region_id == region.id).first()
-        if quest is not None:
-            start_quest(db, character.id, quest.id)
 
     db.commit()
     db.refresh(character)
@@ -141,10 +134,6 @@ def start_world(
     character.location_id = village.id
     grant_initial_player_knowledge(db, campaign_id, character.id)
 
-    quest = db.query(Quest).filter(Quest.region_id == region.id).first()
-    if quest is not None:
-        start_quest(db, character.id, quest.id)
-
     db.commit()
     state = build_game_state(db, campaign_id, character_id)
     if state.opening_narrative:
@@ -154,15 +143,35 @@ def start_world(
             state=to_game_state_response(state),
         )
 
-    nearby_names = ", ".join(player.name for player in state.nearby_simulated_players)
+    nearby_names = ", ".join(
+        player.name for player in state.nearby_simulated_players
+    )
+
     mechanical_intro = (
-        f"Este é o instante da sincronização inicial de {character.name} com Everreach — o "
-        f"lançamento mundial do jogo, no qual centenas de jogadores sincronizam ao mesmo "
-        f"tempo pela primeira vez. {character.name} se encontra de pé em {village.name}, na "
-        f"região {region.name}, cercado por outros jogadores que também acabaram de "
-        f"sincronizar. Jogadores visíveis nas proximidades (use somente estes nomes; o "
-        f"restante da multidão permanece anônimo ao fundo): {nearby_names or 'nenhum'}. "
-        "O personagem ainda não realizou nenhuma ação além da própria sincronização."
+        f"Este é o primeiro instante narrado de {character.name} após um transporte "
+        f"involuntário de seu mundo de origem para outro mundo. "
+        f"Esta campanha começa durante a Primeira Chegada: uma ocorrência massiva na qual "
+        f"muitas pessoas foram transportadas fisicamente quase ao mesmo tempo. "
+        f"{character.name} está de pé em uma praça como resultado direto do transporte e "
+        f"ainda não realizou nenhuma ação voluntária. "
+
+        f"A localização canônica de backend é {village.name}, na região {region.name}. "
+        f"Esses nomes NÃO devem ser revelados ao protagonista apenas por aparecerem neste "
+        f"resumo; só podem ser usados como conhecimento do protagonista se PLAYER KNOWLEDGE "
+        f"ou outro fato autorizado permitir. "
+
+        f"Há outras pessoas transportadas nas proximidades. Identidades persistentes presentes "
+        f"no backend: {nearby_names or 'nenhuma'}. Os nomes dessas pessoas também não são "
+        f"automaticamente conhecidos pelo protagonista. Além delas, uma multidão anônima de "
+        f"recém-chegados pode compor o fundo da Primeira Chegada. "
+
+        f"Os habitantes nativos presentes testemunham o fenômeno, mas não recebem conhecimento "
+        f"automático sobre sua causa. "
+
+        f"Não descreva esta chegada como jogo, login, logout, servidor, VR, VRMMORPG, "
+        f"sincronização de jogo ou lançamento. "
+        f"Não invente mensagens da Interface ou do Sistema. "
+        f"A narrativa deve terminar antes da primeira ação voluntária do protagonista."
     )
     narrator_unavailable = False
     try:
@@ -176,8 +185,10 @@ def start_world(
         )
     except LLMServiceError:
         narrative = (
-            f"{village.name} — manhã. Os primeiros moradores ocupam a praça enquanto o comércio "
-            f"começa a abrir. Ao redor de {character.name}, quase todo o mundo ainda é desconhecido."
+            "As vozes chegam antes que a visão se firme. Gritos, perguntas e passos se misturam "
+            "em uma confusão crescente. Quando o mundo se torna nítido, há pedra sob os pés e "
+            "uma praça desconhecida tomada por pessoas que parecem ter chegado no mesmo instante. "
+            "Nas margens, habitantes locais observam o acontecimento. Nenhuma explicação acompanha a chegada."
         )
         narrator_unavailable = True
 
@@ -187,7 +198,11 @@ def start_world(
         EventType.WORLD_STARTED,
         actor_type="character",
         actor_id=character.id,
-        payload={"narrative": narrative, "narrator_unavailable": narrator_unavailable},
+        payload={
+            "narrative": narrative,
+            "narrator_unavailable": narrator_unavailable,
+            "arrival_kind": "FIRST_ARRIVAL",
+        },
     )
     db.commit()
     state = build_game_state(db, campaign_id, character_id)

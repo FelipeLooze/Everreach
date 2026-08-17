@@ -34,6 +34,10 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.status_code == 409
 
     resp = client.post(f"/api/campaigns/{campaign_id}/start", params={"character_id": character_id})
+    opening_system, opening_prompt = fake_llm.calls[0]
+    assert "Primeira Chegada" in opening_prompt
+    assert "lançamento mundial do jogo" not in opening_prompt.lower()
+    assert "sincronização inicial" not in opening_prompt.lower()
     assert resp.status_code == 200
     assert resp.json()["narrative"] == "[test narration]"
     assert resp.json()["narrator_unavailable"] is False
@@ -81,8 +85,7 @@ def test_full_campaign_flow(client, fake_llm):
     resp = client.get(f"/api/campaigns/{campaign_id}/quests", params={"character_id": character_id})
     assert resp.status_code == 200
     quests = resp.json()["quests"]
-    assert len(quests) == 1
-    assert quests[0]["status"] == "ACTIVE"
+    assert quests == []
 
     resp = client.get(
         f"/api/campaigns/{campaign_id}/journal",
@@ -92,6 +95,7 @@ def test_full_campaign_flow(client, fake_llm):
     event_types = [event["event_type"] for event in resp.json()["events"]]
     assert "CHARACTER_CREATED" in event_types
     assert "WORLD_STARTED" in event_types
+    assert "QUEST_STARTED" not in event_types
     assert "STORY_EXCHANGE" in event_types
     assert all(event["actor_id"] == character_id for event in resp.json()["events"])
     assert resp.json()["memories"]

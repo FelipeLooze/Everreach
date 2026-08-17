@@ -12,7 +12,6 @@ from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location, LocationConnection, LocationFeature
 from app.db.models.npc import NPC
-from app.db.models.quest import Quest, QuestObjective
 from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
 from app.services.event_log import log_event
@@ -25,7 +24,7 @@ REGION_DESCRIPTION = (
     "hoje vivo já mapeou."
 )
 
-INITIAL_PLAYER_FACT_KEYS = ("cardal_is_village", "cardal_has_central_square")
+INITIAL_PLAYER_FACT_KEYS = ("arrival_square_visible",)
 
 
 def create_campaign(db: Session, name: str) -> Campaign:
@@ -187,8 +186,8 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"location:{village.id}",
-            fact_key="cardal_has_central_square",
-            statement="Cardal possui uma praça central cercada por casas de madeira e sapê.",
+            fact_key="arrival_square_visible",
+            statement="O local possui uma praça central cercada por casas de madeira e sapê.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
@@ -236,25 +235,14 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         ),
         SimulatedPlayer(
             campaign_id=campaign_id, name="Dessa Marrow", level=0, location_id=village.id,
-            archetype=SimulatedPlayerArchetype.TRAINER, goal="Ficar forte o suficiente para sobreviver à mata.",
+            archetype=SimulatedPlayerArchetype.TRAINER, goal="Aprender a sobreviver neste mundo desconhecido.",
         ),
         SimulatedPlayer(
             campaign_id=campaign_id, name="Bram Holt", level=0, location_id=village.id,
-            archetype=SimulatedPlayerArchetype.SOCIAL, goal="Construir um nome para si em Cardal.",
+            archetype=SimulatedPlayerArchetype.SOCIAL, goal="Conseguir informações com os habitantes locais e outros recém-chegados.",
         ),
     ]
     db.add_all(simulated_players)
-    db.flush()
-
-    quest = Quest(
-        region_id=region.id,
-        name="Uma Palavra com o Ancião",
-        description="Osgar Vell pede para falar com todo recém-chegado que aparece em Cardal.",
-    )
-    db.add(quest)
-    db.flush()
-    objective = QuestObjective(quest_id=quest.id, description=f"Falar com {elder.name} em Cardal.", order=0)
-    db.add(objective)
     db.flush()
 
     return region, village

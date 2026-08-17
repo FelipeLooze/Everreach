@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService
 from app.db.models.character import Character
-from app.db.models.quest import Quest
+from app.db.models.quest import Quest, QuestObjective
 from app.game.character.service import create_character
 from app.game.game_state import build_game_state
 from app.game.quests.service import start_quest
@@ -26,8 +26,25 @@ def test_context_builder_sends_only_current_player_context(db_session):
     campaign = create_campaign(db_session, "Context Test")
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
-    quest = db_session.query(Quest).filter(Quest.region_id == region.id).first()
+
+    quest = Quest(
+        region_id=region.id,
+        name="Quest de Teste",
+        description="Quest criada exclusivamente para o teste.",
+    )
+    db_session.add(quest)
+    db_session.flush()
+
+    objective = QuestObjective(
+        quest_id=quest.id,
+        description="Falar com Osgar Vell em Cardal.",
+        order=0,
+    )
+    db_session.add(objective)
+    db_session.flush()
+
     start_quest(db_session, character.id, quest.id)
+
     db_session.commit()
 
     context = context_builder.build_context(

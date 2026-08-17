@@ -88,8 +88,10 @@ def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
     actor_name = character.name if character is not None else "O personagem"
 
     if event_type == EventType.WORLD_STARTED.value:
-        location = db.get(Location, character.location_id) if character and character.location_id else None
-        return f"A jornada de {actor_name} começou em {location.name if location else 'um local desconhecido'}."
+        return (
+            f"{actor_name} foi transportado para um lugar desconhecido "
+            f"junto de muitas outras pessoas."
+        )
     if event_type == EventType.PLAYER_MOVED.value:
         location = db.get(Location, payload.get("to_location_id"))
         return f"{actor_name} viajou para {location.name if location else 'outro local'}."

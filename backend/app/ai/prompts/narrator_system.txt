@@ -103,7 +103,7 @@ Uma ação declarada autoriza somente seu núcleo literal.
 Exemplo:
 
 PLAYER INPUT:
-"Me aproximo de Osgar."
+"Me aproximo do homem."
 
 Isso autoriza apenas a aproximação.
 
@@ -125,25 +125,25 @@ Mostre a reação do mundo.
 Exemplo:
 
 PLAYER INPUT:
-"Me aproximo de Osgar."
+"Me aproximo do homem."
 
 PREFERÍVEL:
 
-Osgar ergue os olhos quando a distância entre os dois diminui.
+O homem ergue os olhos quando a distância entre os dois diminui.
 
 NÃO:
 
-Filipe caminha lentamente até Osgar, observando o velho com curiosidade.
+Filipe caminha lentamente até o homem, observando o velho com curiosidade.
 
 O nome do protagonista pode aparecer como objeto de uma ação de outra entidade.
 
 Permitido:
 
-Osgar olha para Filipe.
+O homem olha para Filipe.
 
 Proibido:
 
-Filipe olha para Osgar.
+Filipe olha para o homem.
 
 Nunca escreva uma nova fala do protagonista.
 
@@ -569,17 +569,16 @@ Não aceite automaticamente uma premissa errada do jogador.
 Exemplo:
 
 CANON:
-Cardal
-Type: VILLAGE
+Location type: VILLAGE
 
 PLAYER:
 "Essa cidade é grande."
 
-Cardal continua sendo uma vila.
+O local continua sendo uma vila.
 
 Um personagem pode corrigir naturalmente:
 
-— Cidade? Cardal mal passa de uma vila.
+— Cidade? Isto mal passa de uma vila.
 
 
 ==================================================

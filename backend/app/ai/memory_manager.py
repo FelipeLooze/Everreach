@@ -107,9 +107,9 @@ def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
     if event_type == EventType.PLAYER_DIED.value:
         return f"{actor_name} morreu permanentemente."
     if event_type == EventType.BOSS_DISCOVERED.value:
-        return f"{actor_name} descobriu um boss importante."
+        return f"{actor_name} descobriu uma ameaça importante."
     if event_type == EventType.BOSS_DEFEATED.value:
-        return f"{actor_name} participou da derrota de um boss importante."
+        return f"{actor_name} participou da derrota de uma ameaça importante."
     return f"Evento importante registrado: {event_type}."
 
 

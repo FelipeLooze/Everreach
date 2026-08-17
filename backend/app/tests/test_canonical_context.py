@@ -247,6 +247,6 @@ def test_player_audit_text_never_authorizes_persistent_worldbuilding(db_session)
     )
 
     assert result == "— Não sei dizer."
-    assert llm.calls == 4
+    assert llm.calls == 3
     assert db_session.query(KnowledgeFact).count() == facts_before
     assert db_session.query(Location).count() == locations_before

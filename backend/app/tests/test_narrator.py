@@ -83,7 +83,7 @@ def test_narrator_applies_system_prompt_and_all_dynamic_sections():
     assert result == "Resposta do NPC."
     assert len(llm.calls) == 1
     system, prompt = llm.calls[0]
-    assert "nunca controla o protagonista" in system
+    assert "NUNCA invente para o protagonista" in system
     assert "próximo momento da cena" in system
     assert "MODO DA CENA:\nCONTINUATION" in prompt
     assert "SCENE CONTEXT:" in prompt
@@ -106,7 +106,7 @@ def test_opening_mode_forbids_an_initial_player_action():
     )
 
     system, prompt = llm.calls[0]
-    assert "Fora desse instante sistêmico de sincronização, não invente chegada" in system
+    assert "Somente durante OPENING é permitido narrar o estado físico resultante desse transporte" in system
     assert "MODO DA CENA:\nOPENING" in prompt
     assert "(nenhuma ação do jogador)" in prompt
 
@@ -157,23 +157,27 @@ def test_recent_history_keeps_only_the_small_latest_window():
     assert "mensagem 6" in history
     assert "mensagem 7" in history
 
-
-def test_narrator_revises_a_response_longer_than_three_paragraphs():
+def test_narrator_does_not_regenerate_for_long_response_style_only():
     class ProportionalLLM(LLMService):
         def __init__(self) -> None:
             self.calls = 0
 
         def generate(self, system: str, prompt: str) -> str:
             self.calls += 1
-            if self.calls == 1:
-                return "Um.\n\nDois.\n\nTrês.\n\nQuatro."
-            return "Uma resposta curta e proporcional."
+            return "Um.\n\nDois.\n\nTrês.\n\nQuatro."
 
     llm = ProportionalLLM()
-    result = narrator.narrate(llm, "Nenhuma mudança.", "Contexto.", "Olho ao redor.", "")
 
-    assert result == "Uma resposta curta e proporcional."
-    assert llm.calls == 2
+    result = narrator.narrate(
+        llm,
+        "Nenhuma mudança.",
+        "Contexto.",
+        "Olho ao redor.",
+        "",
+    )
+
+    assert result == "Um.\n\nDois.\n\nTrês.\n\nQuatro."
+    assert llm.calls == 1
 
 
 def test_narrator_returns_plain_text_without_mutating_mechanical_data():
@@ -244,7 +248,7 @@ def test_narrator_drops_stubborn_fabricated_protagonist_dialogue_instead_of_acce
     assert "diz Logan" not in result
     assert "O que posso fazer por aqui" not in result
     assert result == "— Osgar sorri e acena com a cabeça."
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 class StubbornUnnamedFabricatedTurnLLM(LLMService):
@@ -281,7 +285,7 @@ def test_narrator_drops_unnamed_fabricated_player_turn_and_the_npcs_reaction_to_
     assert "Logan" not in result
     assert "respeita o desejo" not in result
     assert result == "— Venha conferir nossa cozinha! O que me diz? — pergunta Talven, sorridente."
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 class StubbornUnnamedTurnNoReactionPhraseLLM(LLMService):
@@ -322,7 +326,7 @@ def test_narrator_drops_fabricated_turn_even_without_an_explicit_reaction_phrase
         "Osgar sorri, compreendendo a curiosidade do rapaz.\n\n"
         "— Claro que é grande! Cardal é apenas uma pequena pérola no vasto reino."
     )
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 def test_narrator_does_not_truncate_a_legitimate_same_speaker_monologue():
@@ -387,7 +391,7 @@ def test_narrator_drops_fabricated_turn_framed_by_a_player_narration_beat():
         "Osgar olha para Logan com um sorriso amigável e atento.\n\n"
         "— Bem-vindo a Cardal, jovem. O que posso fazer por você?"
     )
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 def test_system_prompt_contains_no_campaign_specific_names():
@@ -400,7 +404,7 @@ def test_system_prompt_contains_no_campaign_specific_names():
     assert "Logan" not in system
 
 
-def test_narrator_requests_one_revision_for_detectable_style_violations():
+def test_narrator_does_not_regenerate_for_detectable_style_violations():
     llm = RevisingLLM()
 
     result = narrator.narrate(
@@ -411,13 +415,8 @@ def test_narrator_requests_one_revision_for_detectable_style_violations():
         "NARRATOR: Osgar aguarda.",
     )
 
-    assert result == "Osgar faz uma breve pausa.\n\n— Sou daqui."
-    assert len(llm.calls) == 2
-    _system, revision_prompt = llm.calls[1]
-    assert "DRAFT TO REVISE:" in revision_prompt
-    assert "VIOLATIONS TO REMOVE:" in revision_prompt
-    assert "como se" in revision_prompt
-    assert "aspas" in revision_prompt
+    assert result == 'Osgar olha para o lado como se pesasse a pergunta. "Sou daqui."'
+    assert len(llm.calls) == 1
 
 
 def test_narrator_revises_unregistered_persistent_worldbuilding():
@@ -450,7 +449,7 @@ class StubbornNpcNamesTheGameLLM(LLMService):
         self.calls.append((system, prompt))
         return (
             "Osgar observa as luzes com espanto.\n\n"
-            "— Bem-vindos à Everreach, jovens viajantes! — exclama Osgar Vell."
+            "— Este servidor é perigoso. Vocês deveriam fazer logout. — diz Osgar Vell."
         )
 
 
@@ -468,7 +467,7 @@ def test_narrator_drops_npc_line_that_names_the_game():
     )
 
     assert "Everreach" not in result
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 class StubbornNpcClaimsToBePlayerLLM(LLMService):
@@ -502,7 +501,7 @@ def test_narrator_drops_npc_line_that_claims_to_be_a_player():
     )
 
     assert "jogadores" not in result.lower()
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 def test_narrator_allows_a_simulated_player_to_use_game_vocabulary():
@@ -549,7 +548,7 @@ def test_narrator_uses_safe_npc_fallback_when_revisions_keep_inventing():
     )
 
     assert result == "— Não sei dizer."
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 def test_narrator_rejects_an_invented_history_for_a_canonical_place():
@@ -571,7 +570,7 @@ def test_narrator_rejects_an_invented_history_for_a_canonical_place():
     )
 
     assert result == "— Não sei dizer."
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 # --- Regression tests: "— Não sei dizer." must not be a universal fallback ---
@@ -636,7 +635,7 @@ def test_teste_d_unsupported_road_claim_is_not_invented():
 
     assert "estrada" not in result.lower() or result == "— Não sei dizer."
     assert result == "— Não sei dizer."
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 def test_teste_e_does_not_accept_an_unsupported_premise_about_a_castle():
@@ -651,7 +650,7 @@ def test_teste_e_does_not_accept_an_unsupported_premise_about_a_castle():
 
     assert "castelo" not in result.lower()
     assert result == "— Não sei dizer."
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3
 
 
 def test_teste_f_gibberish_input_gets_a_reaction_not_a_forced_refusal():
@@ -678,4 +677,4 @@ def test_teste_g_valid_social_reply_survives_when_only_part_is_unsupported():
     assert result == "— Bom dia."
     assert "estrada" not in result.lower()
     assert "castelo" not in result.lower()
-    assert len(llm.calls) == 4
+    assert len(llm.calls) == 3

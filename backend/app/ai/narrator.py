@@ -13,6 +13,14 @@ _SYSTEM_PROMPT = _PROMPT_PATH.read_text(encoding="utf-8")
 
 NarrationMode = Literal["OPENING", "CONTINUATION"]
 
+_OPENING_ALLOWED_SUBJECT_VERBS = {
+    "esta",
+    "encontra",
+    "surge",
+    "aparece",
+    "materializa",
+}
+
 _FORBIDDEN_STYLE_MARKERS = (
     "como se",
     "o ar parece",
@@ -28,7 +36,10 @@ _OBJECT_PREPOSITIONS = r"(?:para|a|ao|à|com|de|do|da|sobre|junto a)"
 # world is real and must never use these terms — only the narrator/system
 # voice (outside NPC dialogue) may name the game or describe it as a game.
 _META_GAME_TERMS = re.compile(
-    r"\beverreach\b|\bjogador\w*\b|\blogout\b|\bsincroniza(?:cao|ção)\w*\b", re.IGNORECASE
+    r"\b(?:vrmmorpg|vrmmo|logout|login|servidor|npc)\b|"
+    r"\bsincroniza(?:cao|ção)\w*\b|"
+    r"\b(?:sou|somos|sao|são)\s+(?:um\s+|uns\s+)?jogador(?:es)?\b",
+    re.IGNORECASE,
 )
 
 # Verbs of speech that, followed by the protagonist's name, mean the narrator
@@ -238,11 +249,24 @@ def _protagonist_agency_violations(
     if reacts_pattern.search(text):
         return [_FABRICATED_TURN_MESSAGE]
 
-    subject_pattern = re.compile(rf"(?:^|[.\n—]\s*){name}\s+(?:se\s+)?(\w+)", re.IGNORECASE)
+    subject_pattern = re.compile(
+        rf"(?:^|[.\n—]\s*){name}\s+(?:se\s+)?(\w+)",
+        re.IGNORECASE,
+    )
+
     for match in subject_pattern.finditer(text):
         preceding = text[max(0, match.start() - 20): match.start()]
+
         if re.search(rf"\b{_OBJECT_PREPOSITIONS}\s*$", preceding, re.IGNORECASE):
             continue
+
+        verb = _normalized(match.group(1))
+
+        # During OPENING the protagonist may be the grammatical subject only
+        # for the involuntary physical result of the transportation.
+        if mode == "OPENING" and verb in _OPENING_ALLOWED_SUBJECT_VERBS:
+            continue
+
         return [_AGENCY_VIOLATION_MESSAGE]
     return []
 
@@ -296,10 +320,14 @@ def _is_dialogue_paragraph(paragraph: str) -> bool:
 
 
 def _extract_simulated_player_names(context: str) -> list[str]:
-    """Simulated players — unlike NPCs — may knowingly use game vocabulary
-    (see the prompt's CONHECIMENTO DO MUNDO section), so a spoken line naming
-    one of them is exempt from the meta-awareness check below."""
-    match = re.search(r"(?:^|\n)VISIBLE PLAYERS\n((?:-.*\n?)*)", context)
+    """Return the names of visible transported people.
+    They came from another world and may know modern or videogame vocabulary from
+    their previous lives. This does not mean Everreach is a game.
+    """
+    match = re.search(
+        r"(?:^|\n)(?:VISIBLE TRANSPORTED PEOPLE|VISIBLE PLAYERS)\n((?:-.*\n?)*)",
+        context,
+    )
     if not match:
         return []
     names = []
@@ -313,7 +341,7 @@ def _extract_simulated_player_names(context: str) -> list[str]:
 def _paragraph_speaks_for_simulated_player(
     paragraphs: list[str], index: int, simulated_player_names: list[str]
 ) -> bool:
-    """Whether the dialogue paragraph at `index` belongs to a simulated player —
+    """Whether the dialogue paragraph at `index` belongs to a transported person. —
     either because it names one directly, or because the narration beat right
     before it (if any) just introduced one as the speaker."""
     if not simulated_player_names:
@@ -349,10 +377,10 @@ def _find_meta_awareness_violations(text: str, simulated_player_names: list[str]
         for index in range(len(paragraphs))
     ):
         return [
-            "um NPC revelou consciência de estar em um jogo em fala direta (nome do jogo, "
-            "\"jogador\", \"logout\", \"sincronização\"...); NPCs acreditam que o mundo é "
-            "real — só o narrador pode usar esses termos fora do diálogo, e jogadores "
-            "simulados nomeados podem usá-los livremente"
+            "um habitante nativo usou conhecimento tecnológico ou de videogame incompatível "
+            "com seu contexto; habitantes nativos não sabem que Everreach é um jogo porque "
+            "Everreach não é um jogo. Pessoas transportadas podem conhecer esse vocabulário "
+            "por sua vida anterior, mas isso não torna o mundo uma simulação"
         ]
     return []
 

@@ -316,7 +316,7 @@ def build_context(
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
         ] or ["- none"]
     )
-    visible_lines.append("VISIBLE PLAYERS")
+    visible_lines.append("VISIBLE TRANSPORTED PEOPLE")
     visible_lines.extend(
         [
             f"- {_clip(player.name, 100)} (Level {player.level})"

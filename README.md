@@ -1,6 +1,17 @@
-# Everreach — VRMMORPG Solo (MVP)
+# Everreach — RPG Solo de Mundo Vivo
 
-RPG solo web ambientado em Everreach, um VRMMORPG medieval fictício. A campanha inicial começa na região de Vale Verdejante. O backend é a autoridade sobre o estado e as regras do mundo. O modelo local via Ollama classifica intenções e escreve a narração, mas não altera o banco nem decide resultados mecânicos.
+Everreach é um RPG solo web de fantasia medieval ambientado em um mundo vivo e persistente.
+
+Pessoas do nosso mundo começaram misteriosamente a ser transportadas para Everreach,
+um mundo real habitado por povos, culturas e sociedades próprias. Ninguém sabe por que
+as chegadas começaram, o que as causa ou se existe uma maneira de voltar.
+
+Os transportados possuem acesso a uma misteriosa Interface, mas Everreach não é um jogo.
+O mundo existe independentemente dela e continua mudando mesmo sem a presença do protagonista.
+
+O backend é a autoridade sobre o estado e as regras do mundo. O modelo local via Ollama
+interpreta intenções e escreve a narração, mas não altera o banco nem decide resultados
+mecânicos.
 
 ## Estrutura
 
@@ -176,7 +187,7 @@ npm run build
 
 - Campanha, personagem Level 0 e início explícito do mundo.
 - Listagem, continuação e exclusão de campanhas persistidas na tela inicial.
-- Uma região inicial com locais conectados, NPCs e jogadores simulados.
+- Uma região inicial com locais conectados, habitantes nativos e outras pessoas transportadas.
 - Mapa limitado ao conhecimento atual do jogador.
 - Missão inicial e conclusão simples de objetivo por conversa.
 - Ações de movimento, conversa, descanso, espera, exame e checagem simples de perícia.

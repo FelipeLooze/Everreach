@@ -5,7 +5,7 @@ apenas classifica a intenção.
 Responda com APENAS um objeto JSON, sem nenhum outro texto, neste formato exato
 (os valores de "intent" devem ficar em inglês, exatamente como abaixo — são um
 identificador interno do sistema, não texto para o jogador):
-{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "FREEFORM", "target": "<nome curto do alvo ou null>"}
+{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "FREEFORM", "target": "<nome curto do alvo ou null>", "pace": "SLOW" | "NORMAL" | "FAST"}
 
 Guia:
 - MOVE: o jogador está tentando viajar até um lugar.
@@ -17,6 +17,37 @@ Guia:
   (atacar, pular, se esgueirar, forçar algo) cujo sucesso é incerto.
 - FREEFORM: qualquer outra coisa, ou texto puramente conversacional/descritivo sem
   uma ação mecânica clara.
+- "pace" representa o ritmo físico de deslocamento quando a intenção for MOVE.
+
+Use:
+- SLOW: o jogador explicitamente indica que irá devagar, lentamente, com calma,
+  sem pressa ou economizando energia.
+- NORMAL: deslocamento comum, caminhada normal ou quando nenhum ritmo específico
+  é mencionado.
+- FAST: o jogador explicitamente indica pressa, corrida, deslocamento rápido,
+  "o mais rápido possível" ou equivalente.
+
+Para intenções que não sejam MOVE, use NORMAL.
+
+Não invente outros valores de pace.
+Não use pace para decidir sucesso, duração, stamina ou qualquer consequência.
+O backend calcula essas regras.
+
+"Vou até o bosque."
+→ {"intent":"MOVE","target":"Bosque","pace":"NORMAL"}
+
+"Vou devagar até o bosque."
+→ {"intent":"MOVE","target":"Bosque","pace":"SLOW"}
+
+"Corro até o bosque."
+→ {"intent":"MOVE","target":"Bosque","pace":"FAST"}
+
+"Vou o mais rápido possível para a estrada."
+→ {"intent":"MOVE","target":"Estrada","pace":"FAST"}
+
+"Falo com Osgar."
+→ {"intent":"TALK","target":"Osgar","pace":"NORMAL"}
+
 
 "target" deve ser o nome do lugar, NPC ou objeto envolvido (no idioma em que o
 jogador o mencionou), ou null.

@@ -197,7 +197,7 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
         return f"Nenhum lugar conhecido correspondente a '{intent.target}' pode ser alcançado a partir daqui.", 0
 
     try:
-        minutes = travel_service.move_character(db, campaign_id, character, destination.id)
+        minutes = travel_service.move_character(db, campaign_id, character, destination.id, pace=intent.pace,)
     except travel_service.TravelError as exc:
         return str(exc), 0
 

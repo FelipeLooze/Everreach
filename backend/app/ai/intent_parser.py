@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.ai.llm_service import LLMService, LLMServiceError
-from app.core.enums import ActionIntentType
+from app.core.enums import ActionIntentType, TravelPace
 from app.core.logging import get_logger
 
 logger = get_logger("context")
@@ -19,6 +19,7 @@ class Intent:
     type: ActionIntentType
     target: str | None
     raw_text: str
+    pace: TravelPace = TravelPace.NORMAL
 
 
 def parse(llm_service: LLMService, text: str, context: str) -> Intent:
@@ -34,21 +35,52 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         logger.info("intent parser: LLM unavailable, falling back to FREEFORM")
         return Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=text)
 
-    intent_type, target = _parse_response(raw)
-    return Intent(type=intent_type, target=target, raw_text=text)
+    intent_type, target, pace = _parse_response(raw)
+    return Intent(type=intent_type, target=target, raw_text=text, pace=pace,)
 
 
-def _parse_response(raw: str) -> tuple[ActionIntentType, str | None]:
+def _parse_response(
+    raw: str,
+) -> tuple[ActionIntentType, str | None, TravelPace]:
     try:
         start = raw.index("{")
         end = raw.rindex("}") + 1
         data = json.loads(raw[start:end])
     except (ValueError, json.JSONDecodeError):
-        logger.warning("intent parser: could not parse LLM response: %r", raw)
-        return ActionIntentType.FREEFORM, None
+        logger.warning(
+            "intent parser: could not parse LLM response: %r",
+            raw,
+        )
+        return (
+            ActionIntentType.FREEFORM,
+            None,
+            TravelPace.NORMAL,
+        )
 
-    intent_str = str(data.get("intent", "")).upper()
+    intent_str = str(
+        data.get("intent", "")
+    ).upper()
+
+    target = data.get("target")
+
     if intent_str not in _VALID_INTENTS:
-        return ActionIntentType.FREEFORM, data.get("target")
+        return (
+            ActionIntentType.FREEFORM,
+            target,
+            TravelPace.NORMAL,
+        )
 
-    return ActionIntentType(intent_str), data.get("target")
+    pace_str = str(
+        data.get("pace", TravelPace.NORMAL.value)
+    ).upper()
+
+    try:
+        pace = TravelPace(pace_str)
+    except ValueError:
+        pace = TravelPace.NORMAL
+
+    return (
+        ActionIntentType(intent_str),
+        target,
+        pace,
+    )

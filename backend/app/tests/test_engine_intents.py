@@ -4,7 +4,12 @@ from app.game.time.clock import get_world_time
 from app.game.travel import service as travel_service
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService
-from app.core.enums import ActionIntentType, DiscoveryStatus, MemoryOwnerType
+from app.core.enums import (
+    ActionIntentType, 
+    DiscoveryStatus, 
+    MemoryOwnerType, 
+    TravelPace,
+)
 from app.core.enums import EventType
 from app.db.models.npc import NPC
 from app.db.models.location import Location, LocationConnection
@@ -424,3 +429,78 @@ def test_resolve_action_zero_minutes_does_not_advance_clock_or_tick(
 
     assert final_time_event_count == initial_time_event_count
     assert character.location_id == village.id
+
+def test_apply_intent_move_uses_requested_fast_pace(db_session):
+    campaign, region, village, character = _setup(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    discover_connection(
+        db_session,
+        character.id,
+        connection.id,
+    )
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+        DiscoveryStatus.DISCOVERED,
+    )
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    starting_stamina = character.stamina_current
+
+    intent = Intent(
+        type=ActionIntentType.MOVE,
+        target="Bosque da Beira do Vale",
+        raw_text="Corro até o bosque.",
+        pace=TravelPace.FAST,
+    )
+
+    summary, minutes = engine._apply_intent(
+        db_session,
+        campaign.id,
+        character,
+        intent,
+        state,
+    )
+
+    expected_minutes = travel_service.calculate_travel_minutes(
+        connection,
+        travel_service.PACE_SPEED_MULTIPLIERS[TravelPace.FAST],
+    )
+
+    expected_stamina = (
+        travel_service.calculate_travel_stamina_cost(
+            connection,
+            TravelPace.FAST,
+        )
+    )
+
+    assert minutes == expected_minutes
+    assert character.location_id == forest.id
+    assert character.stamina_current == (
+        starting_stamina - expected_stamina
+    )

@@ -271,10 +271,8 @@ def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
         DiscoveryStatus.DISCOVERED,
     )
 
-    expected_minutes = round(
-        travel_service.BASE_MINUTES_PER_DISTANCE
-        * connection.distance
-        * connection.travel_time_modifier
+    expected_minutes = travel_service.calculate_travel_minutes(
+        connection
     )
 
     start_time = get_world_time(

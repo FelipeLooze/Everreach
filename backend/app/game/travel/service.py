@@ -11,11 +11,45 @@ from app.services.event_log import log_event
 
 
 BASE_MINUTES_PER_DISTANCE = 15
-
+DEFAULT_TRAVEL_SPEED_MULTIPLIER = 1.0
 
 class TravelError(ValueError):
     pass
 
+def calculate_travel_minutes(
+    connection: LocationConnection,
+    speed_multiplier: float = DEFAULT_TRAVEL_SPEED_MULTIPLIER,
+) -> int:
+    """Calculate deterministic travel time for one physical route.
+
+    distance:
+        Physical length of the route.
+
+    travel_time_modifier:
+        Difficulty of traversing the route itself.
+        Values above 1.0 make travel slower.
+        Values below 1.0 make travel faster.
+
+    speed_multiplier:
+        How fast the traveler is currently moving.
+        1.0 means normal walking speed.
+        Values above 1.0 are faster.
+        Values below 1.0 are slower.
+    """
+
+    if speed_multiplier <= 0:
+        raise TravelError(
+            "O multiplicador de velocidade deve ser maior que zero."
+        )
+
+    raw_minutes = (
+        BASE_MINUTES_PER_DISTANCE
+        * connection.distance
+        * connection.travel_time_modifier
+        / speed_multiplier
+    )
+
+    return max(1, round(raw_minutes))
 
 def find_connection(
     db: Session,
@@ -38,6 +72,7 @@ def move_character(
     campaign_id: str,
     character,
     to_location_id: str,
+    speed_multiplier: float = DEFAULT_TRAVEL_SPEED_MULTIPLIER,
 ) -> int:
     """Move a character to a connected and known location.
 
@@ -83,10 +118,9 @@ def move_character(
             "Destino desconhecido."
         )
 
-    minutes = round(
-        BASE_MINUTES_PER_DISTANCE
-        * connection.distance
-        * connection.travel_time_modifier
+    minutes = calculate_travel_minutes(
+        connection,
+        speed_multiplier,
     )
 
     previous_discovery = get_location_discovery(

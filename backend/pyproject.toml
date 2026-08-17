@@ -1,7 +1,7 @@
 [project]
-name = "vrmmo-backend"
+name = "everreach-backend"
 version = "0.1.0"
-description = "Authoritative backend for the VRMMORPG solo RPG (game state, rules, world simulation)."
+description = "Authoritative backend for Everreach (game state, rules, world simulation, canon and narrative context)."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.111",

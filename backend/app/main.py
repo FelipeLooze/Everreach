@@ -8,7 +8,7 @@ from app.core.logging import configure_logging
 settings = get_settings()
 configure_logging(settings.log_level)
 
-app = FastAPI(title="VRMMO Solo — Game API", version="0.1.0")
+app = FastAPI(title="Everreach — Game API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,

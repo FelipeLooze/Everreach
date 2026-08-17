@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    database_url: str = "sqlite:///./vrmmo.db"
+    database_url: str = "sqlite:///./everreach.db"
 
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "hermes3:8b-llama3.1-q4_K_M"

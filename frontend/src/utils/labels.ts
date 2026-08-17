@@ -33,7 +33,7 @@ const QUEST_STATUS_LABELS: Record<string, string> = {
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   CAMPAIGN_CREATED: "Campanha criada",
-  WORLD_STARTED: "Mundo iniciado",
+  WORLD_STARTED: "Primeira Chegada",
   STORY_EXCHANGE: "Troca narrativa",
   CHARACTER_CREATED: "Personagem criado",
   PLAYER_MOVED: "Você se moveu",

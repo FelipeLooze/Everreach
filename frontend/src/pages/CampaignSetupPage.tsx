@@ -79,7 +79,7 @@ export function CampaignSetupPage() {
     <div className="main-menu">
       <header className="game-logo">
         <h1>EVERREACH</h1>
-        <span>VRMMORPG</span>
+        <span>MUNDO VIVO</span>
       </header>
 
       {menu === "main" && (

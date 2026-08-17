@@ -10,7 +10,7 @@ interface GameStore {
   clearSession: () => void;
 }
 
-const STORAGE_KEY = "vrmmo-session";
+const STORAGE_KEY = "everreach-session";
 
 function loadSession(): { campaignId: string | null; characterId: string | null } {
   try {

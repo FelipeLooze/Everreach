@@ -122,7 +122,7 @@ def test_opening_mode_permits_the_protagonist_as_subject_of_the_sync_event():
     context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)"
 
     result = narrator.narrate(
-        llm, "Sincronização inicial.", context,
+        llm, "Primeira Chegada.", context,
         "(nenhuma ação do jogador; abertura da campanha)", "(nenhum histórico)",
         mode="OPENING",
     )
@@ -461,7 +461,7 @@ def test_narrator_drops_npc_line_that_names_the_game():
     )
 
     result = narrator.narrate(
-        llm, "Sincronização inicial.", context,
+        llm, "Primeira Chegada.", context,
         "(nenhuma ação do jogador; abertura da campanha)", "(nenhum histórico)",
         mode="OPENING",
     )
@@ -495,7 +495,7 @@ def test_narrator_drops_npc_line_that_claims_to_be_a_player():
     )
 
     result = narrator.narrate(
-        llm, "Sincronização inicial.", context,
+        llm, "Primeira Chegada.", context,
         "(nenhuma ação do jogador; abertura da campanha)", "(nenhum histórico)",
         mode="OPENING",
     )
@@ -519,7 +519,7 @@ def test_narrator_allows_a_simulated_player_to_use_game_vocabulary():
     )
 
     result = narrator.narrate(
-        llm, "Sincronização inicial.", context,
+        llm, "Primeira Chegada.", context,
         "(nenhuma ação do jogador; abertura da campanha)", "(nenhum histórico)",
         mode="OPENING",
     )

@@ -5,7 +5,7 @@ backend/__pycache__/
 *.pyc
 backend/*.egg-info/
 backend/.pytest_cache/
-backend/vrmmo.db
+backend/everreach.db
 backend/.env
 __pycache__/
 *.py[cod]

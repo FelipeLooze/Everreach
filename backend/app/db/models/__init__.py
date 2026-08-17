@@ -3,7 +3,12 @@ from app.db.models.character import Character, CharacterAttribute
 from app.db.models.event import WorldEvent
 from app.db.models.item import InventoryItem, Item
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
-from app.db.models.location import Location, LocationConnection, LocationFeature
+from app.db.models.location import (
+    CharacterLocationDiscovery,
+    Location,
+    LocationConnection,
+    LocationFeature,
+)
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.quest import (
@@ -27,6 +32,7 @@ __all__ = [
     "Item",
     "KnowledgeFact",
     "KnowledgeKnower",
+    "CharacterLocationDiscovery",
     "Location",
     "LocationConnection",
     "LocationFeature",

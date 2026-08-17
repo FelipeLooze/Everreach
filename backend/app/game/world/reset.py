@@ -6,7 +6,7 @@ from app.db.models.character import Character, CharacterAttribute
 from app.db.models.event import WorldEvent
 from app.db.models.item import InventoryItem
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
-from app.db.models.location import Location, LocationConnection, LocationFeature
+from app.db.models.location import CharacterLocationDiscovery, Location, LocationConnection, LocationFeature
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
@@ -59,6 +59,12 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(WorldEvent).filter(WorldEvent.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(NPC).filter(NPC.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(SimulatedPlayer).filter(SimulatedPlayer.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(CharacterLocationDiscovery).filter(
+        or_(
+            CharacterLocationDiscovery.character_id.in_(character_ids),
+            CharacterLocationDiscovery.location_id.in_(location_ids),
+        )
+    ).delete(synchronize_session=False)
     db.query(Character).filter(Character.id.in_(character_ids)).delete(synchronize_session=False)
 
     db.query(LocationConnection).filter(

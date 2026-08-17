@@ -103,13 +103,51 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     db.add_all([village, forest_edge, road, creek, clearing])
     db.flush()
 
-    db.add(
-        LocationFeature(
-            location_id=village.id,
-            name="praça central",
-            description="Praça desgastada pelo uso, cercada por casas de madeira e sapê.",
-        )
+    db.add_all(
+        [
+            LocationFeature(
+                location_id=village.id,
+                name="praça central",
+                description=(
+                    "Praça desgastada pelo uso, cercada por "
+                    "casas de madeira e sapê."
+                ),
+            ),
+            LocationFeature(
+                location_id=forest_edge.id,
+                name="orla da mata",
+                description=(
+                    "Árvores densas começam junto à borda do caminho "
+                    "e a vegetação se torna mais fechada em direção ao oeste."
+                ),
+            ),
+            LocationFeature(
+                location_id=road.id,
+                name="estrada de terra",
+                description=(
+                    "Faixa de terra batida segue em direção às terras "
+                    "mais elevadas a leste."
+                ),
+            ),
+            LocationFeature(
+                location_id=creek.id,
+                name="riacho",
+                description=(
+                    "Curso de água raso, de coloração escura, "
+                    "atravessa o terreno."
+                ),
+            ),
+            LocationFeature(
+                location_id=clearing.id,
+                name="clareira",
+                description=(
+                    "Uma abertura entre as árvores apresenta relva "
+                    "pouco perturbada e poucos sinais imediatos de animais."
+                ),
+            ),
+        ]
     )
+    db.flush()
 
     def connect(
         a: Location,

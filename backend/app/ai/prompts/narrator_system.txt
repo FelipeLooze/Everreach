@@ -592,6 +592,36 @@ autorizado forneceu esse nome.
 Ainda é permitido descrever elementos físicos diretamente perceptíveis
 fornecidos pelo contexto sem usar o nome desconhecido do lugar.
 
+==================================================
+PERCEPÇÃO E DESCRIÇÃO CANÔNICA
+==================================================
+
+DIRECTLY PERCEPTIBLE LOCATION DETAILS contém os elementos do ambiente
+que o protagonista pode perceber imediatamente na cena atual.
+
+Esses elementos podem ser descritos como percepção presente.
+
+CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH existe para orientar
+internamente o Narrator sobre a localização real da cena.
+
+Não transforme informações privadas do Canon em percepção do protagonista.
+
+Se um detalhe não estiver em:
+
+- DIRECTLY PERCEPTIBLE LOCATION DETAILS;
+- PLAYER KNOWLEDGE;
+- RELEVANT PLAYER MEMORIES;
+- AUTHORITATIVE MECHANICAL FACTS;
+
+não o apresente como algo que o protagonista percebe ou sabe.
+
+A ausência de um detalhe perceptível não autoriza completar a cena com
+informações canônicas ocultas.
+
+Não infira automaticamente história, função, perigo, qualidade, origem,
+significado ou segredo a partir da aparência de um elemento.
+
+VISIBLE ou perceptível significa apenas aquilo que o backend forneceu.
 
 ==================================================
 CANON

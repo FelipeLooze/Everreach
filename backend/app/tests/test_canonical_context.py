@@ -3,7 +3,7 @@ from app.ai.context_builder import MAX_CONTEXT_FACTS_PER_KNOWER, build_context
 from app.ai.llm_service import LLMService
 from app.core.enums import DiscoveryStatus, KnowledgeCertainty, KnowerType
 from app.db.models.knowledge import KnowledgeFact
-from app.db.models.location import Location
+from app.db.models.location import Location, LocationConnection, LocationFeature
 from app.game.character.service import create_character
 from app.game.discovery.service import set_location_discovery
 from app.game.game_state import build_game_state
@@ -457,3 +457,79 @@ def test_player_audit_text_never_authorizes_persistent_worldbuilding(db_session)
     assert llm.calls == 3
     assert db_session.query(KnowledgeFact).count() == facts_before
     assert db_session.query(Location).count() == locations_before
+
+def test_private_location_description_is_not_exposed_as_perception(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    state.location.description = (
+        "SEGREDO CANÔNICO: existe uma cripta escondida sob a praça."
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    assert "SEGREDO CANÔNICO" not in context
+    assert "cripta escondida" not in context
+
+def test_visible_location_feature_is_exposed_as_direct_perception(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    feature = LocationFeature(
+        location_id=state.location.id,
+        name="sino rachado",
+        description=(
+            "Um sino de bronze apresenta uma rachadura "
+            "larga em uma das laterais."
+        ),
+        visible=True,
+    )
+
+    db_session.add(feature)
+    db_session.flush()
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    perception_section = context.split(
+        "DIRECTLY PERCEPTIBLE LOCATION DETAILS",
+        1,
+    )[1].split(
+        "CONNECTED LOCATIONS KNOWN TO PLAYER",
+        1,
+    )[0]
+
+    assert "sino rachado" in perception_section
+    assert "rachadura" in perception_section
+
+def test_hidden_location_feature_does_not_leak_into_perception(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    hidden_feature = LocationFeature(
+        location_id=state.location.id,
+        name="porta subterrânea secreta",
+        description=(
+            "Uma passagem oculta existe sob uma placa de pedra."
+        ),
+        visible=False,
+    )
+
+    db_session.add(hidden_feature)
+    db_session.flush()
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    assert "porta subterrânea secreta" not in context
+    assert "passagem oculta" not in context

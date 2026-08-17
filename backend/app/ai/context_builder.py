@@ -486,19 +486,36 @@ def build_context(
                 f"Name: {state.location.name}",
                 f"Type: {state.location.type.upper()}",
                 f"Region: {state.region.name if state.region else 'unknown'}",
-                f"Description: {_clip(state.location.description, MAX_DESCRIPTION_CHARS)}",
-                "VISIBLE FEATURES",
-                *(
-                    [
-                        f"- {_clip(feature.name, 100)}: {_clip(feature.description, 300)}"
-                        for feature in features
-                    ]
-                    or ["- none registered"]
-                ),
-                "CONNECTED LOCATIONS KNOWN TO PLAYER",
-                *(_known_connection_lines(db, state, player_facts) or ["- none"]),
             ]
         )
+
+    perception_lines = [
+        "DIRECTLY PERCEPTIBLE LOCATION DETAILS"
+    ]
+
+    if state.location is None:
+        perception_lines.append("- none")
+    else:
+        perception_lines.extend(
+            [
+                f"- {_clip(feature.name, 100)}: "
+                f"{_clip(feature.description, 300)}"
+                for feature in features
+            ]
+            or ["- none registered"]
+        )
+
+    known_route_lines = [
+        "CONNECTED LOCATIONS KNOWN TO PLAYER",
+        *(
+            _known_connection_lines(
+                db,
+                state,
+                player_facts,
+            )
+            or ["- none"]
+        ),
+    ]
 
     visible_lines = ["VISIBLE NPCS"]
     visible_lines.extend(
@@ -582,6 +599,8 @@ def build_context(
         player_section,
         world_section,
         "\n".join(location_lines),
+        "\n".join(perception_lines),
+        "\n".join(known_route_lines),
         "\n".join(current_location_knowledge_lines),
         spatial_knowledge_section,
         "\n".join(visible_lines),

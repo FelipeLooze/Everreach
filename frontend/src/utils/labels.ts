@@ -52,6 +52,8 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   NPC_DIED: "Um NPC morreu",
   REGION_DISCOVERED: "Região descoberta",
   LOCATION_DISCOVERED: "Local descoberto",
+  LOCATION_VISITED: "Local visitado pela primeira vez",
+  CONNECTION_DISCOVERED: "Rota descoberta",
   BOSS_DISCOVERED: "Chefe descoberto",
   BOSS_DEFEATED: "Chefe derrotado",
   NEW_TECHNIQUE_CREATED: "Nova técnica criada",

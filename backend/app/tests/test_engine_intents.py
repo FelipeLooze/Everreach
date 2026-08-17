@@ -3,7 +3,7 @@ from app.ai.llm_service import LLMService
 from app.core.enums import ActionIntentType, DiscoveryStatus, MemoryOwnerType
 from app.core.enums import EventType
 from app.db.models.npc import NPC
-from app.db.models.location import Location
+from app.db.models.location import Location, LocationConnection
 from app.db.models.quest import CharacterQuestObjective
 from app.db.models.memory import Memory
 from app.db.models.relationship import CharacterNPCRelationship
@@ -18,6 +18,7 @@ from app.services.event_log import log_event
 from app.game.discovery.service import (
     get_location_discovery,
     set_location_discovery,
+    discover_connection,
 )
 
 def _setup(db_session):
@@ -31,6 +32,21 @@ def _setup(db_session):
 def test_apply_intent_move_relocates_character(db_session):
     campaign, region, village, character = _setup(db_session)
     forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    discover_connection(
+        db_session,
+        character.id,
+        connection.id,
+    )
+    
     set_location_discovery(
         db_session,
         character.id,

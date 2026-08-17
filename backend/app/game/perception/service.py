@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import DiscoveryStatus
+from app.core.enums import DiscoveryStatus, EventType
+from app.services.event_log import log_event
 from app.db.models.character import Character
 from app.db.models.location import (
     Location,
@@ -92,7 +93,35 @@ def observe_surroundings(
         if connection_changed:
             result.discovered_connections.append(connection.id)
 
+            log_event(
+                db,
+                character.campaign_id,
+                EventType.CONNECTION_DISCOVERED,
+                actor_type="character",
+                actor_id=character.id,
+                payload={
+                    "connection_id": connection.id,
+                    "from_location_id": connection.from_location_id,
+                    "to_location_id": connection.to_location_id,
+                    "direction": connection.direction,
+                    "connection_type": connection.connection_type,
+                    "source": "observation",
+                },
+            )
+
         if location_changed:
             result.discovered_locations.append(destination.name)
+
+            log_event(
+                db,
+                character.campaign_id,
+                EventType.LOCATION_DISCOVERED,
+                actor_type="character",
+                actor_id=character.id,
+                payload={
+                    "location_id": destination.id,
+                    "source": "observation",
+                },
+            )
 
     return result

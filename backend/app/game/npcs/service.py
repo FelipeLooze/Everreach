@@ -8,6 +8,7 @@ from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    DiscoveryStatus,
     EventType,
     KnowledgeCertainty,
     KnowerType,
@@ -217,6 +218,7 @@ def teach_fact(
         )
     )
     db.flush()
+
     if (
         knower_type == KnowerType.PLAYER
         and certainty == KnowledgeCertainty.CONFIRMED
@@ -224,21 +226,55 @@ def teach_fact(
     ):
         connection_id = fact.subject.removeprefix("connection:")
 
-        connection = db.get(LocationConnection, connection_id)
+        connection = db.get(
+            LocationConnection,
+            connection_id,
+        )
 
         if connection is not None:
-            discover_connection(
+            _connection_discovery, connection_changed = discover_connection(
                 db,
                 knower_id,
                 connection.id,
             )
 
-            set_location_discovery(
+            _location_discovery, location_changed = set_location_discovery(
                 db,
                 knower_id,
                 connection.to_location_id,
                 DiscoveryStatus.DISCOVERED,
             )
+
+            if connection_changed:
+                log_event(
+                    db,
+                    campaign_id,
+                    EventType.CONNECTION_DISCOVERED,
+                    actor_type="character",
+                    actor_id=knower_id,
+                    payload={
+                        "connection_id": connection.id,
+                        "from_location_id": connection.from_location_id,
+                        "to_location_id": connection.to_location_id,
+                        "direction": connection.direction,
+                        "connection_type": connection.connection_type,
+                        "source": source,
+                    },
+                )
+
+            if location_changed:
+                log_event(
+                    db,
+                    campaign_id,
+                    EventType.LOCATION_DISCOVERED,
+                    actor_type="character",
+                    actor_id=knower_id,
+                    importance=2,
+                    payload={
+                        "location_id": connection.to_location_id,
+                        "source": source,
+                    },
+                )
 
 
 def meet_npc(db: Session, campaign_id: str, character_id: str, npc_id: str) -> NPC:

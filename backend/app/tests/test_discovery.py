@@ -1,4 +1,4 @@
-from app.core.enums import DiscoveryStatus, ActionIntentType
+from app.core.enums import DiscoveryStatus, ActionIntentType, EventType
 from app.game.character.service import create_character
 from app.game.discovery.service import (
     get_connection_discovery,
@@ -7,7 +7,7 @@ from app.game.discovery.service import (
 )
 from app.game.world.seed import create_campaign, seed_initial_region
 from app.game.map.service import known_map
-
+from app.db.models.event import WorldEvent
 from app.ai.intent_parser import Intent
 from app.db.models.location import (
     CharacterLocationDiscovery,
@@ -18,6 +18,7 @@ from app.db.models.location import (
 from app.game import engine
 from app.game.game_state import build_game_state
 from app.game.perception.service import observe_surroundings
+
 
 def test_location_discovery_is_individual_per_character(db_session):
     campaign = create_campaign(db_session, "Discovery Test")
@@ -458,3 +459,142 @@ def test_observe_makes_discovered_destination_available_for_travel(db_session):
 
     assert discovery is not None
     assert discovery.status == DiscoveryStatus.VISITED
+
+def test_observe_logs_discovery_events_only_once(db_session):
+    campaign = create_campaign(
+        db_session,
+        "Discovery Events",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        village.id,
+    )
+
+    observe_surroundings(
+        db_session,
+        character,
+    )
+
+    first_location_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.actor_id == character.id,
+            WorldEvent.event_type
+            == EventType.LOCATION_DISCOVERED.value,
+        )
+        .count()
+    )
+
+    first_connection_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.actor_id == character.id,
+            WorldEvent.event_type
+            == EventType.CONNECTION_DISCOVERED.value,
+        )
+        .count()
+    )
+
+    assert first_location_events > 0
+    assert first_connection_events > 0
+
+    observe_surroundings(
+        db_session,
+        character,
+    )
+
+    assert (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.actor_id == character.id,
+            WorldEvent.event_type
+            == EventType.LOCATION_DISCOVERED.value,
+        )
+        .count()
+        == first_location_events
+    )
+
+    assert (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.actor_id == character.id,
+            WorldEvent.event_type
+            == EventType.CONNECTION_DISCOVERED.value,
+        )
+        .count()
+        == first_connection_events
+    )
+
+def test_known_destination_without_known_route_cannot_be_traveled(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Unknown Route",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        village.id,
+    )
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+        DiscoveryStatus.DISCOVERED,
+    )
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    intent = Intent(
+        type=ActionIntentType.MOVE,
+        target="Bosque da Beira do Vale",
+        raw_text="Vou até o bosque.",
+    )
+
+    summary, minutes = engine._apply_intent(
+        db_session,
+        campaign.id,
+        character,
+        intent,
+        state,
+    )
+
+    assert minutes == 0
+    assert character.location_id == village.id
+    assert "não conhece uma rota" in summary.lower()

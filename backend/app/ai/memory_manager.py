@@ -72,6 +72,7 @@ def create_memory(
 def _event_subject(payload: dict, event: WorldEvent) -> str:
     for key, prefix in (
         ("npc_id", "npc"),
+        ("connection_id", "connection"),
         ("to_location_id", "location"),
         ("location_id", "location"),
         ("quest_id", "quest"),
@@ -98,6 +99,14 @@ def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
     if event_type == EventType.LOCATION_DISCOVERED.value:
         location = db.get(Location, payload.get("location_id"))
         return f"{actor_name} descobriu {location.name if location else 'uma nova localização'}."
+    if event_type == EventType.LOCATION_VISITED.value:
+        location = db.get(Location, payload.get("location_id"))
+        return (
+            f"{actor_name} visitou pela primeira vez "
+            f"{location.name if location else 'uma nova localização'}."
+        )
+    if event_type == EventType.CONNECTION_DISCOVERED.value:
+        return f"{actor_name} descobriu uma nova rota."
     if event_type == EventType.PLAYER_MET_NPC.value:
         return f"{actor_name} conheceu {payload.get('npc_name', 'uma pessoa')} em {payload.get('location_name', 'sua localização atual')}."
     if event_type == EventType.QUEST_STARTED.value:

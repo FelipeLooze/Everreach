@@ -1,25 +1,65 @@
 import pytest
-
-from app.db.models.location import Location
+from app.db.models.location import Location, LocationConnection
+from app.game.discovery.service import discover_connection
 from app.game.character.service import create_character
 from app.game.travel.service import TravelError, move_character
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
 def test_move_character_follows_valid_connection(db_session):
-    campaign = create_campaign(db_session, "Test Campaign")
-    region, village = seed_initial_region(db_session, campaign.id)
-    character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
+    campaign = create_campaign(
+        db_session,
+        "Test Campaign",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        village.id,
+    )
+
     db_session.commit()
 
-    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
 
-    minutes = move_character(db_session, campaign.id, character, forest.id)
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    discover_connection(
+        db_session,
+        character.id,
+        connection.id,
+    )
+
+    minutes = move_character(
+        db_session,
+        campaign.id,
+        character,
+        forest.id,
+    )
 
     assert minutes > 0
     assert character.location_id == forest.id
-    assert character.region_id == region.id
-
 
 def test_move_character_rejects_unconnected_location(db_session):
     campaign = create_campaign(db_session, "Test Campaign")

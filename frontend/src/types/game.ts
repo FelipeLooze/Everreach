@@ -28,8 +28,7 @@ export interface RegionSummary {
   id: string;
   name: string;
   description: string;
-  main_boss_name: string;
-  main_boss_location: string;
+  discovery_status: string;
 }
 
 export interface LocationSummary {
@@ -154,9 +153,6 @@ export interface MapRegion {
   name: string;
   description: string;
   discovery_status: string;
-  main_boss_name: string;
-  main_boss_location: string;
-  main_boss_requirements: string;
 }
 
 export interface MapLocation {
@@ -164,17 +160,19 @@ export interface MapLocation {
   region_id: string;
   name: string;
   type: string;
-  x: number;
-  y: number;
+  x: number | null;
+  y: number | null;
   discovery_status: string;
 }
 
 export interface MapConnection {
   from_location_id: string;
   to_location_id: string;
+  direction: string | null;
   connection_type: string;
   distance: number;
   danger: number;
+  travel_time_modifier: number;
 }
 
 export interface MapData {

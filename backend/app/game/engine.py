@@ -8,7 +8,7 @@ from app.ai.llm_service import LLMService, LLMServiceError
 from app.core.enums import ActionIntentType, CharacterStatus, DiscoveryStatus, EventType
 from app.core.logging import get_logger
 from app.db.models.character import Character
-from app.db.models.location import Location
+from app.db.models.location import CharacterLocationDiscovery, Location
 from app.db.models.quest import QuestObjective
 from app.game import game_state
 from app.game.combat import service as combat_service
@@ -170,9 +170,20 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
 
     destination = (
         db.query(Location)
+        .join(
+            CharacterLocationDiscovery,
+            CharacterLocationDiscovery.location_id == Location.id,
+        )
         .filter(
+            CharacterLocationDiscovery.character_id == character.id,
+            CharacterLocationDiscovery.status.in_(
+                (
+                    DiscoveryStatus.DISCOVERED.value,
+                    DiscoveryStatus.VISITED.value,
+                    DiscoveryStatus.MAPPED.value,
+                )
+            ),
             Location.region_id == character.region_id,
-            Location.discovery_status != DiscoveryStatus.UNKNOWN,
             Location.name.ilike(f"%{intent.target}%"),
         )
         .first()

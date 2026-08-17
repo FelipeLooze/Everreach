@@ -132,10 +132,24 @@ def test_api_rejects_character_from_another_campaign(client, fake_llm):
     assert fake_llm.calls == []
 
 
-@pytest.mark.parametrize("resource", ["map", "journal"])
-def test_campaign_resources_return_404_for_unknown_campaign(client, resource):
-    response = client.get(f"/api/campaigns/campaign_inexistente/{resource}")
-    assert response.status_code == 404
+    @pytest.mark.parametrize(
+        ("resource", "params"),
+        [
+            ("map", {"character_id": "char_inexistente"}),
+            ("journal", None),
+        ],
+    )
+    def test_campaign_resources_return_404_for_unknown_campaign(
+        client,
+        resource,
+        params,
+    ):
+        response = client.get(
+            f"/api/campaigns/campaign_inexistente/{resource}",
+            params=params,
+        )
+
+        assert response.status_code == 404
 
 
 @pytest.mark.parametrize("endpoint", ["/api/campaigns", "/api/campaigns/campaign_id/characters"])

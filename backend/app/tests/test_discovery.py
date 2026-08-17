@@ -1,12 +1,12 @@
 from app.core.enums import DiscoveryStatus
-from app.db.models.location import CharacterLocationDiscovery
+from app.db.models.location import CharacterLocationDiscovery, Location
 from app.game.character.service import create_character
 from app.game.discovery.service import (
     get_location_discovery,
     set_location_discovery,
 )
 from app.game.world.seed import create_campaign, seed_initial_region
-
+from app.game.map.service import known_map
 
 def test_location_discovery_is_individual_per_character(db_session):
     campaign = create_campaign(db_session, "Discovery Test")
@@ -145,3 +145,88 @@ def test_world_start_marks_initial_location_as_visited(
     assert discovery.status == DiscoveryStatus.VISITED
     assert discovery.discovered_at is not None
     assert discovery.visited_at is not None
+
+def test_known_map_is_individual_per_character(db_session):
+    campaign = create_campaign(
+        db_session,
+        "Individual Map",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    first = create_character(
+        db_session,
+        campaign.id,
+        "First",
+        region.id,
+        village.id,
+    )
+
+    second = create_character(
+        db_session,
+        campaign.id,
+        "Second",
+        region.id,
+        village.id,
+    )
+
+    set_location_discovery(
+        db_session,
+        first.id,
+        village.id,
+        DiscoveryStatus.VISITED,
+    )
+
+    set_location_discovery(
+        db_session,
+        second.id,
+        village.id,
+        DiscoveryStatus.VISITED,
+    )
+
+    set_location_discovery(
+        db_session,
+        first.id,
+        forest.id,
+        DiscoveryStatus.DISCOVERED,
+    )
+
+    first_map = known_map(
+        db_session,
+        campaign.id,
+        first.id,
+    )
+
+    second_map = known_map(
+        db_session,
+        campaign.id,
+        second.id,
+    )
+
+    first_names = {
+        location.name
+        for location in first_map["locations"]
+    }
+
+    second_names = {
+        location.name
+        for location in second_map["locations"]
+    }
+
+    assert "Cardal" in first_names
+    assert "Cardal" in second_names
+
+    assert "Bosque da Beira do Vale" in first_names
+    assert "Bosque da Beira do Vale" not in second_names

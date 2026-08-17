@@ -12,8 +12,8 @@ class MapLocation(BaseModel):
     region_id: str
     name: str
     type: str
-    x: int
-    y: int
+    x: int | None
+    y: int | None
     discovery_status: str
 
 class MapConnection(BaseModel):

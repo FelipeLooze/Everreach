@@ -4,6 +4,11 @@ from app.core.enums import DiscoveryStatus, EventType
 from app.db.models.location import Location, LocationConnection
 from app.services.event_log import log_event
 
+from app.game.discovery.service import (
+    get_location_discovery,
+    set_location_discovery,
+)
+
 BASE_MINUTES_PER_DISTANCE = 15
 
 
@@ -36,12 +41,27 @@ def move_character(db: Session, campaign_id: str, character, to_location_id: str
 
     minutes = round(BASE_MINUTES_PER_DISTANCE * connection.distance * connection.travel_time_modifier)
 
+    previous_discovery = get_location_discovery(
+        db,
+        character.id,
+        destination.id,
+    )
+
+    newly_discovered = (
+        previous_discovery is None
+        or DiscoveryStatus(previous_discovery.status)
+        == DiscoveryStatus.RUMORED
+    )
+
     character.location_id = destination.id
     character.region_id = destination.region_id
 
-    newly_discovered = destination.discovery_status == DiscoveryStatus.UNKNOWN
-    if destination.discovery_status in (DiscoveryStatus.UNKNOWN, DiscoveryStatus.RUMORED, DiscoveryStatus.DISCOVERED):
-        destination.discovery_status = DiscoveryStatus.VISITED
+    set_location_discovery(
+        db,
+        character.id,
+        destination.id,
+        DiscoveryStatus.VISITED,
+    )
 
     log_event(
         db,

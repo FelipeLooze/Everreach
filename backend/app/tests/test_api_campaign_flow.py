@@ -13,7 +13,10 @@ def test_full_campaign_flow(client, fake_llm):
     assert character["location_id"] is None
     character_id = character["id"]
 
-    resp = client.get(f"/api/campaigns/{campaign_id}/map")
+    resp = client.get(
+        f"/api/campaigns/{campaign_id}/map",
+        params={"character_id": character_id},
+    )
     assert resp.status_code == 200
     assert resp.json() == {"regions": [], "locations": [], "connections": []}
 
@@ -101,7 +104,10 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.json()["memories"]
     assert all(memory["source_event_id"] for memory in resp.json()["memories"])
 
-    resp = client.get(f"/api/campaigns/{campaign_id}/map")
+    resp = client.get(
+        f"/api/campaigns/{campaign_id}/map",
+        params={"character_id": character_id},
+    )
     assert resp.status_code == 200
     map_data = resp.json()
     assert any(r["name"] == "Vale Verdejante" for r in map_data["regions"])

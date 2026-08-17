@@ -5,43 +5,83 @@ from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.game.map.service import known_map
 from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
+from app.core.enums import DiscoveryStatus
+from app.db.models.character import Character
 
 router = APIRouter(prefix="/api/campaigns", tags=["map"])
 
-
 @router.get("/{campaign_id}/map", response_model=MapResponse)
-def get_map(campaign_id: str, db: Session = Depends(get_db)):
+def get_map(
+    campaign_id: str,
+    character_id: str,
+    db: Session = Depends(get_db),
+):
     if db.get(Campaign, campaign_id) is None:
-        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+        raise HTTPException(
+            status_code=404,
+            detail="Campanha não encontrada",
+        )
 
-    data = known_map(db, campaign_id)
+    character = db.get(Character, character_id)
+
+    if character is None or character.campaign_id != campaign_id:
+        raise HTTPException(
+            status_code=404,
+            detail="Personagem não encontrado nesta campanha",
+        )
+
+    data = known_map(
+        db,
+        campaign_id,
+        character_id,
+    )
+
+    locations = []
+
+    for loc in data["locations"]:
+        status = DiscoveryStatus(
+            data["location_discovery"][loc.id]
+        )
+
+        coordinates_known = status in (
+            DiscoveryStatus.DISCOVERED,
+            DiscoveryStatus.VISITED,
+            DiscoveryStatus.MAPPED,
+        )
+
+        locations.append(
+            MapLocation(
+                id=loc.id,
+                region_id=loc.region_id,
+                name=loc.name,
+                type=loc.type,
+                x=loc.x if coordinates_known else None,
+                y=loc.y if coordinates_known else None,
+                discovery_status=status.value,
+            )
+        )
+
     return MapResponse(
         regions=[
             MapRegion(
-                id=r.id,
-                name=r.name,
-                description=r.description,
-                discovery_status=r.discovery_status,
+                id=region.id,
+                name=region.name,
+                description=region.description,
+                discovery_status=region.discovery_status,
             )
-            for r in data["regions"]
+            for region in data["regions"]
         ],
-        locations=[
-            MapLocation(
-                id=loc.id, region_id=loc.region_id, name=loc.name, type=loc.type,
-                x=loc.x, y=loc.y, discovery_status=loc.discovery_status,
-            )
-            for loc in data["locations"]
-        ],
+        locations=locations,
         connections=[
             MapConnection(
-                from_location_id=c.from_location_id,
-                to_location_id=c.to_location_id,
-                direction=c.direction,
-                connection_type=c.connection_type,
-                distance=c.distance,
-                danger=c.danger,
-                travel_time_modifier=c.travel_time_modifier,
+                from_location_id=connection.from_location_id,
+                to_location_id=connection.to_location_id,
+                direction=connection.direction,
+                connection_type=connection.connection_type,
+                distance=connection.distance,
+                danger=connection.danger,
+                travel_time_modifier=connection.travel_time_modifier,
             )
-            for c in data["connections"]
+            for connection in data["connections"]
         ],
     )

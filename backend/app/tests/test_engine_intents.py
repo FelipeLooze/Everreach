@@ -15,7 +15,10 @@ from app.game.world.seed import create_campaign, seed_initial_region
 from app.db.models.quest import Quest, QuestObjective
 from app.game.npcs import service as npcs_service
 from app.services.event_log import log_event
-
+from app.game.discovery.service import (
+    get_location_discovery,
+    set_location_discovery,
+)
 
 def _setup(db_session):
     campaign = create_campaign(db_session, "Intent Test")
@@ -28,8 +31,12 @@ def _setup(db_session):
 def test_apply_intent_move_relocates_character(db_session):
     campaign, region, village, character = _setup(db_session)
     forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
-    forest.discovery_status = DiscoveryStatus.DISCOVERED
-    db_session.flush()
+    set_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+        DiscoveryStatus.DISCOVERED,
+    )
     state = build_game_state(db_session, campaign.id, character.id)
 
     intent = Intent(type=ActionIntentType.MOVE, target="Bosque da Beira do Vale", raw_text="I walk to the forest")
@@ -38,6 +45,16 @@ def test_apply_intent_move_relocates_character(db_session):
     assert minutes > 0
     assert "Bosque da Beira do Vale" in summary
     assert character.location_id != village.id
+
+    discovery = get_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+    )
+
+    assert discovery is not None
+    assert discovery.status == DiscoveryStatus.VISITED
+    assert forest.discovery_status == DiscoveryStatus.UNKNOWN
 
 
 def test_apply_intent_move_does_not_reveal_unknown_location(db_session):

@@ -145,7 +145,7 @@ export function GameScreen() {
 
       {activePanel === "map" && (
         <Panel title="Mapa" onClose={() => setActivePanel(null)}>
-          <MapPanel campaignId={campaignId} />
+          <MapPanel campaignId={campaignId} characterId={characterId} />
         </Panel>
       )}
       {activePanel === "inventory" && (

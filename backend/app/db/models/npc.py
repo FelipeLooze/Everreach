@@ -1,0 +1,24 @@
+from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.ids import generate_id
+from app.db.base import Base
+
+
+class NPC(Base):
+    """NPCs believe they were born in this world — see ai/prompts/narrator_system.txt.
+    They never know they are inside a game."""
+
+    __tablename__ = "npcs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("npc"))
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)
+    region_id: Mapped[str] = mapped_column(ForeignKey("regions.id"), nullable=False)
+    location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
+
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    personality: Mapped[str] = mapped_column(String, default="")
+    backstory: Mapped[str] = mapped_column(String, default="")
+    role: Mapped[str] = mapped_column(String, default="villager")
+
+    alive: Mapped[bool] = mapped_column(Boolean, default=True)

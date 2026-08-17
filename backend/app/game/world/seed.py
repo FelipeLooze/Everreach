@@ -1,0 +1,274 @@
+from sqlalchemy.orm import Session
+
+from app.core.enums import (
+    ConnectionType,
+    DiscoveryStatus,
+    EventType,
+    KnowledgeCertainty,
+    KnowerType,
+    SimulatedPlayerArchetype,
+)
+from app.db.models.campaign import Campaign, WorldTime
+from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.db.models.location import Location, LocationConnection, LocationFeature
+from app.db.models.npc import NPC
+from app.db.models.quest import Quest, QuestObjective
+from app.db.models.region import Region
+from app.db.models.simulated_player import SimulatedPlayer
+from app.services.event_log import log_event
+from app.game.npcs.service import teach_fact
+
+REGION_NAME = "Vale Verdejante"
+REGION_DESCRIPTION = (
+    "Uma região temperada de terras baixas, com campos ondulantes, matas antigas e uma "
+    "única vila de mercado, cercada por colinas baixas cujo lado mais distante ninguém "
+    "hoje vivo já mapeou."
+)
+
+INITIAL_PLAYER_FACT_KEYS = ("cardal_is_village", "cardal_has_central_square")
+
+
+def create_campaign(db: Session, name: str) -> Campaign:
+    campaign = Campaign(name=name)
+    db.add(campaign)
+    db.flush()
+
+    world_time = WorldTime(campaign_id=campaign.id, year=1, month=1, day=1, hour=8, minute=0)
+    db.add(world_time)
+
+    log_event(db, campaign.id, EventType.CAMPAIGN_CREATED, payload={"name": name})
+
+    db.flush()
+    return campaign
+
+
+def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location]:
+    """Create the single starting region for a fresh campaign. Only ever called once,
+    when the player starts the world — later regions are created as the world progresses
+    (spec section 6), not implemented yet in the MVP."""
+    region = Region(
+        campaign_id=campaign_id,
+        name=REGION_NAME,
+        description=REGION_DESCRIPTION,
+        discovery_status=DiscoveryStatus.DISCOVERED,
+    )
+    db.add(region)
+    db.flush()
+
+    village = Location(
+        region_id=region.id,
+        name="Cardal",
+        type="village",
+        x=0,
+        y=0,
+        description="Uma pequena vila de mercado com casas de madeira e sapê ao redor de uma praça bem desgastada pelo uso.",
+        discovery_status=DiscoveryStatus.VISITED,
+    )
+    forest_edge = Location(
+        region_id=region.id,
+        name="Bosque da Beira do Vale",
+        type="forest",
+        x=-2,
+        y=1,
+        description="A orla mais próxima de uma mata densa que se espessa e escurece em direção ao oeste.",
+        discovery_status=DiscoveryStatus.UNKNOWN,
+    )
+    road = Location(
+        region_id=region.id,
+        name="Estrada do Moinho",
+        type="road",
+        x=2,
+        y=0,
+        description="Uma estrada de terra batida que segue a leste da vila rumo às terras altas.",
+        discovery_status=DiscoveryStatus.UNKNOWN,
+    )
+    creek = Location(
+        region_id=region.id,
+        name="Riacho Negro",
+        type="river",
+        x=0,
+        y=-2,
+        description="Um riacho raso de águas escuras ao sul da vila, bom para pescar.",
+        discovery_status=DiscoveryStatus.UNKNOWN,
+    )
+    clearing = Location(
+        region_id=region.id,
+        name="Clareira do Vidro Antigo",
+        type="clearing",
+        x=-4,
+        y=2,
+        description="Uma clareira silenciosa no fundo da mata, cuja relva estranhamente não é perturbada por animais.",
+        discovery_status=DiscoveryStatus.UNKNOWN,
+    )
+
+    db.add_all([village, forest_edge, road, creek, clearing])
+    db.flush()
+
+    db.add(
+        LocationFeature(
+            location_id=village.id,
+            name="praça central",
+            description="Praça desgastada pelo uso, cercada por casas de madeira e sapê.",
+        )
+    )
+
+    def connect(
+        a: Location,
+        b: Location,
+        direction_from_a: str,
+        direction_from_b: str,
+        distance: float,
+        danger: int = 0,
+        ctype=ConnectionType.PATH,
+    ) -> tuple[LocationConnection, LocationConnection]:
+        outward = LocationConnection(
+            from_location_id=a.id,
+            to_location_id=b.id,
+            direction=direction_from_a,
+            connection_type=ctype,
+            distance=distance,
+            danger=danger,
+        )
+        returning = LocationConnection(
+            from_location_id=b.id,
+            to_location_id=a.id,
+            direction=direction_from_b,
+            connection_type=ctype,
+            distance=distance,
+            danger=danger,
+        )
+        db.add_all([outward, returning])
+        db.flush()
+        return outward, returning
+
+    forest_connection, _ = connect(
+        village, forest_edge, "noroeste", "sudeste", distance=1.0, danger=1
+    )
+    road_connection, _ = connect(
+        village, road, "leste", "oeste", distance=1.0, ctype=ConnectionType.ROAD
+    )
+    creek_connection, _ = connect(
+        village, creek, "sul", "norte", distance=0.8
+    )
+    connect(forest_edge, clearing, "noroeste", "sudeste", distance=1.5, danger=2)
+    db.flush()
+
+    elder = NPC(
+        campaign_id=campaign_id, region_id=region.id, location_id=village.id,
+        name="Osgar Vell", role="ancião da vila",
+        personality="Paciente, atento, fala devagar e raramente repete o que diz.",
+        backstory=(
+            "Nasceu em Cardal, vive ali há décadas e lidera o conselho da vila há tanto tempo "
+            "quanto a maioria dos moradores consegue lembrar."
+        ),
+    )
+    blacksmith = NPC(
+        campaign_id=campaign_id, region_id=region.id, location_id=village.id,
+        name="Mira Draske", role="ferreira",
+        personality="Direta, trabalhadora, orgulhosa do seu ofício.",
+        backstory="Assumiu a forja do pai; desconfia de forasteiros que não pagam adiantado.",
+    )
+    innkeeper = NPC(
+        campaign_id=campaign_id, region_id=region.id, location_id=village.id,
+        name="Talven Brooks", role="estalajadeiro",
+        personality="Falante, recolhe fofocas de todo viajante que passa por ali.",
+        backstory="Administra a única estalagem da vila; conhece todos os boatos que circulam em Cardal.",
+    )
+    db.add_all([elder, blacksmith, innkeeper])
+    db.flush()
+
+    canonical_facts = [
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"location:{village.id}",
+            fact_key="cardal_is_village",
+            statement="Cardal é uma vila da região Vale Verdejante.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"location:{village.id}",
+            fact_key="cardal_has_central_square",
+            statement="Cardal possui uma praça central cercada por casas de madeira e sapê.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"npc:{elder.id}",
+            fact_key="osgar_born_in_cardal",
+            statement="Osgar Vell nasceu em Cardal e vive ali há décadas.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"connection:{forest_connection.id}",
+            fact_key="osgar_knows_cardal_northwest_path",
+            statement="Uma trilha sai de Cardal a noroeste em direção ao Bosque da Beira do Vale.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"connection:{road_connection.id}",
+            fact_key="osgar_knows_cardal_east_road",
+            statement="A Estrada do Moinho sai de Cardal para leste.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"connection:{creek_connection.id}",
+            fact_key="osgar_knows_cardal_south_creek",
+            statement="O Riacho Negro fica ao sul de Cardal e é alcançado por uma trilha.",
+        ),
+    ]
+    db.add_all(canonical_facts)
+    db.flush()
+    for fact in canonical_facts:
+        db.add(
+            KnowledgeKnower(
+                fact_id=fact.id,
+                knower_type=KnowerType.NPC.value,
+                knower_id=elder.id,
+                source="experiência local",
+                certainty=KnowledgeCertainty.CONFIRMED.value,
+            )
+        )
+    db.flush()
+
+    simulated_players = [
+        SimulatedPlayer(
+            campaign_id=campaign_id, name="Corren Ashvale", level=0, location_id=village.id,
+            archetype=SimulatedPlayerArchetype.EXPLORER, goal="Mapear os limites do Vale Verdejante.",
+        ),
+        SimulatedPlayer(
+            campaign_id=campaign_id, name="Dessa Marrow", level=0, location_id=village.id,
+            archetype=SimulatedPlayerArchetype.TRAINER, goal="Ficar forte o suficiente para sobreviver à mata.",
+        ),
+        SimulatedPlayer(
+            campaign_id=campaign_id, name="Bram Holt", level=0, location_id=village.id,
+            archetype=SimulatedPlayerArchetype.SOCIAL, goal="Construir um nome para si em Cardal.",
+        ),
+    ]
+    db.add_all(simulated_players)
+    db.flush()
+
+    quest = Quest(
+        region_id=region.id,
+        name="Uma Palavra com o Ancião",
+        description="Osgar Vell pede para falar com todo recém-chegado que aparece em Cardal.",
+    )
+    db.add(quest)
+    db.flush()
+    objective = QuestObjective(quest_id=quest.id, description=f"Falar com {elder.name} em Cardal.", order=0)
+    db.add(objective)
+    db.flush()
+
+    return region, village
+
+
+def grant_initial_player_knowledge(db: Session, campaign_id: str, character_id: str) -> None:
+    """Grant only facts immediately perceived at the starting location."""
+    for fact_key in INITIAL_PLAYER_FACT_KEYS:
+        teach_fact(
+            db,
+            campaign_id,
+            fact_key,
+            KnowerType.PLAYER,
+            character_id,
+            source="percepção direta",
+            certainty=KnowledgeCertainty.CONFIRMED,
+        )

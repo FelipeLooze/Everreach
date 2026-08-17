@@ -1,3 +1,7 @@
+import json
+from app.db.models.event import WorldEvent
+from app.game.time.clock import get_world_time
+from app.game.travel import service as travel_service
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService
 from app.core.enums import ActionIntentType, DiscoveryStatus, MemoryOwnerType
@@ -46,7 +50,7 @@ def test_apply_intent_move_relocates_character(db_session):
         character.id,
         connection.id,
     )
-    
+
     set_location_discovery(
         db_session,
         character.id,
@@ -180,6 +184,9 @@ class ConversationLLM(LLMService):
             return '{"intent": "FREEFORM", "target": null}'
         return "— Bom dia."
 
+class PassiveLLM(LLMService):
+    def generate(self, system: str, prompt: str) -> str:
+        return "A ação ocorre conforme determinado pelo sistema."
 
 def test_direct_follow_up_keeps_npc_and_exact_recent_history(db_session):
     campaign, _region, _village, character = _setup(db_session)
@@ -226,3 +233,196 @@ def test_direct_follow_up_keeps_npc_and_exact_recent_history(db_session):
     )
     assert "PLAYER: Falo com Osgar: — Bom dia." in second_prompts
     assert "NARRATOR: — Bom dia." in second_prompts
+
+def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
+    db_session,
+    monkeypatch,
+):
+    campaign, region, village, character = _setup(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    discover_connection(
+        db_session,
+        character.id,
+        connection.id,
+    )
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+        DiscoveryStatus.DISCOVERED,
+    )
+
+    expected_minutes = round(
+        travel_service.BASE_MINUTES_PER_DISTANCE
+        * connection.distance
+        * connection.travel_time_modifier
+    )
+
+    start_time = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    tick_calls = []
+
+    def fake_tick(db, campaign_id, minutes):
+        tick_calls.append(
+            (
+                campaign_id,
+                minutes,
+            )
+        )
+
+    monkeypatch.setattr(
+        engine.world_simulation,
+        "tick",
+        fake_tick,
+    )
+
+    monkeypatch.setattr(
+        engine.intent_parser,
+        "parse",
+        lambda *args, **kwargs: Intent(
+            type=ActionIntentType.MOVE,
+            target="Bosque da Beira do Vale",
+            raw_text="Vou até o bosque.",
+        ),
+    )
+
+    engine.resolve_action(
+        db_session,
+        PassiveLLM(),
+        campaign.id,
+        character.id,
+        "Vou até o bosque.",
+    )
+
+    end_time = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    assert end_time - start_time == expected_minutes
+
+    assert tick_calls == [
+        (
+            campaign.id,
+            expected_minutes,
+        )
+    ]
+
+    assert character.location_id == forest.id
+
+    time_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.WORLD_TIME_ADVANCED.value,
+        )
+        .all()
+    )
+
+    assert len(time_events) == 1
+
+    payload = json.loads(
+        time_events[0].payload_json
+    )
+
+    assert payload["minutes"] == expected_minutes
+
+def test_resolve_action_zero_minutes_does_not_advance_clock_or_tick(
+    db_session,
+    monkeypatch,
+):
+    campaign, region, village, character = _setup(db_session)
+
+    start_time = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    initial_time_event_count = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.WORLD_TIME_ADVANCED.value,
+        )
+        .count()
+    )
+
+    tick_calls = []
+
+    def fake_tick(db, campaign_id, minutes):
+        tick_calls.append(
+            (
+                campaign_id,
+                minutes,
+            )
+        )
+
+    monkeypatch.setattr(
+        engine.world_simulation,
+        "tick",
+        fake_tick,
+    )
+
+    monkeypatch.setattr(
+        engine.intent_parser,
+        "parse",
+        lambda *args, **kwargs: Intent(
+            type=ActionIntentType.MOVE,
+            target="Lugar Inexistente",
+            raw_text="Vou até um lugar inexistente.",
+        ),
+    )
+
+    engine.resolve_action(
+        db_session,
+        PassiveLLM(),
+        campaign.id,
+        character.id,
+        "Vou até um lugar inexistente.",
+    )
+
+    end_time = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    assert end_time == start_time
+
+    assert tick_calls == []
+
+    final_time_event_count = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.WORLD_TIME_ADVANCED.value,
+        )
+        .count()
+    )
+
+    assert final_time_event_count == initial_time_event_count
+    assert character.location_id == village.id

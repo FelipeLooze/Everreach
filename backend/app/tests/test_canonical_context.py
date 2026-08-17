@@ -1,10 +1,11 @@
 from app.ai import narrator
 from app.ai.context_builder import MAX_CONTEXT_FACTS_PER_KNOWER, build_context
 from app.ai.llm_service import LLMService
-from app.core.enums import KnowledgeCertainty, KnowerType
+from app.core.enums import DiscoveryStatus, KnowledgeCertainty, KnowerType
 from app.db.models.knowledge import KnowledgeFact
 from app.db.models.location import Location
 from app.game.character.service import create_character
+from app.game.discovery.service import set_location_discovery
 from app.game.game_state import build_game_state
 from app.game.npcs.service import teach_fact
 from app.game.world.seed import (
@@ -214,6 +215,106 @@ def test_remote_known_fact_is_retrieved_only_when_the_input_makes_it_relevant(db
 
     assert remote.statement not in ordinary_context
     assert remote.statement in relevant_context
+
+
+def test_rumored_location_is_explicitly_marked_as_rumor(db_session):
+    campaign, character, state = _cardal_scene(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == state.region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+        DiscoveryStatus.RUMORED,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    spatial_section = context.split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[1].split(
+        "VISIBLE NPCS",
+        1,
+    )[0]
+
+    assert "RUMORED LOCATIONS" in spatial_section
+    assert f"{forest.name} [RUMORED]" in spatial_section
+
+
+def test_discovered_location_is_not_presented_as_rumor(db_session):
+    campaign, character, state = _cardal_scene(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == state.region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+        DiscoveryStatus.DISCOVERED,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    spatial_section = context.split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[1].split(
+        "VISIBLE NPCS",
+        1,
+    )[0]
+
+    assert f"{forest.name} [DISCOVERED]" in spatial_section
+    assert f"{forest.name} [RUMORED]" not in spatial_section
+
+
+def test_unknown_location_does_not_leak_into_spatial_knowledge(db_session):
+    campaign, character, state = _cardal_scene(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == state.region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    spatial_section = context.split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[1].split(
+        "VISIBLE NPCS",
+        1,
+    )[0]
+
+    assert forest.name not in spatial_section
 
 
 class _InventingLLM(LLMService):

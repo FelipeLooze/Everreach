@@ -4,9 +4,19 @@ import unicodedata
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import KnowerType, MemoryOwnerType
+from app.core.enums import (
+    DiscoveryStatus,
+    KnowerType,
+    MemoryOwnerType,
+)
 from app.core.logging import get_logger
-from app.db.models.location import Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
+from app.db.models.location import (
+    CharacterConnectionDiscovery,
+    CharacterLocationDiscovery,
+    Location,
+    LocationConnection,
+    LocationFeature,
+)
 from app.game.game_state import GameStateSnapshot
 from app.game.npcs.service import KnownFact, relevant_known_facts
 from app.ai.memory_manager import get_relevant_memories
@@ -192,6 +202,45 @@ def _known_connection_lines(
     return lines[:MAX_VISIBLE_ENTITIES]
 
 
+def _location_discovery_lines(
+    db: Session,
+    state: GameStateSnapshot,
+    statuses: set[DiscoveryStatus],
+) -> list[str]:
+    rows = (
+        db.query(CharacterLocationDiscovery, Location)
+        .join(
+            Location,
+            Location.id == CharacterLocationDiscovery.location_id,
+        )
+        .filter(
+            CharacterLocationDiscovery.character_id
+            == state.character.id,
+            CharacterLocationDiscovery.status.in_(
+                [status.value for status in statuses]
+            ),
+        )
+        .order_by(Location.name)
+        .all()
+    )
+
+    lines = []
+
+    for discovery, location in rows:
+        # A localização atual já possui seu próprio bloco de contexto.
+        if (
+            state.location is not None
+            and location.id == state.location.id
+        ):
+            continue
+
+        lines.append(
+            f"- {location.name} [{discovery.status}]"
+        )
+
+    return lines[:MAX_VISIBLE_ENTITIES]
+
+
 def build_context(
     db: Session,
     state: GameStateSnapshot,
@@ -288,6 +337,24 @@ def build_context(
         else []
     )
 
+    known_location_lines = _location_discovery_lines(
+        db,
+        state,
+        {
+            DiscoveryStatus.DISCOVERED,
+            DiscoveryStatus.VISITED,
+            DiscoveryStatus.MAPPED,
+        },
+    )
+
+    rumored_location_lines = _location_discovery_lines(
+        db,
+        state,
+        {
+            DiscoveryStatus.RUMORED,
+        },
+    )
+
     wt = state.world_time
     player_section = "\n".join(
         [
@@ -305,6 +372,15 @@ def build_context(
             "CURRENT WORLD",
             f"Time: Ano {wt.year}, Mês {wt.month}, Dia {wt.day}, {wt.hour:02d}:{wt.minute:02d}",
             f"Region: {state.region.name}" if state.region else "Region: unknown",
+        ]
+    )
+    spatial_knowledge_section = "\n".join(
+        [
+            "PLAYER SPATIAL KNOWLEDGE",
+            "KNOWN LOCATIONS",
+            *(known_location_lines or ["- none"]),
+            "RUMORED LOCATIONS",
+            *(rumored_location_lines or ["- none"]),
         ]
     )
 
@@ -413,6 +489,7 @@ def build_context(
         player_section,
         world_section,
         "\n".join(location_lines),
+        spatial_knowledge_section,
         "\n".join(visible_lines),
         "\n".join(active_lines),
         npc_knowledge_section,

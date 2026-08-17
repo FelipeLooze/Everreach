@@ -519,6 +519,49 @@ Não preencha a lacuna inventando uma resposta plausível.
 
 
 ==================================================
+DESCOBERTA ESPACIAL
+==================================================
+
+PLAYER SPATIAL KNOWLEDGE representa o conhecimento espacial autoritativo
+do protagonista.
+
+Interprete os estados assim:
+
+RUMORED:
+- o protagonista apenas ouviu falar do lugar;
+- sua existência, posição ou natureza podem não estar confirmadas;
+- nunca apresente rumor como certeza;
+- não trate rumor como rota navegável.
+
+DISCOVERED:
+- o protagonista sabe que o lugar existe;
+- isso não significa que já esteve lá;
+- isso não significa que conhece todas as características do lugar.
+
+VISITED:
+- o protagonista já esteve fisicamente naquele lugar;
+- isso não significa conhecimento completo do lugar.
+
+MAPPED:
+- o lugar possui conhecimento espacial mais preciso registrado pelo backend;
+- isso não concede automaticamente conhecimento de todas as rotas ligadas a ele.
+
+Rotas conhecidas são determinadas separadamente por
+CONNECTED LOCATIONS KNOWN TO PLAYER.
+
+Se uma rota não estiver nessa seção, não ofereça essa rota como um caminho
+conhecido pelo protagonista.
+
+A ausência de uma localização em PLAYER SPATIAL KNOWLEDGE significa que ela
+não deve ser apresentada como um lugar conhecido pelo protagonista.
+
+Nunca transforme RUMORED em DISCOVERED, DISCOVERED em VISITED ou VISITED em
+MAPPED por conta própria.
+
+Somente o backend altera estados de descoberta.
+
+
+==================================================
 CANON
 ==================================================
 

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.enums import DiscoveryStatus, EventType
+from app.core.enums import DiscoveryStatus, EventType, TravelPace
 from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import (
     get_connection_discovery,
@@ -12,6 +12,22 @@ from app.services.event_log import log_event
 
 BASE_MINUTES_PER_DISTANCE = 15
 DEFAULT_TRAVEL_SPEED_MULTIPLIER = 1.0
+
+BASE_STAMINA_PER_DISTANCE = 2.0
+
+
+PACE_SPEED_MULTIPLIERS = {
+    TravelPace.SLOW: 0.75,
+    TravelPace.NORMAL: 1.0,
+    TravelPace.FAST: 1.5,
+}
+
+
+PACE_STAMINA_MULTIPLIERS = {
+    TravelPace.SLOW: 0.75,
+    TravelPace.NORMAL: 1.0,
+    TravelPace.FAST: 1.75,
+}
 
 class TravelError(ValueError):
     pass
@@ -51,6 +67,23 @@ def calculate_travel_minutes(
 
     return max(1, round(raw_minutes))
 
+def calculate_travel_stamina_cost(
+    connection: LocationConnection,
+    pace: TravelPace = TravelPace.NORMAL,
+) -> float:
+    """Calculate the physical stamina cost of traversing one route."""
+
+    pace = TravelPace(pace)
+
+    raw_cost = (
+        BASE_STAMINA_PER_DISTANCE
+        * connection.distance
+        * connection.travel_time_modifier
+        * PACE_STAMINA_MULTIPLIERS[pace]
+    )
+
+    return round(max(0.1, raw_cost), 1)
+
 def find_connection(
     db: Session,
     from_location_id: str,
@@ -73,6 +106,7 @@ def move_character(
     character,
     to_location_id: str,
     speed_multiplier: float = DEFAULT_TRAVEL_SPEED_MULTIPLIER,
+    pace: TravelPace = TravelPace.NORMAL,
 ) -> int:
     """Move a character to a connected and known location.
 
@@ -118,9 +152,33 @@ def move_character(
             "Destino desconhecido."
         )
 
+    try:
+        pace = TravelPace(pace)
+    except ValueError as exc:
+        raise TravelError(
+            "Ritmo de viagem inválido."
+        ) from exc
+
+    pace_speed_multiplier = PACE_SPEED_MULTIPLIERS[pace]
+
+    effective_speed_multiplier = (
+        speed_multiplier
+        * pace_speed_multiplier
+    )
+
     minutes = calculate_travel_minutes(
         connection,
-        speed_multiplier,
+        effective_speed_multiplier,
+    )
+
+    stamina_cost = calculate_travel_stamina_cost(
+        connection,
+        pace,
+    )
+
+    if character.stamina_current < stamina_cost:
+        raise TravelError(
+            "Você está cansado demais para percorrer essa rota nesse ritmo."
     )
 
     previous_discovery = get_location_discovery(
@@ -149,6 +207,11 @@ def move_character(
         )
     )
 
+    character.stamina_current = max(
+        0.0,
+        character.stamina_current - stamina_cost,
+    )
+
     # Move o personagem.
     character.location_id = destination.id
     character.region_id = destination.region_id
@@ -172,6 +235,8 @@ def move_character(
             "from_location_id": from_location_id,
             "to_location_id": destination.id,
             "minutes": minutes,
+            "pace": pace.value,
+            "stamina_spent": stamina_cost,
         },
     )
 

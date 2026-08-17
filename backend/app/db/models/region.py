@@ -17,9 +17,3 @@ class Region(Base):
     description: Mapped[str] = mapped_column(String, default="")
 
     discovery_status: Mapped[str] = mapped_column(String, default=DiscoveryStatus.DISCOVERED)
-
-    # Main Region Boss starts fully unknown to players (spec section 9).
-    main_boss_name: Mapped[str] = mapped_column(String, default="UNKNOWN")
-    main_boss_location: Mapped[str] = mapped_column(String, default="UNKNOWN")
-    main_boss_requirements: Mapped[str] = mapped_column(String, default="UNKNOWN")
-    main_boss_defeated: Mapped[bool] = mapped_column(default=False)

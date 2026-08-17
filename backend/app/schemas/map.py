@@ -6,10 +6,6 @@ class MapRegion(BaseModel):
     name: str
     description: str
     discovery_status: str
-    main_boss_name: str
-    main_boss_location: str
-    main_boss_requirements: str
-
 
 class MapLocation(BaseModel):
     id: str
@@ -20,14 +16,14 @@ class MapLocation(BaseModel):
     y: int
     discovery_status: str
 
-
 class MapConnection(BaseModel):
     from_location_id: str
     to_location_id: str
+    direction: str | None
     connection_type: str
     distance: float
     danger: int
-
+    travel_time_modifier: float
 
 class MapResponse(BaseModel):
     regions: list[MapRegion]

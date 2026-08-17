@@ -18,9 +18,10 @@ def get_map(campaign_id: str, db: Session = Depends(get_db)):
     return MapResponse(
         regions=[
             MapRegion(
-                id=r.id, name=r.name, description=r.description, discovery_status=r.discovery_status,
-                main_boss_name=r.main_boss_name, main_boss_location=r.main_boss_location,
-                main_boss_requirements=r.main_boss_requirements,
+                id=r.id,
+                name=r.name,
+                description=r.description,
+                discovery_status=r.discovery_status,
             )
             for r in data["regions"]
         ],
@@ -33,8 +34,13 @@ def get_map(campaign_id: str, db: Session = Depends(get_db)):
         ],
         connections=[
             MapConnection(
-                from_location_id=c.from_location_id, to_location_id=c.to_location_id,
-                connection_type=c.connection_type, distance=c.distance, danger=c.danger,
+                from_location_id=c.from_location_id,
+                to_location_id=c.to_location_id,
+                direction=c.direction,
+                connection_type=c.connection_type,
+                distance=c.distance,
+                danger=c.danger,
+                travel_time_modifier=c.travel_time_modifier,
             )
             for c in data["connections"]
         ],

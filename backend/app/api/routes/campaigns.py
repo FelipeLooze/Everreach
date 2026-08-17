@@ -84,7 +84,6 @@ def delete_campaign_route(campaign_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{campaign_id}/characters", response_model=CharacterResponse)
-@router.post("/{campaign_id}/characters", response_model=CharacterResponse)
 def create_character_route(
     campaign_id: str,
     body: CharacterCreateRequest,

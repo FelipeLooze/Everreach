@@ -7,8 +7,7 @@ class RegionSummary(BaseModel):
     id: str
     name: str
     description: str
-    main_boss_name: str
-    main_boss_location: str
+    discovery_status: str
 
     model_config = {"from_attributes": True}
 

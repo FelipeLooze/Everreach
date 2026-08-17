@@ -9,7 +9,7 @@ from typing import Sequence
 from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
 
-from app.core.enums import EventType, MemoryOwnerType
+from app.core.enums import EventType, MemoryOwnerType, TravelIncidentKind
 from app.db.models.character import Character
 from app.db.models.event import WorldEvent
 from app.db.models.location import Location
@@ -94,8 +94,34 @@ def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
             f"junto de muitas outras pessoas."
         )
     if event_type == EventType.PLAYER_MOVED.value:
-        location = db.get(Location, payload.get("to_location_id"))
-        return f"{actor_name} viajou para {location.name if location else 'outro local'}."
+        location = db.get(
+            Location,
+            payload.get("to_location_id"),
+        )
+
+        destination_name = (
+            location.name
+            if location is not None
+            else "outro local"
+        )
+
+        incident = payload.get("incident")
+
+        if incident == TravelIncidentKind.DELAY.value:
+            return (
+                f"{actor_name} viajou para {destination_name} "
+                f"e sofreu um atraso durante o percurso."
+            )
+
+        if incident == TravelIncidentKind.FATIGUE.value:
+            return (
+                f"{actor_name} viajou para {destination_name} "
+                f"e sofreu fadiga adicional durante o percurso."
+            )
+
+        return (
+            f"{actor_name} viajou para {destination_name}."
+        )
     if event_type == EventType.LOCATION_DISCOVERED.value:
         location = db.get(Location, payload.get("location_id"))
         return f"{actor_name} descobriu {location.name if location else 'uma nova localização'}."

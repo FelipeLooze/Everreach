@@ -12,7 +12,8 @@ from app.game.travel.service import (
     roll_travel_incident,
 )
 from app.game.world.seed import create_campaign, seed_initial_region
-from app.core.enums import TravelIncidentKind, TravelPace
+from app.core.enums import MemoryOwnerType, TravelIncidentKind, TravelPace
+from app.db.models.memory import Memory
 
 def test_move_character_rejects_travel_without_enough_stamina(
     db_session,
@@ -113,6 +114,8 @@ def test_move_character_spends_stamina(
         )
         .one()
     )
+
+    connection.danger = 0
 
     discover_connection(
         db_session,
@@ -219,6 +222,8 @@ def test_move_character_follows_valid_connection(db_session):
         )
         .one()
     )
+
+    connection.danger = 0
 
     discover_connection(
         db_session,
@@ -464,6 +469,21 @@ def test_move_character_delay_incident_adds_travel_time(
         + result.incident.extra_minutes
     )
 
+    memory = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type == MemoryOwnerType.PLAYER.value,
+            Memory.owner_id == character.id,
+            Memory.summary_text.ilike("%viajou%"),
+        )
+        .order_by(Memory.created_at.desc())
+        .first()
+    )
+
+    assert memory is not None
+    assert forest.name in memory.summary_text
+    assert "atraso" in memory.summary_text.lower()
+
 def test_move_character_fatigue_incident_spends_extra_stamina(
     db_session,
 ):
@@ -543,3 +563,18 @@ def test_move_character_fatigue_incident_spends_extra_stamina(
         0.0,
         starting_stamina - result.stamina_spent,
     )
+
+    memory = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type == MemoryOwnerType.PLAYER.value,
+            Memory.owner_id == character.id,
+            Memory.summary_text.ilike("%viajou%"),
+        )
+        .order_by(Memory.created_at.desc())
+        .first()
+    )
+
+    assert memory is not None
+    assert forest.name in memory.summary_text
+    assert "fadiga" in memory.summary_text.lower()

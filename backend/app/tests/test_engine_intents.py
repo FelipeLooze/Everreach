@@ -50,6 +50,8 @@ def test_apply_intent_move_relocates_character(db_session):
         .one()
     )
 
+    connection.danger = 0
+
     discover_connection(
         db_session,
         character.id,
@@ -263,6 +265,8 @@ def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
         .one()
     )
 
+    connection.danger = 0
+
     discover_connection(
         db_session,
         character.id,
@@ -450,6 +454,8 @@ def test_apply_intent_move_uses_requested_fast_pace(db_session):
         )
         .one()
     )
+
+    connection.danger = 0
 
     discover_connection(
         db_session,

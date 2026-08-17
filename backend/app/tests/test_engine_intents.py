@@ -25,9 +25,10 @@ from app.db.models.quest import Quest, QuestObjective
 from app.game.npcs import service as npcs_service
 from app.services.event_log import log_event
 from app.game.discovery.service import (
+    discover_connection,
+    get_connection_discovery,
     get_location_discovery,
     set_location_discovery,
-    discover_connection,
 )
 
 def _setup(db_session):
@@ -356,6 +357,114 @@ def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
     )
 
     assert payload["minutes"] == expected_minutes
+
+def test_examine_narrator_receives_discoveries_in_same_turn(
+    db_session,
+    monkeypatch,
+):
+    campaign, region, village, character = _setup(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    # Antes de observar, nem a rota nem o destino são conhecidos.
+    assert (
+        get_connection_discovery(
+            db_session,
+            character.id,
+            connection.id,
+        )
+        is None
+    )
+
+    assert (
+        get_location_discovery(
+            db_session,
+            character.id,
+            forest.id,
+        )
+        is None
+    )
+
+    monkeypatch.setattr(
+        engine.intent_parser,
+        "parse",
+        lambda *args, **kwargs: Intent(
+            type=ActionIntentType.EXAMINE,
+            target=None,
+            raw_text="Olho ao redor.",
+        ),
+    )
+
+    captured = {}
+
+    def fake_narrate(
+        llm_service,
+        mechanical_summary,
+        context,
+        player_input="",
+        recent_history="",
+    ):
+        captured["mechanical_summary"] = mechanical_summary
+        captured["context"] = context
+        return "Os arredores ficam mais claros à observação."
+
+    monkeypatch.setattr(
+        engine.narrator,
+        "narrate",
+        fake_narrate,
+    )
+
+    engine.resolve_action(
+        db_session,
+        PassiveLLM(),
+        campaign.id,
+        character.id,
+        "Olho ao redor.",
+    )
+
+    # O EXAMINE alterou o estado mecânico.
+    connection_discovery = get_connection_discovery(
+        db_session,
+        character.id,
+        connection.id,
+    )
+
+    location_discovery = get_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+    )
+
+    assert connection_discovery is not None
+
+    assert location_discovery is not None
+    assert location_discovery.status == DiscoveryStatus.DISCOVERED
+
+    # E o Narrator recebeu o contexto reconstruído DEPOIS da descoberta.
+    fresh_context = captured["context"]
+
+    assert "CONNECTED LOCATIONS KNOWN TO PLAYER" in fresh_context
+    assert "Bosque da Beira do Vale" in fresh_context
+    assert "noroeste -> Bosque da Beira do Vale" in fresh_context
+
+    assert "PLAYER SPATIAL KNOWLEDGE" in fresh_context
+    assert "Bosque da Beira do Vale [DISCOVERED]" in fresh_context
 
 def test_resolve_action_zero_minutes_does_not_advance_clock_or_tick(
     db_session,

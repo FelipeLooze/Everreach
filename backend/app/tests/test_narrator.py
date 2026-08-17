@@ -751,3 +751,93 @@ def test_narrator_never_leaks_revision_scaffolding_even_via_safe_fallback():
     assert "Reescreva somente" not in result
     assert "DRAFT TO REVISE" not in result
     assert "floresta" not in result.lower()
+
+def test_narrator_prompt_contains_exploration_route_guardrails():
+    llm = CapturingLLM()
+
+    narrator.narrate(
+        llm,
+        mechanical_summary="Nenhuma mudança mecânica.",
+        context=(
+            "PLAYER SPATIAL KNOWLEDGE\n"
+            "RUMORED LOCATIONS\n"
+            "- Ruínas Distantes [RUMORED]\n\n"
+            "CONNECTED LOCATIONS KNOWN TO PLAYER\n"
+            "- none"
+        ),
+        player_input="Por onde posso seguir?",
+        recent_history="",
+    )
+
+    system, _prompt = llm.calls[0]
+
+    assert (
+        "Se uma rota não estiver nessa seção, não ofereça essa rota"
+        in system
+    )
+    assert "não trate rumor como rota navegável" in system
+    assert (
+        "Um lugar RUMORED não se torna destino navegável"
+        in system
+    )
+
+def test_narrator_prompt_contains_resolved_travel_guardrails():
+    llm = CapturingLLM()
+
+    narrator.narrate(
+        llm,
+        mechanical_summary=(
+            "Hero viajou até o Bosque. "
+            "A viagem sofreu DELAY de 5 minutos."
+        ),
+        context=(
+            "CONNECTED LOCATIONS KNOWN TO PLAYER\n"
+            "- noroeste -> Bosque (PATH, distância 1)"
+        ),
+        player_input="Vou até o bosque.",
+        recent_history="",
+    )
+
+    system, prompt = llm.calls[0]
+
+    assert (
+        "O Narrator não resolve a viagem novamente."
+        in system
+    )
+    assert (
+        "Um DELAY não autoriza automaticamente:"
+        in system
+    )
+    assert "- combate;" in system
+    assert "- emboscada;" in system
+    assert "- criatura;" in system
+
+    assert "AUTHORITATIVE MECHANICAL FACTS:" in prompt
+    assert "DELAY de 5 minutos" in prompt
+
+def test_narrator_prompt_prevents_fatigue_from_becoming_damage():
+    llm = CapturingLLM()
+
+    narrator.narrate(
+        llm,
+        mechanical_summary=(
+            "Hero concluiu a viagem. "
+            "FATIGUE causou gasto adicional de 2.0 Stamina."
+        ),
+        context="CURRENT PLAYER\nName: Hero",
+        player_input="Sigo viagem.",
+        recent_history="",
+    )
+
+    system, prompt = llm.calls[0]
+
+    assert (
+        "FATIGUE não significa automaticamente:"
+        in system
+    )
+    assert "- dano;" in system
+    assert "- perda de HP;" in system
+    assert "- ferimento;" in system
+    assert "Não transforme Stamina perdida em HP perdido." in system
+
+    assert "FATIGUE causou gasto adicional de 2.0 Stamina" in prompt

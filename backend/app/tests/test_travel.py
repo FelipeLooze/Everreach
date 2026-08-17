@@ -1,8 +1,16 @@
 import pytest
+import random
 from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import discover_connection
 from app.game.character.service import create_character
-from app.game.travel.service import TravelError, move_character, calculate_travel_minutes, calculate_travel_stamina_cost
+from app.game.travel.service import (
+    TravelError, 
+    move_character, 
+    calculate_travel_minutes, 
+    calculate_travel_stamina_cost,
+    calculate_travel_incident_chance,
+    roll_travel_incident,
+)
 from app.game.world.seed import create_campaign, seed_initial_region
 from app.core.enums import TravelPace
 
@@ -280,3 +288,104 @@ def test_calculate_travel_minutes_uses_distance_terrain_and_speed(
     assert normal_minutes == 45
     assert faster_minutes == 30
     assert slower_minutes == 90
+
+def test_travel_incident_chance_increases_with_danger_and_duration(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Travel Danger",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+        )
+        .first()
+    )
+
+    connection.danger = 0
+
+    safe = calculate_travel_incident_chance(
+        connection,
+        60,
+    )
+
+    connection.danger = 1
+
+    low_danger = calculate_travel_incident_chance(
+        connection,
+        60,
+    )
+
+    connection.danger = 2
+
+    higher_danger = calculate_travel_incident_chance(
+        connection,
+        60,
+    )
+
+    longer_exposure = calculate_travel_incident_chance(
+        connection,
+        120,
+    )
+
+    assert safe == 0.0
+
+    assert (
+        0.0
+        < low_danger
+        < higher_danger
+        < longer_exposure
+        < 1.0
+    )
+
+def test_roll_travel_incident_is_deterministic_with_rng(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Travel Danger Roll",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+        )
+        .first()
+    )
+
+    connection.danger = 5
+
+    first = roll_travel_incident(
+        connection,
+        60,
+        rng=random.Random(42),
+    )
+
+    second = roll_travel_incident(
+        connection,
+        60,
+        rng=random.Random(42),
+    )
+
+    assert first == second
+
+    assert 0.0 <= first.chance <= 1.0
+    assert 0.0 <= first.roll < 1.0
+
+    assert first.triggered == (
+        first.roll < first.chance
+    )

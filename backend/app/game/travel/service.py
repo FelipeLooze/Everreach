@@ -1,3 +1,6 @@
+import math
+import random
+from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.core.enums import DiscoveryStatus, EventType, TravelPace
@@ -9,12 +12,12 @@ from app.game.discovery.service import (
 )
 from app.services.event_log import log_event
 
-
 BASE_MINUTES_PER_DISTANCE = 15
 DEFAULT_TRAVEL_SPEED_MULTIPLIER = 1.0
 
 BASE_STAMINA_PER_DISTANCE = 2.0
 
+BASE_DANGER_HAZARD_PER_HOUR = 0.10
 
 PACE_SPEED_MULTIPLIERS = {
     TravelPace.SLOW: 0.75,
@@ -31,6 +34,42 @@ PACE_STAMINA_MULTIPLIERS = {
 
 class TravelError(ValueError):
     pass
+
+@dataclass(frozen=True)
+class TravelRiskResult:
+    chance: float
+    roll: float
+    triggered: bool
+
+def calculate_travel_incident_chance(
+    connection: LocationConnection,
+    minutes: int,
+) -> float:
+    """Calculate the probability of a travel incident.
+
+    `danger` is an exposure intensity, not a direct percentage.
+
+    Longer journeys and more dangerous routes increase exposure.
+    Danger 0 always means no random travel incident.
+    """
+
+    if minutes <= 0 or connection.danger <= 0:
+        return 0.0
+
+    hours = minutes / 60
+
+    exposure = (
+        BASE_DANGER_HAZARD_PER_HOUR
+        * connection.danger
+        * hours
+    )
+
+    chance = 1.0 - math.exp(-exposure)
+
+    return max(
+        0.0,
+        min(1.0, chance),
+    )
 
 def calculate_travel_minutes(
     connection: LocationConnection,
@@ -269,3 +308,25 @@ def move_character(
         )
 
     return minutes
+
+def roll_travel_incident(
+    connection: LocationConnection,
+    minutes: int,
+    rng: random.Random | None = None,
+) -> TravelRiskResult:
+    """Roll whether an incident occurs during one journey."""
+
+    chance = calculate_travel_incident_chance(
+        connection,
+        minutes,
+    )
+
+    roller = rng or random
+
+    roll = roller.random()
+
+    return TravelRiskResult(
+        chance=chance,
+        roll=roll,
+        triggered=roll < chance,
+    )

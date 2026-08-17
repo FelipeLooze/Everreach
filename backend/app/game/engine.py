@@ -21,6 +21,7 @@ from app.game.travel import service as travel_service
 from app.services.event_log import log_event
 from app.services.story_log import get_recent_story_log
 from app.simulation import world_simulation
+from app.game.perception import service as perception_service
 
 logger = get_logger("game")
 
@@ -152,8 +153,12 @@ def _apply_intent(db: Session, campaign_id: str, character: Character, intent: I
     if intent.type == ActionIntentType.TALK:
         return _handle_talk(db, campaign_id, character, intent, state)
     if intent.type == ActionIntentType.EXAMINE:
-        target = intent.target or "os arredores"
-        return f"{character.name} examina {target} de perto. Nenhuma mudança mecânica ocorre.", 2
+        return _handle_examine(
+            db,
+            campaign_id,
+            character,
+            intent,
+        )
     if intent.type == ActionIntentType.REST:
         return _handle_rest(db, campaign_id, character)
     if intent.type == ActionIntentType.WAIT:
@@ -294,3 +299,37 @@ def _handle_skill_check(db: Session, campaign_id: str, character: Character, int
         "Isto é uma checagem mecânica única, não uma resolução completa de combate."
     )
     return summary, 5
+
+def _handle_examine(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    intent: Intent,
+) -> tuple[str, int]:
+    result = perception_service.observe_surroundings(
+        db,
+        character,
+    )
+
+    lines = [
+        f"{character.name} observa os arredores de {result.location_name}.",
+    ]
+
+    if result.features:
+        lines.append(
+            "Elementos perceptíveis: "
+            + "; ".join(result.features)
+        )
+
+    if result.routes:
+        lines.append(
+            "Rotas perceptíveis: "
+            + "; ".join(result.routes)
+        )
+
+    if not result.features and not result.routes:
+        lines.append(
+            "Nenhum elemento adicional registrado pelo backend é perceptível."
+        )
+
+    return " ".join(lines), 2

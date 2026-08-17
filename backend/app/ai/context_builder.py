@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import KnowerType, MemoryOwnerType
 from app.core.logging import get_logger
-from app.db.models.location import Location, LocationConnection, LocationFeature
+from app.db.models.location import Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
 from app.game.game_state import GameStateSnapshot
 from app.game.npcs.service import KnownFact, relevant_known_facts
 from app.ai.memory_manager import get_relevant_memories
@@ -146,10 +146,28 @@ def _known_connection_lines(
 ) -> list[str]:
     if state.location is None:
         return []
-    known_subjects = {fact.subject for fact in player_facts}
+
+    known_connection_ids = {
+        row.connection_id
+        for row in (
+            db.query(CharacterConnectionDiscovery)
+            .filter(
+                CharacterConnectionDiscovery.character_id
+                == state.character.id
+            )
+            .all()
+        )
+    }
+
+    if not known_connection_ids:
+        return []
+
     rows = (
         db.query(LocationConnection, Location)
-        .join(Location, Location.id == LocationConnection.to_location_id)
+        .join(
+            Location,
+            Location.id == LocationConnection.to_location_id,
+        )
         .filter(
             LocationConnection.from_location_id == state.location.id,
             LocationConnection.active.is_(True),
@@ -157,16 +175,20 @@ def _known_connection_lines(
         .order_by(Location.name)
         .all()
     )
+
     lines = []
+
     for connection, destination in rows:
-        explicitly_known = f"connection:{connection.id}" in known_subjects
-        if not explicitly_known:
+        if connection.id not in known_connection_ids:
             continue
+
         direction = connection.direction or "direção não registrada"
+
         lines.append(
             f"- {direction} -> {destination.name} "
             f"({connection.connection_type}, distância {connection.distance:g})"
         )
+
     return lines[:MAX_VISIBLE_ENTITIES]
 
 

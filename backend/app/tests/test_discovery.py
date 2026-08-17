@@ -1,12 +1,23 @@
-from app.core.enums import DiscoveryStatus
-from app.db.models.location import CharacterLocationDiscovery, Location
+from app.core.enums import DiscoveryStatus, ActionIntentType
 from app.game.character.service import create_character
 from app.game.discovery.service import (
+    get_connection_discovery,
     get_location_discovery,
     set_location_discovery,
 )
 from app.game.world.seed import create_campaign, seed_initial_region
 from app.game.map.service import known_map
+
+from app.ai.intent_parser import Intent
+from app.db.models.location import (
+    CharacterLocationDiscovery,
+    CharacterConnectionDiscovery,
+    Location,
+    LocationConnection,
+)
+from app.game import engine
+from app.game.game_state import build_game_state
+from app.game.perception.service import observe_surroundings
 
 def test_location_discovery_is_individual_per_character(db_session):
     campaign = create_campaign(db_session, "Discovery Test")
@@ -230,3 +241,220 @@ def test_known_map_is_individual_per_character(db_session):
 
     assert "Bosque da Beira do Vale" in first_names
     assert "Bosque da Beira do Vale" not in second_names
+
+def test_observe_discovers_route_only_for_observing_character(db_session):
+    campaign = create_campaign(
+        db_session,
+        "Perception Isolation",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .first()
+    )
+
+    first = create_character(
+        db_session,
+        campaign.id,
+        "First",
+        region.id,
+        village.id,
+    )
+
+    second = create_character(
+        db_session,
+        campaign.id,
+        "Second",
+        region.id,
+        village.id,
+    )
+
+    observe_surroundings(
+        db_session,
+        first,
+    )
+
+    first_connection = get_connection_discovery(
+        db_session,
+        first.id,
+        connection.id,
+    )
+
+    second_connection = get_connection_discovery(
+        db_session,
+        second.id,
+        connection.id,
+    )
+
+    assert first_connection is not None
+    assert second_connection is None
+
+    first_location = get_location_discovery(
+        db_session,
+        first.id,
+        forest.id,
+    )
+
+    second_location = get_location_discovery(
+        db_session,
+        second.id,
+        forest.id,
+    )
+
+    assert first_location is not None
+    assert first_location.status == DiscoveryStatus.DISCOVERED
+
+    assert second_location is None
+
+def test_known_map_shows_only_character_discovered_connections(db_session):
+    campaign = create_campaign(
+        db_session,
+        "Connection Map Isolation",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    first = create_character(
+        db_session,
+        campaign.id,
+        "First",
+        region.id,
+        village.id,
+    )
+
+    second = create_character(
+        db_session,
+        campaign.id,
+        "Second",
+        region.id,
+        village.id,
+    )
+
+    set_location_discovery(
+        db_session,
+        first.id,
+        village.id,
+        DiscoveryStatus.VISITED,
+    )
+
+    set_location_discovery(
+        db_session,
+        second.id,
+        village.id,
+        DiscoveryStatus.VISITED,
+    )
+
+    observe_surroundings(
+        db_session,
+        first,
+    )
+
+    first_map = known_map(
+        db_session,
+        campaign.id,
+        first.id,
+    )
+
+    second_map = known_map(
+        db_session,
+        campaign.id,
+        second.id,
+    )
+
+    assert len(first_map["connections"]) > 0
+    assert second_map["connections"] == []
+
+def test_observe_makes_discovered_destination_available_for_travel(db_session):
+    campaign = create_campaign(
+        db_session,
+        "Observe Then Travel",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        village.id,
+    )
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    observe_surroundings(
+        db_session,
+        character,
+    )
+
+    discovery = get_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+    )
+
+    assert discovery is not None
+    assert discovery.status == DiscoveryStatus.DISCOVERED
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    intent = Intent(
+        type=ActionIntentType.MOVE,
+        target="Bosque da Beira do Vale",
+        raw_text="Vou até o bosque.",
+    )
+
+    summary, minutes = engine._apply_intent(
+        db_session,
+        campaign.id,
+        character,
+        intent,
+        state,
+    )
+
+    assert minutes > 0
+    assert character.location_id == forest.id
+
+    discovery = get_location_discovery(
+        db_session,
+        character.id,
+        forest.id,
+    )
+
+    assert discovery is not None
+    assert discovery.status == DiscoveryStatus.VISITED

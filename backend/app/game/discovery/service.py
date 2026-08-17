@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.core.enums import DiscoveryStatus
-from app.db.models.location import CharacterLocationDiscovery
+from app.db.models.location import CharacterLocationDiscovery, CharacterConnectionDiscovery
 
 
 _DISCOVERY_RANK = {
@@ -113,6 +113,45 @@ def set_location_discovery(
     ):
         discovery.mapped_at = now
 
+    db.flush()
+
+    return discovery, True
+
+def get_connection_discovery(
+    db: Session,
+    character_id: str,
+    connection_id: str,
+) -> CharacterConnectionDiscovery | None:
+    return (
+        db.query(CharacterConnectionDiscovery)
+        .filter(
+            CharacterConnectionDiscovery.character_id == character_id,
+            CharacterConnectionDiscovery.connection_id == connection_id,
+        )
+        .first()
+    )
+
+
+def discover_connection(
+    db: Session,
+    character_id: str,
+    connection_id: str,
+) -> tuple[CharacterConnectionDiscovery, bool]:
+    existing = get_connection_discovery(
+        db,
+        character_id,
+        connection_id,
+    )
+
+    if existing is not None:
+        return existing, False
+
+    discovery = CharacterConnectionDiscovery(
+        character_id=character_id,
+        connection_id=connection_id,
+    )
+
+    db.add(discovery)
     db.flush()
 
     return discovery, True

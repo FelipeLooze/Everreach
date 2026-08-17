@@ -5,6 +5,7 @@ from app.db.models.location import (
     CharacterLocationDiscovery,
     Location,
     LocationConnection,
+    CharacterConnectionDiscovery,
 )
 from app.db.models.region import Region
 
@@ -71,7 +72,13 @@ def known_map(
 
     connections = (
         db.query(LocationConnection)
+        .join(
+            CharacterConnectionDiscovery,
+            CharacterConnectionDiscovery.connection_id
+            == LocationConnection.id,
+        )
         .filter(
+            CharacterConnectionDiscovery.character_id == character_id,
             LocationConnection.from_location_id.in_(location_ids),
             LocationConnection.to_location_id.in_(location_ids),
             LocationConnection.active.is_(True),

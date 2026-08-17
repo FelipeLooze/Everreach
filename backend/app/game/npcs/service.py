@@ -14,13 +14,17 @@ from app.core.enums import (
     MemoryOwnerType,
 )
 from app.db.models.character import Character
-from app.db.models.location import Location
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.npc import NPC
 from app.db.models.event import WorldEvent
 from app.services.event_log import log_event
 from app.game.relationships.service import get_character_npc_relationship
-
+from app.core.enums import DiscoveryStatus
+from app.db.models.location import Location, LocationConnection
+from app.game.discovery.service import (
+    discover_connection,
+    set_location_discovery,
+)
 
 _CONVERSATION_BOUNDARY_EVENTS = (
     EventType.PLAYER_MET_NPC.value,
@@ -213,6 +217,28 @@ def teach_fact(
         )
     )
     db.flush()
+    if (
+        knower_type == KnowerType.PLAYER
+        and certainty == KnowledgeCertainty.CONFIRMED
+        and fact.subject.startswith("connection:")
+    ):
+        connection_id = fact.subject.removeprefix("connection:")
+
+        connection = db.get(LocationConnection, connection_id)
+
+        if connection is not None:
+            discover_connection(
+                db,
+                knower_id,
+                connection.id,
+            )
+
+            set_location_discovery(
+                db,
+                knower_id,
+                connection.to_location_id,
+                DiscoveryStatus.DISCOVERED,
+            )
 
 
 def meet_npc(db: Session, campaign_id: str, character_id: str, npc_id: str) -> NPC:

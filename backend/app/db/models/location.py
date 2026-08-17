@@ -121,3 +121,44 @@ class CharacterLocationDiscovery(Base):
         DateTime,
         nullable=True,
     )
+
+class CharacterConnectionDiscovery(Base):
+    """What one protagonist knows about one physical connection.
+
+    Absence of a row means the character does not know this route.
+    """
+
+    __tablename__ = "character_connection_discoveries"
+    __table_args__ = (
+        UniqueConstraint(
+            "character_id",
+            "connection_id",
+            name="uq_character_connection_discovery",
+        ),
+        Index(
+            "ix_character_connection_discovery_character",
+            "character_id",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("conndisc"),
+    )
+
+    character_id: Mapped[str] = mapped_column(
+        ForeignKey("characters.id"),
+        nullable=False,
+    )
+
+    connection_id: Mapped[str] = mapped_column(
+        ForeignKey("location_connections.id"),
+        nullable=False,
+    )
+
+    discovered_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC).replace(tzinfo=None),
+        nullable=False,
+    )

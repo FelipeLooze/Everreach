@@ -4,6 +4,7 @@ from app.db.models.event import WorldEvent
 from app.db.models.item import InventoryItem, Item
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import (
+    CharacterConnectionDiscovery,
     CharacterLocationDiscovery,
     Location,
     LocationConnection,
@@ -32,6 +33,7 @@ __all__ = [
     "Item",
     "KnowledgeFact",
     "KnowledgeKnower",
+    "CharacterConnectionDiscovery",
     "CharacterLocationDiscovery",
     "Location",
     "LocationConnection",

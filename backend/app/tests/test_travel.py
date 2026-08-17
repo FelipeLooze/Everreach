@@ -12,7 +12,7 @@ from app.game.travel.service import (
     roll_travel_incident,
 )
 from app.game.world.seed import create_campaign, seed_initial_region
-from app.core.enums import TravelPace
+from app.core.enums import TravelIncidentKind, TravelPace
 
 def test_move_character_rejects_travel_without_enough_stamina(
     db_session,
@@ -226,14 +226,14 @@ def test_move_character_follows_valid_connection(db_session):
         connection.id,
     )
 
-    minutes = move_character(
+    result = move_character(
         db_session,
         campaign.id,
         character,
         forest.id,
     )
 
-    assert minutes > 0
+    assert result.minutes > 0
     assert character.location_id == forest.id
 
 def test_move_character_rejects_unconnected_location(db_session):
@@ -388,4 +388,158 @@ def test_roll_travel_incident_is_deterministic_with_rng(
 
     assert first.triggered == (
         first.roll < first.chance
+    )
+
+class SequenceRNG:
+    def __init__(self, values):
+        self.values = iter(values)
+
+    def random(self):
+        return next(self.values)
+
+def test_move_character_delay_incident_adds_travel_time(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Travel Delay Incident",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        village.id,
+    )
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    connection.danger = 5
+
+    discover_connection(
+        db_session,
+        character.id,
+        connection.id,
+    )
+
+    result = move_character(
+        db_session,
+        campaign.id,
+        character,
+        forest.id,
+        rng=SequenceRNG([
+            0.0,  # dispara o risco
+            0.0,  # escolhe DELAY
+        ]),
+    )
+
+    assert result.incident is not None
+    assert result.incident.kind == TravelIncidentKind.DELAY
+    assert result.incident.extra_minutes > 0
+
+    assert result.minutes == (
+        result.base_minutes
+        + result.incident.extra_minutes
+    )
+
+def test_move_character_fatigue_incident_spends_extra_stamina(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Travel Fatigue Incident",
+    )
+
+    region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        village.id,
+    )
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == village.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    connection.danger = 5
+
+    discover_connection(
+        db_session,
+        character.id,
+        connection.id,
+    )
+
+    starting_stamina = character.stamina_current
+
+    normal_cost = calculate_travel_stamina_cost(
+        connection,
+        TravelPace.NORMAL,
+    )
+
+    result = move_character(
+        db_session,
+        campaign.id,
+        character,
+        forest.id,
+        rng=SequenceRNG([
+            0.0,  # dispara
+            0.9,  # escolhe FATIGUE
+        ]),
+    )
+
+    assert result.incident is not None
+    assert result.incident.kind == TravelIncidentKind.FATIGUE
+
+    assert result.incident.extra_stamina > 0
+
+    assert result.stamina_spent == round(
+        normal_cost + result.incident.extra_stamina,
+        1,
+    )
+
+    assert character.stamina_current == max(
+        0.0,
+        starting_stamina - result.stamina_spent,
     )

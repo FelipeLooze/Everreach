@@ -3,7 +3,12 @@ import random
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
-from app.core.enums import DiscoveryStatus, EventType, TravelPace
+from app.core.enums import (
+    DiscoveryStatus,
+    EventType,
+    TravelIncidentKind,
+    TravelPace,
+)
 from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import (
     get_connection_discovery,
@@ -40,6 +45,20 @@ class TravelRiskResult:
     chance: float
     roll: float
     triggered: bool
+
+@dataclass(frozen=True)
+class TravelIncident:
+    kind: TravelIncidentKind
+    extra_minutes: int = 0
+    extra_stamina: float = 0.0
+
+@dataclass(frozen=True)
+class TravelResult:
+    minutes: int
+    base_minutes: int
+    stamina_spent: float
+    risk: TravelRiskResult
+    incident: TravelIncident | None = None
 
 def calculate_travel_incident_chance(
     connection: LocationConnection,
@@ -146,10 +165,11 @@ def move_character(
     to_location_id: str,
     speed_multiplier: float = DEFAULT_TRAVEL_SPEED_MULTIPLIER,
     pace: TravelPace = TravelPace.NORMAL,
-) -> int:
+    rng: random.Random | None = None,
+) -> TravelResult:
     """Move a character to a connected and known location.
 
-    Returns minutes spent traveling.
+    Returns the structured mechanical result of the journey.
 
     Raises TravelError when:
     - there is no active physical connection;
@@ -205,7 +225,7 @@ def move_character(
         * pace_speed_multiplier
     )
 
-    minutes = calculate_travel_minutes(
+    base_minutes = calculate_travel_minutes(
         connection,
         effective_speed_multiplier,
     )
@@ -218,6 +238,40 @@ def move_character(
     if character.stamina_current < stamina_cost:
         raise TravelError(
             "Você está cansado demais para percorrer essa rota nesse ritmo."
+    )
+
+    risk = roll_travel_incident(
+        connection,
+        base_minutes,
+        rng=rng,
+    )
+
+    incident = None
+
+    if risk.triggered:
+        incident = choose_travel_incident(
+            connection,
+            base_minutes,
+            rng=rng,
+        )
+
+    extra_minutes = (
+        incident.extra_minutes
+        if incident is not None
+        else 0
+    )
+
+    extra_stamina = (
+        incident.extra_stamina
+        if incident is not None
+        else 0.0
+    )
+
+    minutes = base_minutes + extra_minutes
+
+    total_stamina_cost = round(
+        stamina_cost + extra_stamina,
+        1,
     )
 
     previous_discovery = get_location_discovery(
@@ -248,7 +302,7 @@ def move_character(
 
     character.stamina_current = max(
         0.0,
-        character.stamina_current - stamina_cost,
+        character.stamina_current - total_stamina_cost,
     )
 
     # Move o personagem.
@@ -263,6 +317,26 @@ def move_character(
         DiscoveryStatus.VISITED,
     )
 
+    # Registra o incidente ocorrido durante o percurso, se houver.
+    if incident is not None:
+        log_event(
+            db,
+            campaign_id,
+            EventType.TRAVEL_INCIDENT,
+            actor_type="character",
+            actor_id=character.id,
+            payload={
+                "connection_id": connection.id,
+                "from_location_id": from_location_id,
+                "to_location_id": destination.id,
+                "kind": incident.kind.value,
+                "chance": risk.chance,
+                "roll": risk.roll,
+                "extra_minutes": incident.extra_minutes,
+                "extra_stamina": incident.extra_stamina,
+            },
+        )
+
     # Toda viagem realizada gera PLAYER_MOVED.
     log_event(
         db,
@@ -273,9 +347,11 @@ def move_character(
         payload={
             "from_location_id": from_location_id,
             "to_location_id": destination.id,
+            "base_minutes": base_minutes,
             "minutes": minutes,
             "pace": pace.value,
-            "stamina_spent": stamina_cost,
+            "stamina_spent": total_stamina_cost,
+            "incident": incident.kind.value if incident else None,
         },
     )
 
@@ -307,7 +383,13 @@ def move_character(
             },
         )
 
-    return minutes
+    return TravelResult(
+        minutes=minutes,
+        base_minutes=base_minutes,
+        stamina_spent=total_stamina_cost,
+        risk=risk,
+        incident=incident,
+    )
 
 def roll_travel_incident(
     connection: LocationConnection,
@@ -329,4 +411,40 @@ def roll_travel_incident(
         chance=chance,
         roll=roll,
         triggered=roll < chance,
+    )
+
+def choose_travel_incident(
+    connection: LocationConnection,
+    base_minutes: int,
+    rng: random.Random | None = None,
+) -> TravelIncident:
+    """Choose one backend-authoritative non-combat travel incident."""
+
+    roller = rng or random
+
+    if roller.random() < 0.5:
+        extra_minutes = max(
+            5,
+            round(base_minutes * 0.25),
+        )
+
+        return TravelIncident(
+            kind=TravelIncidentKind.DELAY,
+            extra_minutes=extra_minutes,
+        )
+
+    extra_stamina = round(
+        max(
+            0.5,
+            BASE_STAMINA_PER_DISTANCE
+            * connection.distance
+            * connection.travel_time_modifier
+            * 0.5,
+        ),
+        1,
+    )
+
+    return TravelIncident(
+        kind=TravelIncidentKind.FATIGUE,
+        extra_stamina=extra_stamina,
     )

@@ -678,3 +678,76 @@ def test_teste_g_valid_social_reply_survives_when_only_part_is_unsupported():
     assert "estrada" not in result.lower()
     assert "castelo" not in result.lower()
     assert len(llm.calls) == 3
+
+
+class LeaksTrailingInstructionsLLM(LLMService):
+    """Real regression: the model's narrative content is fine, but it appends
+    the revision instructions verbatim afterward — text that contains no
+    tracked canon/agency keyword, so only leak-stripping (not the canon
+    filter) can catch it."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    def generate(self, system: str, prompt: str) -> str:
+        self.calls.append((system, prompt))
+        return (
+            "Osgar observa Logan com um leve sorriso.\n\n"
+            "Reescreva somente a narrativa corrigida, em no máximo dois "
+            "parágrafos curtos. Corrija apenas as violações listadas. "
+            "Preserve todo conteúdo válido do rascunho."
+        )
+
+
+def test_narrator_strips_trailing_instruction_leak_with_no_tracked_keyword():
+    llm = LeaksTrailingInstructionsLLM()
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar Vell"
+    )
+
+    result = narrator.narrate(
+        llm, "Nenhuma mudança mecânica.", context, "Olho ao redor.", "(nenhuma troca anterior)"
+    )
+
+    assert result == "Osgar observa Logan com um leve sorriso."
+    assert "Reescreva somente" not in result
+    assert "violações listadas" not in result
+    assert len(llm.calls) == 1
+
+
+class LeaksFullRevisionScaffoldingLLM(LLMService):
+    """Real regression, closer to the exact live failure: the first draft has
+    a genuine canon violation, and on revision the model echoes the draft,
+    the HARD VIOLATIONS TO REMOVE block, AND the trailing instructions,
+    instead of writing a corrected narrative."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    def generate(self, system: str, prompt: str) -> str:
+        self.calls.append((system, prompt))
+        if len(self.calls) == 1:
+            return "Osgar caminha até a floresta e observa o horizonte."
+        return (
+            "Osgar caminha até a floresta e observa o horizonte.\n\n"
+            "HARD VIOLATIONS TO REMOVE:\n- conceito persistente não autorizado "
+            "(invenção da resposta): 'floresta'; pode apenas negar ou admitir "
+            "desconhecimento, sem validá-lo nem acrescentar detalhes\n\n"
+            "Reescreva somente a narrativa corrigida, em no máximo dois "
+            "parágrafos curtos. Corrija apenas as violações listadas."
+        )
+
+
+def test_narrator_never_leaks_revision_scaffolding_even_via_safe_fallback():
+    llm = LeaksFullRevisionScaffoldingLLM()
+    context = "CANONICAL LOCATION CONTEXT\nName: Cardal\nType: VILLAGE"
+
+    result = narrator.narrate(
+        llm, "Nenhuma mudança mecânica.", context, "Olho ao redor.", "(nenhuma troca anterior)"
+    )
+
+    assert "HARD VIOLATIONS" not in result
+    assert "Reescreva somente" not in result
+    assert "DRAFT TO REVISE" not in result
+    assert "floresta" not in result.lower()

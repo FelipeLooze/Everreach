@@ -37,6 +37,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   STORY_EXCHANGE: "Troca narrativa",
   CHARACTER_CREATED: "Personagem criado",
   PLAYER_MOVED: "Você se moveu",
+  TRAVEL_INCIDENT: "Incidente durante a viagem",
   PLAYER_MET_NPC: "Você conheceu alguém",
   PLAYER_TALKED_TO_NPC: "Você conversou com alguém",
   PLAYER_GAINED_ITEM: "Você ganhou um item",

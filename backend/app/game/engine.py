@@ -5,7 +5,13 @@ from sqlalchemy.orm import Session
 from app.ai import context_builder, intent_parser, memory_manager, narrator, narrative_validator
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService, LLMServiceError
-from app.core.enums import ActionIntentType, CharacterStatus, DiscoveryStatus, EventType
+from app.core.enums import (
+    ActionIntentType,
+    CharacterStatus,
+    DiscoveryStatus,
+    EventType,
+    TravelIncidentKind,
+)
 from app.core.logging import get_logger
 from app.db.models.character import Character
 from app.db.models.location import CharacterLocationDiscovery, Location
@@ -197,11 +203,36 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
         return f"Nenhum lugar conhecido correspondente a '{intent.target}' pode ser alcançado a partir daqui.", 0
 
     try:
-        minutes = travel_service.move_character(db, campaign_id, character, destination.id, pace=intent.pace,)
+        travel_result = travel_service.move_character(
+            db,
+            campaign_id,
+            character,
+            destination.id,
+            pace=intent.pace,
+        )
     except travel_service.TravelError as exc:
         return str(exc), 0
 
-    return f"{character.name} viaja até {destination.name}.", minutes
+    summary = (
+        f"{character.name} viaja até {destination.name}. "
+        f"A viagem leva {travel_result.minutes} minutos e consome "
+        f"{travel_result.stamina_spent:g} de stamina."
+    )
+
+    if travel_result.incident is not None:
+        if travel_result.incident.kind == TravelIncidentKind.DELAY:
+            summary += (
+                f" Um incidente na rota causa um atraso adicional de "
+                f"{travel_result.incident.extra_minutes} minutos."
+            )
+
+        elif travel_result.incident.kind == TravelIncidentKind.FATIGUE:
+            summary += (
+                f" Um incidente na rota causa "
+                f"{travel_result.incident.extra_stamina:g} de fadiga adicional."
+            )
+
+    return summary, travel_result.minutes
 
 
 def _handle_talk(db: Session, campaign_id: str, character: Character, intent: Intent, state) -> tuple[str, int]:

@@ -97,6 +97,46 @@ _PERSISTENT_CONCEPTS = {
 }
 
 
+_PROMPT_LEAK_MARKERS = (
+    "HARD VIOLATIONS TO REMOVE",
+    "VIOLATIONS TO REMOVE",
+    "DRAFT TO REVISE",
+    "SCENE CONTEXT:",
+    "RECENT HISTORY:",
+    "PLAYER INPUT:",
+    "AUTHORITATIVE MECHANICAL FACTS:",
+    "MODO DA CENA:",
+    "Reescreva somente a narrativa corrigida",
+    "Escreva somente o próximo momento da cena",
+)
+
+
+def _strip_prompt_leak(text: str) -> str:
+    """If the model echoed part of its own prompt/instructions instead of (or
+    appended to) actual narrative, cut everything from the first leaked marker
+    onward. Under a long revision prompt, a local model sometimes regresses to
+    parroting its input verbatim — that scaffolding text must never reach the
+    player, even when it contains no canon/agency violation on its own."""
+    earliest = len(text)
+    for marker in _PROMPT_LEAK_MARKERS:
+        index = text.find(marker)
+        if index != -1:
+            earliest = min(earliest, index)
+    return text[:earliest].strip()
+
+
+_EMPTY_OR_LEAKED_RESPONSE_MESSAGE = (
+    "a resposta ficou vazia depois de remover texto de instrução/prompt ecoado pelo "
+    "modelo; escreva somente a cena em português, nunca repita estas instruções"
+)
+
+
+def _empty_response_violations(text: str) -> list[str]:
+    if not text.strip():
+        return [_EMPTY_OR_LEAKED_RESPONSE_MESSAGE]
+    return []
+
+
 def _normalized(text: str) -> str:
     decomposed = unicodedata.normalize("NFKD", text.casefold())
     return "".join(char for char in decomposed if not unicodedata.combining(char))
@@ -572,8 +612,14 @@ def narrate(
     logger.debug("PLAYER INPUT\n%s", player_input)
     logger.debug("AUTHORITATIVE FACTS\n%s", mechanical_summary)
 
-    response = llm_service.generate(_SYSTEM_PROMPT, prompt)
-    logger.debug("RAW NARRATOR RESPONSE\n%s", response)
+    raw_response = llm_service.generate(_SYSTEM_PROMPT, prompt)
+    logger.debug("RAW NARRATOR RESPONSE\n%s", raw_response)
+    response = _strip_prompt_leak(raw_response)
+    if response != raw_response.strip():
+        logger.warning(
+            "Stripped apparent prompt/instruction leakage from raw response.\nRAW:\n%s\nCLEANED:\n%s",
+            raw_response, response,
+        )
 
     character_name = _extract_character_name(context)
     npc_name = _extract_active_npc_name(context)
@@ -585,23 +631,27 @@ def narrate(
     # regeneration often degrades a good local-model response and is expensive.
     # Style violations are NEVER included in the rewrite reasons.
     for attempt in range(1, 3):
-        canon_violations = _find_canon_violations(draft, context, player_input)
-        meta_violations = _find_meta_awareness_violations(draft, simulated_player_names)
-        agency_violations = _protagonist_agency_violations(draft, character_name, mode)
-        turn_violations = _fabricated_turn_violations(draft, character_name, npc_name)
-        style_violations = _find_style_violations(draft)
+        empty_violations = _empty_response_violations(draft)
+        canon_violations = [] if empty_violations else _find_canon_violations(draft, context, player_input)
+        meta_violations = [] if empty_violations else _find_meta_awareness_violations(draft, simulated_player_names)
+        agency_violations = [] if empty_violations else _protagonist_agency_violations(draft, character_name, mode)
+        turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, npc_name)
+        style_violations = [] if empty_violations else _find_style_violations(draft)
 
         hard_violations = (
-            canon_violations
+            empty_violations
+            + canon_violations
             + meta_violations
             + agency_violations
             + turn_violations
         )
 
         logger.debug(
-            "REVIEW RESULT (attempt %s)\nCANON VIOLATIONS: %s\nMETA-AWARENESS VIOLATIONS: %s\n"
-            "AGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\nSTYLE VIOLATIONS: %s",
+            "REVIEW RESULT (attempt %s)\nEMPTY/LEAK VIOLATIONS: %s\nCANON VIOLATIONS: %s\n"
+            "META-AWARENESS VIOLATIONS: %s\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
+            "STYLE VIOLATIONS: %s",
             attempt,
+            empty_violations,
             canon_violations,
             meta_violations,
             agency_violations,
@@ -631,18 +681,35 @@ def narrate(
             "Preserve apenas acontecimentos sustentados pelo contexto. Para cada conceito "
             "persistente não autorizado, negue ou admita desconhecimento sem criar alternativa, "
             "equivalente, direção, segurança, história ou explicação. Não invente fatos para "
-            "preencher a resposta."
+            "preencher a resposta. Sua resposta deve conter APENAS a narrativa final, em "
+            "português — nunca repita este prompt, o rascunho, a lista de violações ou "
+            "qualquer instrução."
         )
         logger.debug(
             "NARRATOR REVISION %s HARD REASONS\n%s",
             attempt,
             "\n".join(hard_violations),
         )
-        draft = llm_service.generate(_SYSTEM_PROMPT, revision_prompt)
-        logger.debug("RAW NARRATOR RESPONSE (REVISION %s)\n%s", attempt, draft)
+        raw_revision = llm_service.generate(_SYSTEM_PROMPT, revision_prompt)
+        logger.debug("RAW NARRATOR RESPONSE (REVISION %s)\n%s", attempt, raw_revision)
+        draft = _strip_prompt_leak(raw_revision)
+        if draft != raw_revision.strip():
+            logger.warning(
+                "Stripped apparent prompt/instruction leakage from revision %s.\nRAW:\n%s\nCLEANED:\n%s",
+                attempt, raw_revision, draft,
+            )
 
     # From this point onward, no unresolved HARD violation is intentionally
     # returned to the player. Style remains non-blocking.
+    if not draft.strip():
+        safe = _safe_hard_failure_fallback(mode, npc_name)
+        logger.error(
+            "FALLBACK REASON: response was empty after stripping leaked prompt/instruction "
+            "text on every revision attempt. Returning deterministic safe fallback.\nFALLBACK:\n%s",
+            safe,
+        )
+        return safe
+
     remaining_style = _find_style_violations(draft)
     remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
     remaining_turn = _fabricated_turn_violations(draft, character_name, npc_name)

@@ -1,7 +1,7 @@
 import random
 
 from sqlalchemy.orm import Session
-
+from app.game.time.clock import get_world_time
 from app.core.enums import EventType, SimulatedPlayerArchetype, SimulatedPlayerStatus
 from app.db.models.location import LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
@@ -9,32 +9,89 @@ from app.services.event_log import log_event
 
 ACTION_CHANCE_PER_HOUR = 0.5
 
+def _hour_boundaries_crossed(
+    db: Session,
+    campaign_id: str,
+    minutes: int,
+) -> int:
+    if minutes <= 0:
+        return 0
 
-def tick(db: Session, campaign_id: str, minutes: int, rng: random.Random | None = None) -> None:
-    """Rule-based world advancement for simulated players (spec section 52).
-    Not an AI — a simple state machine per archetype. Simulated players keep
-    existing/acting even when the protagonist is elsewhere."""
+    end_total = get_world_time(
+        db,
+        campaign_id,
+    ).total_minutes()
+
+    start_total = end_total - minutes
+
+    return max(
+        0,
+        (end_total // 60) - (start_total // 60),
+    )
+
+def tick(
+    db: Session,
+    campaign_id: str,
+    minutes: int,
+    rng: random.Random | None = None,
+) -> None:
+    """Advance simulated transported people on absolute hourly opportunities.
+
+    The number of opportunities depends on world-clock boundaries crossed,
+    not on how the protagonist divided the elapsed time into actions.
+    """
     if minutes <= 0:
         return
 
+    opportunities = _hour_boundaries_crossed(
+        db,
+        campaign_id,
+        minutes,
+    )
+
+    if opportunities <= 0:
+        return
+
     r = rng or random.Random()
-    chance = min(1.0, ACTION_CHANCE_PER_HOUR * (minutes / 60))
 
     players = (
         db.query(SimulatedPlayer)
-        .filter(SimulatedPlayer.campaign_id == campaign_id, SimulatedPlayer.status == SimulatedPlayerStatus.ACTIVE)
+        .filter(
+            SimulatedPlayer.campaign_id == campaign_id,
+            SimulatedPlayer.status
+            == SimulatedPlayerStatus.ACTIVE,
+        )
+        .order_by(SimulatedPlayer.id)
         .all()
     )
 
-    for player in players:
-        if r.random() > chance:
-            continue
+    for _ in range(opportunities):
+        for player in players:
+            if r.random() > ACTION_CHANCE_PER_HOUR:
+                continue
 
-        if player.archetype in (SimulatedPlayerArchetype.EXPLORER, SimulatedPlayerArchetype.ADVENTURER):
-            _try_move(db, campaign_id, player, r)
-        elif player.archetype == SimulatedPlayerArchetype.TRAINER:
-            _train(db, campaign_id, player)
-        # SOCIAL archetype stays put in the MVP — no social simulation yet.
+            if player.archetype in (
+                SimulatedPlayerArchetype.EXPLORER,
+                SimulatedPlayerArchetype.ADVENTURER,
+            ):
+                _try_move(
+                    db,
+                    campaign_id,
+                    player,
+                    r,
+                )
+
+            elif (
+                player.archetype
+                == SimulatedPlayerArchetype.TRAINER
+            ):
+                _train(
+                    db,
+                    campaign_id,
+                    player,
+                )
+
+            # SOCIAL permanece parado no MVP.
 
 
 def _try_move(db: Session, campaign_id: str, player: SimulatedPlayer, r: random.Random) -> None:

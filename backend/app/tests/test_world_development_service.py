@@ -136,3 +136,78 @@ def test_create_world_development_rejects_location_from_other_campaign(
             interval_minutes=7 * 24 * 60,
             location_id=other_location.id,
         )
+
+def test_create_construction_defaults_progress_to_zero(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Construction Defaults",
+    )
+
+    development = create_world_development(
+        db_session,
+        campaign.id,
+        WorldDevelopmentType.CONSTRUCTION,
+        "Nova construção",
+        interval_minutes=7 * 24 * 60,
+        payload={
+            "progress_per_update": 10,
+        },
+    )
+
+    payload = json.loads(
+        development.payload_json
+    )
+
+    assert payload["progress"] == 0
+    assert payload["progress_per_update"] == 10
+
+
+def test_create_construction_rejects_invalid_progress(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Invalid Construction Progress",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="progress must be between 0 and 100",
+    ):
+        create_world_development(
+            db_session,
+            campaign.id,
+            WorldDevelopmentType.CONSTRUCTION,
+            "Construção inválida",
+            interval_minutes=7 * 24 * 60,
+            payload={
+                "progress": 120,
+                "progress_per_update": 10,
+            },
+        )
+
+
+def test_create_construction_requires_positive_progress_per_update(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Invalid Construction Rate",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="progress_per_update",
+    ):
+        create_world_development(
+            db_session,
+            campaign.id,
+            WorldDevelopmentType.CONSTRUCTION,
+            "Construção sem ritmo",
+            interval_minutes=7 * 24 * 60,
+            payload={
+                "progress": 0,
+            },
+        )

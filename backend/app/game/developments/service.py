@@ -101,6 +101,36 @@ def create_world_development(
         payload or {}
     )
 
+    if development_type == WorldDevelopmentType.CONSTRUCTION:
+        progress = int(
+            development_payload.get(
+                "progress",
+                0,
+            )
+        )
+
+        progress_per_update = int(
+            development_payload.get(
+                "progress_per_update",
+                0,
+            )
+        )
+
+        if progress < 0 or progress > 100:
+            raise ValueError(
+                "progress must be between 0 and 100"
+            )
+
+        if progress_per_update <= 0:
+            raise ValueError(
+                "progress_per_update must be greater than zero"
+            )
+
+        development_payload["progress"] = progress
+        development_payload[
+            "progress_per_update"
+        ] = progress_per_update
+
     development_payload[
         "interval_minutes"
     ] = interval_minutes

@@ -1,8 +1,9 @@
 import json
 import math
 from sqlalchemy.orm import Session
-
+from app.services.event_log import log_event
 from app.core.enums import (
+    EventType,
     WorldDevelopmentStatus,
     WorldDevelopmentType,
 )
@@ -42,6 +43,7 @@ def due_developments(
 
 
 def _process_construction(
+    db: Session,
     development: WorldDevelopment,
     current_world_minute: int,
 ) -> bool:
@@ -94,6 +96,50 @@ def _process_construction(
         development.next_update_world_minute
     )
 
+    for update_index in range(applied_updates):
+        previous_progress = min(
+            100,
+            progress
+            + update_index * progress_per_update,
+        )
+
+        update_progress = min(
+            100,
+            progress
+            + (update_index + 1) * progress_per_update,
+        )
+
+        occurred_world_minute = (
+            first_due_world_minute
+            + update_index * interval_minutes
+        )
+
+        completed = update_progress >= 100
+
+        log_event(
+            db,
+            development.campaign_id,
+            (
+                EventType.WORLD_DEVELOPMENT_COMPLETED
+                if completed
+                else EventType.WORLD_DEVELOPMENT_UPDATED
+            ),
+            actor_type="world_development",
+            actor_id=development.id,
+            payload={
+                "development_id": development.id,
+                "development_type": (
+                    development.development_type
+                ),
+                "title": development.title,
+                "region_id": development.region_id,
+                "location_id": development.location_id,
+                "previous_progress": previous_progress,
+                "progress": update_progress,
+            },
+            occurred_world_minute=occurred_world_minute,
+        )
+
     progress = min(
         100,
         progress
@@ -136,6 +182,7 @@ def process_development(
         == WorldDevelopmentType.CONSTRUCTION.value
     ):
         return _process_construction(
+            db,
             development,
             current_world_minute,
         )

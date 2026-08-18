@@ -3,7 +3,9 @@ from app.simulation import development_simulation
 from app.db.models.world_development import WorldDevelopment
 from app.game.time.clock import get_world_time
 from app.game.world.seed import create_campaign
+from app.db.models.event import WorldEvent
 from app.core.enums import (
+    EventType,
     WorldDevelopmentStatus,
     WorldDevelopmentType,
 )
@@ -364,6 +366,29 @@ def test_construction_advances_when_due(
         == WorldDevelopmentStatus.ACTIVE.value
     )
 
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == construction.id,
+        )
+        .all()
+    )
+
+    assert len(events) == 1
+
+    event = events[0]
+
+    assert (
+        event.event_type
+        == EventType.WORLD_DEVELOPMENT_UPDATED.value
+    )
+    assert event.world_minute == now
+
+    event_payload = json.loads(event.payload_json)
+
+    assert event_payload["previous_progress"] == 20
+    assert event_payload["progress"] == 30
+
 
 def test_construction_catches_up_missed_updates(
     db_session,
@@ -430,6 +455,40 @@ def test_construction_catches_up_missed_updates(
     assert (
         construction.next_update_world_minute
         == start + 6 * interval
+    )
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == construction.id,
+        )
+        .order_by(WorldEvent.world_minute.asc())
+        .all()
+    )
+
+    assert [event.world_minute for event in events] == [
+        start + interval,
+        start + 2 * interval,
+        start + 3 * interval,
+        start + 4 * interval,
+        start + 5 * interval,
+    ]
+
+    assert [
+        json.loads(event.payload_json)["progress"]
+        for event in events
+    ] == [
+        10,
+        20,
+        30,
+        40,
+        50,
+    ]
+
+    assert all(
+        event.event_type
+        == EventType.WORLD_DEVELOPMENT_UPDATED.value
+        for event in events
     )
 
 
@@ -501,3 +560,38 @@ def test_construction_completes_without_processing_extra_updates(
         construction.last_updated_world_minute
         == start + 2 * interval
     )
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == construction.id,
+        )
+        .order_by(WorldEvent.world_minute.asc())
+        .all()
+    )
+
+    assert len(events) == 2
+
+    assert [
+        event.world_minute
+        for event in events
+    ] == [
+        start + interval,
+        start + 2 * interval,
+    ]
+
+    assert [
+        event.event_type
+        for event in events
+    ] == [
+        EventType.WORLD_DEVELOPMENT_UPDATED.value,
+        EventType.WORLD_DEVELOPMENT_COMPLETED.value,
+    ]
+
+    assert [
+        json.loads(event.payload_json)["progress"]
+        for event in events
+    ] == [
+        90,
+        100,
+    ]

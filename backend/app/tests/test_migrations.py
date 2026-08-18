@@ -45,6 +45,12 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         connection_indexes = {
             item["name"] for item in inspect(engine).get_indexes("location_connections")
         }
+        development_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes(
+                "world_developments"
+            )
+        }
         assert "uq_knowledge_fact_campaign_key" in fact_constraints
         assert "uq_knowledge_knower_fact_identity" in knower_constraints
         assert "ix_location_connection_origin_active" in connection_indexes
@@ -54,14 +60,6 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert {"owner_type", "owner_id", "subject", "source_event_id"}.issubset(
             memory_columns
         )
-
-        development_indexes = {
-            item["name"]
-            for item in inspect(engine).get_indexes(
-                "world_developments"
-            )
-        }
-
         assert (
             "ix_world_developments_campaign_status_next_update"
             in development_indexes

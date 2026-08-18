@@ -3,7 +3,7 @@ from typing import Protocol, Sequence
 import unicodedata
 
 from sqlalchemy.orm import Session
-
+from app.db.models.npc import NPC
 from app.core.enums import (
     DiscoveryStatus,
     KnowerType,
@@ -290,6 +290,21 @@ def build_context(
         ),
         None,
     )
+    # The interlocutor of the action may have become unavailable after
+    # the action advanced world time. Keep that NPC available to the
+    # narrator for this completed interaction without putting them back
+    # into the current visible scene.
+    if active_npc is None and active_interlocutor:
+        candidate = db.get(NPC, active_interlocutor)
+
+        if (
+            candidate is not None
+            and candidate.campaign_id == state.campaign_id
+            and state.location is not None
+            and candidate.location_id == state.location.id
+            and candidate.alive
+        ):
+            active_npc = candidate
     outgoing_connections = (
         db.query(LocationConnection)
         .filter(
@@ -550,7 +565,13 @@ def build_context(
         ]
         or ["- none"]
     )
-
+    active_npc_visible_now = (
+        active_npc is not None
+        and any(
+            npc.id == active_npc.id
+            for npc in state.nearby_npcs
+        )
+    )
     active_lines = ["ACTIVE NPC CONTEXT"]
     if active_npc is None:
         active_lines.append("- none")
@@ -575,8 +596,18 @@ def build_context(
                         f"trust={relationship.trust}, affinity={relationship.affinity}"
                     )
                 ),
-                f"Current state: {'alive and available' if active_npc.alive else 'dead'}",
-                "Continue the active conversation; unrelated NPCs do not interrupt.",
+                f"Current activity: {active_npc.activity}",
+                (
+                    "Conversation status: the NPC remains available in the current scene. "
+                    "The conversation may continue naturally."
+                    if active_npc_visible_now
+                    else (
+                        "Conversation status: this NPC participated in the action that just "
+                        "occurred but is no longer available in the current scene. "
+                        "Narrate the completed interaction, but do not continue the "
+                        "conversation afterward."
+                    )
+                ),
             ]
         )
 

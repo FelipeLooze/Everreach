@@ -30,6 +30,8 @@ from app.game.discovery.service import (
     get_location_discovery,
     set_location_discovery,
 )
+from app.core.enums import NPCActivity
+from app.game.time import clock
 
 def _setup(db_session):
     campaign = create_campaign(db_session, "Intent Test")
@@ -628,3 +630,145 @@ def test_apply_intent_move_uses_requested_fast_pace(db_session):
     assert character.stamina_current == (
         starting_stamina - expected_stamina
     )
+
+def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
+    db_session,
+):
+    campaign, _region, village, character = _setup(db_session)
+
+    osgar = (
+        db_session.query(NPC)
+        .filter(
+            NPC.campaign_id == campaign.id,
+            NPC.name == "Osgar Vell",
+        )
+        .one()
+    )
+
+    # O mundo começa às 08:00.
+    # Leva o relógio até 21:55 sem iniciar uma ação.
+    clock.advance_world_time(
+        db_session,
+        campaign.id,
+        13 * 60 + 55,
+    )
+
+    db_session.refresh(osgar)
+
+    assert osgar.activity != NPCActivity.RESTING.value
+
+    player_memories_before = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type == MemoryOwnerType.PLAYER.value,
+            Memory.owner_id == character.id,
+        )
+        .count()
+    )
+
+    npc_memories_before = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type == MemoryOwnerType.NPC.value,
+            Memory.owner_id == osgar.id,
+            Memory.subject == f"character:{character.id}",
+        )
+        .count()
+    )
+
+    llm = ConversationLLM()
+
+    result = engine.resolve_action(
+        db_session,
+        llm,
+        campaign.id,
+        character.id,
+        "Falo com Osgar: — Boa noite.",
+    )
+
+    db_session.refresh(osgar)
+
+    # TALK custa 10 minutos:
+    # 21:55 -> 22:05.
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    assert state.world_time.hour == 22
+    assert state.world_time.minute == 5
+
+    # O World Tick já colocou Osgar para descansar.
+    assert osgar.activity == NPCActivity.RESTING.value
+
+    # Portanto ele não está mais presente na cena atual.
+    assert osgar.id not in {
+        npc.id
+        for npc in state.nearby_npcs
+    }
+
+    # E a conversa não permanece ativa para o próximo turno.
+    assert (
+        npcs_service.get_active_interlocutor(
+            db_session,
+            campaign.id,
+            character.id,
+            village.id,
+        )
+        is None
+    )
+
+    # Porém o Narrator deste turno ainda recebeu Osgar
+    # como interlocutor da ação que acabou de acontecer.
+    narrator_prompts = "\n".join(
+        prompt
+        for system, prompt in llm.calls
+        if "intent" not in system.lower()
+    )
+
+    assert "ACTIVE NPC CONTEXT\nName: Osgar Vell" in narrator_prompts
+    assert "Current activity: RESTING" in narrator_prompts
+    assert (
+        "participated in the action that just occurred"
+        in narrator_prompts
+    )
+
+    # A conversa continua sendo registrada como uma interação real,
+    # mesmo que Osgar tenha ficado indisponível depois dela.
+    relationship = (
+        db_session.query(CharacterNPCRelationship)
+        .filter(
+            CharacterNPCRelationship.character_id
+            == character.id,
+            CharacterNPCRelationship.npc_id
+            == osgar.id,
+        )
+        .one()
+    )
+
+    assert relationship.familiarity == 1
+
+    player_memories_after = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type == MemoryOwnerType.PLAYER.value,
+            Memory.owner_id == character.id,
+        )
+        .count()
+    )
+
+    npc_memories_after = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type == MemoryOwnerType.NPC.value,
+            Memory.owner_id == osgar.id,
+            Memory.subject == f"character:{character.id}",
+        )
+        .count()
+    )
+
+    assert player_memories_after > player_memories_before
+    assert npc_memories_after > npc_memories_before
+
+    assert result.intent_type == ActionIntentType.TALK.value

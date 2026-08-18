@@ -71,6 +71,15 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
 
     mechanical_summary, minutes = _apply_intent(db, campaign_id, character, intent, state)
 
+    # Capture who this action involved before advancing world time.
+    # The NPC may become unavailable during the tick that follows.
+    action_interlocutor = npcs_service.get_active_interlocutor(
+        db,
+        campaign_id,
+        character_id,
+        character.location_id,
+    )
+
     if minutes > 0:
         clock.advance_world_time(db, campaign_id, minutes)
         world_simulation.tick(db, campaign_id, minutes)
@@ -79,11 +88,27 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
 
     fresh_state = game_state.build_game_state(db, campaign_id, character_id)
     recent_entries = get_recent_story_log(db, campaign_id, character_id)
-    active_npc = npcs_service.get_active_interlocutor(
-        db, campaign_id, character_id, character.location_id
+    current_active_npc = npcs_service.get_active_interlocutor(
+        db,
+        campaign_id,
+        character_id,
+        character.location_id,
     )
+
+    context_interlocutor = (
+        action_interlocutor
+        or current_active_npc
+    )
+
     fresh_context = context_builder.build_context(
-        db, fresh_state, active_npc.id if active_npc else None, player_input=text
+        db,
+        fresh_state,
+        (
+            context_interlocutor.id
+            if context_interlocutor
+            else None
+        ),
+        player_input=text,
     )
     recent_history = context_builder.build_recent_history(recent_entries)
     canonical_facts = context_builder.build_canonical_facts(fresh_state)
@@ -103,8 +128,9 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
 
     validation = narrative_validator.validate(narrative_text, canonical_facts)
 
-    is_dialogue = active_npc is not None and (
-        intent.type == ActionIntentType.TALK or _looks_like_dialogue(text)
+    is_dialogue = action_interlocutor is not None and (
+        intent.type == ActionIntentType.TALK
+        or _looks_like_dialogue(text)
     )
     story_event = log_event(
         db,
@@ -119,18 +145,26 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
         },
         importance=2 if is_dialogue else 1,
     )
-    if is_dialogue and active_npc is not None:
+    if is_dialogue and action_interlocutor is not None:
         relationship_service.record_npc_interaction(
-            db, campaign_id, character.id, active_npc.id
+            db,
+            campaign_id,
+            character.id,
+            action_interlocutor.id,
         )
+
         memory_manager.remember_dialogue(
             db,
             story_event,
             character,
-            active_npc,
+            action_interlocutor,
             text,
             validation.text,
-            importance=3 if intent.type == ActionIntentType.TALK else 2,
+            importance=(
+                3
+                if intent.type == ActionIntentType.TALK
+                else 2
+            ),
         )
 
     db.commit()

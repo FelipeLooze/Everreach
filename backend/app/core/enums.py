@@ -108,6 +108,10 @@ class TravelPace(StrEnum):
     NORMAL = "NORMAL"
     FAST = "FAST"
 
+class NPCActivity(StrEnum):
+    RESTING = "RESTING"
+    WORKING = "WORKING"
+    AVAILABLE = "AVAILABLE"
 
 class TravelIncidentKind(StrEnum):
     DELAY = "DELAY"

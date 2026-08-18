@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import generate_id
 from app.db.base import Base
-
+from app.core.enums import NPCActivity
 
 class NPC(Base):
     """NPCs believe they were born in this world — see ai/prompts/narrator_system.txt.
@@ -20,5 +20,11 @@ class NPC(Base):
     personality: Mapped[str] = mapped_column(String, default="")
     backstory: Mapped[str] = mapped_column(String, default="")
     role: Mapped[str] = mapped_column(String, default="villager")
+
+    activity: Mapped[str] = mapped_column(
+        String,
+        default=NPCActivity.AVAILABLE,
+        nullable=False,
+    )
 
     alive: Mapped[bool] = mapped_column(Boolean, default=True)

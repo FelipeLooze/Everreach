@@ -5,6 +5,11 @@ from app.simulation.results import KnowledgeSimulationResult
 from dataclasses import dataclass
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.event import WorldEvent
+from app.services.event_log import log_event
+from app.game.npcs.service import (
+    propagate_fact_locally,
+)
 from app.db.models.knowledge import (
     KnowledgeFact,
     KnowledgeKnower,
@@ -13,6 +18,7 @@ from app.simulation.cadence import (
     boundary_minutes_crossed,
 )
 from app.core.enums import (
+    EventType,
     KnowerType,
     NPCActivity,
     SimulatedPlayerStatus,
@@ -58,6 +64,20 @@ def tick(
         )
     )
 
+    propagations = 0
+
+    if opportunity_world_minutes:
+        current_opportunity = (
+            opportunity_world_minutes[-1]
+        )
+
+        if resolve_social_opportunity(
+            db,
+            campaign_id,
+            current_opportunity,
+        ):
+            propagations += 1
+
     return KnowledgeSimulationResult(
         opportunities=len(
             opportunity_world_minutes
@@ -67,6 +87,7 @@ def tick(
             if opportunity_world_minutes
             else 0
         ),
+        propagations=propagations,
         opportunity_world_minutes=(
             opportunity_world_minutes
         ),
@@ -326,3 +347,119 @@ def select_transfer_candidate(
     ) % len(candidates)
 
     return candidates[index]
+
+def _social_opportunity_actor_id(
+    opportunity_world_minute: int,
+) -> str:
+    return (
+        f"social:{opportunity_world_minute}"
+    )
+
+
+def social_opportunity_already_resolved(
+    db: Session,
+    campaign_id: str,
+    opportunity_world_minute: int,
+) -> bool:
+    return (
+        db.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign_id,
+            WorldEvent.event_type
+            == EventType
+            .SOCIAL_KNOWLEDGE_OPPORTUNITY_RESOLVED
+            .value,
+            WorldEvent.actor_type
+            == "knowledge_simulation",
+            WorldEvent.actor_id
+            == _social_opportunity_actor_id(
+                opportunity_world_minute
+            ),
+        )
+        .first()
+        is not None
+    )
+
+def resolve_social_opportunity(
+    db: Session,
+    campaign_id: str,
+    opportunity_world_minute: int,
+) -> bool:
+    if social_opportunity_already_resolved(
+        db,
+        campaign_id,
+        opportunity_world_minute,
+    ):
+        return False
+
+    pair = select_social_pair(
+        db,
+        campaign_id,
+        opportunity_world_minute,
+    )
+
+    candidate = None
+    propagated = False
+
+    if pair is not None:
+        candidate = select_transfer_candidate(
+            db,
+            campaign_id,
+            pair,
+            opportunity_world_minute,
+        )
+
+    if candidate is not None:
+        propagated = propagate_fact_locally(
+            db,
+            campaign_id,
+            candidate.fact_key,
+            candidate.source.knower_type,
+            candidate.source.knower_id,
+            candidate.target.knower_type,
+            candidate.target.knower_id,
+        )
+
+    log_event(
+        db,
+        campaign_id,
+        EventType.SOCIAL_KNOWLEDGE_OPPORTUNITY_RESOLVED,
+        actor_type="knowledge_simulation",
+        actor_id=_social_opportunity_actor_id(
+            opportunity_world_minute
+        ),
+        payload={
+            "opportunity_world_minute": (
+                opportunity_world_minute
+            ),
+            "source_type": (
+                candidate.source.knower_type.value
+                if candidate
+                else None
+            ),
+            "source_id": (
+                candidate.source.knower_id
+                if candidate
+                else None
+            ),
+            "target_type": (
+                candidate.target.knower_type.value
+                if candidate
+                else None
+            ),
+            "target_id": (
+                candidate.target.knower_id
+                if candidate
+                else None
+            ),
+            "fact_key": (
+                candidate.fact_key
+                if candidate
+                else None
+            ),
+            "propagated": propagated,
+        },
+    )
+
+    return propagated

@@ -2,6 +2,7 @@ from app.game.world.seed import create_campaign
 from app.db.models.location import Location
 from app.simulation import knowledge_simulation
 from app.db.models.npc import NPC
+from app.game.npcs.service import teach_fact
 from app.game.time.clock import (
     advance_world_time,
 )
@@ -10,6 +11,7 @@ from app.db.models.knowledge import (
     KnowledgeKnower,
 )
 from app.core.enums import (
+    EventType,
     KnowledgeCertainty,
     KnowerType,
     NPCActivity,
@@ -25,6 +27,7 @@ from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
 )
+from app.db.models.event import WorldEvent
 
 
 def test_knowledge_simulation_has_no_opportunity_without_daily_boundary(
@@ -806,3 +809,356 @@ def test_social_transfer_candidate_selection_returns_none_without_candidates(
     )
 
     assert result is None
+
+def test_social_opportunity_automatically_propagates_one_fact(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Automatic Social Propagation",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    # Remove participantes autônomos do seed
+    # para controlar exatamente o par do teste.
+    db_session.query(NPC).filter(
+        NPC.campaign_id == campaign.id
+    ).update(
+        {
+            NPC.activity:
+            NPCActivity.RESTING.value
+        },
+        synchronize_session=False,
+    )
+
+    db_session.query(SimulatedPlayer).filter(
+        SimulatedPlayer.campaign_id
+        == campaign.id
+    ).update(
+        {
+            SimulatedPlayer.status:
+            SimulatedPlayerStatus.DEAD.value
+        },
+        synchronize_session=False,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="automatic_social_fact",
+        statement="Uma nova ponte está sendo construída.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        source="percepção direta",
+        certainty=KnowledgeCertainty.CONFIRMED,
+    )
+
+    minutes = 24 * 60
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    result = knowledge_simulation.tick(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    assert result.opportunities == 1
+    assert result.resolvable_opportunities == 1
+    assert result.propagations == 1
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .count()
+        == 1
+    )
+
+def test_social_opportunity_automatically_propagates_one_fact(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Automatic Social Propagation",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    # Remove participantes autônomos do seed
+    # para controlar exatamente o par do teste.
+    db_session.query(NPC).filter(
+        NPC.campaign_id == campaign.id
+    ).update(
+        {
+            NPC.activity:
+            NPCActivity.RESTING.value
+        },
+        synchronize_session=False,
+    )
+
+    db_session.query(SimulatedPlayer).filter(
+        SimulatedPlayer.campaign_id
+        == campaign.id
+    ).update(
+        {
+            SimulatedPlayer.status:
+            SimulatedPlayerStatus.DEAD.value
+        },
+        synchronize_session=False,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="automatic_social_fact",
+        statement="Uma nova ponte está sendo construída.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        source="percepção direta",
+        certainty=KnowledgeCertainty.CONFIRMED,
+    )
+
+    minutes = 24 * 60
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    result = knowledge_simulation.tick(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    assert result.opportunities == 1
+    assert result.resolvable_opportunities == 1
+    assert result.propagations == 1
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .count()
+        == 1
+    )
+
+def test_same_social_opportunity_is_not_resolved_twice(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Social Opportunity Idempotency",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    db_session.query(NPC).filter(
+        NPC.campaign_id == campaign.id
+    ).update(
+        {
+            NPC.activity:
+            NPCActivity.RESTING.value
+        },
+        synchronize_session=False,
+    )
+
+    db_session.query(SimulatedPlayer).filter(
+        SimulatedPlayer.campaign_id
+        == campaign.id
+    ).update(
+        {
+            SimulatedPlayer.status:
+            SimulatedPlayerStatus.DEAD.value
+        },
+        synchronize_session=False,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    facts = [
+        KnowledgeFact(
+            campaign_id=campaign.id,
+            fact_key="social_idempotent_a",
+            statement="Fato A.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign.id,
+            fact_key="social_idempotent_b",
+            statement="Fato B.",
+        ),
+    ]
+
+    db_session.add_all(facts)
+    db_session.flush()
+
+    for fact in facts:
+        teach_fact(
+            db_session,
+            campaign.id,
+            fact.fact_key,
+            KnowerType.NPC,
+            source.id,
+        )
+
+    minutes = 24 * 60
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    first_result = knowledge_simulation.tick(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    second_result = knowledge_simulation.tick(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    assert first_result.propagations == 1
+    assert second_result.propagations == 0
+
+    learned_count = (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id.in_(
+                [fact.id for fact in facts]
+            ),
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .count()
+    )
+
+    assert learned_count == 1
+
+    resolved_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.event_type
+            == EventType
+            .SOCIAL_KNOWLEDGE_OPPORTUNITY_RESOLVED
+            .value,
+        )
+        .count()
+    )
+
+    assert resolved_events == 1

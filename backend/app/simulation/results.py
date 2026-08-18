@@ -15,12 +15,16 @@ class PlayerSimulationResult:
 class NPCSimulationResult:
     changes: int = 0
 
+@dataclass(frozen=True)
+class WorldDevelopmentSimulationResult:
+    changes: int = 0
 
 @dataclass(frozen=True)
 class WorldTickResult:
     simulated_player_moves: int = 0
     simulated_player_training: int = 0
     npc_changes: int = 0
+    world_development_changes: int = 0
 
     @property
     def total_changes(self) -> int:
@@ -28,6 +32,7 @@ class WorldTickResult:
             self.simulated_player_moves
             + self.simulated_player_training
             + self.npc_changes
+            + self.world_development_changes
         )
 
     @property

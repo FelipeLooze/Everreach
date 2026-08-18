@@ -2,7 +2,11 @@ import random
 
 from sqlalchemy.orm import Session
 from app.simulation.results import WorldTickResult
-from app.simulation import npc_simulation, player_simulation
+from app.simulation import (
+    npc_simulation, 
+    player_simulation,
+    development_simulation,
+)
 
 
 def tick(
@@ -29,8 +33,15 @@ def tick(
         minutes,
     )
 
+    development_result = development_simulation.tick(
+        db,
+        campaign_id,
+        minutes,
+    )
+
     return WorldTickResult(
         simulated_player_moves=player_result.moved,
         simulated_player_training=player_result.trained,
         npc_changes=npc_result.changes,
+        world_development_changes=development_result.changes,
     )

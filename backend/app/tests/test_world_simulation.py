@@ -4,6 +4,7 @@ from app.simulation import world_simulation
 from app.simulation.results import (
     NPCSimulationResult,
     PlayerSimulationResult,
+    WorldDevelopmentSimulationResult,
 )
 
 def test_world_tick_runs_subsystems_once_in_deterministic_order(
@@ -48,6 +49,22 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
             changes=3,
         )
 
+    def fake_development_tick(
+        db,
+        campaign_id,
+        minutes,
+    ):
+        calls.append(
+            (
+                "developments",
+                campaign_id,
+                minutes,
+            )
+        )
+        return WorldDevelopmentSimulationResult(
+            changes=4,
+        )
+
     monkeypatch.setattr(
         world_simulation.player_simulation,
         "tick",
@@ -58,6 +75,12 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         world_simulation.npc_simulation,
         "tick",
         fake_npc_tick,
+    )
+
+    monkeypatch.setattr(
+        world_simulation.development_simulation,
+        "tick",
+        fake_development_tick,
     )
 
     result = world_simulation.tick(
@@ -79,11 +102,17 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
             "campaign_1",
             45,
         ),
+        (
+            "developments",
+            "campaign_1",
+            45,
+        ),
     ]
     assert result.simulated_player_moves == 2
     assert result.simulated_player_training == 1
     assert result.npc_changes == 3
-    assert result.total_changes == 6
+    assert result.world_development_changes == 4
+    assert result.total_changes == 10
     assert result.has_changes is True
 
 
@@ -103,6 +132,12 @@ def test_world_tick_with_zero_minutes_runs_nothing(
         world_simulation.npc_simulation,
         "tick",
         lambda *args, **kwargs: calls.append("npcs"),
+    )
+
+    monkeypatch.setattr(
+        world_simulation.development_simulation,
+        "tick",
+        lambda *args, **kwargs: calls.append("developments"),
     )
 
     result = world_simulation.tick(
@@ -132,6 +167,12 @@ def test_world_tick_with_negative_minutes_runs_nothing(
         world_simulation.npc_simulation,
         "tick",
         lambda *args, **kwargs: calls.append("npcs"),
+    )
+
+    monkeypatch.setattr(
+        world_simulation.development_simulation,
+        "tick",
+        lambda *args, **kwargs: calls.append("developments"),
     )
 
     result = world_simulation.tick(

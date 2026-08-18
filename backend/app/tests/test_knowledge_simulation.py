@@ -1,3 +1,4 @@
+import json
 from app.db.models.location import Location
 from app.simulation import knowledge_simulation
 from app.db.models.npc import NPC
@@ -935,6 +936,31 @@ def test_social_opportunity_automatically_propagates_one_fact(
 
     assert (
         target_link.certainty
+        == KnowledgeCertainty.BELIEVED.value
+    )
+
+    propagation_event = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign.id,
+            WorldEvent.event_type
+            == EventType.KNOWLEDGE_PROPAGATED.value,
+        )
+        .one()
+    )
+
+    payload = json.loads(
+        propagation_event.payload_json
+    )
+
+    assert (
+        payload["source_certainty"]
+        == KnowledgeCertainty.CONFIRMED.value
+    )
+
+    assert (
+        payload["target_certainty"]
         == KnowledgeCertainty.BELIEVED.value
     )
 

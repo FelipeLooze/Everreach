@@ -411,12 +411,14 @@ def propagate_fact(
     if knows(db, to_type, to_id, fact_key, campaign_id):
         return False
 
+    source_certainty = KnowledgeCertainty(
+        source_link.certainty
+    )
+
     target_certainty = (
         certainty
         if certainty is not None
-        else KnowledgeCertainty(
-            source_link.certainty
-        )
+        else source_certainty
     )
 
     teach_fact(
@@ -439,6 +441,12 @@ def propagate_fact(
             "fact_key": fact.fact_key,
             "to_type": to_type.value,
             "to_id": to_id,
+            "source_certainty": (
+                source_certainty.value
+            ),
+            "target_certainty": (
+                target_certainty.value
+            ),
         },
     )
 

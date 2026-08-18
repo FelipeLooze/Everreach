@@ -215,8 +215,14 @@ def _known_connection_lines(
 
         direction = connection.direction or "direção não registrada"
 
+        destination_name = (
+            destination.name
+            if _explicit_name_known(player_facts, destination.name)
+            else "Local desconhecido"
+        )
+
         lines.append(
-            f"- {direction} -> {destination.name} "
+            f"- {direction} -> {destination_name} "
             f"({connection.connection_type}, distância {connection.distance:g})"
         )
 
@@ -520,7 +526,7 @@ def build_context(
             _known_connection_lines(
                 db,
                 state,
-                player_facts,
+                all_player_facts,
             )
             or ["- none"]
         ),

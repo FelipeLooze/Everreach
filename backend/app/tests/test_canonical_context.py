@@ -561,3 +561,72 @@ def test_spatial_knowledge_does_not_reveal_visited_location_name_without_fact(
     )[0]
 
     assert "Cardal [VISITED]" not in spatial_section
+
+def test_known_route_reveals_destination_name_when_player_knows_name_fact(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    forest = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == state.region.id,
+            Location.type == "forest",
+        )
+        .first()
+    )
+
+    connection = (
+        db_session.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == state.location.id,
+            LocationConnection.to_location_id == forest.id,
+        )
+        .one()
+    )
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        "osgar_knows_cardal_northwest_path",
+        KnowerType.PLAYER,
+        character.id,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    connection_section = context.split(
+        "CONNECTED LOCATIONS KNOWN TO PLAYER",
+        1,
+    )[1].split(
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        1,
+    )[0]
+
+    assert "Bosque da Beira do Vale" in connection_section
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        "osgar_knows_cardal_northwest_path",
+        KnowerType.PLAYER,
+        character.id,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    connection_section = context.split(
+        "CONNECTED LOCATIONS KNOWN TO PLAYER",
+        1,
+    )[1].split(
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        1,
+    )[0]
+
+    assert "Bosque da Beira do Vale" in connection_section

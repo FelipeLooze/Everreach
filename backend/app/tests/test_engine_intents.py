@@ -460,8 +460,17 @@ def test_examine_narrator_receives_discoveries_in_same_turn(
     fresh_context = captured["context"]
 
     assert "CONNECTED LOCATIONS KNOWN TO PLAYER" in fresh_context
-    assert "Bosque da Beira do Vale" in fresh_context
-    assert "noroeste -> Bosque da Beira do Vale" in fresh_context
+
+    connection_section = fresh_context.split(
+        "CONNECTED LOCATIONS KNOWN TO PLAYER",
+        1,
+    )[1].split(
+        "PLAYER CURRENT LOCATION KNOWLEDGE",
+        1,
+    )[0]
+
+    assert "noroeste -> Local desconhecido" in connection_section
+    assert "Bosque da Beira do Vale" not in connection_section
 
     assert "PLAYER SPATIAL KNOWLEDGE" in fresh_context
     assert "Local desconhecido [DISCOVERED]" in fresh_context

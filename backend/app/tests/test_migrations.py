@@ -31,6 +31,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "characters",
             "regions",
             "locations",
+            "world_developments",
             "world_times",
             "world_events",
             "character_npc_relationships",
@@ -52,6 +53,18 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert "importance" in event_columns
         assert {"owner_type", "owner_id", "subject", "source_event_id"}.issubset(
             memory_columns
+        )
+
+        development_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes(
+                "world_developments"
+            )
+        }
+
+        assert (
+            "ix_world_developments_campaign_status_next_update"
+            in development_indexes
         )
 
         with Session(engine) as session:

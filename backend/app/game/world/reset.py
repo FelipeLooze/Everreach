@@ -14,7 +14,7 @@ from app.db.models.region import Region
 from app.db.models.relationship import CharacterNPCRelationship
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.skill import CharacterSkill, CharacterTechnique
-
+from app.db.models.world_development import WorldDevelopment
 
 def delete_campaign(db: Session, campaign_id: str) -> bool:
     campaign = db.get(Campaign, campaign_id)
@@ -56,6 +56,7 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(CharacterNPCRelationship).filter(
         CharacterNPCRelationship.campaign_id == campaign_id
     ).delete(synchronize_session=False)
+    db.query(WorldDevelopment).filter(WorldDevelopment.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(WorldEvent).filter(WorldEvent.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(NPC).filter(NPC.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(SimulatedPlayer).filter(SimulatedPlayer.campaign_id == campaign_id).delete(synchronize_session=False)

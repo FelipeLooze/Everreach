@@ -113,6 +113,13 @@ class NPCActivity(StrEnum):
     WORKING = "WORKING"
     AVAILABLE = "AVAILABLE"
 
+class WorldDevelopmentStatus(StrEnum):
+    PLANNED = "PLANNED"
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
 class TravelIncidentKind(StrEnum):
     DELAY = "DELAY"
     FATIGUE = "FATIGUE"

@@ -22,6 +22,7 @@ from app.db.models.region import Region
 from app.db.models.relationship import CharacterNPCRelationship
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.skill import CharacterSkill, CharacterTechnique, Skill, Technique
+from app.db.models.world_development import WorldDevelopment
 
 __all__ = [
     "Campaign",
@@ -51,4 +52,5 @@ __all__ = [
     "CharacterTechnique",
     "Skill",
     "Technique",
+    "WorldDevelopment",
 ]

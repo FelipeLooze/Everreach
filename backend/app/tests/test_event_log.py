@@ -162,3 +162,100 @@ def test_log_event_can_record_historical_world_minute(
         ).total_minutes()
         == current_world_minute
     )
+
+def test_recent_events_orders_by_world_time_not_creation_time(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Historical Event Ordering",
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    day = 24 * 60
+
+    # Criado primeiro, mas aconteceu mais tarde.
+    later_event = log_event(
+        db_session,
+        campaign.id,
+        EventType.PLAYER_RESTED,
+        actor_type="character",
+        actor_id="char_a",
+        occurred_world_minute=(
+            start_world_minute + 10 * day
+        ),
+    )
+
+    # Criado depois, mas aconteceu antes.
+    earlier_event = log_event(
+        db_session,
+        campaign.id,
+        EventType.PLAYER_RESTED,
+        actor_type="character",
+        actor_id="char_a",
+        occurred_world_minute=(
+            start_world_minute + 5 * day
+        ),
+    )
+
+    events = recent_events(
+        db_session,
+        campaign.id,
+        actor_id="char_a",
+    )
+
+    assert events == [
+        later_event,
+        earlier_event,
+    ]
+
+def test_recent_events_limit_uses_world_time_recency(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Historical Event Limit",
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    old_event = log_event(
+        db_session,
+        campaign.id,
+        EventType.PLAYER_RESTED,
+        occurred_world_minute=start_world_minute + 100,
+    )
+
+    newest_event = log_event(
+        db_session,
+        campaign.id,
+        EventType.PLAYER_RESTED,
+        occurred_world_minute=start_world_minute + 300,
+    )
+
+    middle_event = log_event(
+        db_session,
+        campaign.id,
+        EventType.PLAYER_RESTED,
+        occurred_world_minute=start_world_minute + 200,
+    )
+
+    events = recent_events(
+        db_session,
+        campaign.id,
+        limit=2,
+    )
+
+    assert events == [
+        newest_event,
+        middle_event,
+    ]
+
+    assert old_event not in events

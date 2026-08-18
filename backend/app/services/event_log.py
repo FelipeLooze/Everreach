@@ -96,7 +96,11 @@ def recent_events(
         query = query.filter(WorldEvent.importance >= min_importance)
     return (
         query
-        .order_by(WorldEvent.created_at.desc())
+        .order_by(
+            WorldEvent.world_minute.desc(),
+            WorldEvent.created_at.desc(),
+            WorldEvent.id.desc(),
+        )
         .limit(limit)
         .all()
     )

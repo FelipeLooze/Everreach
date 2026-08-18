@@ -290,3 +290,39 @@ def eligible_transfer_candidates(
             ),
         )
     )
+
+def select_transfer_candidate(
+    db: Session,
+    campaign_id: str,
+    pair: SocialPair,
+    opportunity_world_minute: int,
+) -> SocialTransferCandidate | None:
+    candidates = eligible_transfer_candidates(
+        db,
+        campaign_id,
+        pair,
+    )
+
+    if not candidates:
+        return None
+
+    seed = (
+        f"{campaign_id}:"
+        f"{opportunity_world_minute}:"
+        f"{pair.first.knower_type.value}:"
+        f"{pair.first.knower_id}:"
+        f"{pair.second.knower_type.value}:"
+        f"{pair.second.knower_id}"
+    ).encode("utf-8")
+
+    digest = hashlib.sha256(
+        seed
+    ).digest()
+
+    index = int.from_bytes(
+        digest[:8],
+        byteorder="big",
+        signed=False,
+    ) % len(candidates)
+
+    return candidates[index]

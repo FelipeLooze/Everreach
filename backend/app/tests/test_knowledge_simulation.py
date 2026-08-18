@@ -614,3 +614,195 @@ def test_secret_fact_is_not_eligible_for_automatic_social_transfer(
     )
 
     assert candidates == ()
+
+def test_social_transfer_candidate_selection_is_deterministic(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Deterministic Transfer Candidate",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    first = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    second = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Target",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    db_session.add_all(
+        [
+            first,
+            second,
+        ]
+    )
+    db_session.flush()
+
+    facts = [
+        KnowledgeFact(
+            campaign_id=campaign.id,
+            fact_key="social_fact_a",
+            statement="Fato A.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign.id,
+            fact_key="social_fact_b",
+            statement="Fato B.",
+        ),
+    ]
+
+    db_session.add_all(facts)
+    db_session.flush()
+
+    for fact in facts:
+        db_session.add(
+            KnowledgeKnower(
+                fact_id=fact.id,
+                knower_type=KnowerType.NPC.value,
+                knower_id=first.id,
+                source="percepção direta",
+                certainty=(
+                    KnowledgeCertainty.CONFIRMED.value
+                ),
+            )
+        )
+
+    db_session.flush()
+
+    pair = knowledge_simulation.SocialPair(
+        first=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=first.id,
+            location_id=location.id,
+        ),
+        second=knowledge_simulation.SocialParticipant(
+            knower_type=(
+                KnowerType.SIMULATED_PLAYER
+            ),
+            knower_id=second.id,
+            location_id=location.id,
+        ),
+    )
+
+    opportunity_world_minute = 24 * 60
+
+    first_selection = (
+        knowledge_simulation
+        .select_transfer_candidate(
+            db_session,
+            campaign.id,
+            pair,
+            opportunity_world_minute,
+        )
+    )
+
+    second_selection = (
+        knowledge_simulation
+        .select_transfer_candidate(
+            db_session,
+            campaign.id,
+            pair,
+            opportunity_world_minute,
+        )
+    )
+
+    assert first_selection is not None
+    assert second_selection is not None
+
+    assert (
+        first_selection
+        == second_selection
+    )
+
+    assert (
+        first_selection.fact_key
+        in {
+            "social_fact_a",
+            "social_fact_b",
+        }
+    )
+
+    assert (
+        first_selection.source.knower_id
+        == first.id
+    )
+
+    assert (
+        first_selection.target.knower_id
+        == second.id
+    )
+
+def test_social_transfer_candidate_selection_returns_none_without_candidates(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "No Transfer Candidate",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    first = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="First",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    second = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Second",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            first,
+            second,
+        ]
+    )
+    db_session.flush()
+
+    pair = knowledge_simulation.SocialPair(
+        first=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=first.id,
+            location_id=location.id,
+        ),
+        second=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=second.id,
+            location_id=location.id,
+        ),
+    )
+
+    result = (
+        knowledge_simulation
+        .select_transfer_candidate(
+            db_session,
+            campaign.id,
+            pair,
+            24 * 60,
+        )
+    )
+
+    assert result is None

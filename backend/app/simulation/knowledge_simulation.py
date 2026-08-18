@@ -42,6 +42,7 @@ class SocialTransferCandidate:
     source: SocialParticipant
     target: SocialParticipant
     fact_key: str
+    social_priority: int
 
 def tick(
     db: Session,
@@ -297,6 +298,7 @@ def eligible_transfer_candidates(
                     source=source,
                     target=target,
                     fact_key=fact.fact_key,
+                    social_priority=fact.social_priority,
                 )
             )
 
@@ -341,13 +343,26 @@ def select_transfer_candidate(
         seed
     ).digest()
 
-    index = int.from_bytes(
+    total_weight = sum(
+        candidate.social_priority
+        for candidate in candidates
+    )
+
+    ticket = int.from_bytes(
         digest[:8],
         byteorder="big",
         signed=False,
-    ) % len(candidates)
+    ) % total_weight
 
-    return candidates[index]
+    for candidate in candidates:
+        if ticket < candidate.social_priority:
+            return candidate
+
+        ticket -= candidate.social_priority
+
+    raise RuntimeError(
+        "weighted social candidate selection failed"
+)
 
 def _social_opportunity_actor_id(
     opportunity_world_minute: int,

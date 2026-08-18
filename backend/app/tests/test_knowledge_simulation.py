@@ -536,6 +536,7 @@ def test_social_transfer_candidates_follow_knowledge_difference(
     assert candidate.source.knower_id == first.id
     assert candidate.target.knower_id == second.id
     assert candidate.fact_key == fact.fact_key
+    assert candidate.social_priority == 1
 
 def test_secret_fact_is_not_eligible_for_automatic_social_transfer(
     db_session,
@@ -1400,3 +1401,121 @@ def test_zero_priority_fact_is_not_eligible_for_social_transfer(
         != fact.fact_key
         for candidate in candidates
     )
+
+def test_social_transfer_selection_uses_social_priority_weight(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Weighted Social Selection",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Weighted Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Weighted Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    low_priority = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="priority_a",
+        statement="Assunto comum.",
+        social_priority=1,
+    )
+
+    high_priority = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="priority_b",
+        statement="Assunto muito importante.",
+        social_priority=3,
+    )
+
+    db_session.add_all(
+        [
+            low_priority,
+            high_priority,
+        ]
+    )
+    db_session.flush()
+
+    for fact in (
+        low_priority,
+        high_priority,
+    ):
+        teach_fact(
+            db_session,
+            campaign.id,
+            fact.fact_key,
+            KnowerType.NPC,
+            source.id,
+            source="percepção direta",
+            certainty=KnowledgeCertainty.CONFIRMED,
+        )
+
+    pair = knowledge_simulation.SocialPair(
+        first=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=source.id,
+            location_id=location.id,
+        ),
+        second=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=target.id,
+            location_id=location.id,
+        ),
+    )
+
+    class FakeHash:
+        def digest(self):
+            return (
+                (2).to_bytes(
+                    8,
+                    byteorder="big",
+                    signed=False,
+                )
+                + bytes(24)
+            )
+
+    monkeypatch.setattr(
+        knowledge_simulation.hashlib,
+        "sha256",
+        lambda value: FakeHash(),
+    )
+
+    selected = (
+        knowledge_simulation
+        .select_transfer_candidate(
+            db_session,
+            campaign.id,
+            pair,
+            24 * 60,
+        )
+    )
+
+    assert selected is not None
+    assert selected.fact_key == "priority_b"
+    assert selected.social_priority == 3

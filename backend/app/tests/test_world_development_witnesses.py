@@ -1,6 +1,8 @@
 from app.db.models.npc import NPC
 from app.core.enums import EventType
 from app.db.models.event import WorldEvent
+from app.simulation import development_simulation
+from app.game.time.clock import advance_world_time
 from app.game.character.service import (
     create_character,
 )
@@ -446,3 +448,129 @@ def test_local_character_witnesses_returns_only_alive_characters_at_location(
     assert present.id in witness_ids
     assert dead.id not in witness_ids
     assert absent.id not in witness_ids
+
+def test_historical_catch_up_does_not_use_current_location_as_direct_perception(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Historical Witness",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    witness = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Historical Witness",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add(witness)
+    db_session.flush()
+
+    interval = 7 * 24 * 60
+
+    development = create_world_development(
+        db_session,
+        campaign.id,
+        WorldDevelopmentType.CONSTRUCTION,
+        "Ponte histórica",
+        interval_minutes=interval,
+        payload={
+            "progress": 0,
+            "progress_per_update": 10,
+        },
+        location_id=location.id,
+    )
+
+    # A criação acontece no presente e pode ser percebida.
+    creation_fact = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.subject
+            == f"world_development:{development.id}",
+            KnowledgeFact.statement
+            == "Ponte histórica começou.",
+        )
+        .one()
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == creation_fact.id,
+            KnowledgeKnower.knower_id
+            == witness.id,
+        )
+        .count()
+        == 1
+    )
+
+    # Pulamos dois intervalos de uma vez.
+    # O primeiro update será histórico;
+    # o segundo ocorre exatamente no tempo atual.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        2 * interval,
+    )
+
+    development_simulation.tick(
+        db_session,
+        campaign.id,
+        2 * interval,
+    )
+
+    db_session.flush()
+
+    historical_fact = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.subject
+            == f"world_development:{development.id}",
+            KnowledgeFact.statement
+            == "Ponte histórica atingiu 10% de progresso.",
+        )
+        .one()
+    )
+
+    current_fact = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.subject
+            == f"world_development:{development.id}",
+            KnowledgeFact.statement
+            == "Ponte histórica atingiu 20% de progresso.",
+        )
+        .one()
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == historical_fact.id,
+            KnowledgeKnower.knower_id
+            == witness.id,
+        )
+        .count()
+        == 0
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == current_fact.id,
+            KnowledgeKnower.knower_id
+            == witness.id,
+        )
+        .count()
+        == 1
+    )

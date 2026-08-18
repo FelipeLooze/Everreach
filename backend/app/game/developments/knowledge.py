@@ -1,10 +1,10 @@
 import json
-
 from sqlalchemy.orm import Session
 from app.db.models.npc import NPC
 from app.db.models.event import WorldEvent
 from app.db.models.knowledge import KnowledgeFact
 from app.db.models.character import Character
+from app.game.time.clock import get_world_time
 from app.game.knowledge.service import create_event_fact
 from app.game.npcs.service import teach_fact
 from app.core.enums import (
@@ -74,6 +74,13 @@ def local_npc_witnesses(
     db: Session,
     event: WorldEvent,
 ) -> list[NPC]:
+
+    if not can_resolve_direct_witnesses(
+        db,
+        event,
+    ):
+        return []
+    
     payload = json.loads(
         event.payload_json or "{}"
     )
@@ -100,6 +107,13 @@ def local_character_witnesses(
     db: Session,
     event: WorldEvent,
 ) -> list[Character]:
+
+    if not can_resolve_direct_witnesses(
+        db,
+        event,
+    ):
+        return []
+    
     payload = json.loads(
         event.payload_json or "{}"
     )
@@ -155,3 +169,17 @@ def teach_development_fact_to_local_witnesses(
             source="percepção direta",
             certainty=KnowledgeCertainty.CONFIRMED,
         )
+
+def can_resolve_direct_witnesses(
+    db: Session,
+    event: WorldEvent,
+) -> bool:
+    current_world_minute = get_world_time(
+        db,
+        event.campaign_id,
+    ).total_minutes()
+
+    return (
+        event.world_minute
+        == current_world_minute
+    )

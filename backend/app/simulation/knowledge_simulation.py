@@ -19,6 +19,7 @@ from app.simulation.cadence import (
 )
 from app.core.enums import (
     EventType,
+    KnowledgeCertainty,
     KnowerType,
     NPCActivity,
     SimulatedPlayerStatus,
@@ -93,6 +94,23 @@ def tick(
             opportunity_world_minutes
         ),
     )
+
+def social_transfer_certainty(
+    source_certainty: KnowledgeCertainty,
+) -> KnowledgeCertainty:
+    if (
+        source_certainty
+        == KnowledgeCertainty.CONFIRMED
+    ):
+        return KnowledgeCertainty.BELIEVED
+
+    if (
+        source_certainty
+        == KnowledgeCertainty.BELIEVED
+    ):
+        return KnowledgeCertainty.RUMOR
+
+    return KnowledgeCertainty.RUMOR
 
 def eligible_social_participants(
     db: Session,
@@ -427,6 +445,21 @@ def resolve_social_opportunity(
         )
 
     if candidate is not None:
+        source_certainty = (
+            _participant_fact_certainty(
+                db,
+                candidate.source,
+                candidate.fact_key,
+                campaign_id,
+            )
+        )
+
+        target_certainty = (
+            social_transfer_certainty(
+                source_certainty
+            )
+        )
+
         propagated = propagate_fact_locally(
             db,
             campaign_id,
@@ -435,6 +468,7 @@ def resolve_social_opportunity(
             candidate.source.knower_id,
             candidate.target.knower_type,
             candidate.target.knower_id,
+            certainty=target_certainty,
         )
 
     log_event(
@@ -479,3 +513,38 @@ def resolve_social_opportunity(
     )
 
     return propagated
+
+def _participant_fact_certainty(
+    db: Session,
+    participant: SocialParticipant,
+    fact_key: str,
+    campaign_id: str,
+) -> KnowledgeCertainty:
+    link = (
+        db.query(KnowledgeKnower)
+        .join(
+            KnowledgeFact,
+            KnowledgeFact.id
+            == KnowledgeKnower.fact_id,
+        )
+        .filter(
+            KnowledgeFact.campaign_id
+            == campaign_id,
+            KnowledgeFact.fact_key
+            == fact_key,
+            KnowledgeKnower.knower_type
+            == participant.knower_type.value,
+            KnowledgeKnower.knower_id
+            == participant.knower_id,
+        )
+        .first()
+    )
+
+    if link is None:
+        raise ValueError(
+            "social transfer source does not know the fact"
+        )
+
+    return KnowledgeCertainty(
+        link.certainty
+    )

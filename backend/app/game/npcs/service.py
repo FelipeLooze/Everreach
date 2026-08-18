@@ -382,6 +382,8 @@ def propagate_fact(
     from_id: str,
     to_type: KnowerType,
     to_id: str,
+    *,
+    certainty: KnowledgeCertainty | None = None,
 ) -> bool:
     """Transfer one explicit fact; narrative prose can never call this implicitly."""
     fact = (
@@ -409,6 +411,14 @@ def propagate_fact(
     if knows(db, to_type, to_id, fact_key, campaign_id):
         return False
 
+    target_certainty = (
+        certainty
+        if certainty is not None
+        else KnowledgeCertainty(
+            source_link.certainty
+        )
+    )
+
     teach_fact(
         db,
         campaign_id,
@@ -416,7 +426,7 @@ def propagate_fact(
         to_type,
         to_id,
         source=f"{from_type.value.lower()}:{from_id}",
-        certainty=KnowledgeCertainty(source_link.certainty),
+        certainty=target_certainty,
     )
     event = log_event(
         db,
@@ -455,6 +465,8 @@ def propagate_fact_locally(
     from_id: str,
     to_type: KnowerType,
     to_id: str,
+    *,
+    certainty: KnowledgeCertainty | None = None,
 ) -> bool:
     source_location_id = _knower_location_id(
         db,
@@ -489,6 +501,7 @@ def propagate_fact_locally(
         from_id,
         to_type,
         to_id,
+        certainty=certainty,
     )
 
 def get_active_interlocutor(

@@ -1,4 +1,3 @@
-from app.game.world.seed import create_campaign
 from app.db.models.location import Location
 from app.simulation import knowledge_simulation
 from app.db.models.npc import NPC
@@ -921,114 +920,22 @@ def test_social_opportunity_automatically_propagates_one_fact(
         == 1
     )
 
-def test_social_opportunity_automatically_propagates_one_fact(
-    db_session,
-):
-    campaign = create_campaign(
-        db_session,
-        "Automatic Social Propagation",
-    )
-
-    region, location = seed_initial_region(
-        db_session,
-        campaign.id,
-    )
-
-    # Remove participantes autônomos do seed
-    # para controlar exatamente o par do teste.
-    db_session.query(NPC).filter(
-        NPC.campaign_id == campaign.id
-    ).update(
-        {
-            NPC.activity:
-            NPCActivity.RESTING.value
-        },
-        synchronize_session=False,
-    )
-
-    db_session.query(SimulatedPlayer).filter(
-        SimulatedPlayer.campaign_id
-        == campaign.id
-    ).update(
-        {
-            SimulatedPlayer.status:
-            SimulatedPlayerStatus.DEAD.value
-        },
-        synchronize_session=False,
-    )
-
-    source = NPC(
-        campaign_id=campaign.id,
-        region_id=region.id,
-        location_id=location.id,
-        name="Source",
-        activity=NPCActivity.AVAILABLE.value,
-    )
-
-    target = NPC(
-        campaign_id=campaign.id,
-        region_id=region.id,
-        location_id=location.id,
-        name="Target",
-        activity=NPCActivity.AVAILABLE.value,
-    )
-
-    db_session.add_all(
-        [
-            source,
-            target,
-        ]
-    )
-    db_session.flush()
-
-    fact = KnowledgeFact(
-        campaign_id=campaign.id,
-        fact_key="automatic_social_fact",
-        statement="Uma nova ponte está sendo construída.",
-    )
-
-    db_session.add(fact)
-    db_session.flush()
-
-    teach_fact(
-        db_session,
-        campaign.id,
-        fact.fact_key,
-        KnowerType.NPC,
-        source.id,
-        source="percepção direta",
-        certainty=KnowledgeCertainty.CONFIRMED,
-    )
-
-    minutes = 24 * 60
-
-    advance_world_time(
-        db_session,
-        campaign.id,
-        minutes,
-    )
-
-    result = knowledge_simulation.tick(
-        db_session,
-        campaign.id,
-        minutes,
-    )
-
-    assert result.opportunities == 1
-    assert result.resolvable_opportunities == 1
-    assert result.propagations == 1
-
-    assert (
+    target_link = (
         db_session.query(KnowledgeKnower)
         .filter(
-            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.fact_id
+            == fact.id,
             KnowledgeKnower.knower_type
             == KnowerType.NPC.value,
             KnowledgeKnower.knower_id
             == target.id,
         )
-        .count()
-        == 1
+        .one()
+    )
+
+    assert (
+        target_link.certainty
+        == KnowledgeCertainty.BELIEVED.value
     )
 
 def test_same_social_opportunity_is_not_resolved_twice(
@@ -1519,3 +1426,28 @@ def test_social_transfer_selection_uses_social_priority_weight(
     assert selected is not None
     assert selected.fact_key == "priority_b"
     assert selected.social_priority == 3
+
+def test_social_transfer_certainty_degrades_hearsay():
+    assert (
+        knowledge_simulation
+        .social_transfer_certainty(
+            KnowledgeCertainty.CONFIRMED
+        )
+        == KnowledgeCertainty.BELIEVED
+    )
+
+    assert (
+        knowledge_simulation
+        .social_transfer_certainty(
+            KnowledgeCertainty.BELIEVED
+        )
+        == KnowledgeCertainty.RUMOR
+    )
+
+    assert (
+        knowledge_simulation
+        .social_transfer_certainty(
+            KnowledgeCertainty.RUMOR
+        )
+        == KnowledgeCertainty.RUMOR
+    )

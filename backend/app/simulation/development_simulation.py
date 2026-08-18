@@ -2,15 +2,18 @@ import json
 import math
 from sqlalchemy.orm import Session
 from app.services.event_log import log_event
+from app.simulation.results import WorldDevelopmentSimulationResult
+from app.db.models.world_development import WorldDevelopment
+from app.game.time.clock import get_world_time
+from app.simulation.cadence import scheduled_occurrences_due
+from app.game.developments.knowledge import (
+    create_development_event_fact,
+)
 from app.core.enums import (
     EventType,
     WorldDevelopmentStatus,
     WorldDevelopmentType,
 )
-from app.simulation.results import WorldDevelopmentSimulationResult
-from app.db.models.world_development import WorldDevelopment
-from app.game.time.clock import get_world_time
-from app.simulation.cadence import scheduled_occurrences_due
 
 
 def due_developments(
@@ -116,7 +119,7 @@ def _process_construction(
 
         completed = update_progress >= 100
 
-        log_event(
+        event = log_event(
             db,
             development.campaign_id,
             (
@@ -140,6 +143,10 @@ def _process_construction(
             occurred_world_minute=occurred_world_minute,
         )
 
+        create_development_event_fact(
+            db,
+            event,
+        )
     progress = min(
         100,
         progress

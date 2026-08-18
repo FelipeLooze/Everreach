@@ -319,7 +319,30 @@ def test_world_development_events_do_not_create_automatic_memory_or_knowledge(
 
     assert (
         db_session.query(KnowledgeFact).count()
-        == fact_count_before
+        == fact_count_before + 1
+    )
+
+    created_fact = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.subject
+            == f"world_development:{development.id}"
+        )
+        .one()
+    )
+
+    assert created_fact.statement == (
+        "Ponte distante começou."
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == created_fact.id
+        )
+        .count()
+        == 0
     )
 
     assert (
@@ -367,9 +390,42 @@ def test_world_development_events_do_not_create_automatic_memory_or_knowledge(
         == memory_count_before
     )
 
+    development_facts = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.subject
+            == f"world_development:{development.id}"
+        )
+        .all()
+    )
+
+    assert len(development_facts) == 2
+
+    assert {
+        fact.statement
+        for fact in development_facts
+    } == {
+        "Ponte distante começou.",
+        "Ponte distante foi concluído.",
+    }
+
     assert (
         db_session.query(KnowledgeFact).count()
-        == fact_count_before
+        == fact_count_before + 2
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id.in_(
+                [
+                    fact.id
+                    for fact in development_facts
+                ]
+            )
+        )
+        .count()
+        == 0
     )
 
     assert (

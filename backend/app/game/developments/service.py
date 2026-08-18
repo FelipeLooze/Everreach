@@ -1,10 +1,4 @@
 import json
-
-from app.core.enums import (
-    EventType,
-    WorldDevelopmentStatus,
-    WorldDevelopmentType,
-)
 from sqlalchemy.orm import Session
 from app.db.models.campaign import Campaign
 from app.db.models.location import Location
@@ -12,6 +6,15 @@ from app.db.models.region import Region
 from app.db.models.world_development import WorldDevelopment
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
+
+from app.game.developments.knowledge import (
+    create_development_event_fact,
+)
+from app.core.enums import (
+    EventType,
+    WorldDevelopmentStatus,
+    WorldDevelopmentType,
+)
 
 def create_world_development(
     db: Session,
@@ -162,7 +165,7 @@ def create_world_development(
     db.add(development)
     db.flush()
 
-    log_event(
+    event = log_event(
         db,
         campaign_id,
         EventType.WORLD_DEVELOPMENT_CREATED,
@@ -177,6 +180,11 @@ def create_world_development(
             "status": development.status,
         },
         occurred_world_minute=current_world_minute,
+    )
+
+    create_development_event_fact(
+        db,
+        event,
     )
 
     return development

@@ -1,8 +1,9 @@
 import json
 
 import pytest
-
+from app.db.models.event import WorldEvent
 from app.core.enums import (
+    EventType,
     WorldDevelopmentStatus,
     WorldDevelopmentType,
 )
@@ -80,6 +81,38 @@ def test_create_world_development_sets_schedule(
         "progress": 0,
         "progress_per_update": 10,
         "interval_minutes": interval,
+    }
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == development.id,
+            WorldEvent.event_type
+            == EventType.WORLD_DEVELOPMENT_CREATED.value,
+        )
+        .all()
+    )
+
+    assert len(events) == 1
+
+    event = events[0]
+
+    assert event.world_minute == now
+    assert event.importance == 1
+
+    event_payload = json.loads(
+        event.payload_json
+    )
+
+    assert event_payload == {
+        "development_id": development.id,
+        "development_type": (
+            WorldDevelopmentType.CONSTRUCTION.value
+        ),
+        "title": "Nova ponte",
+        "region_id": region.id,
+        "location_id": village.id,
+        "status": WorldDevelopmentStatus.ACTIVE.value,
     }
 
 

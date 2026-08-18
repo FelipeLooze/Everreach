@@ -39,6 +39,14 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
         }
+
+        fact_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns(
+                "knowledge_facts"
+            )
+        }
+
         knower_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_knowers")
         }
@@ -52,6 +60,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             )
         }
         assert "uq_knowledge_fact_campaign_key" in fact_constraints
+        assert "social_priority" in fact_columns
         assert "uq_knowledge_knower_fact_identity" in knower_constraints
         assert "ix_location_connection_origin_active" in connection_indexes
         event_columns = {item["name"] for item in inspect(engine).get_columns("world_events")}

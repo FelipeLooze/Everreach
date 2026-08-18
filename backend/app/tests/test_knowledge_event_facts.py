@@ -1,3 +1,4 @@
+import pytest
 from app.core.enums import EventType
 from app.db.models.knowledge import (
     KnowledgeFact,
@@ -35,7 +36,7 @@ def test_create_event_fact_records_world_truth_without_knower(
             "Uma ponte começou a ser construída."
         ),
     )
-
+    assert fact.social_priority == 1
     assert fact.campaign_id == campaign.id
     assert fact.subject == (
         "world_development:dev_test"
@@ -60,6 +61,62 @@ def test_create_event_fact_records_world_truth_without_knower(
         == 0
     )
 
+
+def test_create_event_fact_accepts_explicit_social_priority(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Important Event Fact",
+    )
+
+    event = log_event(
+        db_session,
+        campaign.id,
+        EventType.WORLD_DEVELOPMENT_CREATED,
+        actor_type="world_development",
+        actor_id="dev_priority",
+        payload={},
+    )
+
+    fact = create_event_fact(
+        db_session,
+        event,
+        subject="world_development:dev_priority",
+        statement="Uma ponte importante começou.",
+        social_priority=3,
+    )
+
+    assert fact.social_priority == 3
+
+def test_create_event_fact_rejects_invalid_social_priority(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Invalid Social Priority",
+    )
+
+    event = log_event(
+        db_session,
+        campaign.id,
+        EventType.WORLD_DEVELOPMENT_CREATED,
+        actor_type="world_development",
+        actor_id="dev_invalid_priority",
+        payload={},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="social_priority",
+    ):
+        create_event_fact(
+            db_session,
+            event,
+            subject="world_development:dev_invalid_priority",
+            statement="Fato inválido.",
+            social_priority=4,
+        )
 
 def test_create_event_fact_is_idempotent(
     db_session,

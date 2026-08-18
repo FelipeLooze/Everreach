@@ -1,10 +1,16 @@
 from datetime import datetime, timezone
-
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
-
 from app.core.ids import generate_id
 from app.db.base import Base
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 
 
 class KnowledgeFact(Base):
@@ -22,7 +28,11 @@ class KnowledgeFact(Base):
     fact_key: Mapped[str] = mapped_column(String, nullable=False)
     statement: Mapped[str] = mapped_column(String, nullable=False)
     is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
-
+    social_priority: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
 
 class KnowledgeKnower(Base):
     """Links a fact to whoever (player / NPC / simulated player) knows it.

@@ -1,7 +1,11 @@
 from sqlalchemy.orm import Session
-from app.db.models.event import WorldEvent
+
 from app.core.enums import KnowerType
-from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.db.models.event import WorldEvent
+from app.db.models.knowledge import (
+    KnowledgeFact,
+    KnowledgeKnower,
+)
 
 
 def explicitly_knows_name(
@@ -37,6 +41,7 @@ def explicitly_knows_name(
         for (statement,) in rows
     )
 
+
 def create_event_fact(
     db: Session,
     event: WorldEvent,
@@ -44,6 +49,7 @@ def create_event_fact(
     subject: str,
     statement: str,
     is_secret: bool = False,
+    social_priority: int = 1,
 ) -> KnowledgeFact:
     """
     Create an immutable world-truth fact backed by a structured event.
@@ -51,6 +57,14 @@ def create_event_fact(
     Creating the fact does not make any player, NPC, or simulated
     player know it.
     """
+
+    if (
+        social_priority < 0
+        or social_priority > 3
+    ):
+        raise ValueError(
+            "social_priority must be between 0 and 3"
+        )
 
     fact_key = f"world_event:{event.id}"
 
@@ -74,6 +88,7 @@ def create_event_fact(
         fact_key=fact_key,
         statement=statement,
         is_secret=is_secret,
+        social_priority=social_priority,
     )
 
     db.add(fact)

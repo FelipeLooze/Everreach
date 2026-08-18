@@ -1,7 +1,7 @@
 import json
 
 from sqlalchemy.orm import Session
-
+from app.db.models.npc import NPC
 from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.db.models.knowledge import KnowledgeFact
@@ -61,4 +61,30 @@ def create_development_event_fact(
         event,
         subject=subject,
         statement=statement,
+    )
+
+def local_npc_witnesses(
+    db: Session,
+    event: WorldEvent,
+) -> list[NPC]:
+    payload = json.loads(
+        event.payload_json or "{}"
+    )
+
+    location_id = payload.get(
+        "location_id"
+    )
+
+    if location_id is None:
+        return []
+
+    return (
+        db.query(NPC)
+        .filter(
+            NPC.campaign_id == event.campaign_id,
+            NPC.location_id == location_id,
+            NPC.alive.is_(True),
+        )
+        .order_by(NPC.id)
+        .all()
     )

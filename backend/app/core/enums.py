@@ -112,6 +112,9 @@ class NPCActivity(StrEnum):
     RESTING = "RESTING"
     WORKING = "WORKING"
     AVAILABLE = "AVAILABLE"
+    
+class WorldDevelopmentType(StrEnum):
+    CONSTRUCTION = "CONSTRUCTION"
 
 class WorldDevelopmentStatus(StrEnum):
     PLANNED = "PLANNED"

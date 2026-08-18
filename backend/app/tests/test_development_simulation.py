@@ -1,8 +1,12 @@
+import json
 from app.simulation import development_simulation
-from app.core.enums import WorldDevelopmentStatus
 from app.db.models.world_development import WorldDevelopment
 from app.game.time.clock import get_world_time
 from app.game.world.seed import create_campaign
+from app.core.enums import (
+    WorldDevelopmentStatus,
+    WorldDevelopmentType,
+)
 
 def test_development_simulation_currently_makes_no_changes(
     db_session,
@@ -300,3 +304,200 @@ def test_development_tick_processes_due_entries_and_counts_only_changes(
     ]
 
     assert result.changes == 2
+
+def test_construction_advances_when_due(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Construction Progress",
+    )
+
+    now = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    construction = WorldDevelopment(
+        campaign_id=campaign.id,
+        development_type=(
+            WorldDevelopmentType.CONSTRUCTION.value
+        ),
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Ponte em construção",
+        started_world_minute=now,
+        next_update_world_minute=now,
+        payload_json=(
+            '{"progress": 20, '
+            '"progress_per_update": 10, '
+            '"interval_minutes": 10080}'
+        ),
+    )
+
+    db_session.add(construction)
+    db_session.flush()
+
+    result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+    )
+    db_session.flush()
+    db_session.refresh(construction)
+
+    payload = json.loads(
+        construction.payload_json
+    )
+
+    assert result.changes == 1
+    assert payload["progress"] == 30
+    assert (
+        construction.last_updated_world_minute
+        == now
+    )
+    assert (
+        construction.next_update_world_minute
+        == now + 10080
+    )
+    assert (
+        construction.status
+        == WorldDevelopmentStatus.ACTIVE.value
+    )
+
+
+def test_construction_catches_up_missed_updates(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Construction Catch Up",
+    )
+
+    start = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    interval = 7 * 24 * 60
+
+    construction = WorldDevelopment(
+        campaign_id=campaign.id,
+        development_type=(
+            WorldDevelopmentType.CONSTRUCTION.value
+        ),
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Estrada em construção",
+        started_world_minute=start,
+        next_update_world_minute=start + interval,
+        payload_json=json.dumps(
+            {
+                "progress": 0,
+                "progress_per_update": 10,
+                "interval_minutes": interval,
+            }
+        ),
+    )
+
+    db_session.add(construction)
+    db_session.flush()
+
+    from app.game.time.clock import advance_world_time
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        5 * interval,
+    )
+
+    result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        5 * interval,
+    )
+    db_session.flush()
+    db_session.refresh(construction)
+
+    payload = json.loads(
+        construction.payload_json
+    )
+
+    assert result.changes == 1
+    assert payload["progress"] == 50
+    assert (
+        construction.last_updated_world_minute
+        == start + 5 * interval
+    )
+    assert (
+        construction.next_update_world_minute
+        == start + 6 * interval
+    )
+
+
+def test_construction_completes_without_processing_extra_updates(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Construction Completion",
+    )
+
+    start = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    interval = 7 * 24 * 60
+
+    construction = WorldDevelopment(
+        campaign_id=campaign.id,
+        development_type=(
+            WorldDevelopmentType.CONSTRUCTION.value
+        ),
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Ponte quase pronta",
+        started_world_minute=start,
+        next_update_world_minute=start + interval,
+        payload_json=json.dumps(
+            {
+                "progress": 80,
+                "progress_per_update": 10,
+                "interval_minutes": interval,
+            }
+        ),
+    )
+
+    db_session.add(construction)
+    db_session.flush()
+
+    from app.game.time.clock import advance_world_time
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        5 * interval,
+    )
+
+    result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        5 * interval,
+    )
+    db_session.flush()
+    db_session.refresh(construction)
+
+    payload = json.loads(
+        construction.payload_json
+    )
+
+    assert result.changes == 1
+    assert payload["progress"] == 100
+    assert (
+        construction.status
+        == WorldDevelopmentStatus.COMPLETED.value
+    )
+    assert construction.next_update_world_minute is None
+
+    assert (
+        construction.last_updated_world_minute
+        == start + 2 * interval
+    )

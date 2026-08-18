@@ -1,11 +1,15 @@
+import json
+import math
 from sqlalchemy.orm import Session
 
-from app.core.enums import WorldDevelopmentStatus
+from app.core.enums import (
+    WorldDevelopmentStatus,
+    WorldDevelopmentType,
+)
+from app.simulation.results import WorldDevelopmentSimulationResult
 from app.db.models.world_development import WorldDevelopment
 from app.game.time.clock import get_world_time
-from app.simulation.results import (
-    WorldDevelopmentSimulationResult,
-)
+from app.simulation.cadence import scheduled_occurrences_due
 
 
 def due_developments(
@@ -37,17 +41,104 @@ def due_developments(
     )
 
 
+def _process_construction(
+    development: WorldDevelopment,
+    current_world_minute: int,
+) -> bool:
+    payload = json.loads(development.payload_json)
+
+    interval_minutes = int(
+        payload["interval_minutes"]
+    )
+    progress = int(
+        payload.get("progress", 0)
+    )
+    progress_per_update = int(
+        payload["progress_per_update"]
+    )
+
+    if progress >= 100:
+        development.status = (
+            WorldDevelopmentStatus.COMPLETED.value
+        )
+        development.next_update_world_minute = None
+        return True
+
+    if progress_per_update <= 0:
+        raise ValueError(
+            "progress_per_update must be greater than zero"
+        )
+
+    occurrences_due = scheduled_occurrences_due(
+        current_world_minute=current_world_minute,
+        next_update_world_minute=(
+            development.next_update_world_minute
+        ),
+        interval_minutes=interval_minutes,
+    )
+
+    if occurrences_due <= 0:
+        return False
+
+    updates_needed = math.ceil(
+        (100 - progress)
+        / progress_per_update
+    )
+
+    applied_updates = min(
+        occurrences_due,
+        updates_needed,
+    )
+
+    first_due_world_minute = (
+        development.next_update_world_minute
+    )
+
+    progress = min(
+        100,
+        progress
+        + applied_updates * progress_per_update,
+    )
+
+    last_processed_world_minute = (
+        first_due_world_minute
+        + (applied_updates - 1) * interval_minutes
+    )
+
+    payload["progress"] = progress
+
+    development.payload_json = json.dumps(payload)
+    development.last_updated_world_minute = (
+        last_processed_world_minute
+    )
+
+    if progress >= 100:
+        development.status = (
+            WorldDevelopmentStatus.COMPLETED.value
+        )
+        development.next_update_world_minute = None
+    else:
+        development.next_update_world_minute = (
+            first_due_world_minute
+            + applied_updates * interval_minutes
+        )
+
+    return True
+
+
 def process_development(
     db: Session,
     development: WorldDevelopment,
     current_world_minute: int,
 ) -> bool:
-    """
-    Process one due world development.
-
-    Development-specific mechanics will be added later.
-    Returning True means persistent mechanical state changed.
-    """
+    if (
+        development.development_type
+        == WorldDevelopmentType.CONSTRUCTION.value
+    ):
+        return _process_construction(
+            development,
+            current_world_minute,
+        )
 
     return False
 

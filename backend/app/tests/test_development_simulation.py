@@ -1,6 +1,7 @@
 import json
 from app.simulation import development_simulation
 from app.db.models.world_development import WorldDevelopment
+from app.db.models.knowledge import KnowledgeFact
 from app.game.time.clock import get_world_time
 from app.game.world.seed import create_campaign
 from app.db.models.event import WorldEvent
@@ -594,6 +595,34 @@ def test_construction_completes_without_processing_extra_updates(
     ] == [
         90,
         100,
+    ]
+
+    development_facts = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.fact_key.in_(
+                [
+                    f"world_event:{event.id}"
+                    for event in events
+                ]
+            )
+        )
+        .all()
+    )
+
+    facts_by_key = {
+        fact.fact_key: fact
+        for fact in development_facts
+    }
+
+    assert [
+        facts_by_key[
+            f"world_event:{event.id}"
+        ].social_priority
+        for event in events
+    ] == [
+        1,
+        3,
     ]
 
 def test_construction_does_not_process_same_update_twice(

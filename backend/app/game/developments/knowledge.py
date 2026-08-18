@@ -41,6 +41,7 @@ def create_development_event_fact(
         statement = (
             f"{title} começou."
         )
+        social_priority = 2
 
     elif (
         event.event_type
@@ -51,6 +52,7 @@ def create_development_event_fact(
         statement = (
             f"{title} atingiu {progress}% de progresso."
         )
+        social_priority = 1
 
     elif (
         event.event_type
@@ -59,6 +61,7 @@ def create_development_event_fact(
         statement = (
             f"{title} foi concluído."
         )
+        social_priority = 3
 
     else:
         raise ValueError(
@@ -70,6 +73,7 @@ def create_development_event_fact(
         event,
         subject=subject,
         statement=statement,
+        social_priority=social_priority,
     )
 
 def local_npc_witnesses(

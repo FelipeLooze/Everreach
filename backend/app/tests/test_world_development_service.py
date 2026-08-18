@@ -401,6 +401,21 @@ def test_world_development_events_do_not_create_automatic_memory_or_knowledge(
 
     assert len(development_facts) == 2
 
+    facts_by_key = {
+        fact.fact_key: fact
+        for fact in development_facts
+    }
+
+    assert [
+        facts_by_key[
+            f"world_event:{event.id}"
+        ].social_priority
+        for event in events
+    ] == [
+        2,
+        3,
+    ]
+
     assert {
         fact.statement
         for fact in development_facts

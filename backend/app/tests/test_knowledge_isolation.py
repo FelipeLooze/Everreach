@@ -1,10 +1,16 @@
-from app.core.enums import KnowledgeCertainty, KnowerType
+import pytest
 from app.db.models.knowledge import KnowledgeFact
 from app.game.npcs.service import known_facts, knows, teach_fact
 from app.game.world.seed import create_campaign
 from sqlalchemy.exc import IntegrityError
-import pytest
-
+from app.core.enums import (
+    KnowledgeCertainty,
+    KnowerType,
+)
+from app.db.models.knowledge import (
+    KnowledgeFact,
+    KnowledgeKnower,
+)
 
 def test_npc_does_not_know_fact_by_default(db_session):
     campaign = create_campaign(db_session, "Test Campaign")
@@ -102,3 +108,68 @@ def test_teaching_the_same_fact_twice_is_idempotent(db_session):
     db_session.commit()
 
     assert len(known_facts(db_session, campaign.id, KnowerType.NPC, "npc_one")) == 1
+
+def test_teach_fact_upgrades_certainty_without_duplicate_knower(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Knowledge Certainty Upgrade",
+    )
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="certainty_upgrade",
+        statement="Uma ponte caiu.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        "npc_test",
+        certainty=KnowledgeCertainty.RUMOR,
+    )
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        "npc_test",
+        certainty=KnowledgeCertainty.BELIEVED,
+    )
+
+    link = (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id
+            == "npc_test",
+        )
+        .one()
+    )
+
+    assert (
+        link.certainty
+        == KnowledgeCertainty.BELIEVED.value
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == fact.id,
+            KnowledgeKnower.knower_id
+            == "npc_test",
+        )
+        .count()
+        == 1
+    )

@@ -1,21 +1,33 @@
 import pytest
 
-from app.core.enums import EventType, KnowerType, MemoryOwnerType
 from app.db.models.event import WorldEvent
-from app.db.models.knowledge import KnowledgeKnower
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.location import Location
 from app.ai.memory_manager import get_relevant_memories
 from app.game.character.service import create_character
 from app.game.relationships.service import record_npc_interaction
-from app.game.world.seed import create_campaign, seed_initial_region
+from app.game.world.seed import (
+    create_campaign, 
+    seed_initial_region,
+)
 from app.game.npcs.service import (
     knows,
+    teach_fact,
     propagate_fact,
     propagate_fact_locally,
 )
-
+from app.db.models.knowledge import (
+    KnowledgeFact, 
+    KnowledgeKnower,
+)
+from app.core.enums import (
+    EventType,
+    KnowledgeCertainty,
+    MemoryOwnerType,
+    KnowerType,
+    NPCActivity,
+)
 
 def _scene(db_session):
     campaign = create_campaign(db_session, "Memory Test")
@@ -283,3 +295,111 @@ def test_local_knowledge_propagation_rejects_people_at_different_locations(
     )
 
     assert propagated_events == 0
+
+def test_propagate_fact_upgrades_existing_weaker_certainty(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Propagation Certainty Upgrade",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Confirmed Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Rumor Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="certainty_upgrade_propagation",
+        statement="A ponte caiu.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        certainty=KnowledgeCertainty.CONFIRMED,
+    )
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        target.id,
+        certainty=KnowledgeCertainty.RUMOR,
+    )
+
+    changed = propagate_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        KnowerType.NPC,
+        target.id,
+    )
+
+    assert changed is True
+
+    target_link = (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .one()
+    )
+
+    assert (
+        target_link.certainty
+        == KnowledgeCertainty.CONFIRMED.value
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id
+            == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .count()
+        == 1
+    )

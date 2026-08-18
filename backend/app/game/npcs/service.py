@@ -166,6 +166,14 @@ def relevant_known_facts(
         for fact, link in rows
     ]
 
+def _certainty_rank(
+    certainty: KnowledgeCertainty,
+) -> int:
+    return {
+        KnowledgeCertainty.RUMOR: 1,
+        KnowledgeCertainty.BELIEVED: 2,
+        KnowledgeCertainty.CONFIRMED: 3,
+    }[certainty]
 
 def knows(db: Session, knower_type: KnowerType, knower_id: str, fact_key: str, campaign_id: str) -> bool:
     """A knower only knows a fact if there is an explicit KnowledgeKnower row.
@@ -217,19 +225,35 @@ def teach_fact(
         )
         .first()
     )
-    if exists:
-        return
 
-    db.add(
-        KnowledgeKnower(
-            fact_id=fact.id,
-            knower_type=knower_type.value,
-            knower_id=knower_id,
-            source=source,
-            certainty=certainty.value,
+    if exists:
+        current_certainty = KnowledgeCertainty(
+            exists.certainty
         )
-    )
-    db.flush()
+
+        if (
+            _certainty_rank(certainty)
+            <= _certainty_rank(
+                current_certainty
+            )
+        ):
+            return
+
+        exists.certainty = certainty.value
+        exists.source = source
+        db.flush()
+
+    else:
+        db.add(
+            KnowledgeKnower(
+                fact_id=fact.id,
+                knower_type=knower_type.value,
+                knower_id=knower_id,
+                source=source,
+                certainty=certainty.value,
+            )
+        )
+        db.flush()
 
     if (
         knower_type == KnowerType.PLAYER
@@ -408,8 +432,6 @@ def propagate_fact(
     )
     if source_link is None:
         raise ValueError("A fonte não conhece o fato que tentou compartilhar.")
-    if knows(db, to_type, to_id, fact_key, campaign_id):
-        return False
 
     source_certainty = KnowledgeCertainty(
         source_link.certainty
@@ -420,6 +442,35 @@ def propagate_fact(
         if certainty is not None
         else source_certainty
     )
+
+    target_link = (
+        db.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == to_type.value,
+            KnowledgeKnower.knower_id
+            == to_id,
+        )
+        .first()
+    )
+
+    if target_link is not None:
+        current_target_certainty = (
+            KnowledgeCertainty(
+                target_link.certainty
+            )
+        )
+
+        if (
+            _certainty_rank(
+                target_certainty
+            )
+            <= _certainty_rank(
+                current_target_certainty
+            )
+        ):
+            return False
 
     teach_fact(
         db,

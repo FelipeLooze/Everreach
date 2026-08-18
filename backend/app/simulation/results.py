@@ -23,6 +23,7 @@ class WorldDevelopmentSimulationResult:
 class KnowledgeSimulationResult:
     opportunities: int = 0
     propagations: int = 0
+    opportunity_world_minutes: tuple[int, ...] = ()
 
 @dataclass(frozen=True)
 class WorldTickResult:

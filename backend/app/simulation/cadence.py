@@ -20,6 +20,42 @@ def boundaries_crossed(
         - start_total_minutes // interval_minutes
     )
 
+def boundary_minutes_crossed(
+    end_total_minutes: int,
+    elapsed_minutes: int,
+    interval_minutes: int,
+) -> tuple[int, ...]:
+    if elapsed_minutes <= 0:
+        return ()
+
+    if interval_minutes <= 0:
+        raise ValueError(
+            "interval_minutes must be greater than zero"
+        )
+
+    start_total_minutes = (
+        end_total_minutes - elapsed_minutes
+    )
+
+    first_boundary = (
+        (
+            start_total_minutes
+            // interval_minutes
+        )
+        + 1
+    ) * interval_minutes
+
+    if first_boundary > end_total_minutes:
+        return ()
+
+    return tuple(
+        range(
+            first_boundary,
+            end_total_minutes + 1,
+            interval_minutes,
+        )
+    )
+
 def scheduled_occurrences_due(
     current_world_minute: int,
     next_update_world_minute: int | None,

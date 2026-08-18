@@ -25,6 +25,7 @@ def test_knowledge_simulation_has_no_opportunity_without_daily_boundary(
         60,
     )
 
+    assert result.opportunity_world_minutes == ()
     assert result.opportunities == 0
     assert result.propagations == 0
 
@@ -53,6 +54,10 @@ def test_knowledge_simulation_counts_daily_boundaries(
 
     assert result.opportunities == 1
     assert result.propagations == 0
+    assert (
+        result.opportunity_world_minutes
+        == (24 * 60,)
+    )
 
 
 def test_knowledge_simulation_catches_up_multiple_days(
@@ -79,3 +84,15 @@ def test_knowledge_simulation_catches_up_multiple_days(
 
     assert result.opportunities == 7
     assert result.propagations == 0
+    assert (
+        result.opportunity_world_minutes
+        == (
+            1 * 24 * 60,
+            2 * 24 * 60,
+            3 * 24 * 60,
+            4 * 24 * 60,
+            5 * 24 * 60,
+            6 * 24 * 60,
+            7 * 24 * 60,
+        )
+    )

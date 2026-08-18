@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 
 from app.game.time.clock import get_world_time
-from app.simulation.cadence import boundaries_crossed
+from app.simulation.cadence import (
+    boundary_minutes_crossed,
+)
 from app.simulation.results import KnowledgeSimulationResult
 
 
@@ -21,12 +23,19 @@ def tick(
         campaign_id,
     ).total_minutes()
 
-    opportunities = boundaries_crossed(
-        current_world_minute,
-        minutes,
-        SOCIAL_INTERVAL_MINUTES,
+    opportunity_world_minutes = (
+        boundary_minutes_crossed(
+            current_world_minute,
+            minutes,
+            SOCIAL_INTERVAL_MINUTES,
+        )
     )
 
     return KnowledgeSimulationResult(
-        opportunities=opportunities,
+        opportunities=len(
+            opportunity_world_minutes
+        ),
+        opportunity_world_minutes=(
+            opportunity_world_minutes
+        ),
     )

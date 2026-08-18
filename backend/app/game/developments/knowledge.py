@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 from app.db.models.npc import NPC
 from app.db.models.event import WorldEvent
 from app.db.models.knowledge import KnowledgeFact
+from app.db.models.character import Character
 from app.game.knowledge.service import create_event_fact
 from app.game.npcs.service import teach_fact
 from app.core.enums import (
+    CharacterStatus,
     EventType,
     KnowledgeCertainty,
     KnowerType,
@@ -94,6 +96,33 @@ def local_npc_witnesses(
         .all()
     )
 
+def local_character_witnesses(
+    db: Session,
+    event: WorldEvent,
+) -> list[Character]:
+    payload = json.loads(
+        event.payload_json or "{}"
+    )
+
+    location_id = payload.get(
+        "location_id"
+    )
+
+    if location_id is None:
+        return []
+
+    return (
+        db.query(Character)
+        .filter(
+            Character.campaign_id == event.campaign_id,
+            Character.location_id == location_id,
+            Character.status
+            == CharacterStatus.ALIVE.value,
+        )
+        .order_by(Character.id)
+        .all()
+    )
+
 def teach_development_fact_to_local_witnesses(
     db: Session,
     event: WorldEvent,
@@ -109,6 +138,20 @@ def teach_development_fact_to_local_witnesses(
             fact.fact_key,
             KnowerType.NPC,
             npc.id,
+            source="percepção direta",
+            certainty=KnowledgeCertainty.CONFIRMED,
+        )
+
+    for character in local_character_witnesses(
+        db,
+        event,
+    ):
+        teach_fact(
+            db,
+            event.campaign_id,
+            fact.fact_key,
+            KnowerType.PLAYER,
+            character.id,
             source="percepção direta",
             certainty=KnowledgeCertainty.CONFIRMED,
         )

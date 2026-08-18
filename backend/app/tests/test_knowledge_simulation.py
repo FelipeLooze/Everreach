@@ -1,4 +1,5 @@
 from app.game.world.seed import create_campaign
+from app.db.models.location import Location
 from app.simulation import knowledge_simulation
 from app.game.time.clock import (
     advance_world_time,
@@ -223,3 +224,113 @@ def test_social_participants_include_only_autonomous_active_people(
     # O sistema social autônomo nunca decide
     # uma conversa pelo protagonista.
     assert character.id not in participant_ids
+
+def test_social_pairs_only_join_people_at_same_location(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Social Pairs",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    other_location = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.id != location.id,
+        )
+        .order_by(Location.id)
+        .first()
+    )
+
+    assert other_location is not None
+
+    first = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="First Social NPC",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    second = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Second Social Person",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    absent = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Absent Social Person",
+        location_id=other_location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    db_session.add_all(
+        [
+            first,
+            second,
+            absent,
+        ]
+    )
+    db_session.flush()
+
+    pairs = (
+        knowledge_simulation
+        .eligible_social_pairs(
+            db_session,
+            campaign.id,
+        )
+    )
+
+    pair_ids = {
+        frozenset(
+            (
+                pair.first.knower_id,
+                pair.second.knower_id,
+            )
+        )
+        for pair in pairs
+    }
+
+    assert (
+        frozenset(
+            (
+                first.id,
+                second.id,
+            )
+        )
+        in pair_ids
+    )
+
+    assert (
+        frozenset(
+            (
+                first.id,
+                absent.id,
+            )
+        )
+        not in pair_ids
+    )
+
+    assert (
+        frozenset(
+            (
+                second.id,
+                absent.id,
+            )
+        )
+        not in pair_ids
+    )
+
+    assert all(
+        pair.first.knower_id
+        != pair.second.knower_id
+        for pair in pairs
+    )

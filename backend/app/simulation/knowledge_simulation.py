@@ -21,6 +21,11 @@ class SocialParticipant:
     knower_id: str
     location_id: str
 
+@dataclass(frozen=True)
+class SocialPair:
+    first: SocialParticipant
+    second: SocialParticipant
+
 def tick(
     db: Session,
     campaign_id: str,
@@ -117,3 +122,35 @@ def eligible_social_participants(
             ),
         )
     )
+
+def eligible_social_pairs(
+    db: Session,
+    campaign_id: str,
+) -> tuple[SocialPair, ...]:
+    participants = eligible_social_participants(
+        db,
+        campaign_id,
+    )
+
+    pairs: list[SocialPair] = []
+
+    for first_index, first in enumerate(
+        participants
+    ):
+        for second in participants[
+            first_index + 1:
+        ]:
+            if (
+                first.location_id
+                != second.location_id
+            ):
+                continue
+
+            pairs.append(
+                SocialPair(
+                    first=first,
+                    second=second,
+                )
+            )
+
+    return tuple(pairs)

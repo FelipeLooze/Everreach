@@ -1,15 +1,20 @@
 import pytest
 
-from app.ai.memory_manager import get_relevant_memories
 from app.core.enums import EventType, KnowerType, MemoryOwnerType
 from app.db.models.event import WorldEvent
 from app.db.models.knowledge import KnowledgeKnower
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
+from app.db.models.location import Location
+from app.ai.memory_manager import get_relevant_memories
 from app.game.character.service import create_character
-from app.game.npcs.service import knows, propagate_fact
 from app.game.relationships.service import record_npc_interaction
 from app.game.world.seed import create_campaign, seed_initial_region
+from app.game.npcs.service import (
+    knows,
+    propagate_fact,
+    propagate_fact_locally,
+)
 
 
 def _scene(db_session):
@@ -175,3 +180,106 @@ def test_relationship_changes_are_bounded_and_evented(db_session):
     )
     assert event.importance == 2
     assert event.actor_id == character.id
+
+def test_local_knowledge_propagation_between_people_at_same_location(
+    db_session,
+):
+    campaign, character, osgar = _scene(
+        db_session
+    )
+
+    fact_key = (
+        "osgar_knows_cardal_east_road"
+    )
+
+    assert not knows(
+        db_session,
+        KnowerType.PLAYER,
+        character.id,
+        fact_key,
+        campaign.id,
+    )
+
+    changed = propagate_fact_locally(
+        db_session,
+        campaign.id,
+        fact_key,
+        KnowerType.NPC,
+        osgar.id,
+        KnowerType.PLAYER,
+        character.id,
+    )
+
+    assert changed is True
+
+    assert knows(
+        db_session,
+        KnowerType.PLAYER,
+        character.id,
+        fact_key,
+        campaign.id,
+    )
+
+def test_local_knowledge_propagation_rejects_people_at_different_locations(
+    db_session,
+):
+    campaign, character, osgar = _scene(
+        db_session
+    )
+
+    fact_key = (
+        "osgar_knows_cardal_east_road"
+    )
+
+    other_location = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id
+            == character.region_id,
+            Location.id
+            != character.location_id,
+        )
+        .order_by(Location.id)
+        .first()
+    )
+
+    assert other_location is not None
+
+    character.location_id = (
+        other_location.id
+    )
+
+    db_session.flush()
+
+    with pytest.raises(
+        ValueError,
+        match="mesmo local",
+    ):
+        propagate_fact_locally(
+            db_session,
+            campaign.id,
+            fact_key,
+            KnowerType.NPC,
+            osgar.id,
+            KnowerType.PLAYER,
+            character.id,
+        )
+
+    assert not knows(
+        db_session,
+        KnowerType.PLAYER,
+        character.id,
+        fact_key,
+        campaign.id,
+    )
+
+    propagated_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.event_type
+            == EventType.KNOWLEDGE_PROPAGATED.value
+        )
+        .count()
+    )
+
+    assert propagated_events == 0

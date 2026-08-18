@@ -1,20 +1,11 @@
-from dataclasses import dataclass
-from datetime import datetime
 import json
 import re
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Sequence
-
 from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
-
-from app.core.enums import (
-    DiscoveryStatus,
-    EventType,
-    KnowledgeCertainty,
-    KnowerType,
-    MemoryOwnerType,
-    NPCActivity,
-)
+from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.character import Character
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.npc import NPC
@@ -25,6 +16,16 @@ from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import (
     discover_connection,
     set_location_discovery,
+)
+from app.core.enums import (
+    DiscoveryStatus,
+    EventType,
+    KnowledgeCertainty,
+    KnowerType,
+    MemoryOwnerType,
+    NPCActivity,
+    CharacterStatus,
+    SimulatedPlayerStatus,
 )
 
 _CONVERSATION_BOUNDARY_EVENTS = (
@@ -314,6 +315,64 @@ def meet_npc(db: Session, campaign_id: str, character_id: str, npc_id: str) -> N
     )
     return npc
 
+def _knower_location_id(
+    db: Session,
+    campaign_id: str,
+    knower_type: KnowerType,
+    knower_id: str,
+) -> str | None:
+    if knower_type == KnowerType.PLAYER:
+        character = db.get(
+            Character,
+            knower_id,
+        )
+
+        if (
+            character is None
+            or character.campaign_id != campaign_id
+            or character.status
+            != CharacterStatus.ALIVE.value
+        ):
+            return None
+
+        return character.location_id
+
+    if knower_type == KnowerType.NPC:
+        npc = db.get(
+            NPC,
+            knower_id,
+        )
+
+        if (
+            npc is None
+            or npc.campaign_id != campaign_id
+            or not npc.alive
+        ):
+            return None
+
+        return npc.location_id
+
+    if (
+        knower_type
+        == KnowerType.SIMULATED_PLAYER
+    ):
+        simulated_player = db.get(
+            SimulatedPlayer,
+            knower_id,
+        )
+
+        if (
+            simulated_player is None
+            or simulated_player.campaign_id
+            != campaign_id
+            or simulated_player.status
+            != SimulatedPlayerStatus.ACTIVE.value
+        ):
+            return None
+
+        return simulated_player.location_id
+
+    return None
 
 def propagate_fact(
     db: Session,
@@ -388,6 +447,49 @@ def propagate_fact(
     )
     return True
 
+def propagate_fact_locally(
+    db: Session,
+    campaign_id: str,
+    fact_key: str,
+    from_type: KnowerType,
+    from_id: str,
+    to_type: KnowerType,
+    to_id: str,
+) -> bool:
+    source_location_id = _knower_location_id(
+        db,
+        campaign_id,
+        from_type,
+        from_id,
+    )
+
+    target_location_id = _knower_location_id(
+        db,
+        campaign_id,
+        to_type,
+        to_id,
+    )
+
+    if (
+        source_location_id is None
+        or target_location_id is None
+        or source_location_id
+        != target_location_id
+    ):
+        raise ValueError(
+            "A fonte e o destino precisam estar "
+            "ativos e no mesmo local."
+        )
+
+    return propagate_fact(
+        db,
+        campaign_id,
+        fact_key,
+        from_type,
+        from_id,
+        to_type,
+        to_id,
+    )
 
 def get_active_interlocutor(
     db: Session,

@@ -30,7 +30,9 @@ export function StatusBar({ state }: { state: GameState }) {
         <Stat label="Fôlego" current={character.stamina_current} max={character.stamina_max} className="sp" />
       </div>
       <div className="status-context">
-        {location && <span>{location.name}</span>}
+        {location && (
+          <span>{location.name ?? "Local desconhecido"}</span>
+        )}
         {world_time && (
           <span>
             Dia {world_time.day}, {String(world_time.hour).padStart(2, "0")}:{String(world_time.minute).padStart(2, "0")}

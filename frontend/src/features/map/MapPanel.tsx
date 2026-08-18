@@ -23,14 +23,15 @@ export function MapPanel({ campaignId, characterId }: { campaignId: string; char
     <div>
       {map.regions.map((region) => (
         <div key={region.id} className="map-region">
-          <h4>{region.name}</h4>
-          <p>{region.description}</p>
+          <h4>{region.name ?? "Região desconhecida"}</h4>
+          {region.description && <p>{region.description}</p>}
           <ul>
             {map.locations
               .filter((loc) => loc.region_id === region.id)
               .map((loc) => (
                 <li key={loc.id}>
-                  {loc.name} ({locationTypeLabel(loc.type)}) — {discoveryStatusLabel(loc.discovery_status)}
+                  {loc.name ?? "Local desconhecido"} ({locationTypeLabel(loc.type)}) —{" "}
+                  {discoveryStatusLabel(loc.discovery_status)}
                 </li>
               ))}
           </ul>

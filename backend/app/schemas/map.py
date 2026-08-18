@@ -3,14 +3,14 @@ from pydantic import BaseModel
 
 class MapRegion(BaseModel):
     id: str
-    name: str
-    description: str
+    name: str | None
+    description: str | None
     discovery_status: str
 
 class MapLocation(BaseModel):
     id: str
     region_id: str
-    name: str
+    name: str | None
     type: str
     x: int | None
     y: int | None

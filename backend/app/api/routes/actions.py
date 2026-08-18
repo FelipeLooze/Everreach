@@ -37,5 +37,5 @@ def post_action(
         mechanical_summary=result.mechanical_summary,
         intent_type=result.intent_type,
         warnings=result.warnings,
-        state=to_game_state_response(state),
+        state=to_game_state_response(db, state),
     )

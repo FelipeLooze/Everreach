@@ -26,16 +26,16 @@ export interface Character {
 
 export interface RegionSummary {
   id: string;
-  name: string;
-  description: string;
+  name: string | null;
+  description: string | null;
   discovery_status: string;
 }
 
 export interface LocationSummary {
   id: string;
-  name: string;
+  name: string | null;
   type: string;
-  description: string;
+  description: string | null;
   discovery_status: string;
 }
 
@@ -150,15 +150,15 @@ export interface Quest {
 
 export interface MapRegion {
   id: string;
-  name: string;
-  description: string;
+  name: string | null;
+  description: string | null;
   discovery_status: string;
 }
 
 export interface MapLocation {
   id: string;
   region_id: string;
-  name: string;
+  name: string | null;
   type: string;
   x: number | null;
   y: number | null;

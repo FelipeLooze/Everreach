@@ -15,4 +15,4 @@ def get_state(campaign_id: str, character_id: str, db: Session = Depends(get_db)
         state = build_game_state(db, campaign_id, character_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return to_game_state_response(state)
+    return to_game_state_response(db, state)

@@ -150,7 +150,7 @@ def start_world(
         return WorldStartResponse(
             narrative=state.opening_narrative,
             narrator_unavailable=state.opening_narrator_unavailable,
-            state=to_game_state_response(state),
+            state=to_game_state_response(db, state),
         )
 
     nearby_names = ", ".join(
@@ -220,5 +220,5 @@ def start_world(
     return WorldStartResponse(
         narrative=narrative,
         narrator_unavailable=narrator_unavailable,
-        state=to_game_state_response(state),
+        state=to_game_state_response(db, state),
     )

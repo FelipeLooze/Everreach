@@ -5,8 +5,8 @@ from app.schemas.character import CharacterResponse
 
 class RegionSummary(BaseModel):
     id: str
-    name: str
-    description: str
+    name: str | None
+    description: str | None
     discovery_status: str
 
     model_config = {"from_attributes": True}
@@ -14,9 +14,9 @@ class RegionSummary(BaseModel):
 
 class LocationSummary(BaseModel):
     id: str
-    name: str
+    name: str | None
     type: str
-    description: str
+    description: str | None
     discovery_status: str
 
     model_config = {"from_attributes": True}

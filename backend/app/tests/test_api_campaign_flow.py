@@ -44,7 +44,7 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.status_code == 200
     assert resp.json()["narrative"] == "[test narration]"
     assert resp.json()["narrator_unavailable"] is False
-    assert resp.json()["state"]["location"]["name"] == "Cardal"
+    assert resp.json()["state"]["location"]["name"] is None
     assert resp.json()["state"]["opening_narrative"] == "[test narration]"
     assert resp.json()["state"]["world_time"] == {"year": 1, "month": 1, "day": 1, "hour": 8, "minute": 0}
     assert len(fake_llm.calls) == 1
@@ -61,8 +61,8 @@ def test_full_campaign_flow(client, fake_llm):
     state = resp.json()
     assert state["character"]["id"] == character_id
     assert state["opening_narrative"] == "[test narration]"
-    assert state["region"]["name"] == "Vale Verdejante"
-    assert state["location"]["name"] == "Cardal"
+    assert state["region"]["name"] is None
+    assert state["location"]["name"] is None
 
     resp = client.post(
         f"/api/campaigns/{campaign_id}/actions",
@@ -110,8 +110,8 @@ def test_full_campaign_flow(client, fake_llm):
     )
     assert resp.status_code == 200
     map_data = resp.json()
-    assert any(r["name"] == "Vale Verdejante" for r in map_data["regions"])
-    assert [location["name"] for location in map_data["locations"]] == ["Cardal"]
+    assert [r["name"] for r in map_data["regions"]] == [None]
+    assert [location["name"] for location in map_data["locations"]] == [None]
 
 
 def test_dead_character_action_returns_409(client):
@@ -172,3 +172,73 @@ def test_deleted_campaign_disappears_from_campaign_list(client):
     response = client.get("/api/campaigns")
     assert response.status_code == 200
     assert all(item["id"] != campaign["id"] for item in response.json())
+
+def test_player_facing_state_and_map_reveal_names_after_learning_fact(
+    client,
+    fake_llm,
+):
+    resp = client.post(
+        "/api/campaigns",
+        json={"name": "Knowledge API Test"},
+    )
+    campaign_id = resp.json()["id"]
+
+    resp = client.post(
+        f"/api/campaigns/{campaign_id}/characters",
+        json={"name": "Hero"},
+    )
+    character_id = resp.json()["id"]
+
+    resp = client.post(
+        f"/api/campaigns/{campaign_id}/start",
+        params={"character_id": character_id},
+    )
+    assert resp.status_code == 200
+
+    # Antes de aprender o fato, os nomes canônicos não são expostos.
+    state = client.get(
+        f"/api/campaigns/{campaign_id}/state",
+        params={"character_id": character_id},
+    ).json()
+
+    assert state["location"]["name"] is None
+    assert state["region"]["name"] is None
+
+    from app.core.enums import KnowerType
+    from app.db.database import get_db
+    from app.game.npcs.service import teach_fact
+    from app.main import app
+
+    db_gen = app.dependency_overrides[get_db]()
+    db = next(db_gen)
+
+    teach_fact(
+        db,
+        campaign_id,
+        "cardal_is_village",
+        KnowerType.PLAYER,
+        character_id,
+    )
+    db.commit()
+
+    state = client.get(
+        f"/api/campaigns/{campaign_id}/state",
+        params={"character_id": character_id},
+    ).json()
+
+    assert state["location"]["name"] == "Cardal"
+    assert state["region"]["name"] == "Vale Verdejante"
+
+    map_data = client.get(
+        f"/api/campaigns/{campaign_id}/map",
+        params={"character_id": character_id},
+    ).json()
+
+    assert [region["name"] for region in map_data["regions"]] == [
+        "Vale Verdejante"
+    ]
+
+    assert "Cardal" in [
+        location["name"]
+        for location in map_data["locations"]
+    ]

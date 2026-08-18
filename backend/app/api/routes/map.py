@@ -5,8 +5,9 @@ from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.game.map.service import known_map
 from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
-from app.core.enums import DiscoveryStatus
+from app.core.enums import DiscoveryStatus, KnowerType
 from app.db.models.character import Character
+from app.game.knowledge.service import explicitly_knows_name
 
 router = APIRouter(prefix="/api/campaigns", tags=["map"])
 
@@ -36,6 +37,28 @@ def get_map(
         character_id,
     )
 
+    known_location_names = {
+        loc.id: explicitly_knows_name(
+            db,
+            campaign_id,
+            KnowerType.PLAYER,
+            character.id,
+            loc.name,
+        )
+        for loc in data["locations"]
+    }
+
+    known_region_names = {
+        region.id: explicitly_knows_name(
+            db,
+            campaign_id,
+            KnowerType.PLAYER,
+            character.id,
+            region.name,
+        )
+        for region in data["regions"]
+    }
+
     locations = []
 
     for loc in data["locations"]:
@@ -53,7 +76,7 @@ def get_map(
             MapLocation(
                 id=loc.id,
                 region_id=loc.region_id,
-                name=loc.name,
+                name=loc.name if known_location_names[loc.id] else None,
                 type=loc.type,
                 x=loc.x if coordinates_known else None,
                 y=loc.y if coordinates_known else None,
@@ -65,8 +88,12 @@ def get_map(
         regions=[
             MapRegion(
                 id=region.id,
-                name=region.name,
-                description=region.description,
+                name=(
+                    region.name
+                    if known_region_names[region.id]
+                    else None
+                ),
+                description=None,
                 discovery_status=region.discovery_status,
             )
             for region in data["regions"]

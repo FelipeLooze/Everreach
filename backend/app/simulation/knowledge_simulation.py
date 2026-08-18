@@ -1,3 +1,4 @@
+import hashlib
 from sqlalchemy.orm import Session
 from app.game.time.clock import get_world_time
 from app.simulation.results import KnowledgeSimulationResult
@@ -154,3 +155,33 @@ def eligible_social_pairs(
             )
 
     return tuple(pairs)
+
+def select_social_pair(
+    db: Session,
+    campaign_id: str,
+    opportunity_world_minute: int,
+) -> SocialPair | None:
+    pairs = eligible_social_pairs(
+        db,
+        campaign_id,
+    )
+
+    if not pairs:
+        return None
+
+    seed = (
+        f"{campaign_id}:"
+        f"{opportunity_world_minute}"
+    ).encode("utf-8")
+
+    digest = hashlib.sha256(
+        seed
+    ).digest()
+
+    index = int.from_bytes(
+        digest[:8],
+        byteorder="big",
+        signed=False,
+    ) % len(pairs)
+
+    return pairs[index]

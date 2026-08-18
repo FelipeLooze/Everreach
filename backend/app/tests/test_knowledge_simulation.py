@@ -334,3 +334,104 @@ def test_social_pairs_only_join_people_at_same_location(
         != pair.second.knower_id
         for pair in pairs
     )
+
+def test_social_pair_selection_is_deterministic(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Deterministic Social Pair",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    first = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="First",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    second = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Second",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    third = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Third",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    db_session.add_all(
+        [
+            first,
+            second,
+            third,
+        ]
+    )
+    db_session.flush()
+
+    opportunity_world_minute = (
+        24 * 60
+    )
+
+    first_selection = (
+        knowledge_simulation.select_social_pair(
+            db_session,
+            campaign.id,
+            opportunity_world_minute,
+        )
+    )
+
+    second_selection = (
+        knowledge_simulation.select_social_pair(
+            db_session,
+            campaign.id,
+            opportunity_world_minute,
+        )
+    )
+
+    assert first_selection is not None
+    assert second_selection is not None
+
+    assert (
+        first_selection
+        == second_selection
+    )
+
+    assert (
+        first_selection.first.location_id
+        == first_selection.second.location_id
+    )
+
+    assert (
+        first_selection.first.knower_id
+        != first_selection.second.knower_id
+    )
+
+def test_social_pair_selection_returns_none_without_pair(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "No Social Pair",
+    )
+
+    result = (
+        knowledge_simulation.select_social_pair(
+            db_session,
+            campaign.id,
+            24 * 60,
+        )
+    )
+
+    assert result is None

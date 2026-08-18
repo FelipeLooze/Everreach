@@ -7,9 +7,14 @@ from app.game.world.seed import create_campaign
 def test_development_simulation_currently_makes_no_changes(
     db_session,
 ):
+    campaign = create_campaign(
+        db_session,
+        "Development Tick",
+    )
+
     result = development_simulation.tick(
         db_session,
-        "campaign_test",
+        campaign.id,
         60,
     )
 
@@ -206,3 +211,92 @@ def test_due_developments_are_returned_in_deterministic_order(
         "dev_b",
         "dev_c",
     ]
+
+def test_development_tick_processes_due_entries_and_counts_only_changes(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Development Processing",
+    )
+
+    now = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    first = WorldDevelopment(
+        id="dev_a",
+        campaign_id=campaign.id,
+        development_type="TEST",
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Primeiro",
+        next_update_world_minute=now,
+    )
+
+    second = WorldDevelopment(
+        id="dev_b",
+        campaign_id=campaign.id,
+        development_type="TEST",
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Segundo",
+        next_update_world_minute=now,
+    )
+
+    third = WorldDevelopment(
+        id="dev_c",
+        campaign_id=campaign.id,
+        development_type="TEST",
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Terceiro",
+        next_update_world_minute=now,
+    )
+
+    db_session.add_all(
+        [
+            third,
+            second,
+            first,
+        ]
+    )
+    db_session.flush()
+
+    processed = []
+
+    def fake_process(
+        db,
+        development,
+        current_world_minute,
+    ):
+        processed.append(
+            (
+                development.id,
+                current_world_minute,
+            )
+        )
+
+        return development.id in {
+            "dev_a",
+            "dev_c",
+        }
+
+    monkeypatch.setattr(
+        development_simulation,
+        "process_development",
+        fake_process,
+    )
+
+    result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    assert processed == [
+        ("dev_a", now),
+        ("dev_b", now),
+        ("dev_c", now),
+    ]
+
+    assert result.changes == 2

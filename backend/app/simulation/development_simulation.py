@@ -1,10 +1,11 @@
 from sqlalchemy.orm import Session
-from app.simulation.results import (
-    WorldDevelopmentSimulationResult,
-)
+
 from app.core.enums import WorldDevelopmentStatus
 from app.db.models.world_development import WorldDevelopment
 from app.game.time.clock import get_world_time
+from app.simulation.results import (
+    WorldDevelopmentSimulationResult,
+)
 
 
 def due_developments(
@@ -35,20 +36,50 @@ def due_developments(
         .all()
     )
 
+
+def process_development(
+    db: Session,
+    development: WorldDevelopment,
+    current_world_minute: int,
+) -> bool:
+    """
+    Process one due world development.
+
+    Development-specific mechanics will be added later.
+    Returning True means persistent mechanical state changed.
+    """
+
+    return False
+
+
 def tick(
     db: Session,
     campaign_id: str,
     minutes: int,
 ) -> WorldDevelopmentSimulationResult:
-    """
-    Advance persistent world developments.
-
-    Mechanical development progression will be added
-    incrementally. For now this establishes the World Tick
-    subsystem contract without changing world state.
-    """
-
     if minutes <= 0:
         return WorldDevelopmentSimulationResult()
 
-    return WorldDevelopmentSimulationResult()
+    current_world_minute = get_world_time(
+        db,
+        campaign_id,
+    ).total_minutes()
+
+    changes = 0
+
+    for development in due_developments(
+        db,
+        campaign_id,
+    ):
+        changed = process_development(
+            db,
+            development,
+            current_world_minute,
+        )
+
+        if changed:
+            changes += 1
+
+    return WorldDevelopmentSimulationResult(
+        changes=changes,
+    )

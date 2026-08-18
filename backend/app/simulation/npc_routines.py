@@ -12,6 +12,7 @@ def activity_for_role(
 
     if normalized_role in {
         "ferreiro",
+        "ferreira",
         "estalajadeiro",
     }:
         if 8 <= hour < 18:

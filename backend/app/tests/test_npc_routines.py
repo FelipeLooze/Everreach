@@ -20,3 +20,9 @@ def test_npc_rests_at_night():
 
 def test_generic_role_is_available_during_day():
     assert activity_for_role("ancião", 12) == NPCActivity.AVAILABLE
+
+def test_female_blacksmith_works_during_day():
+    assert (
+        activity_for_role("ferreira", 10)
+        == NPCActivity.WORKING
+    )

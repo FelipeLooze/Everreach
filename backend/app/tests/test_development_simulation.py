@@ -595,3 +595,86 @@ def test_construction_completes_without_processing_extra_updates(
         90,
         100,
     ]
+
+def test_construction_does_not_process_same_update_twice(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Construction Idempotency",
+    )
+
+    now = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    interval = 7 * 24 * 60
+
+    construction = WorldDevelopment(
+        campaign_id=campaign.id,
+        development_type=(
+            WorldDevelopmentType.CONSTRUCTION.value
+        ),
+        status=WorldDevelopmentStatus.ACTIVE.value,
+        title="Construção idempotente",
+        started_world_minute=now,
+        next_update_world_minute=now,
+        payload_json=json.dumps(
+            {
+                "progress": 0,
+                "progress_per_update": 10,
+                "interval_minutes": interval,
+            }
+        ),
+    )
+
+    db_session.add(construction)
+    db_session.flush()
+
+    first_result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    db_session.flush()
+
+    second_result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    db_session.flush()
+    db_session.refresh(construction)
+
+    payload = json.loads(
+        construction.payload_json
+    )
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == construction.id,
+        )
+        .all()
+    )
+
+    assert first_result.changes == 1
+    assert second_result.changes == 0
+
+    assert payload["progress"] == 10
+    assert len(events) == 1
+
+    assert (
+        events[0].event_type
+        == EventType.WORLD_DEVELOPMENT_UPDATED.value
+    )
+
+    assert events[0].world_minute == now
+
+    assert (
+        construction.next_update_world_minute
+        == now + interval
+    )

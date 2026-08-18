@@ -9,6 +9,7 @@ from app.services.event_log import log_event
 
 from app.game.developments.knowledge import (
     create_development_event_fact,
+    teach_development_fact_to_local_witnesses,
 )
 from app.core.enums import (
     EventType,
@@ -182,9 +183,15 @@ def create_world_development(
         occurred_world_minute=current_world_minute,
     )
 
-    create_development_event_fact(
+    fact = create_development_event_fact(
         db,
         event,
+    )
+
+    teach_development_fact_to_local_witnesses(
+        db,
+        event,
+        fact,
     )
 
     return development

@@ -2,10 +2,15 @@ import json
 
 from sqlalchemy.orm import Session
 from app.db.models.npc import NPC
-from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.db.models.knowledge import KnowledgeFact
 from app.game.knowledge.service import create_event_fact
+from app.game.npcs.service import teach_fact
+from app.core.enums import (
+    EventType,
+    KnowledgeCertainty,
+    KnowerType,
+)
 
 
 def create_development_event_fact(
@@ -88,3 +93,22 @@ def local_npc_witnesses(
         .order_by(NPC.id)
         .all()
     )
+
+def teach_development_fact_to_local_witnesses(
+    db: Session,
+    event: WorldEvent,
+    fact: KnowledgeFact,
+) -> None:
+    for npc in local_npc_witnesses(
+        db,
+        event,
+    ):
+        teach_fact(
+            db,
+            event.campaign_id,
+            fact.fact_key,
+            KnowerType.NPC,
+            npc.id,
+            source="percepção direta",
+            certainty=KnowledgeCertainty.CONFIRMED,
+        )

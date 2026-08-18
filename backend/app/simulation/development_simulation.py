@@ -8,6 +8,7 @@ from app.game.time.clock import get_world_time
 from app.simulation.cadence import scheduled_occurrences_due
 from app.game.developments.knowledge import (
     create_development_event_fact,
+    teach_development_fact_to_local_witnesses,
 )
 from app.core.enums import (
     EventType,
@@ -143,10 +144,17 @@ def _process_construction(
             occurred_world_minute=occurred_world_minute,
         )
 
-        create_development_event_fact(
+        fact = create_development_event_fact(
             db,
             event,
         )
+
+        teach_development_fact_to_local_witnesses(
+            db,
+            event,
+            fact,
+        )
+
     progress = min(
         100,
         progress

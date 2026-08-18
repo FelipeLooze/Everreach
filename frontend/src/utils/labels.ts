@@ -70,7 +70,9 @@ function translate(map: Record<string, string>, key: string): string {
 }
 
 export const locationTypeLabel = (type: string) => translate(LOCATION_TYPE_LABELS, type);
+const CONNECTION_TYPE_LABELS: Record<string, string> = {PATH: "trilha",ROAD: "estrada",};
 export const characterAttributeLabel = (name: string) => translate(CHARACTER_ATTRIBUTE_LABELS, name);
 export const discoveryStatusLabel = (status: string) => translate(DISCOVERY_STATUS_LABELS, status);
 export const questStatusLabel = (status: string) => translate(QUEST_STATUS_LABELS, status);
 export const eventTypeLabel = (type: string) => translate(EVENT_TYPE_LABELS, type);
+export const connectionTypeLabel = (type: string) => translate(CONNECTION_TYPE_LABELS, type.toUpperCase());

@@ -353,9 +353,79 @@ input {
   text-decoration: line-through;
 }
 
-.map-boss {
+.exploration-map {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.map-region {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.map-region-header h4,
+.map-section h4,
+.map-section h5 {
+  margin: 0;
+}
+
+.map-region-header p {
+  margin: 0.4rem 0 0;
+  color: var(--text-dim);
+}
+
+.map-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.map-location-list,
+.map-route-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-location-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-location-name {
+  font-weight: 600;
+}
+
+.map-location-meta,
+.map-route-meta {
   color: var(--text-dim);
   font-size: 0.85rem;
+}
+
+.map-route-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-route-path {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.map-route-direction {
+  color: var(--text-dim);
+}
+
+.map-route-meta {
+  margin-top: 0.3rem;
 }
 
 .menu-background {

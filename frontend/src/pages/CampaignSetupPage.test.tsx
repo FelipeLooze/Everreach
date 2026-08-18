@@ -82,13 +82,17 @@ describe("CampaignSetupPage", () => {
     mocks.listCampaigns.mockResolvedValue([]);
     renderPage();
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "CRIAR PERSONAGEM" }),
+    );
+
     fireEvent.change(screen.getByLabelText("Nome da campanha"), {
       target: { value: "  Nova Jornada  " },
     });
     fireEvent.change(screen.getByLabelText("Nome do personagem"), {
       target: { value: "  Nova Heroína  " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Criar campanha" }));
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
 
     await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Nova Jornada"));
     expect(mocks.createCharacter).toHaveBeenCalledWith("campaign_new", "Nova Heroína");
@@ -99,9 +103,14 @@ describe("CampaignSetupPage", () => {
   it("lista campanhas e continua com o personagem persistido", async () => {
     renderPage();
 
+    fireEvent.click(
+      screen.getByRole("button", { name: "CAMPANHAS" }),
+    );
+
     expect(await screen.findByText("Vale Persistente")).toBeInTheDocument();
-    expect(screen.getByText("Logan — Level 0")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByText("Logan")).toBeInTheDocument();
+    expect(screen.getByText("Level 0")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "JOGAR" }));
 
     expect(mocks.setSession).toHaveBeenCalledWith("campaign_1", "char_1");
     expect(await screen.findByText("Tela do jogo")).toBeInTheDocument();
@@ -110,6 +119,10 @@ describe("CampaignSetupPage", () => {
   it("exclui uma campanha somente após confirmação", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "CAMPANHAS" }),
+    );
 
     expect(await screen.findByText("Vale Persistente")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Excluir" }));
@@ -121,6 +134,10 @@ describe("CampaignSetupPage", () => {
   it("mantém a campanha quando a exclusão é cancelada", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
     renderPage();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "CAMPANHAS" }),
+    );
 
     expect(await screen.findByText("Vale Persistente")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Excluir" }));

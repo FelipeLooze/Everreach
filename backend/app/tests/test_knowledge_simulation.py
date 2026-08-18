@@ -1,9 +1,23 @@
+from app.game.world.seed import create_campaign
+from app.simulation import knowledge_simulation
 from app.game.time.clock import (
     advance_world_time,
 )
-from app.game.world.seed import create_campaign
-from app.simulation import knowledge_simulation
-
+from app.core.enums import (
+    NPCActivity,
+    SimulatedPlayerStatus,
+)
+from app.db.models.npc import NPC
+from app.db.models.simulated_player import (
+    SimulatedPlayer,
+)
+from app.game.character.service import (
+    create_character,
+)
+from app.game.world.seed import (
+    create_campaign,
+    seed_initial_region,
+)
 
 def test_knowledge_simulation_has_no_opportunity_without_daily_boundary(
     db_session,
@@ -104,3 +118,108 @@ def test_knowledge_simulation_catches_up_multiple_days(
         result.resolvable_opportunities
         == 1
     )
+
+def test_social_participants_include_only_autonomous_active_people(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Social Participants",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    available_npc = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Available NPC",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    working_npc = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Working NPC",
+        activity=NPCActivity.WORKING.value,
+    )
+
+    resting_npc = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Resting NPC",
+        activity=NPCActivity.RESTING.value,
+    )
+
+    dead_npc = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Dead NPC",
+        alive=False,
+    )
+
+    active_simulated = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Active Transported",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    dead_simulated = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Dead Transported",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.DEAD.value,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Player Character",
+        region.id,
+        location.id,
+    )
+
+    db_session.add_all(
+        [
+            available_npc,
+            working_npc,
+            resting_npc,
+            dead_npc,
+            active_simulated,
+            dead_simulated,
+        ]
+    )
+
+    db_session.flush()
+
+    participants = (
+        knowledge_simulation
+        .eligible_social_participants(
+            db_session,
+            campaign.id,
+        )
+    )
+
+    participant_ids = {
+        participant.knower_id
+        for participant in participants
+    }
+
+    assert available_npc.id in participant_ids
+    assert working_npc.id in participant_ids
+    assert active_simulated.id in participant_ids
+
+    assert resting_npc.id not in participant_ids
+    assert dead_npc.id not in participant_ids
+    assert dead_simulated.id not in participant_ids
+
+    # O sistema social autônomo nunca decide
+    # uma conversa pelo protagonista.
+    assert character.id not in participant_ids

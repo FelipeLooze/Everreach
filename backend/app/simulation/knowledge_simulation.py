@@ -283,6 +283,7 @@ def eligible_transfer_candidates(
                     fact_ids
                 ),
                 KnowledgeFact.is_secret.is_(False),
+                KnowledgeFact.social_priority > 0,
             )
             .order_by(
                 KnowledgeFact.fact_key

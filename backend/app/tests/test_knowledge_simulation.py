@@ -1315,3 +1315,88 @@ def test_social_catch_up_propagates_at_most_one_fact(
     )
 
     assert resolved_events == 1
+
+def test_zero_priority_fact_is_not_eligible_for_social_transfer(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Zero Priority Knowledge",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="zero_priority_fact",
+        statement="Informação pública, mas não social.",
+        social_priority=0,
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        source="percepção direta",
+        certainty=KnowledgeCertainty.CONFIRMED,
+    )
+
+    pair = knowledge_simulation.SocialPair(
+        first=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=source.id,
+            location_id=location.id,
+        ),
+        second=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=target.id,
+            location_id=location.id,
+        ),
+    )
+
+    candidates = (
+        knowledge_simulation
+        .eligible_transfer_candidates(
+            db_session,
+            campaign.id,
+            pair,
+        )
+    )
+
+    assert all(
+        candidate.fact_key
+        != fact.fact_key
+        for candidate in candidates
+    )

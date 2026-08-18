@@ -7,7 +7,11 @@ silently pretending NPCs are alive and active in the world.
 """
 
 from sqlalchemy.orm import Session
+from app.simulation.results import NPCSimulationResult
 
-
-def tick(db: Session, campaign_id: str, minutes: int) -> None:
-    return None
+def tick(
+    db: Session,
+    campaign_id: str,
+    minutes: int,
+) -> NPCSimulationResult:
+    return NPCSimulationResult()

@@ -1,7 +1,10 @@
 import random
 
 from app.simulation import world_simulation
-
+from app.simulation.results import (
+    NPCSimulationResult,
+    PlayerSimulationResult,
+)
 
 def test_world_tick_runs_subsystems_once_in_deterministic_order(
     db_session,
@@ -24,6 +27,10 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
                 rng,
             )
         )
+        return PlayerSimulationResult(
+            moved=2,
+            trained=1,
+        )
 
     def fake_npc_tick(
         db,
@@ -36,6 +43,9 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
                 campaign_id,
                 minutes,
             )
+        )
+        return NPCSimulationResult(
+            changes=3,
         )
 
     monkeypatch.setattr(
@@ -50,7 +60,7 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         fake_npc_tick,
     )
 
-    world_simulation.tick(
+    result = world_simulation.tick(
         db_session,
         "campaign_1",
         45,
@@ -70,6 +80,11 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
             45,
         ),
     ]
+    assert result.simulated_player_moves == 2
+    assert result.simulated_player_training == 1
+    assert result.npc_changes == 3
+    assert result.total_changes == 6
+    assert result.has_changes is True
 
 
 def test_world_tick_with_zero_minutes_runs_nothing(
@@ -90,13 +105,15 @@ def test_world_tick_with_zero_minutes_runs_nothing(
         lambda *args, **kwargs: calls.append("npcs"),
     )
 
-    world_simulation.tick(
+    result = world_simulation.tick(
         db_session,
         "campaign_1",
         0,
     )
 
     assert calls == []
+    assert result.total_changes == 0
+    assert result.has_changes is False
 
 
 def test_world_tick_with_negative_minutes_runs_nothing(
@@ -117,10 +134,12 @@ def test_world_tick_with_negative_minutes_runs_nothing(
         lambda *args, **kwargs: calls.append("npcs"),
     )
 
-    world_simulation.tick(
+    result = world_simulation.tick(
         db_session,
         "campaign_1",
         -15,
     )
 
     assert calls == []
+    assert result.total_changes == 0
+    assert result.has_changes is False

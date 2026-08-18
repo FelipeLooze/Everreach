@@ -6,6 +6,7 @@ from app.core.enums import EventType, SimulatedPlayerArchetype, SimulatedPlayerS
 from app.db.models.location import LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
 from app.services.event_log import log_event
+from app.simulation.results import PlayerSimulationResult
 
 ACTION_CHANCE_PER_HOUR = 0.5
 
@@ -34,14 +35,14 @@ def tick(
     campaign_id: str,
     minutes: int,
     rng: random.Random | None = None,
-) -> None:
+) -> PlayerSimulationResult:
     """Advance simulated transported people on absolute hourly opportunities.
 
     The number of opportunities depends on world-clock boundaries crossed,
     not on how the protagonist divided the elapsed time into actions.
     """
     if minutes <= 0:
-        return
+        return PlayerSimulationResult()
 
     opportunities = _hour_boundaries_crossed(
         db,
@@ -50,7 +51,10 @@ def tick(
     )
 
     if opportunities <= 0:
-        return
+        return PlayerSimulationResult()
+
+    moved = 0
+    trained = 0
 
     r = rng or random.Random()
 
@@ -74,12 +78,13 @@ def tick(
                 SimulatedPlayerArchetype.EXPLORER,
                 SimulatedPlayerArchetype.ADVENTURER,
             ):
-                _try_move(
+                if _try_move(
                     db,
                     campaign_id,
                     player,
                     r,
-                )
+                ):
+                    moved += 1
 
             elif (
                 player.archetype
@@ -90,8 +95,12 @@ def tick(
                     campaign_id,
                     player,
                 )
-
+                trained += 1
             # SOCIAL permanece parado no MVP.
+    return PlayerSimulationResult(
+        moved=moved,
+        trained=trained,
+    )
 
 
 def _try_move(db: Session, campaign_id: str, player: SimulatedPlayer, r: random.Random) -> None:
@@ -101,7 +110,7 @@ def _try_move(db: Session, campaign_id: str, player: SimulatedPlayer, r: random.
         .all()
     )
     if not connections:
-        return
+        return False
 
     destination = r.choice(connections).to_location_id
     player.location_id = destination
@@ -114,6 +123,7 @@ def _try_move(db: Session, campaign_id: str, player: SimulatedPlayer, r: random.
         actor_id=player.id,
         payload={"to_location_id": destination},
     )
+    return True
 
 
 def _train(db: Session, campaign_id: str, player: SimulatedPlayer) -> None:

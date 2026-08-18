@@ -187,12 +187,14 @@ def test_player_simulation_behaves_the_same_for_whole_and_split_time(
         120,
     )
 
-    player_simulation.tick(
+    whole_result = player_simulation.tick(
         db_session,
         whole_campaign.id,
         120,
         rng=whole_rng,
     )
+
+    assert whole_result.trained == 2
 
     # Cenário B:
     # 08:00 -> 09:00

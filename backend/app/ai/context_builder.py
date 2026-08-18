@@ -227,6 +227,7 @@ def _location_discovery_lines(
     db: Session,
     state: GameStateSnapshot,
     statuses: set[DiscoveryStatus],
+    player_facts: Sequence[KnownFact],
 ) -> list[str]:
     rows = (
         db.query(CharacterLocationDiscovery, Location)
@@ -255,8 +256,14 @@ def _location_discovery_lines(
         ):
             continue
 
+        display_name = (
+            location.name
+            if _explicit_name_known(player_facts, location.name)
+            else "Local desconhecido"
+        )
+
         lines.append(
-            f"- {location.name} [{discovery.status}]"
+            f"- {display_name} [{discovery.status}]"
         )
 
     return lines[:MAX_VISIBLE_ENTITIES]
@@ -403,6 +410,7 @@ def build_context(
             DiscoveryStatus.VISITED,
             DiscoveryStatus.MAPPED,
         },
+        all_player_facts,
     )
 
     rumored_location_lines = _location_discovery_lines(
@@ -411,6 +419,7 @@ def build_context(
         {
             DiscoveryStatus.RUMORED,
         },
+        all_player_facts,
     )
 
     wt = state.world_time

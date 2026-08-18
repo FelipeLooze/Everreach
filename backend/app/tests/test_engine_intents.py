@@ -464,7 +464,7 @@ def test_examine_narrator_receives_discoveries_in_same_turn(
     assert "noroeste -> Bosque da Beira do Vale" in fresh_context
 
     assert "PLAYER SPATIAL KNOWLEDGE" in fresh_context
-    assert "Bosque da Beira do Vale [DISCOVERED]" in fresh_context
+    assert "Local desconhecido [DISCOVERED]" in fresh_context
 
 def test_resolve_action_zero_minutes_does_not_advance_clock_or_tick(
     db_session,

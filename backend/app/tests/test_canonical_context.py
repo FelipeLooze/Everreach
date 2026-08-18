@@ -250,7 +250,8 @@ def test_rumored_location_is_explicitly_marked_as_rumor(db_session):
     )[0]
 
     assert "RUMORED LOCATIONS" in spatial_section
-    assert f"{forest.name} [RUMORED]" in spatial_section
+    assert "Local desconhecido [RUMORED]" in spatial_section
+    assert forest.name not in spatial_section
 
 
 def test_discovered_location_is_not_presented_as_rumor(db_session):
@@ -285,8 +286,8 @@ def test_discovered_location_is_not_presented_as_rumor(db_session):
         1,
     )[0]
 
-    assert f"{forest.name} [DISCOVERED]" in spatial_section
-    assert f"{forest.name} [RUMORED]" not in spatial_section
+    assert "Local desconhecido [DISCOVERED]" in spatial_section
+    assert forest.name not in spatial_section
 
 
 def test_unknown_location_does_not_leak_into_spatial_knowledge(db_session):
@@ -533,3 +534,30 @@ def test_hidden_location_feature_does_not_leak_into_perception(
 
     assert "porta subterrânea secreta" not in context
     assert "passagem oculta" not in context
+
+def test_spatial_knowledge_does_not_reveal_visited_location_name_without_fact(
+    db_session,
+):
+    campaign, character, state = _cardal_scene(db_session)
+
+    set_location_discovery(
+        db_session,
+        character.id,
+        state.location.id,
+        DiscoveryStatus.VISITED,
+    )
+
+    context = build_context(
+        db_session,
+        state,
+    )
+
+    spatial_section = context.split(
+        "PLAYER SPATIAL KNOWLEDGE",
+        1,
+    )[1].split(
+        "VISIBLE NPCS",
+        1,
+    )[0]
+
+    assert "Cardal [VISITED]" not in spatial_section

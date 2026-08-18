@@ -1,8 +1,11 @@
 from app.db.models.npc import NPC
-from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.simulation import development_simulation
 from app.game.time.clock import advance_world_time
+from app.db.models.location import Location
+from app.db.models.simulated_player import (
+    SimulatedPlayer,
+)
 from app.game.character.service import (
     create_character,
 )
@@ -16,6 +19,7 @@ from app.game.world.seed import (
 from app.game.developments.knowledge import (
     local_character_witnesses,
     local_npc_witnesses,
+    local_simulated_player_witnesses,
 )
 from app.db.models.knowledge import (
     KnowledgeFact,
@@ -28,6 +32,7 @@ from app.core.enums import (
     KnowerType,
     NPCActivity,
     WorldDevelopmentType,
+    SimulatedPlayerStatus,
 )
 
 def test_local_npc_witnesses_returns_alive_npcs_at_event_location(
@@ -573,4 +578,146 @@ def test_historical_catch_up_does_not_use_current_location_as_direct_perception(
         )
         .count()
         == 1
+    )
+
+def test_local_simulated_player_witness_learns_development_fact(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Simulated Player Witness",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    active = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Active Witness",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    dead = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Dead Witness",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.DEAD.value,
+    )
+
+    other_location = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.id != location.id,
+        )
+        .order_by(Location.id)
+        .first()
+    )
+
+    assert other_location is not None
+
+    absent = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Absent Witness",
+        location_id=other_location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    db_session.add_all(
+        [
+            active,
+            dead,
+            absent,
+        ]
+    )
+    db_session.flush()
+
+    development = create_world_development(
+        db_session,
+        campaign.id,
+        WorldDevelopmentType.CONSTRUCTION,
+        "Nova torre de vigia",
+        interval_minutes=7 * 24 * 60,
+        payload={
+            "progress": 0,
+            "progress_per_update": 10,
+        },
+        location_id=location.id,
+    )
+
+    event = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == development.id,
+            WorldEvent.event_type
+            == EventType.WORLD_DEVELOPMENT_CREATED.value,
+        )
+        .one()
+    )
+
+    witnesses = (
+        local_simulated_player_witnesses(
+            db_session,
+            event,
+        )
+    )
+
+    witness_ids = {
+        player.id
+        for player in witnesses
+    }
+
+    assert active.id in witness_ids
+    assert dead.id not in witness_ids
+    assert absent.id not in witness_ids
+
+    fact = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.subject
+            == f"world_development:{development.id}"
+        )
+        .one()
+    )
+
+    active_link = (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.SIMULATED_PLAYER.value,
+            KnowledgeKnower.knower_id
+            == active.id,
+        )
+        .one()
+    )
+
+    assert (
+        active_link.source
+        == "percepção direta"
+    )
+
+    assert (
+        active_link.certainty
+        == KnowledgeCertainty.CONFIRMED.value
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.SIMULATED_PLAYER.value,
+            KnowledgeKnower.knower_id.in_(
+                [
+                    dead.id,
+                    absent.id,
+                ]
+            ),
+        )
+        .count()
+        == 0
     )

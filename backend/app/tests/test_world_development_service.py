@@ -2,6 +2,10 @@ import json
 
 import pytest
 from app.db.models.event import WorldEvent
+from app.game.time.clock import get_world_time
+from app.db.models.memory import Memory
+from app.game.time.clock import advance_world_time
+from app.simulation import development_simulation
 from app.core.enums import (
     EventType,
     WorldDevelopmentStatus,
@@ -10,10 +14,13 @@ from app.core.enums import (
 from app.game.developments.service import (
     create_world_development,
 )
-from app.game.time.clock import get_world_time
 from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
+)
+from app.db.models.knowledge import (
+    KnowledgeFact,
+    KnowledgeKnower,
 )
 
 
@@ -268,3 +275,104 @@ def test_create_construction_rejects_already_completed_progress(
                 "progress_per_update": 10,
             },
         )
+
+def test_world_development_events_do_not_create_automatic_memory_or_knowledge(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Hidden World Development",
+    )
+
+    interval = 7 * 24 * 60
+
+    memory_count_before = (
+        db_session.query(Memory).count()
+    )
+
+    fact_count_before = (
+        db_session.query(KnowledgeFact).count()
+    )
+
+    knower_count_before = (
+        db_session.query(KnowledgeKnower).count()
+    )
+
+    development = create_world_development(
+        db_session,
+        campaign.id,
+        WorldDevelopmentType.CONSTRUCTION,
+        "Ponte distante",
+        interval_minutes=interval,
+        payload={
+            "progress": 90,
+            "progress_per_update": 10,
+        },
+    )
+
+    # A criação já gerou WORLD_DEVELOPMENT_CREATED,
+    # mas isso continua sendo apenas World Truth.
+    assert (
+        db_session.query(Memory).count()
+        == memory_count_before
+    )
+
+    assert (
+        db_session.query(KnowledgeFact).count()
+        == fact_count_before
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower).count()
+        == knower_count_before
+    )
+
+    # Faz a construção chegar ao próximo vencimento
+    # e concluir fora da percepção de qualquer personagem.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        interval,
+    )
+
+    result = development_simulation.tick(
+        db_session,
+        campaign.id,
+        interval,
+    )
+
+    db_session.flush()
+
+    assert result.changes == 1
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.actor_id == development.id,
+        )
+        .order_by(WorldEvent.world_minute.asc())
+        .all()
+    )
+
+    assert [
+        event.event_type
+        for event in events
+    ] == [
+        EventType.WORLD_DEVELOPMENT_CREATED.value,
+        EventType.WORLD_DEVELOPMENT_COMPLETED.value,
+    ]
+
+    assert (
+        db_session.query(Memory).count()
+        == memory_count_before
+    )
+
+    assert (
+        db_session.query(KnowledgeFact).count()
+        == fact_count_before
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower).count()
+        == knower_count_before
+    )

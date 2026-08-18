@@ -13,6 +13,7 @@ from app.core.enums import (
     KnowledgeCertainty,
     KnowerType,
     MemoryOwnerType,
+    NPCActivity,
 )
 from app.db.models.character import Character
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
@@ -20,7 +21,6 @@ from app.db.models.npc import NPC
 from app.db.models.event import WorldEvent
 from app.services.event_log import log_event
 from app.game.relationships.service import get_character_npc_relationship
-from app.core.enums import DiscoveryStatus
 from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import (
     discover_connection,
@@ -37,9 +37,20 @@ _CONVERSATION_BOUNDARY_EVENTS = (
 )
 
 
-def npcs_at_location(db: Session, location_id: str) -> list[NPC]:
-    return db.query(NPC).filter(NPC.location_id == location_id, NPC.alive.is_(True)).all()
-
+def npcs_at_location(
+    db: Session,
+    location_id: str,
+) -> list[NPC]:
+    return (
+        db.query(NPC)
+        .filter(
+            NPC.location_id == location_id,
+            NPC.alive.is_(True),
+            NPC.activity != NPCActivity.RESTING.value,
+        )
+        .order_by(NPC.id)
+        .all()
+    )
 
 @dataclass(frozen=True)
 class KnownFact:
@@ -420,6 +431,7 @@ def get_active_interlocutor(
         or npc.campaign_id != campaign_id
         or npc.location_id != location_id
         or not npc.alive
+        or npc.activity == NPCActivity.RESTING.value
     ):
         return None
     return npc

@@ -535,7 +535,10 @@ def build_context(
     visible_lines = ["VISIBLE NPCS"]
     visible_lines.extend(
         [
-            f"- {_clip(npc.name, 100)} ({_clip(npc.role, 120)})"
+            (
+                f"- {_clip(npc.name, 100)} "
+                f"({_clip(npc.role, 120)}; activity={npc.activity})"
+            )
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
         ] or ["- none"]
     )

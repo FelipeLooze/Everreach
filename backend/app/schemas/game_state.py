@@ -36,6 +36,7 @@ class NearbyNPC(BaseModel):
     id: str
     name: str
     role: str
+    activity: str
 
 
 class NearbySimulatedPlayer(BaseModel):

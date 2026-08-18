@@ -90,6 +90,7 @@ def to_game_state_response(
                 id=n.id,
                 name=n.name,
                 role=n.role,
+                activity=n.activity,
             )
             for n in state.nearby_npcs
         ],

@@ -1,14 +1,20 @@
 from app.game.world.seed import create_campaign
 from app.db.models.location import Location
 from app.simulation import knowledge_simulation
+from app.db.models.npc import NPC
 from app.game.time.clock import (
     advance_world_time,
 )
+from app.db.models.knowledge import (
+    KnowledgeFact,
+    KnowledgeKnower,
+)
 from app.core.enums import (
+    KnowledgeCertainty,
+    KnowerType,
     NPCActivity,
     SimulatedPlayerStatus,
 )
-from app.db.models.npc import NPC
 from app.db.models.simulated_player import (
     SimulatedPlayer,
 )
@@ -19,6 +25,7 @@ from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
 )
+
 
 def test_knowledge_simulation_has_no_opportunity_without_daily_boundary(
     db_session,
@@ -435,3 +442,175 @@ def test_social_pair_selection_returns_none_without_pair(
     )
 
     assert result is None
+
+def test_social_transfer_candidates_follow_knowledge_difference(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Social Transfer Direction",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    first = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="First Knower",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    second = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Second Knower",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    db_session.add_all(
+        [
+            first,
+            second,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="social_fact",
+        statement="Uma ponte está sendo construída.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    db_session.add(
+        KnowledgeKnower(
+            fact_id=fact.id,
+            knower_type=KnowerType.NPC.value,
+            knower_id=first.id,
+            source="percepção direta",
+            certainty=(
+                KnowledgeCertainty.CONFIRMED.value
+            ),
+        )
+    )
+
+    db_session.flush()
+
+    pair = knowledge_simulation.SocialPair(
+        first=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=first.id,
+            location_id=location.id,
+        ),
+        second=knowledge_simulation.SocialParticipant(
+            knower_type=(
+                KnowerType.SIMULATED_PLAYER
+            ),
+            knower_id=second.id,
+            location_id=location.id,
+        ),
+    )
+
+    candidates = (
+        knowledge_simulation
+        .eligible_transfer_candidates(
+            db_session,
+            campaign.id,
+            pair,
+        )
+    )
+
+    assert len(candidates) == 1
+
+    candidate = candidates[0]
+
+    assert candidate.source.knower_id == first.id
+    assert candidate.target.knower_id == second.id
+    assert candidate.fact_key == fact.fact_key
+
+def test_secret_fact_is_not_eligible_for_automatic_social_transfer(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Secret Social Knowledge",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    first = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Secret Knower",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    second = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Unaware NPC",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            first,
+            second,
+        ]
+    )
+    db_session.flush()
+
+    secret = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="secret_fact",
+        statement="Existe uma passagem escondida.",
+        is_secret=True,
+    )
+
+    db_session.add(secret)
+    db_session.flush()
+
+    db_session.add(
+        KnowledgeKnower(
+            fact_id=secret.id,
+            knower_type=KnowerType.NPC.value,
+            knower_id=first.id,
+        )
+    )
+
+    db_session.flush()
+
+    pair = knowledge_simulation.SocialPair(
+        first=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=first.id,
+            location_id=location.id,
+        ),
+        second=knowledge_simulation.SocialParticipant(
+            knower_type=KnowerType.NPC,
+            knower_id=second.id,
+            location_id=location.id,
+        ),
+    )
+
+    candidates = (
+        knowledge_simulation
+        .eligible_transfer_candidates(
+            db_session,
+            campaign.id,
+            pair,
+        )
+    )
+
+    assert candidates == ()

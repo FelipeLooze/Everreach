@@ -211,3 +211,27 @@ def test_create_construction_requires_positive_progress_per_update(
                 "progress": 0,
             },
         )
+
+def test_create_construction_rejects_already_completed_progress(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Completed Construction",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="active construction progress must be below 100",
+    ):
+        create_world_development(
+            db_session,
+            campaign.id,
+            WorldDevelopmentType.CONSTRUCTION,
+            "Construção já pronta",
+            interval_minutes=7 * 24 * 60,
+            payload={
+                "progress": 100,
+                "progress_per_update": 10,
+            },
+        )

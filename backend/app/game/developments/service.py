@@ -121,6 +121,11 @@ def create_world_development(
                 "progress must be between 0 and 100"
             )
 
+        if progress == 100:
+            raise ValueError(
+                "active construction progress must be below 100"
+            )
+
         if progress_per_update <= 0:
             raise ValueError(
                 "progress_per_update must be greater than zero"

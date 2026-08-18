@@ -1,7 +1,9 @@
 import pytest
 
-from app.simulation.cadence import boundaries_crossed
-
+from app.simulation.cadence import (
+    boundaries_crossed,
+    scheduled_occurrences_due,
+)
 
 DAY = 24 * 60
 WEEK = 7 * DAY
@@ -89,5 +91,57 @@ def test_invalid_interval_is_rejected():
         boundaries_crossed(
             end_total_minutes=1000,
             elapsed_minutes=100,
+            interval_minutes=0,
+        )
+
+def test_scheduled_occurrence_is_not_due_yet():
+    assert (
+        scheduled_occurrences_due(
+            current_world_minute=999,
+            next_update_world_minute=1000,
+            interval_minutes=100,
+        )
+        == 0
+    )
+
+
+def test_scheduled_occurrence_is_due_exactly_now():
+    assert (
+        scheduled_occurrences_due(
+            current_world_minute=1000,
+            next_update_world_minute=1000,
+            interval_minutes=100,
+        )
+        == 1
+    )
+
+
+def test_scheduled_occurrences_include_missed_intervals():
+    assert (
+        scheduled_occurrences_due(
+            current_world_minute=1400,
+            next_update_world_minute=1000,
+            interval_minutes=100,
+        )
+        == 5
+    )
+
+
+def test_unscheduled_development_has_no_occurrences():
+    assert (
+        scheduled_occurrences_due(
+            current_world_minute=5000,
+            next_update_world_minute=None,
+            interval_minutes=100,
+        )
+        == 0
+    )
+
+
+def test_invalid_scheduled_interval_is_rejected():
+    with pytest.raises(ValueError):
+        scheduled_occurrences_due(
+            current_world_minute=1000,
+            next_update_world_minute=1000,
             interval_minutes=0,
         )

@@ -35,6 +35,11 @@ def tick(
         opportunities=len(
             opportunity_world_minutes
         ),
+        resolvable_opportunities=(
+            1
+            if opportunity_world_minutes
+            else 0
+        ),
         opportunity_world_minutes=(
             opportunity_world_minutes
         ),

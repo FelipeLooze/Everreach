@@ -192,6 +192,7 @@ def test_context_limits_scene_knowledge_instead_of_sending_the_database(db_sessi
     )[0]
 
     assert player_section.count("fonte:") == MAX_CONTEXT_FACTS_PER_KNOWER
+    assert "[CONFIRMED; fonte:" in player_section
     assert len(context) < 8_000
 
 

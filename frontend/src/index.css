@@ -428,6 +428,101 @@ input {
   margin-top: 0.3rem;
 }
 
+.map-canvas {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.map-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.035) 1px,
+      transparent 1px
+    );
+
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.map-edges {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: visible;
+  pointer-events: none;
+}
+
+.map-edges line {
+  stroke: var(--border);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+
+  max-width: 120px;
+  text-align: center;
+
+  pointer-events: none;
+}
+
+.map-node-marker {
+  display: block;
+
+  width: 14px;
+  height: 14px;
+
+  background: var(--bg-panel);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+
+.map-node-label {
+  max-width: 120px;
+  padding: 0.15rem 0.35rem;
+
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.map-position-note {
+  margin: 0;
+
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 .menu-background {
   min-height: 100vh;
   width: 100%;

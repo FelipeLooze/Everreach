@@ -42,9 +42,25 @@ def log_event(
     actor_id: str = "",
     payload: dict | None = None,
     importance: int | None = None,
+    occurred_world_minute: int | None = None,
 ) -> WorldEvent:
-    world_time = db.query(WorldTime).filter(WorldTime.campaign_id == campaign_id).first()
-    world_minute = world_time.total_minutes() if world_time else 0
+
+    if occurred_world_minute is None:
+        world_time = (
+            db.query(WorldTime)
+            .filter(
+                WorldTime.campaign_id == campaign_id
+            )
+            .first()
+        )
+
+        world_minute = (
+            world_time.total_minutes()
+            if world_time
+            else 0
+        )
+    else:
+        world_minute = occurred_world_minute
 
     event = WorldEvent(
         campaign_id=campaign_id,

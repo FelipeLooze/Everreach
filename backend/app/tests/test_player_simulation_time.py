@@ -1,6 +1,6 @@
 import random
-
-from app.core.enums import EventType
+from types import SimpleNamespace
+from app.core.enums import EventType, SimulatedPlayerArchetype
 from app.db.models.event import WorldEvent
 from app.game.world.seed import (
     create_campaign, 
@@ -12,6 +12,47 @@ from app.game.players.service import simulated_players_at_location
 from app.simulation.player_simulation import (
     _hour_boundaries_crossed,
 )
+
+def test_explorer_prefers_unvisited_known_destination(
+    monkeypatch,
+):
+    player = SimpleNamespace(
+        archetype=SimulatedPlayerArchetype.EXPLORER,
+    )
+
+    visited_connection = SimpleNamespace(
+        to_location_id="visited",
+        danger=1,
+    )
+
+    unvisited_connection = SimpleNamespace(
+        to_location_id="unvisited",
+        danger=1,
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "_visited_location_ids",
+        lambda db, campaign_id, player: {
+            "origin",
+            "visited",
+        },
+    )
+
+    selected = (
+        player_simulation._select_travel_connection(
+            None,
+            "campaign_test",
+            player,
+            [
+                visited_connection,
+                unvisited_connection,
+            ],
+            random.Random(0),
+        )
+    )
+
+    assert selected is unvisited_connection
 
 def test_traveling_simulated_player_is_not_physically_present_at_origin(
     db_session,

@@ -1,4 +1,5 @@
 import random
+import json
 
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,7 @@ from app.db.models.knowledge import (
 )
 from app.db.models.location import LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.event import WorldEvent
 from app.game.time.clock import get_world_time
 from app.game.travel.service import calculate_travel_minutes
 from app.services.event_log import log_event
@@ -226,6 +228,116 @@ def _known_outgoing_connections(
         .all()
     )
 
+def _visited_location_ids(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+) -> set[str]:
+    """Return locations this transported person has physically visited."""
+
+    visited = {
+        player.location_id,
+    }
+
+    events = (
+        db.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign_id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_MOVED.value,
+            WorldEvent.actor_type
+            == "simulated_player",
+            WorldEvent.actor_id
+            == player.id,
+        )
+        .order_by(
+            WorldEvent.world_minute,
+            WorldEvent.id,
+        )
+        .all()
+    )
+
+    for event in events:
+        try:
+            payload = json.loads(
+                event.payload_json or "{}"
+            )
+        except (
+            json.JSONDecodeError,
+            TypeError,
+        ):
+            continue
+
+        from_location_id = payload.get(
+            "from_location_id"
+        )
+        to_location_id = payload.get(
+            "to_location_id"
+        )
+
+        if from_location_id:
+            visited.add(from_location_id)
+
+        if to_location_id:
+            visited.add(to_location_id)
+
+    return visited
+
+def _select_travel_connection(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    connections: list[LocationConnection],
+    r: random.Random,
+) -> LocationConnection:
+    """Choose a known route according to the traveler's archetype."""
+
+    if (
+        player.archetype
+        == SimulatedPlayerArchetype.EXPLORER
+    ):
+        visited_locations = (
+            _visited_location_ids(
+                db,
+                campaign_id,
+                player,
+            )
+        )
+
+        unexplored_connections = [
+            connection
+            for connection in connections
+            if connection.to_location_id
+            not in visited_locations
+        ]
+
+        if unexplored_connections:
+            return r.choice(
+                unexplored_connections
+            )
+
+    if (
+        player.archetype
+        == SimulatedPlayerArchetype.ADVENTURER
+    ):
+        highest_danger = max(
+            connection.danger
+            for connection in connections
+        )
+
+        dangerous_connections = [
+            connection
+            for connection in connections
+            if connection.danger
+            == highest_danger
+        ]
+
+        return r.choice(
+            dangerous_connections
+        )
+
+    return r.choice(connections)
 
 def _try_start_travel(
     db: Session,
@@ -243,7 +355,13 @@ def _try_start_travel(
     if not connections:
         return False
 
-    connection = r.choice(connections)
+    connection = _select_travel_connection(
+        db,
+        campaign_id,
+        player,
+        connections,
+        r,
+    )
 
     travel_minutes = calculate_travel_minutes(
         connection

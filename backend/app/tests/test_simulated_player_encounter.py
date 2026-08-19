@@ -1,5 +1,5 @@
 import random
-from app.core.enums import EventType
+from app.core.enums import EventType, ActionIntentType
 from app.db.models.event import WorldEvent
 from app.game.players.service import (
     get_active_simulated_player_interlocutor,
@@ -11,7 +11,9 @@ from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
 )
-
+from app.ai.intent_parser import Intent
+from app.game import engine
+from app.game.game_state import build_game_state
 
 def test_encounter_reuses_existing_transported_person(
     db_session,
@@ -129,3 +131,71 @@ def test_simulated_player_conversation_becomes_active(
     )
 
     assert event is not None
+
+def test_talk_intent_can_target_simulated_player(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Talk To Transported",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    from app.game.character.service import (
+        create_character,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Logan",
+        region.id,
+        location.id,
+    )
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    assert state.nearby_simulated_players
+
+    transported = (
+        state.nearby_simulated_players[0]
+    )
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target=transported.name,
+        raw_text=(
+            f"Eu falo com {transported.name}."
+        ),
+    )
+
+    summary, minutes = engine._apply_intent(
+        db_session,
+        campaign.id,
+        character,
+        intent,
+        state,
+    )
+
+    assert transported.name in summary
+    assert minutes == 10
+
+    active = (
+        get_active_simulated_player_interlocutor(
+            db_session,
+            campaign.id,
+            character.id,
+            location.id,
+        )
+    )
+
+    assert active is not None
+    assert active.id == transported.id

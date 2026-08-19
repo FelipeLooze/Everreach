@@ -19,6 +19,7 @@ from app.db.models.quest import QuestObjective
 from app.game import game_state
 from app.game.combat import service as combat_service
 from app.game.npcs import service as npcs_service
+from app.game.players import service as players_service
 from app.game.progression import service as progression_service
 from app.game.quests import service as quests_service
 from app.game.relationships import service as relationship_service
@@ -269,21 +270,111 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
     return summary, travel_result.minutes
 
 
-def _handle_talk(db: Session, campaign_id: str, character: Character, intent: Intent, state) -> tuple[str, int]:
+def _handle_talk(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    intent: Intent,
+    state,
+) -> tuple[str, int]:
     npc = None
+    simulated_player = None
+
     if intent.target:
-        target_lower = intent.target.lower()
-        npc = next((n for n in state.nearby_npcs if target_lower in n.name.lower()), None)
-    elif len(state.nearby_npcs) == 1:
-        npc = state.nearby_npcs[0]
+        target_lower = intent.target.casefold()
 
-    if npc is None:
-        return "Não há ninguém correspondente a essa descrição aqui para conversar.", 0
+        npc_matches = [
+            candidate
+            for candidate in state.nearby_npcs
+            if target_lower in candidate.name.casefold()
+        ]
 
-    npcs_service.meet_npc(db, campaign_id, character.id, npc.id)
-    _auto_complete_talk_objectives(db, campaign_id, character, npc)
+        simulated_player_matches = [
+            candidate
+            for candidate in state.nearby_simulated_players
+            if target_lower in candidate.name.casefold()
+        ]
 
-    return f"{character.name} conversa com {npc.name} ({npc.role}).", 10
+        matches = [
+            ("npc", candidate)
+            for candidate in npc_matches
+        ] + [
+            ("simulated_player", candidate)
+            for candidate in simulated_player_matches
+        ]
+
+        if len(matches) > 1:
+            return (
+                "Há mais de uma pessoa correspondente "
+                "a essa descrição aqui.",
+                0,
+            )
+
+        if len(matches) == 1:
+            kind, person = matches[0]
+
+            if kind == "npc":
+                npc = person
+            else:
+                simulated_player = person
+
+    else:
+        nearby_people = [
+            ("npc", candidate)
+            for candidate in state.nearby_npcs
+        ] + [
+            ("simulated_player", candidate)
+            for candidate in state.nearby_simulated_players
+        ]
+
+        if len(nearby_people) == 1:
+            kind, person = nearby_people[0]
+
+            if kind == "npc":
+                npc = person
+            else:
+                simulated_player = person
+
+    if npc is None and simulated_player is None:
+        return (
+            "Não há ninguém correspondente a essa "
+            "descrição aqui para conversar.",
+            0,
+        )
+
+    if npc is not None:
+        npcs_service.meet_npc(
+            db,
+            campaign_id,
+            character.id,
+            npc.id,
+        )
+
+        _auto_complete_talk_objectives(
+            db,
+            campaign_id,
+            character,
+            npc,
+        )
+
+        return (
+            f"{character.name} conversa com "
+            f"{npc.name} ({npc.role}).",
+            10,
+        )
+
+    players_service.meet_simulated_player(
+        db,
+        campaign_id,
+        character.id,
+        simulated_player.id,
+    )
+
+    return (
+        f"{character.name} conversa com "
+        f"{simulated_player.name}.",
+        10,
+    )
 
 
 def _auto_complete_talk_objectives(db: Session, campaign_id: str, character: Character, npc) -> None:

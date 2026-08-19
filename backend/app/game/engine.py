@@ -228,6 +228,24 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
             ),
         )
 
+    if (
+        is_dialogue
+        and action_simulated_player is not None
+    ):
+        memory_manager.remember_simulated_player_dialogue(
+            db,
+            story_event,
+            character,
+            action_simulated_player,
+            text,
+            validation.text,
+            importance=(
+                3
+                if intent.type == ActionIntentType.TALK
+                else 2
+            ),
+        )
+
     db.commit()
 
     return ActionResult(

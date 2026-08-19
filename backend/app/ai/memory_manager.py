@@ -1,14 +1,12 @@
 """Structured memory creation and retrieval; no LLM or vector database required."""
-
-from __future__ import annotations
+from __future__ import annotations                                              #__future__ Sempre no começo do código
 
 import json
 import re
+from app.db.models.simulated_player import SimulatedPlayer
 from typing import Sequence
-
 from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
-
 from app.core.enums import EventType, MemoryOwnerType, TravelIncidentKind
 from app.db.models.character import Character
 from app.db.models.event import WorldEvent
@@ -233,6 +231,61 @@ def remember_dialogue(
         source_event=source_event,
     )
     return player_memory, npc_memory
+
+
+def remember_simulated_player_dialogue(
+    db: Session,
+    source_event: WorldEvent,
+    character: Character,
+    simulated_player: SimulatedPlayer,
+    player_input: str,
+    narrative_response: str,
+    *,
+    importance: int = 2,
+) -> tuple[Memory, Memory]:
+    spoken = _clip(
+        player_input,
+        220,
+    )
+
+    response = _clip(
+        narrative_response,
+        220,
+    )
+
+    player_memory = create_memory(
+        db,
+        source_event.campaign_id,
+        MemoryOwnerType.PLAYER,
+        character.id,
+        f"simulated_player:{simulated_player.id}",
+        (
+            f"Conversou com {simulated_player.name}. "
+            f"Disse: {spoken} "
+            f"Resposta ouvida: {response}"
+        ),
+        importance=importance,
+        source_event=source_event,
+    )
+
+    simulated_player_memory = create_memory(
+        db,
+        source_event.campaign_id,
+        MemoryOwnerType.SIMULATED_PLAYER,
+        simulated_player.id,
+        f"character:{character.id}",
+        (
+            f"{character.name} lhe disse: {spoken} "
+            f"Sua resposta foi: {response}"
+        ),
+        importance=importance,
+        source_event=source_event,
+    )
+
+    return (
+        player_memory,
+        simulated_player_memory,
+    )
 
 
 def get_relevant_memories(

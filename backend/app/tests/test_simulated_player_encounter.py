@@ -1,6 +1,5 @@
 import random
 from app.ai.llm_service import LLMService
-from app.core.enums import EventType, ActionIntentType
 from app.db.models.event import WorldEvent
 from app.game.players.service import (
     get_active_simulated_player_interlocutor,
@@ -12,10 +11,102 @@ from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
 )
+from app.core.enums import (
+    EventType, 
+    ActionIntentType, 
+    MemoryOwnerType,
+)
 from app.ai.intent_parser import Intent
 from app.game import engine
 from app.game.game_state import build_game_state
 from app.ai.context_builder import build_context
+from app.db.models.memory import Memory
+
+def test_conversation_creates_memories_for_both_character_and_transported_person(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Transported Dialogue Memory",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    from app.game.character.service import (
+        create_character,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Logan",
+        region.id,
+        location.id,
+    )
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    assert state.nearby_simulated_players
+
+    transported = (
+        state.nearby_simulated_players[0]
+    )
+
+    llm = TransportedConversationLLM(
+        transported.name
+    )
+
+    engine.resolve_action(
+        db_session,
+        llm,
+        campaign.id,
+        character.id,
+        f"Falo com {transported.name}.",
+    )
+
+    player_memories = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type
+            == MemoryOwnerType.PLAYER.value,
+            Memory.owner_id
+            == character.id,
+            Memory.subject
+            == f"simulated_player:{transported.id}",
+        )
+        .all()
+    )
+
+    transported_memories = (
+        db_session.query(Memory)
+        .filter(
+            Memory.owner_type
+            == MemoryOwnerType.SIMULATED_PLAYER.value,
+            Memory.owner_id
+            == transported.id,
+            Memory.subject
+            == f"character:{character.id}",
+        )
+        .all()
+    )
+
+    assert player_memories
+    assert transported_memories
+
+    assert transported.name in (
+        player_memories[-1].summary_text
+    )
+
+    assert character.name in (
+        transported_memories[-1].summary_text
+    )
 
 def test_encounter_reuses_existing_transported_person(
     db_session,

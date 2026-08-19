@@ -10,7 +10,11 @@ from app.core.enums import (
 from app.db.models.character import Character
 from app.db.models.event import WorldEvent
 from app.db.models.location import Location
-from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.region import Region
+from app.db.models.simulated_player import (
+    SimulatedPlayer,
+    SimulatedPlayerPopulation,
+)
 from app.services.event_log import log_event
 
 
@@ -299,3 +303,100 @@ def get_active_simulated_player_interlocutor(
         return None
 
     return player
+
+def _require_location_in_campaign(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+) -> Location:
+    location = db.get(
+        Location,
+        location_id,
+    )
+
+    if location is None:
+        raise ValueError(
+            f"Unknown location {location_id}"
+        )
+
+    region = db.get(
+        Region,
+        location.region_id,
+    )
+
+    if (
+        region is None
+        or region.campaign_id != campaign_id
+    ):
+        raise ValueError(
+            f"Location {location_id} does not belong "
+            f"to campaign {campaign_id}"
+        )
+
+    return location
+
+
+def abstract_simulated_player_count_at_location(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+) -> int:
+    _require_location_in_campaign(
+        db,
+        campaign_id,
+        location_id,
+    )
+
+    population = (
+        db.query(SimulatedPlayerPopulation)
+        .filter(
+            SimulatedPlayerPopulation.location_id
+            == location_id
+        )
+        .first()
+    )
+
+    if population is None:
+        return 0
+
+    return population.abstract_count
+
+
+def set_abstract_simulated_player_population(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    count: int,
+) -> SimulatedPlayerPopulation:
+    _require_location_in_campaign(
+        db,
+        campaign_id,
+        location_id,
+    )
+
+    if count < 0:
+        raise ValueError(
+            "Abstract simulated player population "
+            "cannot be negative."
+        )
+
+    population = (
+        db.query(SimulatedPlayerPopulation)
+        .filter(
+            SimulatedPlayerPopulation.location_id
+            == location_id
+        )
+        .first()
+    )
+
+    if population is None:
+        population = SimulatedPlayerPopulation(
+            location_id=location_id,
+        )
+        db.add(population)
+
+    population.abstract_count = count
+
+    db.flush()
+
+    return population

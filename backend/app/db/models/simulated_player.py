@@ -76,3 +76,32 @@ class SimulatedPlayer(Base):
         Integer,
         nullable=True,
     )
+
+class SimulatedPlayerPopulation(Base):
+    """
+    Abstract transported population at one concrete location.
+
+    People represented here do not yet have individual identities.
+    Materialization will later consume this population and create
+    persistent SimulatedPlayer rows.
+    """
+
+    __tablename__ = "simulated_player_populations"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("sppop"),
+    )
+
+    location_id: Mapped[str] = mapped_column(
+        ForeignKey("locations.id"),
+        unique=True,
+        nullable=False,
+    )
+
+    abstract_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )

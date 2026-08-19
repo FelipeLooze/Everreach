@@ -1,14 +1,17 @@
+import pytest
 from app.core.enums import SimulatedPlayerActivity
+from app.game.time.clock import get_world_time
 from app.db.models.simulated_player_routine import (
     SimulatedPlayerRoutine,
 )
-from app.game.players.service import (
-    simulated_players_at_location,
-)
-from app.game.time.clock import get_world_time
 from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
+)
+from app.game.players.service import (
+    create_simulated_player_routine,
+    disable_simulated_player_routine,
+    simulated_players_at_location,
 )
 
 def test_established_routine_can_be_persisted(
@@ -138,3 +141,227 @@ def test_transportee_can_have_multiple_established_routines(
         SimulatedPlayerActivity.SOCIALIZING.value
     )
 
+def test_service_creates_established_routine(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Established Routine Service",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    current_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    routine = create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    assert routine.simulated_player_id == player.id
+    assert routine.location_id == location.id
+
+    assert (
+        routine.activity
+        == SimulatedPlayerActivity.TRAINING.value
+    )
+
+    assert routine.start_minute_of_day == 480
+    assert routine.end_minute_of_day == 600
+
+    assert (
+        routine.established_world_minute
+        == current_world_minute
+    )
+
+    assert routine.enabled is True
+
+def test_established_routines_cannot_overlap(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Overlapping Routines",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    with pytest.raises(ValueError):
+        create_simulated_player_routine(
+            db_session,
+            player,
+            location.id,
+            SimulatedPlayerActivity.SOCIALIZING,
+            9 * 60,
+            11 * 60,
+        )
+
+def test_established_routines_can_touch_without_overlap(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Adjacent Routines",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    first = create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    second = create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.SOCIALIZING,
+        10 * 60,
+        11 * 60,
+    )
+
+    assert first.enabled is True
+    assert second.enabled is True
+
+@pytest.mark.parametrize(
+    "activity",
+    [
+        SimulatedPlayerActivity.AVAILABLE,
+        SimulatedPlayerActivity.RESTING,
+    ],
+)
+def test_rejects_invalid_established_routine_activity(
+    db_session,
+    activity,
+):
+    campaign = create_campaign(
+        db_session,
+        "Invalid Established Routine",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    with pytest.raises(ValueError):
+        create_simulated_player_routine(
+            db_session,
+            player,
+            location.id,
+            activity,
+            8 * 60,
+            10 * 60,
+        )
+
+def test_established_routine_must_end_after_start(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Invalid Routine Time",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    with pytest.raises(ValueError):
+        create_simulated_player_routine(
+            db_session,
+            player,
+            location.id,
+            SimulatedPlayerActivity.TRAINING,
+            10 * 60,
+            8 * 60,
+        )
+
+def test_established_routine_can_be_disabled(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Disable Established Routine",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    routine = create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    result = disable_simulated_player_routine(
+        db_session,
+        routine,
+    )
+
+    assert result is routine
+    assert routine.enabled is False

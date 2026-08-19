@@ -21,6 +21,9 @@ from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
 )
+from app.db.models.simulated_player_routine import (
+    SimulatedPlayerRoutine,
+)
 from app.services.event_log import log_event
 from app.db.models.campaign import Campaign
 
@@ -113,6 +116,130 @@ def start_simulated_player_temporary_activity(
     db.flush()
 
     return player
+
+
+def create_simulated_player_routine(
+    db: Session,
+    player: SimulatedPlayer,
+    location_id: str,
+    activity: SimulatedPlayerActivity,
+    start_minute_of_day: int,
+    end_minute_of_day: int,
+) -> SimulatedPlayerRoutine:
+    """
+    Establish one recurring daily local routine.
+
+    The routine is only a persistent habit definition. The simulation
+    decides later whether it can actually run on a given day.
+    """
+
+    if (
+        player.status
+        != SimulatedPlayerStatus.ACTIVE.value
+    ):
+        raise ValueError(
+            "Only active transported people can establish a routine."
+        )
+
+    if activity not in (
+        SimulatedPlayerActivity.TRAINING,
+        SimulatedPlayerActivity.SOCIALIZING,
+        SimulatedPlayerActivity.WORKING,
+    ):
+        raise ValueError(
+            "Established routine must be TRAINING, "
+            "SOCIALIZING, or WORKING."
+        )
+
+    if not 0 <= start_minute_of_day < 24 * 60:
+        raise ValueError(
+            "Routine start minute must be inside one world day."
+        )
+
+    if not 0 < end_minute_of_day <= 24 * 60:
+        raise ValueError(
+            "Routine end minute must be inside one world day."
+        )
+
+    if end_minute_of_day <= start_minute_of_day:
+        raise ValueError(
+            "Routine must end after it starts."
+        )
+
+    location = db.get(
+        Location,
+        location_id,
+    )
+
+    if location is None:
+        raise ValueError(
+            "Routine location does not exist."
+        )
+
+    region = db.get(
+        Region,
+        location.region_id,
+    )
+
+    if (
+        region is None
+        or region.campaign_id != player.campaign_id
+    ):
+        raise ValueError(
+            "Routine location must belong to the "
+            "transported person's campaign."
+        )
+
+    overlapping = (
+        db.query(SimulatedPlayerRoutine)
+        .filter(
+            SimulatedPlayerRoutine.simulated_player_id
+            == player.id,
+            SimulatedPlayerRoutine.enabled.is_(True),
+            SimulatedPlayerRoutine.start_minute_of_day
+            < end_minute_of_day,
+            SimulatedPlayerRoutine.end_minute_of_day
+            > start_minute_of_day,
+        )
+        .first()
+    )
+
+    if overlapping is not None:
+        raise ValueError(
+            "Established routines for the same person "
+            "cannot overlap."
+        )
+
+    current_world_minute = get_world_time(
+        db,
+        player.campaign_id,
+    ).total_minutes()
+
+    routine = SimulatedPlayerRoutine(
+        simulated_player_id=player.id,
+        location_id=location_id,
+        activity=activity.value,
+        start_minute_of_day=start_minute_of_day,
+        end_minute_of_day=end_minute_of_day,
+        established_world_minute=current_world_minute,
+        enabled=True,
+    )
+
+    db.add(routine)
+    db.flush()
+
+    return routine
+
+
+def disable_simulated_player_routine(
+    db: Session,
+    routine: SimulatedPlayerRoutine,
+) -> SimulatedPlayerRoutine:
+    routine.enabled = False
+
+    db.flush()
+
+    return routine
 
 
 def simulated_players_at_location(

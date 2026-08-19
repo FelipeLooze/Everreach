@@ -7,6 +7,7 @@ from app.game.players.encounter import (
 )
 from app.game.relationships.service import (
     get_character_simulated_player_relationship,
+    record_simulated_player_interaction,
 )
 from app.ai.llm_service import LLMService
 from app.db.models.event import WorldEvent
@@ -411,6 +412,16 @@ def test_active_simulated_player_has_private_identity_context(
 
     db_session.flush()
 
+    record_simulated_player_interaction(
+        db_session,
+        campaign.id,
+        character.id,
+        transported.id,
+        familiarity_delta=7,
+        trust_delta=3,
+        affinity_delta=-2,
+    )
+
     context = build_context(
         db_session,
         state,
@@ -426,6 +437,12 @@ def test_active_simulated_player_has_private_identity_context(
     assert "Conseguir trabalho e um lugar para morar." in context
     assert (
         "Homem jovem de cabelos escuros e olhos castanhos."
+        in context
+    )
+
+    assert (
+        "Relationship with player: "
+        "familiarity=7, trust=3, affinity=-2"
         in context
     )
 

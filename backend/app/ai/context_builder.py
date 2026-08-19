@@ -24,7 +24,11 @@ from app.game.npcs.service import (
     relevant_known_facts,
 )
 from app.ai.memory_manager import get_relevant_memories
-from app.game.relationships.service import get_character_npc_relationship
+from app.game.relationships.service import (
+    get_character_npc_relationship,
+    get_character_simulated_player_relationship,
+)
+
 
 logger = get_logger("context")
 
@@ -420,6 +424,18 @@ def build_context(
         if active_npc is not None
         else None
     )
+
+    transported_relationship = (
+        get_character_simulated_player_relationship(
+            db,
+            state.campaign_id,
+            state.character.id,
+            active_transported.id,
+        )
+        if active_transported is not None
+        else None
+    )
+
     features = (
         db.query(LocationFeature)
         .filter(
@@ -659,6 +675,16 @@ def build_context(
                 (
                     "Current personal goal: "
                     f"{_clip(active_transported.goal or 'unknown', 500)}"
+                ),
+                (
+                    "Relationship with player: not registered"
+                    if transported_relationship is None
+                    else (
+                        "Relationship with player: "
+                        f"familiarity={transported_relationship.familiarity}, "
+                        f"trust={transported_relationship.trust}, "
+                        f"affinity={transported_relationship.affinity}"
+                    )
                 ),
                 (
                     "Use personality, background, motivation and goal "

@@ -276,6 +276,27 @@ def simulated_players_at_location(
     )
 
 
+def simulated_players_available_for_encounter_at_location(
+    db: Session,
+    location_id: str,
+) -> list[SimulatedPlayer]:
+    """
+    Return transported people who are both physically present
+    and currently available for a casual encounter.
+    """
+
+    return [
+        player
+        for player in simulated_players_at_location(
+            db,
+            location_id,
+        )
+        if is_simulated_player_available_for_encounter(
+            player
+        )
+    ]
+
+
 def select_existing_simulated_player_for_encounter(
     db: Session,
     campaign_id: str,
@@ -553,7 +574,7 @@ def get_active_simulated_player_interlocutor(
         player is None
         or player.campaign_id != campaign_id
         or player.location_id != location_id
-        or not is_simulated_player_physically_present(
+        or not is_simulated_player_available_for_encounter(
             player
         )
     ):

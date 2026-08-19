@@ -13,7 +13,9 @@ from app.db.models.campaign import WorldTime
 from app.db.models.event import WorldEvent
 from app.core.enums import EventType
 from app.game.npcs.service import npcs_at_location
-from app.game.players.service import simulated_players_at_location
+from app.game.players.service import (
+    simulated_players_available_for_encounter_at_location,
+)
 from app.game.quests.service import list_character_quests
 
 
@@ -44,8 +46,14 @@ def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameSt
     world_time = db.query(WorldTime).filter(WorldTime.campaign_id == campaign_id).first()
 
     nearby_npcs = npcs_at_location(db, character.location_id) if character.location_id else []
-    nearby_players = simulated_players_at_location(db, character.location_id) if character.location_id else []
-
+    nearby_players = (
+        simulated_players_available_for_encounter_at_location(
+            db,
+            character.location_id,
+        )
+        if character.location_id
+        else []
+    )
     quest_links = list_character_quests(db, character_id)
     active_quests = [
         (cq, db.get(Quest, cq.quest_id)) for cq in quest_links if db.get(Quest, cq.quest_id) is not None

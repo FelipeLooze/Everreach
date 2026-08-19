@@ -1,11 +1,13 @@
 from app.core.enums import SimulatedPlayerActivity
 from app.ai.llm_service import LLMService
+from app.game.game_state import build_game_state
 from app.game.character.service import create_character
 from app.game.players.service import (
     meet_simulated_player,
     select_existing_simulated_player_for_encounter,
     select_known_simulated_player_for_reencounter,
     simulated_players_at_location,
+    get_active_simulated_player_interlocutor,
 )
 from app.game.world.seed import (
     create_campaign,
@@ -461,3 +463,163 @@ def test_encounter_resolver_falls_back_to_unknown_persistent_transportee(
     assert resolved is not None
     assert resolved.id == expected.id
     assert llm.calls == 0
+
+def test_resting_transportee_is_not_nearby_in_real_game_state(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Resting Transportee Game State",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    player.activity = (
+        SimulatedPlayerActivity.RESTING.value
+    )
+
+    db_session.flush()
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    nearby_ids = {
+        nearby.id
+        for nearby in state.nearby_simulated_players
+    }
+
+    assert player.id not in nearby_ids
+
+    # Physical presence itself was not erased.
+    physical_ids = {
+        nearby.id
+        for nearby in simulated_players_at_location(
+            db_session,
+            location.id,
+        )
+    }
+
+    assert player.id in physical_ids
+
+def test_working_transportee_remains_nearby_in_real_game_state(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Working Transportee Game State",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    player.activity = (
+        SimulatedPlayerActivity.WORKING.value
+    )
+
+    db_session.flush()
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    nearby_ids = {
+        nearby.id
+        for nearby in state.nearby_simulated_players
+    }
+
+    assert player.id in nearby_ids
+
+def test_resting_transportee_is_no_longer_active_interlocutor(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Resting Active Interlocutor",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    meet_simulated_player(
+        db_session,
+        campaign.id,
+        character.id,
+        player.id,
+    )
+
+    assert (
+        get_active_simulated_player_interlocutor(
+            db_session,
+            campaign.id,
+            character.id,
+            location.id,
+        )
+        is player
+    )
+
+    player.activity = (
+        SimulatedPlayerActivity.RESTING.value
+    )
+
+    db_session.flush()
+
+    assert (
+        get_active_simulated_player_interlocutor(
+            db_session,
+            campaign.id,
+            character.id,
+            location.id,
+        )
+        is None
+    )

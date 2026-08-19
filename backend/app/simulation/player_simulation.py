@@ -18,6 +18,9 @@ from app.db.models.knowledge import (
 )
 from app.db.models.location import Location, LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.simulated_player_routine import (
+    SimulatedPlayerRoutine,
+)
 from app.db.models.event import WorldEvent
 from app.game.time.clock import (
     HOURS_PER_DAY,
@@ -32,6 +35,10 @@ from app.simulation.results import PlayerSimulationResult
 
 ACTION_CHANCE_PER_HOUR = 0.5
 ACTION_INTERVAL_MINUTES = 60
+ACTION_CHANCE_PER_HOUR = 0.5
+ACTION_INTERVAL_MINUTES = 60
+MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR
+
 
 def _hour_boundaries_crossed(
     db: Session,
@@ -116,6 +123,12 @@ def tick(
                 moved += 1
 
             _sync_temporary_activity(
+                player,
+                opportunity_world_minute,
+            )
+
+            _sync_established_routine(
+                db,
                 player,
                 opportunity_world_minute,
             )
@@ -249,10 +262,17 @@ def tick(
             end_world_minute,
         )
 
+        _sync_established_routine(
+            db,
+            player,
+            end_world_minute,
+        )
+
         _sync_rest_activity(
             player,
             end_world_minute,
         )
+
     return PlayerSimulationResult(
         travel_started=travel_started,
         moved=moved,
@@ -329,6 +349,73 @@ def _sync_temporary_activity(
         player.activity = (
             SimulatedPlayerActivity.AVAILABLE.value
         )
+
+
+def _sync_established_routine(
+    db: Session,
+    player: SimulatedPlayer,
+    world_minute: int,
+) -> None:
+    """
+    Activate the established daily routine that applies at this
+    canonical world minute.
+
+    An already-running temporary activity has precedence. Established
+    routines only apply while the person is physically at the routine's
+    configured location.
+    """
+
+    if _is_traveling(player):
+        return
+
+    if _temporary_activity_is_active(
+        player,
+        world_minute,
+    ):
+        return
+
+    minute_of_day = (
+        world_minute % MINUTES_PER_DAY
+    )
+
+    routine = (
+        db.query(SimulatedPlayerRoutine)
+        .filter(
+            SimulatedPlayerRoutine.simulated_player_id
+            == player.id,
+            SimulatedPlayerRoutine.location_id
+            == player.location_id,
+            SimulatedPlayerRoutine.enabled.is_(True),
+            SimulatedPlayerRoutine.established_world_minute
+            <= world_minute,
+            SimulatedPlayerRoutine.start_minute_of_day
+            <= minute_of_day,
+            SimulatedPlayerRoutine.end_minute_of_day
+            > minute_of_day,
+        )
+        .order_by(
+            SimulatedPlayerRoutine.start_minute_of_day,
+            SimulatedPlayerRoutine.id,
+        )
+        .first()
+    )
+
+    if routine is None:
+        return
+
+    start_of_day_world_minute = (
+        world_minute - minute_of_day
+    )
+
+    routine_end_world_minute = (
+        start_of_day_world_minute
+        + routine.end_minute_of_day
+    )
+
+    player.activity = routine.activity
+    player.activity_until_world_minute = (
+        routine_end_world_minute
+    )
 
 
 def _sync_rest_activity(

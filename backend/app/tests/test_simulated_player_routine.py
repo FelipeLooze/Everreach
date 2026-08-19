@@ -1,6 +1,15 @@
 import pytest
-from app.core.enums import SimulatedPlayerActivity
-from app.game.time.clock import get_world_time
+
+from app.core.enums import (
+    SimulatedPlayerActivity,
+    SimulatedPlayerArchetype,
+    SimulatedPlayerGoalType,
+)
+from app.db.models.location import Location
+from app.game.time.clock import (
+    advance_world_time,
+    get_world_time,
+)
 from app.db.models.simulated_player_routine import (
     SimulatedPlayerRoutine,
 )
@@ -13,6 +22,7 @@ from app.game.players.service import (
     disable_simulated_player_routine,
     simulated_players_at_location,
 )
+from app.simulation import player_simulation
 
 def test_established_routine_can_be_persisted(
     db_session,
@@ -365,3 +375,367 @@ def test_established_routine_can_be_disabled(
 
     assert result is routine
     assert routine.enabled is False
+
+def test_established_training_runs_only_inside_daily_window(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Established Training Execution",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    social = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.SOCIAL
+    )
+
+    social.goal_type = (
+        SimulatedPlayerGoalType.NONE
+    )
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 7
+    world_time.minute = 0
+
+    create_simulated_player_routine(
+        db_session,
+        social,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    db_session.flush()
+
+    # Isolate the established routine from normal archetype actions.
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        0.0,
+    )
+
+    # 07:00 -> 11:00
+    #
+    # Hourly opportunities:
+    # 08:00 -> training
+    # 09:00 -> training
+    # 10:00 -> routine already ended
+    # 11:00 -> outside routine
+    advance_world_time(
+        db_session,
+        campaign.id,
+        4 * 60,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        4 * 60,
+    )
+
+    assert result.trained == 2
+
+    assert (
+        social.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    assert social.activity_until_world_minute is None
+
+def test_established_routine_only_runs_at_configured_location(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Routine Location",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    social = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.SOCIAL
+    )
+
+    social.goal_type = (
+        SimulatedPlayerGoalType.NONE
+    )
+
+    other_location = (
+        db_session.query(Location)
+        .filter(
+            Location.region_id == region.id,
+            Location.id != location.id,
+        )
+        .first()
+    )
+
+    assert other_location is not None
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 7
+    world_time.minute = 0
+
+    create_simulated_player_routine(
+        db_session,
+        social,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    # The person is physically elsewhere.
+    social.location_id = other_location.id
+
+    db_session.flush()
+
+    # Isolate this location rule from unrelated archetype actions
+    # performed by the other seeded transported people.
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        0.0,
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        2 * 60,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        2 * 60,
+    )
+
+    assert result.trained == 0
+
+    assert social.location_id == other_location.id
+
+def test_established_routine_is_not_applied_retroactively(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Routine Historical Boundary",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 9
+    world_time.minute = 30
+
+    current_world_minute = (
+        world_time.total_minutes()
+    )
+
+    create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    player.activity = (
+        SimulatedPlayerActivity.AVAILABLE.value
+    )
+    player.activity_until_world_minute = None
+
+    db_session.flush()
+
+    # Ask the simulation about 09:00, even though the routine
+    # was only established at 09:30.
+    player_simulation._sync_established_routine(
+        db_session,
+        player,
+        current_world_minute - 30,
+    )
+
+    assert (
+        player.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    assert player.activity_until_world_minute is None
+
+def test_temporary_activity_has_priority_over_established_routine(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Temporary Activity Priority",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 8
+    world_time.minute = 0
+
+    current_world_minute = (
+        world_time.total_minutes()
+    )
+
+    create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    player.activity = (
+        SimulatedPlayerActivity.SOCIALIZING.value
+    )
+
+    player.activity_until_world_minute = (
+        current_world_minute + 30
+    )
+
+    db_session.flush()
+
+    player_simulation._sync_established_routine(
+        db_session,
+        player,
+        current_world_minute + 10,
+    )
+
+    assert (
+        player.activity
+        == SimulatedPlayerActivity.SOCIALIZING.value
+    )
+
+    assert (
+        player.activity_until_world_minute
+        == current_world_minute + 30
+    )
+
+def test_short_tick_enters_established_routine_without_hour_boundary(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Short Established Routine Tick",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    player = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 8
+    world_time.minute = 0
+
+    start_world_minute = (
+        world_time.total_minutes()
+    )
+
+    create_simulated_player_routine(
+        db_session,
+        player,
+        location.id,
+        SimulatedPlayerActivity.TRAINING,
+        8 * 60,
+        10 * 60,
+    )
+
+    db_session.flush()
+
+    # 08:00 -> 08:10.
+    # No hourly mechanical opportunity occurs.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        10,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        10,
+    )
+
+    assert result.trained == 0
+
+    assert (
+        player.activity
+        == SimulatedPlayerActivity.TRAINING.value
+    )
+
+    assert (
+        player.activity_until_world_minute
+        == start_world_minute + (2 * 60)
+    )

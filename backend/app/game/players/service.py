@@ -508,6 +508,8 @@ def schedule_simulated_player_world_arrival(
     location_id: str,
     count: int,
     scheduled_world_minute: int,
+    *,
+    base_world_minute: int | None = None,
 ) -> ScheduledSimulatedPlayerArrival:
     """
     Schedule a future arrival.
@@ -527,14 +529,15 @@ def schedule_simulated_player_world_arrival(
             "Arrival count must be greater than zero."
         )
 
-    current_world_minute = get_world_time(
-        db,
-        campaign_id,
-    ).total_minutes()
+    if base_world_minute is None:
+        base_world_minute = get_world_time(
+            db,
+            campaign_id,
+        ).total_minutes()
 
-    if scheduled_world_minute <= current_world_minute:
+    if scheduled_world_minute <= base_world_minute:
         raise ValueError(
-            "Scheduled arrival must be in the future."
+            "Scheduled arrival must be after its base world minute."
         )
 
     arrival = ScheduledSimulatedPlayerArrival(
@@ -598,6 +601,7 @@ def schedule_next_simulated_player_world_arrival(
         location_id,
         count,
         base_world_minute + delay_minutes,
+        base_world_minute=base_world_minute,
     )
 
 def get_simulated_player_arrival_policy(

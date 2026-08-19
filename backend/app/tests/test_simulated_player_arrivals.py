@@ -770,3 +770,54 @@ def test_next_arrival_can_use_canonical_base_world_minute(
             campaign.id,
         ).total_minutes() + 500
     )
+
+def test_schedule_can_use_historical_canonical_base_during_catch_up(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Historical Arrival Schedule",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    starting_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    canonical_base = starting_world_minute + 100
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        500,
+    )
+
+    scheduled_world_minute = canonical_base + 150
+
+    assert (
+        scheduled_world_minute
+        < get_world_time(
+            db_session,
+            campaign.id,
+        ).total_minutes()
+    )
+
+    arrival = schedule_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+        location.id,
+        count=2,
+        scheduled_world_minute=scheduled_world_minute,
+        base_world_minute=canonical_base,
+    )
+
+    assert (
+        arrival.scheduled_world_minute
+        == scheduled_world_minute
+    )
+    assert arrival.executed_world_minute is None

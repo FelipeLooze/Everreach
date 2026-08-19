@@ -115,6 +115,11 @@ def tick(
             ):
                 moved += 1
 
+            _sync_temporary_activity(
+                player,
+                opportunity_world_minute,
+            )
+
             _sync_rest_activity(
                 player,
                 opportunity_world_minute,
@@ -124,11 +129,32 @@ def tick(
             if _is_traveling(player):
                 continue
 
-            # Resting people do not roll for autonomous actions.
+            # Resting people do not perform autonomous actions.
             if (
                 player.activity
                 == SimulatedPlayerActivity.RESTING.value
             ):
+                continue
+
+            # An ongoing temporary activity owns this opportunity.
+            # TRAINING produces its normal mechanical training effect.
+            # Other temporary activities are persistent state for now.
+            if _temporary_activity_is_active(
+                player,
+                opportunity_world_minute,
+            ):
+                if (
+                    player.activity
+                    == SimulatedPlayerActivity.TRAINING.value
+                ):
+                    _train(
+                        db,
+                        campaign_id,
+                        player,
+                        opportunity_world_minute,
+                    )
+                    trained += 1
+
                 continue
 
             if r.random() > ACTION_CHANCE_PER_HOUR:
@@ -218,6 +244,11 @@ def tick(
         ):
             moved += 1
 
+        _sync_temporary_activity(
+            player,
+            end_world_minute,
+        )
+
         _sync_rest_activity(
             player,
             end_world_minute,
@@ -236,6 +267,69 @@ def _is_traveling(
         player.travel_arrival_world_minute
         is not None
     )
+
+
+def _temporary_activity_is_active(
+    player: SimulatedPlayer,
+    world_minute: int,
+) -> bool:
+    if (
+        player.activity_until_world_minute
+        is None
+    ):
+        return False
+
+    if (
+        world_minute
+        >= player.activity_until_world_minute
+    ):
+        return False
+
+    return player.activity in (
+        SimulatedPlayerActivity.TRAINING.value,
+        SimulatedPlayerActivity.SOCIALIZING.value,
+        SimulatedPlayerActivity.WORKING.value,
+    )
+
+
+def _sync_temporary_activity(
+    player: SimulatedPlayer,
+    world_minute: int,
+) -> None:
+    """
+    Finish a temporary local activity when its canonical end minute
+    has been reached.
+
+    Travel is handled separately and takes precedence over local
+    activities.
+    """
+
+    if _is_traveling(player):
+        return
+
+    if (
+        player.activity_until_world_minute
+        is None
+    ):
+        return
+
+    if (
+        world_minute
+        < player.activity_until_world_minute
+    ):
+        return
+
+    player.activity_until_world_minute = None
+
+    if player.activity in (
+        SimulatedPlayerActivity.TRAINING.value,
+        SimulatedPlayerActivity.SOCIALIZING.value,
+        SimulatedPlayerActivity.WORKING.value,
+    ):
+        player.activity = (
+            SimulatedPlayerActivity.AVAILABLE.value
+        )
+
 
 def _sync_rest_activity(
     player: SimulatedPlayer,
@@ -257,6 +351,8 @@ def _sync_rest_activity(
     ) % HOURS_PER_DAY
 
     if hour >= 22 or hour < 6:
+        player.activity_until_world_minute = None
+
         player.activity = (
             SimulatedPlayerActivity.RESTING.value
         )
@@ -672,10 +768,14 @@ def _try_start_travel(
         opportunity_world_minute
         + travel_minutes
     )
+
     player.activity = (
         SimulatedPlayerActivity.AVAILABLE.value
     )
+    player.activity_until_world_minute = None
+
     player.travel_connection_id = connection.id
+
     player.travel_destination_id = (
         connection.to_location_id
     )

@@ -776,3 +776,289 @@ def test_gather_knowledge_goal_does_not_fall_back_to_training(
         trainer.activity
         == SimulatedPlayerActivity.AVAILABLE.value
     )
+
+def test_temporary_training_continues_until_its_end(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Temporary Training",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    social = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.SOCIAL
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    social.activity = (
+        SimulatedPlayerActivity.TRAINING.value
+    )
+    social.activity_until_world_minute = (
+        start_world_minute + 180
+    )
+
+    db_session.flush()
+
+    # An existing routine must not need a new random action roll.
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        0.0,
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        120,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        120,
+        rng=random.Random(123),
+    )
+
+    assert result.trained == 2
+
+    assert (
+        social.activity
+        == SimulatedPlayerActivity.TRAINING.value
+    )
+
+    assert (
+        social.activity_until_world_minute
+        == start_world_minute + 180
+    )
+
+def test_temporary_activity_ends_without_hour_boundary(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Temporary Activity Ending",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    social = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.SOCIAL
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    social.activity = (
+        SimulatedPlayerActivity.TRAINING.value
+    )
+    social.activity_until_world_minute = (
+        start_world_minute + 30
+    )
+
+    db_session.flush()
+
+    # 08:00 -> 08:45.
+    # No hourly opportunity occurs, but the routine ended at 08:30.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        45,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        45,
+        rng=random.Random(123),
+    )
+
+    assert result.trained == 0
+
+    assert (
+        social.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    assert social.activity_until_world_minute is None
+
+def test_rest_cancels_temporary_local_activity(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Rest Overrides Temporary Activity",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    social = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.SOCIAL
+    )
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 21
+    world_time.minute = 0
+
+    start_world_minute = world_time.total_minutes()
+
+    social.activity = (
+        SimulatedPlayerActivity.TRAINING.value
+    )
+    social.activity_until_world_minute = (
+        start_world_minute + 180
+    )
+
+    db_session.flush()
+
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        1.0,
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+        rng=random.Random(123),
+    )
+
+    assert result.trained == 0
+
+    assert (
+        social.activity
+        == SimulatedPlayerActivity.RESTING.value
+    )
+
+    assert social.activity_until_world_minute is None
+
+def test_starting_travel_cancels_temporary_local_activity(
+    monkeypatch,
+):
+    connection = SimpleNamespace(
+        id="connection_test",
+        from_location_id="origin",
+        to_location_id="destination",
+    )
+
+    player = SimpleNamespace(
+        id="simulated_player_test",
+        location_id="origin",
+        archetype=SimulatedPlayerArchetype.EXPLORER,
+        goal_type=SimulatedPlayerGoalType.NONE,
+        goal_subject=None,
+        activity=SimulatedPlayerActivity.TRAINING.value,
+        activity_until_world_minute=9999,
+        travel_connection_id=None,
+        travel_destination_id=None,
+        travel_started_world_minute=None,
+        travel_arrival_world_minute=None,
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "_known_outgoing_connections",
+        lambda db, campaign_id, player: [
+            connection
+        ],
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "_select_travel_connection",
+        lambda db, campaign_id, player, connections, r: (
+            connection
+        ),
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "calculate_travel_minutes",
+        lambda connection: 60,
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "log_event",
+        lambda *args, **kwargs: None,
+    )
+
+    started = player_simulation._try_start_travel(
+        None,
+        "campaign_test",
+        player,
+        random.Random(123),
+        1000,
+    )
+
+    assert started is True
+
+    assert (
+        player.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    assert player.activity_until_world_minute is None
+
+    assert (
+        player.travel_connection_id
+        == connection.id
+    )
+
+    assert (
+        player.travel_destination_id
+        == connection.to_location_id
+    )

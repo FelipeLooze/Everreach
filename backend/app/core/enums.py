@@ -64,6 +64,12 @@ class SimulatedPlayerArchetype(StrEnum):
     SOCIAL = "SOCIAL"
     ADVENTURER = "ADVENTURER"
 
+class SimulatedPlayerGoalType(StrEnum):
+    NONE = "NONE"
+    EXPLORE_REGION = "EXPLORE_REGION"
+    TRAIN_SELF = "TRAIN_SELF"
+    GATHER_KNOWLEDGE = "GATHER_KNOWLEDGE"
+    SEEK_DANGER = "SEEK_DANGER"
 
 class SimulatedPlayerStatus(StrEnum):
     ACTIVE = "ACTIVE"

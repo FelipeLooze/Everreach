@@ -7,6 +7,7 @@ from app.core.enums import (
     KnowledgeCertainty,
     KnowerType,
     SimulatedPlayerArchetype,
+    SimulatedPlayerGoalType,
 )
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
@@ -268,16 +269,32 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
 
     simulated_players = [
         SimulatedPlayer(
-            campaign_id=campaign_id, name="Corren Ashvale", level=0, location_id=village.id,
-            archetype=SimulatedPlayerArchetype.EXPLORER, goal="Mapear os limites do Vale Verdejante.",
+            campaign_id=campaign_id,
+            name="Corren Ashvale",
+            level=0,
+            location_id=village.id,
+            archetype=SimulatedPlayerArchetype.EXPLORER,
+            goal="Mapear os limites do Vale Verdejante.",
+            goal_type=SimulatedPlayerGoalType.EXPLORE_REGION,
+            goal_subject=f"region:{region.id}",
         ),
         SimulatedPlayer(
-            campaign_id=campaign_id, name="Dessa Marrow", level=0, location_id=village.id,
-            archetype=SimulatedPlayerArchetype.TRAINER, goal="Aprender a sobreviver neste mundo desconhecido.",
+            campaign_id=campaign_id,
+            name="Dessa Marrow",
+            level=0,
+            location_id=village.id,
+            archetype=SimulatedPlayerArchetype.TRAINER,
+            goal="Aprender a sobreviver neste mundo desconhecido.",
+            goal_type=SimulatedPlayerGoalType.TRAIN_SELF,
         ),
         SimulatedPlayer(
-            campaign_id=campaign_id, name="Bram Holt", level=0, location_id=village.id,
-            archetype=SimulatedPlayerArchetype.SOCIAL, goal="Conseguir informações com os habitantes locais e outros recém-chegados.",
+            campaign_id=campaign_id,
+            name="Bram Holt",
+            level=0,
+            location_id=village.id,
+            archetype=SimulatedPlayerArchetype.SOCIAL,
+            goal="Conseguir informações com os habitantes locais e outros recém-chegados.",
+            goal_type=SimulatedPlayerGoalType.GATHER_KNOWLEDGE,
         ),
     ]
     db.add_all(simulated_players)

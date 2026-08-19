@@ -1,7 +1,11 @@
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import SimulatedPlayerArchetype, SimulatedPlayerStatus
+from app.core.enums import (
+    SimulatedPlayerArchetype,
+    SimulatedPlayerGoalType,
+    SimulatedPlayerStatus,
+)
 from app.core.ids import generate_id
 from app.db.base import Base
 
@@ -20,6 +24,18 @@ class SimulatedPlayer(Base):
 
     archetype: Mapped[str] = mapped_column(String, default=SimulatedPlayerArchetype.EXPLORER)
     goal: Mapped[str] = mapped_column(String, default="")
+
+    goal_type: Mapped[str] = mapped_column(
+        String,
+        default=SimulatedPlayerGoalType.NONE,
+        nullable=False,
+    )
+
+    goal_subject: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+
     status: Mapped[str] = mapped_column(String, default=SimulatedPlayerStatus.ACTIVE)
     travel_connection_id: Mapped[str | None] = mapped_column(
         ForeignKey("location_connections.id"),

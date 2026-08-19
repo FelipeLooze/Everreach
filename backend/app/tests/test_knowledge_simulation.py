@@ -1,4 +1,7 @@
 import json
+from app.ai import narrator
+from app.ai.context_builder import build_context
+from app.game.game_state import build_game_state
 from app.db.models.location import Location
 from app.simulation import knowledge_simulation
 from app.db.models.npc import NPC
@@ -813,6 +816,7 @@ def test_social_transfer_candidate_selection_returns_none_without_candidates(
 
 def test_social_opportunity_automatically_propagates_one_fact(
     db_session,
+    fake_llm,
 ):
     campaign = create_campaign(
         db_session,
@@ -963,6 +967,61 @@ def test_social_opportunity_automatically_propagates_one_fact(
         payload["target_certainty"]
         == KnowledgeCertainty.BELIEVED.value
     )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Player Character",
+        region.id,
+        location.id,
+    )
+
+    db_session.flush()
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    player_input = "O que voce sabe sobre a ponte?"
+
+    context = build_context(
+        db_session,
+        state,
+        active_interlocutor="Target",
+        player_input=player_input,
+    )
+
+    npc_section = (
+        context
+        .split("NPC KNOWLEDGE", 1)[1]
+        .split("PLAYER KNOWLEDGE", 1)[0]
+    )
+
+    assert fact.statement in npc_section
+
+    fact_line = next(
+        line
+        for line in npc_section.splitlines()
+        if fact.statement in line
+    )
+
+    assert "[BELIEVED; fonte:" in fact_line
+    assert "[CONFIRMED; fonte:" not in fact_line
+
+    narrator.narrate(
+        fake_llm,
+        "Nenhuma mudanca mecanica.",
+        context,
+        player_input,
+        "",
+    )
+
+    _narrator_system, narrator_prompt = fake_llm.calls[-1]
+
+    assert fact.statement in narrator_prompt
+    assert fact_line.strip() in narrator_prompt
 
 def test_same_social_opportunity_is_not_resolved_twice(
     db_session,

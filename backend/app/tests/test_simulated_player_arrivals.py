@@ -821,3 +821,104 @@ def test_schedule_can_use_historical_canonical_base_during_catch_up(
         == scheduled_world_minute
     )
     assert arrival.executed_world_minute is None
+
+def test_large_tick_catches_up_entire_automatic_arrival_chain(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Arrival Chain Catch Up",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    set_simulated_player_arrival_policy(
+        db_session,
+        campaign.id,
+        enabled=True,
+        min_delay_minutes=60,
+        max_delay_minutes=60,
+        min_group_size=1,
+        max_group_size=1,
+    )
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        location.id,
+        enabled=True,
+    )
+
+    schedule_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+        location.id,
+        count=1,
+        scheduled_world_minute=(
+            start_world_minute + 60
+        ),
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        240,
+    )
+
+    result = world_simulation.tick(
+        db_session,
+        campaign.id,
+        240,
+    )
+
+    assert result.simulated_player_arrivals == 4
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 4
+    )
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_WORLD_ARRIVAL.value,
+        )
+        .order_by(WorldEvent.world_minute)
+        .all()
+    )
+
+    assert [
+        event.world_minute
+        for event in events
+    ] == [
+        start_world_minute + 60,
+        start_world_minute + 120,
+        start_world_minute + 180,
+        start_world_minute + 240,
+    ]
+
+    pending = get_pending_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+    )
+
+    assert pending is not None
+
+    assert (
+        pending.scheduled_world_minute
+        == start_world_minute + 300
+    )

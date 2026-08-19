@@ -1662,6 +1662,16 @@ def test_social_transfer_selection_uses_social_priority_weight(
             certainty=KnowledgeCertainty.CONFIRMED,
         )
 
+    teach_fact(
+            db_session,
+            campaign.id,
+            high_priority.fact_key,
+            KnowerType.NPC,
+            target.id,
+            source="boato anterior",
+            certainty=KnowledgeCertainty.RUMOR,
+        )
+
     pair = knowledge_simulation.SocialPair(
         first=knowledge_simulation.SocialParticipant(
             knower_type=KnowerType.NPC,

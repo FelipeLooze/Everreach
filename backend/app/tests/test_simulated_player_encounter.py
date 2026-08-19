@@ -1,4 +1,10 @@
 import random
+import json
+
+from app.core.enums import SimulatedPlayerStatus
+from app.game.players.encounter import (
+    resolve_simulated_player_encounter,
+)
 from app.ai.llm_service import LLMService
 from app.db.models.event import WorldEvent
 from app.game.players.service import (
@@ -6,6 +12,8 @@ from app.game.players.service import (
     meet_simulated_player,
     select_existing_simulated_player_for_encounter,
     simulated_players_at_location,
+    abstract_simulated_player_count_at_location,
+    set_abstract_simulated_player_population,
 )
 from app.game.world.seed import (
     create_campaign,
@@ -21,6 +29,44 @@ from app.game import engine
 from app.game.game_state import build_game_state
 from app.ai.context_builder import build_context
 from app.db.models.memory import Memory
+
+class EncounterMaterializationLLM(LLMService):
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    def generate(
+        self,
+        system: str,
+        prompt: str,
+    ) -> str:
+        self.calls.append(
+            (system, prompt)
+        )
+
+        return json.dumps(
+            {
+                "name": "Kaelen Voss",
+                "personality": (
+                    "Calmo, prudente e observador."
+                ),
+                "background": (
+                    "Trabalhava como técnico antes "
+                    "de ser transportado."
+                ),
+                "motivation": (
+                    "Encontrar estabilidade."
+                ),
+                "physical_description": (
+                    "Homem jovem de cabelos escuros, "
+                    "olhos castanhos e porte magro."
+                ),
+                "goal": (
+                    "Encontrar trabalho e um lugar "
+                    "seguro para viver."
+                ),
+                "archetype": "SOCIAL",
+            }
+        )
 
 def test_conversation_creates_memories_for_both_character_and_transported_person(
     db_session,
@@ -481,3 +527,95 @@ def test_resolve_action_sends_active_transported_identity_to_narrator(
     assert transported.name in narrator_prompt
     assert "Paciente e observador." in narrator_prompt
     assert "Trabalhava como mecânico na Terra." in narrator_prompt
+
+def test_encounter_reuses_persistent_person_before_materializing_new_one(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Encounter Priority",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    set_abstract_simulated_player_population(
+        db_session,
+        campaign.id,
+        location.id,
+        1,
+    )
+
+    existing_players = (
+        simulated_players_at_location(
+            db_session,
+            location.id,
+        )
+    )
+
+    assert existing_players
+
+    existing_ids = {
+        player.id
+        for player in existing_players
+    }
+
+    llm = EncounterMaterializationLLM()
+
+    resolved_existing = (
+        resolve_simulated_player_encounter(
+            db_session,
+            llm,
+            campaign.id,
+            location.id,
+            rng=random.Random(42),
+        )
+    )
+
+    assert resolved_existing is not None
+    assert resolved_existing.id in existing_ids
+
+    assert len(llm.calls) == 0
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 1
+    )
+
+    for player in existing_players:
+        player.status = (
+            SimulatedPlayerStatus.DEAD.value
+        )
+
+    db_session.flush()
+
+    resolved_new = (
+        resolve_simulated_player_encounter(
+            db_session,
+            llm,
+            campaign.id,
+            location.id,
+            rng=random.Random(42),
+        )
+    )
+
+    assert resolved_new is not None
+    assert resolved_new.id not in existing_ids
+    assert resolved_new.name == "Kaelen Voss"
+
+    assert len(llm.calls) == 1
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 0
+    )

@@ -1023,6 +1023,200 @@ def test_social_opportunity_automatically_propagates_one_fact(
     assert fact.statement in narrator_prompt
     assert fact_line.strip() in narrator_prompt
 
+def test_social_believed_fact_becomes_rumor_in_narrator_context(
+    db_session,
+    fake_llm,
+):
+    campaign = create_campaign(
+        db_session,
+        "Social Rumor Propagation",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    db_session.query(NPC).filter(
+        NPC.campaign_id == campaign.id
+    ).update(
+        {
+            NPC.activity:
+            NPCActivity.RESTING.value
+        },
+        synchronize_session=False,
+    )
+
+    db_session.query(SimulatedPlayer).filter(
+        SimulatedPlayer.campaign_id
+        == campaign.id
+    ).update(
+        {
+            SimulatedPlayer.status:
+            SimulatedPlayerStatus.DEAD.value
+        },
+        synchronize_session=False,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Rumor Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="Rumor Target",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="social_believed_to_rumor",
+        statement="A estrada do leste esta alagada.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        source="relato confiavel",
+        certainty=KnowledgeCertainty.BELIEVED,
+    )
+
+    minutes = 24 * 60
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    result = knowledge_simulation.tick(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    assert result.opportunities == 1
+    assert result.resolvable_opportunities == 1
+    assert result.propagations == 1
+
+    target_link = (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .one()
+    )
+
+    assert (
+        target_link.certainty
+        == KnowledgeCertainty.RUMOR.value
+    )
+
+    propagation_event = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign.id,
+            WorldEvent.event_type
+            == EventType.KNOWLEDGE_PROPAGATED.value,
+        )
+        .one()
+    )
+
+    payload = json.loads(
+        propagation_event.payload_json
+    )
+
+    assert (
+        payload["source_certainty"]
+        == KnowledgeCertainty.BELIEVED.value
+    )
+
+    assert (
+        payload["target_certainty"]
+        == KnowledgeCertainty.RUMOR.value
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Player Character",
+        region.id,
+        location.id,
+    )
+
+    db_session.flush()
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    player_input = "O que voce sabe sobre a estrada do leste?"
+
+    context = build_context(
+        db_session,
+        state,
+        active_interlocutor="Rumor Target",
+        player_input=player_input,
+    )
+
+    npc_section = (
+        context
+        .split("NPC KNOWLEDGE", 1)[1]
+        .split("PLAYER KNOWLEDGE", 1)[0]
+    )
+
+    assert fact.statement in npc_section
+
+    fact_line = next(
+        line
+        for line in npc_section.splitlines()
+        if fact.statement in line
+    )
+
+    assert "[RUMOR; fonte:" in fact_line
+    assert "[BELIEVED; fonte:" not in fact_line
+    assert "[CONFIRMED; fonte:" not in fact_line
+
+    narrator.narrate(
+        fake_llm,
+        "Nenhuma mudanca mecanica.",
+        context,
+        player_input,
+        "",
+    )
+
+    _narrator_system, narrator_prompt = fake_llm.calls[-1]
+
+    assert fact.statement in narrator_prompt
+    assert fact_line.strip() in narrator_prompt
+
 def test_same_social_opportunity_is_not_resolved_twice(
     db_session,
 ):

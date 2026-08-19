@@ -1730,3 +1730,129 @@ def test_social_transfer_certainty_degrades_hearsay():
         )
         == KnowledgeCertainty.RUMOR
     )
+
+def test_social_opportunity_propagates_fact_to_simulated_player(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "NPC To Simulated Player Propagation",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    # Remove participantes autônomos do seed
+    # para controlar exatamente o par do teste.
+    db_session.query(NPC).filter(
+        NPC.campaign_id == campaign.id
+    ).update(
+        {
+            NPC.activity:
+            NPCActivity.RESTING.value
+        },
+        synchronize_session=False,
+    )
+
+    db_session.query(SimulatedPlayer).filter(
+        SimulatedPlayer.campaign_id
+        == campaign.id
+    ).update(
+        {
+            SimulatedPlayer.status:
+            SimulatedPlayerStatus.DEAD.value
+        },
+        synchronize_session=False,
+    )
+
+    source = NPC(
+        campaign_id=campaign.id,
+        region_id=region.id,
+        location_id=location.id,
+        name="NPC Source",
+        activity=NPCActivity.AVAILABLE.value,
+    )
+
+    target = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Transported Target",
+        location_id=location.id,
+        status=SimulatedPlayerStatus.ACTIVE.value,
+    )
+
+    db_session.add_all(
+        [
+            source,
+            target,
+        ]
+    )
+    db_session.flush()
+
+    fact = KnowledgeFact(
+        campaign_id=campaign.id,
+        fact_key="npc_to_simulated_social_fact",
+        statement="Mercadores chegaram pela estrada do sul.",
+    )
+
+    db_session.add(fact)
+    db_session.flush()
+
+    teach_fact(
+        db_session,
+        campaign.id,
+        fact.fact_key,
+        KnowerType.NPC,
+        source.id,
+        source="percepcao direta",
+        certainty=KnowledgeCertainty.CONFIRMED,
+    )
+
+    minutes = 24 * 60
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    result = knowledge_simulation.tick(
+        db_session,
+        campaign.id,
+        minutes,
+    )
+
+    assert result.opportunities == 1
+    assert result.resolvable_opportunities == 1
+    assert result.propagations == 1
+
+    target_link = (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.SIMULATED_PLAYER.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .one()
+    )
+
+    assert (
+        target_link.certainty
+        == KnowledgeCertainty.BELIEVED.value
+    )
+
+    assert (
+        db_session.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type
+            == KnowerType.SIMULATED_PLAYER.value,
+            KnowledgeKnower.knower_id
+            == target.id,
+        )
+        .count()
+        == 1
+    )

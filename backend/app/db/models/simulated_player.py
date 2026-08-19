@@ -64,6 +64,11 @@ class SimulatedPlayer(Base):
         nullable=False,
     )
 
+    activity_until_world_minute: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
     status: Mapped[str] = mapped_column(String, default=SimulatedPlayerStatus.ACTIVE)
     travel_connection_id: Mapped[str | None] = mapped_column(
         ForeignKey("location_connections.id"),

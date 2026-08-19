@@ -19,3 +19,13 @@ def test_simulated_player_activity_defaults_to_available():
         column.default.arg
         == SimulatedPlayerActivity.AVAILABLE
     )
+
+
+def test_temporary_activity_duration_is_optional():
+    column = (
+        SimulatedPlayer.__table__
+        .c.activity_until_world_minute
+    )
+
+    assert column.nullable is True
+    assert column.default is None

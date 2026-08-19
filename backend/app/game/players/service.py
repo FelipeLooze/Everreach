@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.models.simulated_player_arrival import (
     ScheduledSimulatedPlayerArrival,
     SimulatedPlayerArrivalPolicy,
+    SimulatedPlayerArrivalLocation,
 )
 from app.game.time.clock import get_world_time
 from app.core.enums import (
@@ -779,4 +780,70 @@ def ensure_simulated_player_world_arrival_scheduled(
         campaign_id,
         location_id,
         rng=rng,
+    )
+
+def set_simulated_player_arrival_location_enabled(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    *,
+    enabled: bool,
+) -> SimulatedPlayerArrivalLocation:
+    """
+    Explicitly enable or disable a location for automatic future arrivals.
+    """
+
+    _require_location_in_campaign(
+        db,
+        campaign_id,
+        location_id,
+    )
+
+    arrival_location = (
+        db.query(SimulatedPlayerArrivalLocation)
+        .filter(
+            SimulatedPlayerArrivalLocation.location_id
+            == location_id
+        )
+        .first()
+    )
+
+    if arrival_location is None:
+        arrival_location = SimulatedPlayerArrivalLocation(
+            location_id=location_id,
+            enabled=enabled,
+        )
+        db.add(arrival_location)
+    else:
+        arrival_location.enabled = enabled
+
+    db.flush()
+
+    return arrival_location
+
+def simulated_player_arrival_locations(
+    db: Session,
+    campaign_id: str,
+) -> list[Location]:
+    """
+    Return explicitly enabled arrival locations belonging to the campaign.
+    """
+
+    return (
+        db.query(Location)
+        .join(
+            SimulatedPlayerArrivalLocation,
+            SimulatedPlayerArrivalLocation.location_id
+            == Location.id,
+        )
+        .join(
+            Region,
+            Location.region_id == Region.id,
+        )
+        .filter(
+            Region.campaign_id == campaign_id,
+            SimulatedPlayerArrivalLocation.enabled.is_(True),
+        )
+        .order_by(Location.id)
+        .all()
     )

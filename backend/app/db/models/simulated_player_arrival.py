@@ -106,3 +106,32 @@ class SimulatedPlayerArrivalPolicy(Base):
         Integer,
         nullable=False,
     )
+
+class SimulatedPlayerArrivalLocation(Base):
+    """
+    Explicitly marks a location as eligible for future transported-person
+    arrivals.
+
+    Absence of a row means the location is not an automatic arrival
+    location.
+    """
+
+    __tablename__ = "simulated_player_arrival_locations"
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("sparrloc"),
+    )
+
+    location_id: Mapped[str] = mapped_column(
+        ForeignKey("locations.id"),
+        unique=True,
+        nullable=False,
+    )
+
+    enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )

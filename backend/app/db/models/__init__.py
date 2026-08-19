@@ -19,6 +19,7 @@ from app.db.models.quest import (
     QuestObjective,
 )
 from app.db.models.simulated_player_arrival import (
+    SimulatedPlayerArrivalLocation,
     ScheduledSimulatedPlayerArrival,
     SimulatedPlayerArrivalPolicy,
 )
@@ -58,6 +59,7 @@ __all__ = [
     "SimulatedPlayer",
     "SimulatedPlayerPopulation",
     "SimulatedPlayerArrivalPolicy",
+    "SimulatedPlayerArrivalLocation",
     "CharacterSkill",
     "CharacterTechnique",
     "Skill",

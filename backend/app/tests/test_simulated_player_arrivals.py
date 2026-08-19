@@ -4,8 +4,11 @@ import pytest
 
 from app.core.enums import EventType
 from app.db.models.event import WorldEvent
+from app.db.models.location import Location
 from app.game.time.clock import get_world_time
 from app.game.players.service import (
+    set_simulated_player_arrival_location_enabled,
+    simulated_player_arrival_locations,
     ensure_simulated_player_world_arrival_scheduled,
     get_pending_simulated_player_world_arrival,
     schedule_simulated_player_world_arrival_from_policy,
@@ -514,3 +517,64 @@ def test_ensure_arrival_reuses_existing_pending_schedule(
     )
 
     assert len(pending_rows) == 1
+
+def test_only_explicitly_enabled_locations_are_valid_for_automatic_arrivals(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Arrival Locations",
+    )
+
+    region, first_location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    other_location = Location(
+        region_id=region.id,
+        name="Other Place",
+        type="forest",
+    )
+
+    db_session.add(other_location)
+    db_session.flush()
+
+    assert (
+        simulated_player_arrival_locations(
+            db_session,
+            campaign.id,
+        )
+        == []
+    )
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        first_location.id,
+        enabled=True,
+    )
+
+    enabled = simulated_player_arrival_locations(
+        db_session,
+        campaign.id,
+    )
+
+    assert [location.id for location in enabled] == [
+        first_location.id
+    ]
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        first_location.id,
+        enabled=False,
+    )
+
+    assert (
+        simulated_player_arrival_locations(
+            db_session,
+            campaign.id,
+        )
+        == []
+    )

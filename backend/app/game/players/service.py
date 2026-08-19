@@ -2,7 +2,10 @@ import json
 import random
 
 from sqlalchemy.orm import Session
-
+from app.db.models.simulated_player_arrival import (
+    ScheduledSimulatedPlayerArrival,
+)
+from app.game.time.clock import get_world_time
 from app.core.enums import (
     EventType,
     SimulatedPlayerStatus,
@@ -493,3 +496,50 @@ def register_simulated_player_world_arrival(
     )
 
     return population
+
+def schedule_simulated_player_world_arrival(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    count: int,
+    scheduled_world_minute: int,
+) -> ScheduledSimulatedPlayerArrival:
+    """
+    Schedule a future arrival.
+
+    This only creates the schedule. It does not add abstract population
+    and does not create individual transported people.
+    """
+
+    _require_location_in_campaign(
+        db,
+        campaign_id,
+        location_id,
+    )
+
+    if count <= 0:
+        raise ValueError(
+            "Arrival count must be greater than zero."
+        )
+
+    current_world_minute = get_world_time(
+        db,
+        campaign_id,
+    ).total_minutes()
+
+    if scheduled_world_minute <= current_world_minute:
+        raise ValueError(
+            "Scheduled arrival must be in the future."
+        )
+
+    arrival = ScheduledSimulatedPlayerArrival(
+        location_id=location_id,
+        scheduled_world_minute=scheduled_world_minute,
+        count=count,
+        executed_world_minute=None,
+    )
+
+    db.add(arrival)
+    db.flush()
+
+    return arrival

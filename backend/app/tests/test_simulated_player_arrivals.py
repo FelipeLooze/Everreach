@@ -4,14 +4,19 @@ import pytest
 
 from app.core.enums import EventType
 from app.db.models.event import WorldEvent
+from app.game.time.clock import get_world_time
 from app.game.players.service import (
     abstract_simulated_player_count_at_location,
     register_simulated_player_world_arrival,
     set_abstract_simulated_player_population,
+    schedule_simulated_player_world_arrival,
 )
 from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
+)
+from app.db.models.simulated_player_arrival import (
+    ScheduledSimulatedPlayerArrival,
 )
 
 
@@ -69,5 +74,81 @@ def test_world_arrival_adds_to_abstract_population_and_logs_event(
         event.payload_json
     )
 
+    assert (
+        event.world_minute
+        == campaign.world_time.total_minutes()
+    )
+    assert event.world_minute == get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
     assert payload["location_id"] == location.id
     assert payload["count"] == 3
+
+def test_future_arrival_is_persisted_without_happening_immediately(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Scheduled Arrival",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    current_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    scheduled_world_minute = (
+        current_world_minute + 180
+    )
+
+    arrival = schedule_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+        location.id,
+        count=4,
+        scheduled_world_minute=scheduled_world_minute,
+    )
+
+    assert arrival.location_id == location.id
+    assert arrival.count == 4
+    assert (
+        arrival.scheduled_world_minute
+        == scheduled_world_minute
+    )
+    assert arrival.executed_world_minute is None
+
+    persisted = db_session.get(
+        ScheduledSimulatedPlayerArrival,
+        arrival.id,
+    )
+
+    assert persisted is not None
+    assert persisted.id == arrival.id
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 0
+    )
+
+    arrival_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_WORLD_ARRIVAL.value,
+        )
+        .all()
+    )
+
+    assert arrival_events == []

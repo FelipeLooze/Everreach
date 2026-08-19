@@ -24,7 +24,10 @@ from app.db.models.simulated_player_arrival import (
     SimulatedPlayerArrivalPolicy,
 )
 from app.db.models.region import Region
-from app.db.models.relationship import CharacterNPCRelationship
+from app.db.models.relationship import (
+    CharacterNPCRelationship,
+    CharacterSimulatedPlayerRelationship,
+)
 from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
@@ -58,6 +61,7 @@ __all__ = [
     "QuestObjective",
     "Region",
     "CharacterNPCRelationship",
+    "CharacterSimulatedPlayerRelationship",
     "ScheduledSimulatedPlayerArrival",
     "SimulatedPlayer",
     "SimulatedPlayerPopulation",

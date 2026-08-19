@@ -619,3 +619,55 @@ def test_encounter_reuses_persistent_person_before_materializing_new_one(
         )
         == 0
     )
+
+def test_encounter_returns_none_when_no_persistent_or_abstract_population(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Empty Encounter",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    existing_players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    for player in existing_players:
+        player.status = SimulatedPlayerStatus.DEAD.value
+
+    set_abstract_simulated_player_population(
+        db_session,
+        campaign.id,
+        location.id,
+        0,
+    )
+
+    db_session.flush()
+
+    llm = EncounterMaterializationLLM()
+
+    resolved = resolve_simulated_player_encounter(
+        db_session,
+        llm,
+        campaign.id,
+        location.id,
+        rng=random.Random(42),
+    )
+
+    assert resolved is None
+    assert len(llm.calls) == 0
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 0
+    )    

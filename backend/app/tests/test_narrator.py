@@ -85,6 +85,8 @@ def test_narrator_applies_system_prompt_and_all_dynamic_sections():
     system, prompt = llm.calls[0]
     assert "NUNCA invente para o protagonista" in system
     assert "próximo momento da cena" in system
+    assert "CONFIRMED significa confirmação para aquela entidade específica." in system
+    assert "Somente o backend pode alterar o nível de certeza." in system
     assert "MODO DA CENA:\nCONTINUATION" in prompt
     assert "SCENE CONTEXT:" in prompt
     assert "RECENT HISTORY:" in prompt

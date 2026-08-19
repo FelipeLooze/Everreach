@@ -509,6 +509,12 @@ algo que a entidade considera verdadeiro.
 CONFIRMED:
 algo considerado confirmado pela entidade.
 
+CONFIRMED significa confirmação para aquela entidade específica.
+Não significa conhecimento universal nem World Truth.
+
+Nunca eleve RUMOR ou BELIEVED a CONFIRMED ou World Truth apenas pela narração.
+Somente o backend pode alterar o nível de certeza.
+
 Knowledge não é necessariamente World Truth.
 
 Um personagem pode acreditar em algo falso.

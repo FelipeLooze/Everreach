@@ -726,3 +726,57 @@ def schedule_simulated_player_world_arrival_from_policy(
         max_delay_minutes=policy.max_delay_minutes,
         rng=random_source,
     )
+
+def get_pending_simulated_player_world_arrival(
+    db: Session,
+    campaign_id: str,
+) -> ScheduledSimulatedPlayerArrival | None:
+    return (
+        db.query(ScheduledSimulatedPlayerArrival)
+        .join(
+            Location,
+            ScheduledSimulatedPlayerArrival.location_id
+            == Location.id,
+        )
+        .join(
+            Region,
+            Location.region_id == Region.id,
+        )
+        .filter(
+            Region.campaign_id == campaign_id,
+            ScheduledSimulatedPlayerArrival.executed_world_minute
+            .is_(None),
+        )
+        .order_by(
+            ScheduledSimulatedPlayerArrival.scheduled_world_minute,
+            ScheduledSimulatedPlayerArrival.id,
+        )
+        .first()
+    )
+
+def ensure_simulated_player_world_arrival_scheduled(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    rng: random.Random | None = None,
+) -> ScheduledSimulatedPlayerArrival | None:
+    """
+    Ensure the campaign has at most one pending automatic arrival.
+
+    The caller still decides the location.
+    """
+
+    existing = get_pending_simulated_player_world_arrival(
+        db,
+        campaign_id,
+    )
+
+    if existing is not None:
+        return existing
+
+    return schedule_simulated_player_world_arrival_from_policy(
+        db,
+        campaign_id,
+        location_id,
+        rng=rng,
+    )

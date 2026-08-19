@@ -6,6 +6,8 @@ from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.game.time.clock import get_world_time
 from app.game.players.service import (
+    ensure_simulated_player_world_arrival_scheduled,
+    get_pending_simulated_player_world_arrival,
     schedule_simulated_player_world_arrival_from_policy,
     get_simulated_player_arrival_policy,
     set_simulated_player_arrival_policy,
@@ -450,3 +452,65 @@ def test_missing_arrival_policy_schedules_nothing(
     )
 
     assert arrival is None
+
+def test_ensure_arrival_reuses_existing_pending_schedule(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Single Pending Arrival",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    set_simulated_player_arrival_policy(
+        db_session,
+        campaign.id,
+        enabled=True,
+        min_delay_minutes=100,
+        max_delay_minutes=500,
+        min_group_size=2,
+        max_group_size=4,
+    )
+
+    first = ensure_simulated_player_world_arrival_scheduled(
+        db_session,
+        campaign.id,
+        location.id,
+        rng=random.Random(10),
+    )
+
+    second = ensure_simulated_player_world_arrival_scheduled(
+        db_session,
+        campaign.id,
+        location.id,
+        rng=random.Random(999),
+    )
+
+    assert first is not None
+    assert second is not None
+    assert second.id == first.id
+
+    pending = get_pending_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+    )
+
+    assert pending is not None
+    assert pending.id == first.id
+
+    pending_rows = (
+        db_session.query(
+            ScheduledSimulatedPlayerArrival
+        )
+        .filter(
+            ScheduledSimulatedPlayerArrival.executed_world_minute
+            .is_(None),
+        )
+        .all()
+    )
+
+    assert len(pending_rows) == 1

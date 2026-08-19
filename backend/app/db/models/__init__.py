@@ -29,6 +29,9 @@ from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
 )
+from app.db.models.simulated_player_routine import (
+    SimulatedPlayerRoutine,
+)
 from app.db.models.skill import CharacterSkill, CharacterTechnique, Skill, Technique
 from app.db.models.world_development import WorldDevelopment
 
@@ -58,6 +61,7 @@ __all__ = [
     "ScheduledSimulatedPlayerArrival",
     "SimulatedPlayer",
     "SimulatedPlayerPopulation",
+    "SimulatedPlayerRoutine",
     "SimulatedPlayerArrivalPolicy",
     "SimulatedPlayerArrivalLocation",
     "CharacterSkill",

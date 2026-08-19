@@ -25,6 +25,9 @@ from app.core.enums import (
     NPCActivity,
     SimulatedPlayerStatus,
 )
+from app.game.players.service import (
+    simulated_player_presence_filters,
+)
 
 SOCIAL_INTERVAL_MINUTES = 24 * 60
 
@@ -144,8 +147,7 @@ def eligible_social_participants(
         .filter(
             SimulatedPlayer.campaign_id
             == campaign_id,
-            SimulatedPlayer.status
-            == SimulatedPlayerStatus.ACTIVE.value,
+            *simulated_player_presence_filters(),
         )
         .order_by(SimulatedPlayer.id)
         .all()

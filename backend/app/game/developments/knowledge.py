@@ -15,7 +15,9 @@ from app.core.enums import (
     KnowerType,
     SimulatedPlayerStatus,
 )
-
+from app.game.players.service import (
+    simulated_player_presence_filters,
+)
 
 def create_development_event_fact(
     db: Session,
@@ -171,8 +173,7 @@ def local_simulated_player_witnesses(
             == event.campaign_id,
             SimulatedPlayer.location_id
             == location_id,
-            SimulatedPlayer.status
-            == SimulatedPlayerStatus.ACTIVE.value,
+            *simulated_player_presence_filters(),
         )
         .order_by(SimulatedPlayer.id)
         .all()

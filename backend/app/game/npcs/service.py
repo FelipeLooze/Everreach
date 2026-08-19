@@ -13,6 +13,9 @@ from app.db.models.event import WorldEvent
 from app.services.event_log import log_event
 from app.game.relationships.service import get_character_npc_relationship
 from app.db.models.location import Location, LocationConnection
+from app.game.players.service import (
+    is_simulated_player_physically_present,
+)
 from app.game.discovery.service import (
     discover_connection,
     set_location_discovery,
@@ -389,8 +392,9 @@ def _knower_location_id(
             simulated_player is None
             or simulated_player.campaign_id
             != campaign_id
-            or simulated_player.status
-            != SimulatedPlayerStatus.ACTIVE.value
+            or not is_simulated_player_physically_present(
+                simulated_player
+            )
         ):
             return None
 

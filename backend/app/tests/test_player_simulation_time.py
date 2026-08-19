@@ -2,14 +2,51 @@ import random
 
 from app.core.enums import EventType
 from app.db.models.event import WorldEvent
-from app.game.world.seed import create_campaign, seed_initial_region
+from app.game.world.seed import (
+    create_campaign, 
+    seed_initial_region,
+)
 from app.simulation import player_simulation
 from app.game.time.clock import advance_world_time
-from app.game.world.seed import create_campaign
+from app.game.players.service import simulated_players_at_location
 from app.simulation.player_simulation import (
     _hour_boundaries_crossed,
 )
 
+def test_traveling_simulated_player_is_not_physically_present_at_origin(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Travel Presence",
+    )
+
+    _region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players_before = simulated_players_at_location(
+        db_session,
+        village.id,
+    )
+
+    assert players_before
+
+    traveling_player = players_before[0]
+    traveling_player.travel_arrival_world_minute = 600
+
+    db_session.flush()
+
+    players_during_travel = simulated_players_at_location(
+        db_session,
+        village.id,
+    )
+
+    assert traveling_player.id not in {
+        player.id
+        for player in players_during_travel
+    }
 
 def test_no_hour_boundary_crossed(db_session):
     campaign = create_campaign(

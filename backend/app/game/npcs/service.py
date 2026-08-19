@@ -166,7 +166,7 @@ def relevant_known_facts(
         for fact, link in rows
     ]
 
-def _certainty_rank(
+def certainty_rank(
     certainty: KnowledgeCertainty,
 ) -> int:
     return {
@@ -232,8 +232,8 @@ def teach_fact(
         )
 
         if (
-            _certainty_rank(certainty)
-            <= _certainty_rank(
+            certainty_rank(certainty)
+            <= certainty_rank(
                 current_certainty
             )
         ):
@@ -463,10 +463,10 @@ def propagate_fact(
         )
 
         if (
-            _certainty_rank(
+            certainty_rank(
                 target_certainty
             )
-            <= _certainty_rank(
+            <= certainty_rank(
                 current_target_certainty
             )
         ):

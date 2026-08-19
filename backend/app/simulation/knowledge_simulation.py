@@ -8,6 +8,7 @@ from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.event import WorldEvent
 from app.services.event_log import log_event
 from app.game.npcs.service import (
+    certainty_rank,
     propagate_fact_locally,
 )
 from app.db.models.knowledge import (
@@ -236,12 +237,15 @@ def select_social_pair(
 
     return pairs[index]
 
-def _known_fact_ids(
+def _known_fact_certainties(
     db: Session,
     participant: SocialParticipant,
-) -> set[str]:
+) -> dict[str, KnowledgeCertainty]:
     rows = (
-        db.query(KnowledgeKnower.fact_id)
+        db.query(
+            KnowledgeKnower.fact_id,
+            KnowledgeKnower.certainty,
+        )
         .filter(
             KnowledgeKnower.knower_type
             == participant.knower_type.value,
@@ -252,8 +256,8 @@ def _known_fact_ids(
     )
 
     return {
-        fact_id
-        for (fact_id,) in rows
+        fact_id: KnowledgeCertainty(certainty)
+        for fact_id, certainty in rows
     }
 
 
@@ -262,12 +266,12 @@ def eligible_transfer_candidates(
     campaign_id: str,
     pair: SocialPair,
 ) -> tuple[SocialTransferCandidate, ...]:
-    first_known = _known_fact_ids(
+    first_known = _known_fact_certainties(
         db,
         pair.first,
     )
 
-    second_known = _known_fact_ids(
+    second_known = _known_fact_certainties(
         db,
         pair.second,
     )
@@ -280,16 +284,53 @@ def eligible_transfer_candidates(
         (
             pair.first,
             pair.second,
-            first_known - second_known,
+            first_known,
+            second_known,
         ),
         (
             pair.second,
             pair.first,
-            second_known - first_known,
+            second_known,
+            first_known,
         ),
     )
 
-    for source, target, fact_ids in directions:
+    for (
+        source,
+        target,
+        source_known,
+        target_known,
+    ) in directions:
+        fact_ids: set[str] = set()
+
+        for (
+            fact_id,
+            source_certainty,
+        ) in source_known.items():
+            current_target_certainty = (
+                target_known.get(fact_id)
+            )
+
+            if current_target_certainty is None:
+                fact_ids.add(fact_id)
+                continue
+
+            transferred_certainty = (
+                social_transfer_certainty(
+                    source_certainty
+                )
+            )
+
+            if (
+                certainty_rank(
+                    transferred_certainty
+                )
+                > certainty_rank(
+                    current_target_certainty
+                )
+            ):
+                fact_ids.add(fact_id)
+
         if not fact_ids:
             continue
 

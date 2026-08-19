@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
@@ -24,6 +24,26 @@ class SimulatedPlayer(Base):
 
     archetype: Mapped[str] = mapped_column(String, default=SimulatedPlayerArchetype.EXPLORER)
     goal: Mapped[str] = mapped_column(String, default="")
+
+    personality: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    background: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    motivation: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    physical_description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
 
     goal_type: Mapped[str] = mapped_column(
         String,

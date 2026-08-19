@@ -1,4 +1,5 @@
 import random
+from app.ai.llm_service import LLMService
 from app.core.enums import EventType, ActionIntentType
 from app.db.models.event import WorldEvent
 from app.game.players.service import (
@@ -273,3 +274,119 @@ def test_active_simulated_player_has_private_identity_context(
         "Homem jovem de cabelos escuros e olhos castanhos."
         in context
     )
+
+class TransportedConversationLLM(
+    LLMService,
+):
+    def __init__(
+        self,
+        target_name: str,
+    ) -> None:
+        self.target_name = target_name
+        self.calls: list[tuple[str, str]] = []
+
+    def generate(
+        self,
+        system: str,
+        prompt: str,
+    ) -> str:
+        self.calls.append(
+            (system, prompt)
+        )
+
+        if "intent" in system.casefold():
+            return (
+                "{"
+                '"intent": "TALK", '
+                f'"target": "{self.target_name}"'
+                "}"
+            )
+
+        return "— Olá."
+
+def test_resolve_action_sends_active_transported_identity_to_narrator(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Transported Narrator Context",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    from app.game.character.service import (
+        create_character,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Logan",
+        region.id,
+        location.id,
+    )
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    assert state.nearby_simulated_players
+
+    transported = (
+        state.nearby_simulated_players[0]
+    )
+
+    transported.personality = (
+        "Paciente e observador."
+    )
+    transported.background = (
+        "Trabalhava como mecânico na Terra."
+    )
+    transported.motivation = (
+        "Encontrar estabilidade."
+    )
+    transported.goal = (
+        "Conseguir um lugar seguro para viver."
+    )
+    transported.physical_description = (
+        "Homem jovem de cabelos escuros."
+    )
+
+    db_session.flush()
+
+    llm = TransportedConversationLLM(
+        transported.name
+    )
+
+    result = engine.resolve_action(
+        db_session,
+        llm,
+        campaign.id,
+        character.id,
+        f"Falo com {transported.name}.",
+    )
+
+    assert result.intent_type == ActionIntentType.TALK.value
+
+    narrator_prompts = [
+        prompt
+        for system, prompt in llm.calls
+        if "SCENE CONTEXT:" in prompt
+    ]
+
+    assert narrator_prompts
+
+    narrator_prompt = narrator_prompts[-1]
+
+    assert (
+        "ACTIVE TRANSPORTED PERSON CONTEXT"
+        in narrator_prompt
+    )
+    assert transported.name in narrator_prompt
+    assert "Paciente e observador." in narrator_prompt
+    assert "Trabalhava como mecânico na Terra." in narrator_prompt

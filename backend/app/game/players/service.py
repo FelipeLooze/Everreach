@@ -59,6 +59,24 @@ def is_simulated_player_physically_present(
     )
 
 
+def is_simulated_player_available_for_encounter(
+    player: SimulatedPlayer,
+) -> bool:
+    """
+    Return whether a transported person can plausibly appear
+    in a casual encounter right now.
+
+    Working, training, and social activity do not make someone
+    physically absent. Resting does.
+    """
+
+    return (
+        is_simulated_player_physically_present(player)
+        and player.activity
+        != SimulatedPlayerActivity.RESTING.value
+    )
+
+
 def start_simulated_player_temporary_activity(
     db: Session,
     player: SimulatedPlayer,
@@ -277,7 +295,12 @@ def select_existing_simulated_player_for_encounter(
             db,
             location_id,
         )
-        if player.campaign_id == campaign_id
+        if (
+            player.campaign_id == campaign_id
+            and is_simulated_player_available_for_encounter(
+                player
+            )
+        )
     ]
 
     if not candidates:
@@ -366,6 +389,9 @@ def select_known_simulated_player_for_reencounter(
         )
         if (
             player.campaign_id == campaign_id
+            and is_simulated_player_available_for_encounter(
+                player
+            )
             and _character_has_met_simulated_player(
                 db,
                 campaign_id,

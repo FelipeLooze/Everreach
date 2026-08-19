@@ -47,6 +47,9 @@ def tick(
     )
 
     return WorldTickResult(
+        simulated_player_travel_started=(
+            player_result.travel_started
+        ),
         simulated_player_moves=player_result.moved,
         simulated_player_training=player_result.trained,
         npc_changes=npc_result.changes,

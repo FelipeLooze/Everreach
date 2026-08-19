@@ -21,3 +21,22 @@ class SimulatedPlayer(Base):
     archetype: Mapped[str] = mapped_column(String, default=SimulatedPlayerArchetype.EXPLORER)
     goal: Mapped[str] = mapped_column(String, default="")
     status: Mapped[str] = mapped_column(String, default=SimulatedPlayerStatus.ACTIVE)
+    travel_connection_id: Mapped[str | None] = mapped_column(
+        ForeignKey("location_connections.id"),
+        nullable=True,
+    )
+
+    travel_destination_id: Mapped[str | None] = mapped_column(
+        ForeignKey("locations.id"),
+        nullable=True,
+    )
+
+    travel_started_world_minute: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    travel_arrival_world_minute: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )

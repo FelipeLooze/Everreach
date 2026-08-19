@@ -1,33 +1,54 @@
 import random
 
 from sqlalchemy.orm import Session
-from app.game.time.clock import get_world_time
-from app.core.enums import EventType, SimulatedPlayerArchetype, SimulatedPlayerStatus
+
+from app.core.enums import (
+    EventType,
+    KnowledgeCertainty,
+    KnowerType,
+    SimulatedPlayerArchetype,
+    SimulatedPlayerStatus,
+)
+from app.db.models.knowledge import (
+    KnowledgeFact,
+    KnowledgeKnower,
+)
 from app.db.models.location import LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
+from app.game.time.clock import get_world_time
+from app.game.travel.service import calculate_travel_minutes
 from app.services.event_log import log_event
+from app.simulation.cadence import boundary_minutes_crossed
 from app.simulation.results import PlayerSimulationResult
 
+
 ACTION_CHANCE_PER_HOUR = 0.5
+ACTION_INTERVAL_MINUTES = 60
 
 def _hour_boundaries_crossed(
     db: Session,
     campaign_id: str,
     minutes: int,
 ) -> int:
+    """Return how many absolute hourly boundaries were crossed.
+
+    Kept as a small compatibility helper for callers/tests that only need
+    the count. Travel simulation itself uses the exact boundary minutes.
+    """
     if minutes <= 0:
         return 0
 
-    end_total = get_world_time(
+    end_world_minute = get_world_time(
         db,
         campaign_id,
     ).total_minutes()
 
-    start_total = end_total - minutes
-
-    return max(
-        0,
-        (end_total // 60) - (start_total // 60),
+    return len(
+        boundary_minutes_crossed(
+            end_world_minute,
+            minutes,
+            ACTION_INTERVAL_MINUTES,
+        )
     )
 
 def tick(
@@ -36,25 +57,25 @@ def tick(
     minutes: int,
     rng: random.Random | None = None,
 ) -> PlayerSimulationResult:
-    """Advance simulated transported people on absolute hourly opportunities.
+    """Advance autonomous transported people.
 
-    The number of opportunities depends on world-clock boundaries crossed,
-    not on how the protagonist divided the elapsed time into actions.
+    Travel uses absolute world minutes. A transported person begins travel
+    during an hourly action opportunity and changes physical location only
+    when the route's travel time has actually elapsed.
     """
     if minutes <= 0:
         return PlayerSimulationResult()
 
-    opportunities = _hour_boundaries_crossed(
+    end_world_minute = get_world_time(
         db,
         campaign_id,
+    ).total_minutes()
+
+    opportunity_world_minutes = boundary_minutes_crossed(
+        end_world_minute,
         minutes,
+        ACTION_INTERVAL_MINUTES,
     )
-
-    if opportunities <= 0:
-        return PlayerSimulationResult()
-
-    moved = 0
-    trained = 0
 
     r = rng or random.Random()
 
@@ -69,8 +90,26 @@ def tick(
         .all()
     )
 
-    for _ in range(opportunities):
+    travel_started = 0
+    moved = 0
+    trained = 0
+
+    for opportunity_world_minute in opportunity_world_minutes:
         for player in players:
+            # Someone whose arrival happened before this opportunity
+            # is already physically at the destination.
+            if _complete_travel_if_due(
+                db,
+                campaign_id,
+                player,
+                opportunity_world_minute,
+            ):
+                moved += 1
+
+            # A person still in transit cannot perform another hourly action.
+            if _is_traveling(player):
+                continue
+
             if r.random() > ACTION_CHANCE_PER_HOUR:
                 continue
 
@@ -78,13 +117,14 @@ def tick(
                 SimulatedPlayerArchetype.EXPLORER,
                 SimulatedPlayerArchetype.ADVENTURER,
             ):
-                if _try_move(
+                if _try_start_travel(
                     db,
                     campaign_id,
                     player,
                     r,
+                    opportunity_world_minute,
                 ):
-                    moved += 1
+                    travel_started += 1
 
             elif (
                 player.archetype
@@ -94,26 +134,198 @@ def tick(
                     db,
                     campaign_id,
                     player,
+                    opportunity_world_minute,
                 )
                 trained += 1
-            # SOCIAL permanece parado no MVP.
+
+            # SOCIAL does not choose an autonomous action in this MVP.
+
+    # Arrival is independent from hourly action opportunities.
+    # This matters for short ticks that cross no hour boundary.
+    for player in players:
+        if _complete_travel_if_due(
+            db,
+            campaign_id,
+            player,
+            end_world_minute,
+        ):
+            moved += 1
+
     return PlayerSimulationResult(
+        travel_started=travel_started,
         moved=moved,
         trained=trained,
     )
 
 
-def _try_move(db: Session, campaign_id: str, player: SimulatedPlayer, r: random.Random) -> None:
-    connections = (
-        db.query(LocationConnection)
-        .filter(LocationConnection.from_location_id == player.location_id, LocationConnection.active.is_(True))
+def _is_traveling(
+    player: SimulatedPlayer,
+) -> bool:
+    return (
+        player.travel_arrival_world_minute
+        is not None
+    )
+
+
+def _known_outgoing_connections(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+) -> list[LocationConnection]:
+    """Return active outgoing routes this transported person can navigate.
+
+    RUMOR alone is not enough to use a route autonomously.
+    BELIEVED and CONFIRMED route knowledge are navigable.
+    """
+    rows = (
+        db.query(KnowledgeFact.subject)
+        .join(
+            KnowledgeKnower,
+            KnowledgeKnower.fact_id
+            == KnowledgeFact.id,
+        )
+        .filter(
+            KnowledgeFact.campaign_id
+            == campaign_id,
+            KnowledgeFact.subject.like(
+                "connection:%"
+            ),
+            KnowledgeKnower.knower_type
+            == KnowerType.SIMULATED_PLAYER.value,
+            KnowledgeKnower.knower_id
+            == player.id,
+            KnowledgeKnower.certainty.in_(
+                (
+                    KnowledgeCertainty.BELIEVED.value,
+                    KnowledgeCertainty.CONFIRMED.value,
+                )
+            ),
+        )
         .all()
     )
+
+    known_connection_ids = {
+        subject.removeprefix("connection:")
+        for (subject,) in rows
+    }
+
+    if not known_connection_ids:
+        return []
+
+    return (
+        db.query(LocationConnection)
+        .filter(
+            LocationConnection.id.in_(
+                known_connection_ids
+            ),
+            LocationConnection.from_location_id
+            == player.location_id,
+            LocationConnection.active.is_(True),
+        )
+        .order_by(LocationConnection.id)
+        .all()
+    )
+
+
+def _try_start_travel(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    r: random.Random,
+    opportunity_world_minute: int,
+) -> bool:
+    connections = _known_outgoing_connections(
+        db,
+        campaign_id,
+        player,
+    )
+
     if not connections:
         return False
 
-    destination = r.choice(connections).to_location_id
-    player.location_id = destination
+    connection = r.choice(connections)
+
+    travel_minutes = calculate_travel_minutes(
+        connection
+    )
+
+    arrival_world_minute = (
+        opportunity_world_minute
+        + travel_minutes
+    )
+
+    player.travel_connection_id = connection.id
+    player.travel_destination_id = (
+        connection.to_location_id
+    )
+    player.travel_started_world_minute = (
+        opportunity_world_minute
+    )
+    player.travel_arrival_world_minute = (
+        arrival_world_minute
+    )
+
+    log_event(
+        db,
+        campaign_id,
+        EventType.SIMULATED_PLAYER_TRAVEL_STARTED,
+        actor_type="simulated_player",
+        actor_id=player.id,
+        payload={
+            "connection_id": connection.id,
+            "from_location_id": (
+                connection.from_location_id
+            ),
+            "to_location_id": (
+                connection.to_location_id
+            ),
+            "travel_minutes": travel_minutes,
+            "arrival_world_minute": (
+                arrival_world_minute
+            ),
+        },
+        occurred_world_minute=(
+            opportunity_world_minute
+        ),
+    )
+
+    return True
+
+
+def _complete_travel_if_due(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    current_world_minute: int,
+) -> bool:
+    arrival_world_minute = (
+        player.travel_arrival_world_minute
+    )
+
+    if arrival_world_minute is None:
+        return False
+
+    if arrival_world_minute > current_world_minute:
+        return False
+
+    destination_id = (
+        player.travel_destination_id
+    )
+
+    if destination_id is None:
+        return False
+
+    origin_id = player.location_id
+    connection_id = (
+        player.travel_connection_id
+    )
+
+    player.location_id = destination_id
+
+    player.travel_connection_id = None
+    player.travel_destination_id = None
+    player.travel_started_world_minute = None
+    player.travel_arrival_world_minute = None
 
     log_event(
         db,
@@ -121,12 +333,25 @@ def _try_move(db: Session, campaign_id: str, player: SimulatedPlayer, r: random.
         EventType.SIMULATED_PLAYER_MOVED,
         actor_type="simulated_player",
         actor_id=player.id,
-        payload={"to_location_id": destination},
+        payload={
+            "connection_id": connection_id,
+            "from_location_id": origin_id,
+            "to_location_id": destination_id,
+        },
+        occurred_world_minute=(
+            arrival_world_minute
+        ),
     )
+
     return True
 
 
-def _train(db: Session, campaign_id: str, player: SimulatedPlayer) -> None:
+def _train(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    opportunity_world_minute: int,
+) -> None:
     log_event(
         db,
         campaign_id,
@@ -134,4 +359,7 @@ def _train(db: Session, campaign_id: str, player: SimulatedPlayer) -> None:
         actor_type="simulated_player",
         actor_id=player.id,
         payload={},
+        occurred_world_minute=(
+            opportunity_world_minute
+        ),
     )

@@ -6,6 +6,8 @@ from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.game.time.clock import get_world_time
 from app.game.players.service import (
+    get_simulated_player_arrival_policy,
+    set_simulated_player_arrival_policy,
     schedule_next_simulated_player_world_arrival,
     abstract_simulated_player_count_at_location,
     register_simulated_player_world_arrival,
@@ -318,3 +320,50 @@ def test_next_arrival_is_scheduled_irregularly_inside_given_window(
         )
         == 0
     )
+
+def test_arrival_policy_is_optional_and_persists_exact_campaign_values(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Arrival Policy",
+    )
+
+    assert (
+        get_simulated_player_arrival_policy(
+            db_session,
+            campaign.id,
+        )
+        is None
+    )
+
+    policy = set_simulated_player_arrival_policy(
+        db_session,
+        campaign.id,
+        enabled=True,
+        min_delay_minutes=111,
+        max_delay_minutes=777,
+        min_group_size=2,
+        max_group_size=9,
+    )
+
+    assert policy.campaign_id == campaign.id
+    assert policy.enabled is True
+    assert policy.min_delay_minutes == 111
+    assert policy.max_delay_minutes == 777
+    assert policy.min_group_size == 2
+    assert policy.max_group_size == 9
+
+    persisted = (
+        get_simulated_player_arrival_policy(
+            db_session,
+            campaign.id,
+        )
+    )
+
+    assert persisted is not None
+    assert persisted.id == policy.id
+    assert persisted.min_delay_minutes == 111
+    assert persisted.max_delay_minutes == 777
+    assert persisted.min_group_size == 2
+    assert persisted.max_group_size == 9

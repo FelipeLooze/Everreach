@@ -4,6 +4,7 @@ import random
 from sqlalchemy.orm import Session
 from app.db.models.simulated_player_arrival import (
     ScheduledSimulatedPlayerArrival,
+    SimulatedPlayerArrivalPolicy,
 )
 from app.game.time.clock import get_world_time
 from app.core.enums import (
@@ -19,7 +20,7 @@ from app.db.models.simulated_player import (
     SimulatedPlayerPopulation,
 )
 from app.services.event_log import log_event
-
+from app.db.models.campaign import Campaign
 
 _CONVERSATION_BOUNDARY_EVENTS = (
     EventType.PLAYER_MET_NPC.value,
@@ -594,3 +595,94 @@ def schedule_next_simulated_player_world_arrival(
         count,
         current_world_minute + delay_minutes,
     )
+
+def get_simulated_player_arrival_policy(
+    db: Session,
+    campaign_id: str,
+) -> SimulatedPlayerArrivalPolicy | None:
+    return (
+        db.query(SimulatedPlayerArrivalPolicy)
+        .filter(
+            SimulatedPlayerArrivalPolicy.campaign_id
+            == campaign_id
+        )
+        .first()
+    )
+
+
+def set_simulated_player_arrival_policy(
+    db: Session,
+    campaign_id: str,
+    *,
+    enabled: bool,
+    min_delay_minutes: int,
+    max_delay_minutes: int,
+    min_group_size: int,
+    max_group_size: int,
+) -> SimulatedPlayerArrivalPolicy:
+    """
+    Create or update the campaign's later-arrival policy.
+
+    This only stores configuration. It does not schedule or execute
+    an arrival.
+    """
+
+    campaign = db.get(
+        Campaign,
+        campaign_id,
+    )
+
+    if campaign is None:
+        raise ValueError(
+            f"Campaign {campaign_id} does not exist."
+        )
+
+    if min_delay_minutes <= 0:
+        raise ValueError(
+            "Minimum arrival delay must be greater than zero."
+        )
+
+    if max_delay_minutes < min_delay_minutes:
+        raise ValueError(
+            "Maximum arrival delay cannot be smaller "
+            "than minimum arrival delay."
+        )
+
+    if min_group_size <= 0:
+        raise ValueError(
+            "Minimum arrival group size must be greater than zero."
+        )
+
+    if max_group_size < min_group_size:
+        raise ValueError(
+            "Maximum arrival group size cannot be smaller "
+            "than minimum arrival group size."
+        )
+
+    policy = get_simulated_player_arrival_policy(
+        db,
+        campaign_id,
+    )
+
+    if policy is None:
+        policy = SimulatedPlayerArrivalPolicy(
+            campaign_id=campaign_id,
+            enabled=enabled,
+            min_delay_minutes=min_delay_minutes,
+            max_delay_minutes=max_delay_minutes,
+            min_group_size=min_group_size,
+            max_group_size=max_group_size,
+        )
+
+        db.add(policy)
+
+    else:
+        policy.enabled = enabled
+        policy.min_delay_minutes = min_delay_minutes
+        policy.max_delay_minutes = max_delay_minutes
+        policy.min_group_size = min_group_size
+        policy.max_group_size = max_group_size
+
+    db.flush()
+
+    return policy

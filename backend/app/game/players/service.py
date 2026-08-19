@@ -686,3 +686,43 @@ def set_simulated_player_arrival_policy(
     db.flush()
 
     return policy
+
+def schedule_simulated_player_world_arrival_from_policy(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    rng: random.Random | None = None,
+) -> ScheduledSimulatedPlayerArrival | None:
+    """
+    Schedule one future arrival using the campaign policy.
+
+    The caller still decides the arrival location.
+
+    No policy or a disabled policy means no automatic arrival
+    is scheduled.
+    """
+
+    policy = get_simulated_player_arrival_policy(
+        db,
+        campaign_id,
+    )
+
+    if policy is None or not policy.enabled:
+        return None
+
+    random_source = rng or random.Random()
+
+    count = random_source.randint(
+        policy.min_group_size,
+        policy.max_group_size,
+    )
+
+    return schedule_next_simulated_player_world_arrival(
+        db,
+        campaign_id,
+        location_id,
+        count=count,
+        min_delay_minutes=policy.min_delay_minutes,
+        max_delay_minutes=policy.max_delay_minutes,
+        rng=random_source,
+    )

@@ -6,6 +6,7 @@ from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.game.time.clock import get_world_time
 from app.game.players.service import (
+    schedule_simulated_player_world_arrival_from_policy,
     get_simulated_player_arrival_policy,
     set_simulated_player_arrival_policy,
     schedule_next_simulated_player_world_arrival,
@@ -367,3 +368,85 @@ def test_arrival_policy_is_optional_and_persists_exact_campaign_values(
     assert persisted.max_delay_minutes == 777
     assert persisted.min_group_size == 2
     assert persisted.max_group_size == 9
+
+def test_arrival_policy_schedules_future_arrival_within_configured_bounds(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Policy Scheduled Arrival",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    set_simulated_player_arrival_policy(
+        db_session,
+        campaign.id,
+        enabled=True,
+        min_delay_minutes=120,
+        max_delay_minutes=600,
+        min_group_size=2,
+        max_group_size=5,
+    )
+
+    current_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    arrival = (
+        schedule_simulated_player_world_arrival_from_policy(
+            db_session,
+            campaign.id,
+            location.id,
+            rng=random.Random(42),
+        )
+    )
+
+    assert arrival is not None
+
+    delay = (
+        arrival.scheduled_world_minute
+        - current_world_minute
+    )
+
+    assert 120 <= delay <= 600
+    assert 2 <= arrival.count <= 5
+    assert arrival.location_id == location.id
+    assert arrival.executed_world_minute is None
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 0
+    )
+
+def test_missing_arrival_policy_schedules_nothing(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "No Arrival Policy",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    arrival = (
+        schedule_simulated_player_world_arrival_from_policy(
+            db_session,
+            campaign.id,
+            location.id,
+            rng=random.Random(42),
+        )
+    )
+
+    assert arrival is None

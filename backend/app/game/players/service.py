@@ -10,6 +10,7 @@ from app.db.models.simulated_player_arrival import (
 from app.game.time.clock import get_world_time
 from app.core.enums import (
     EventType,
+    SimulatedPlayerActivity,
     SimulatedPlayerStatus,
 )
 from app.db.models.character import Character
@@ -53,6 +54,65 @@ def is_simulated_player_physically_present(
         and player.travel_arrival_world_minute
         is None
     )
+
+
+def start_simulated_player_temporary_activity(
+    db: Session,
+    player: SimulatedPlayer,
+    activity: SimulatedPlayerActivity,
+    until_world_minute: int,
+) -> SimulatedPlayer:
+    """
+    Start a bounded local activity for one transported person.
+
+    Duration is supplied explicitly by the caller. This service does not
+    invent how long training, work, or social activity should last.
+    """
+
+    if activity not in (
+        SimulatedPlayerActivity.TRAINING,
+        SimulatedPlayerActivity.SOCIALIZING,
+        SimulatedPlayerActivity.WORKING,
+    ):
+        raise ValueError(
+            "Temporary activity must be TRAINING, "
+            "SOCIALIZING, or WORKING."
+        )
+
+    if (
+        player.status
+        != SimulatedPlayerStatus.ACTIVE.value
+    ):
+        raise ValueError(
+            "Only active transported people can start "
+            "a temporary activity."
+        )
+
+    if player.travel_arrival_world_minute is not None:
+        raise ValueError(
+            "A transported person cannot start a local "
+            "temporary activity while traveling."
+        )
+
+    current_world_minute = get_world_time(
+        db,
+        player.campaign_id,
+    ).total_minutes()
+
+    if until_world_minute <= current_world_minute:
+        raise ValueError(
+            "Temporary activity must end after "
+            "the current world minute."
+        )
+
+    player.activity = activity.value
+    player.activity_until_world_minute = (
+        until_world_minute
+    )
+
+    db.flush()
+
+    return player
 
 
 def simulated_players_at_location(

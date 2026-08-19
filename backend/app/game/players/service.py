@@ -344,6 +344,45 @@ def _character_has_met_simulated_player(
     return False
 
 
+def select_known_simulated_player_for_reencounter(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    location_id: str,
+    rng: random.Random | None = None,
+) -> SimulatedPlayer | None:
+    """
+    Select a previously met transported person who is physically
+    present at the requested location.
+
+    This function never moves, creates, or materializes anyone.
+    """
+
+    candidates = [
+        player
+        for player in simulated_players_at_location(
+            db,
+            location_id,
+        )
+        if (
+            player.campaign_id == campaign_id
+            and _character_has_met_simulated_player(
+                db,
+                campaign_id,
+                character_id,
+                player.id,
+            )
+        )
+    ]
+
+    if not candidates:
+        return None
+
+    random_source = rng or random.Random()
+
+    return random_source.choice(candidates)
+
+
 def meet_simulated_player(
     db: Session,
     campaign_id: str,

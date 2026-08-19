@@ -435,3 +435,61 @@ def consume_abstract_simulated_player_population(
     db.flush()
 
     return population
+
+def register_simulated_player_world_arrival(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    count: int,
+) -> SimulatedPlayerPopulation:
+    """
+    Register newly transported people arriving in the world.
+
+    They enter only as abstract population. Individual identities are
+    materialized later when an actual encounter requires one.
+    """
+
+    location = _require_location_in_campaign(
+        db,
+        campaign_id,
+        location_id,
+    )
+
+    if count <= 0:
+        raise ValueError(
+            "Arrival count must be greater than zero."
+        )
+
+    population = (
+        db.query(SimulatedPlayerPopulation)
+        .filter(
+            SimulatedPlayerPopulation.location_id
+            == location_id
+        )
+        .first()
+    )
+
+    if population is None:
+        population = SimulatedPlayerPopulation(
+            location_id=location_id,
+            abstract_count=0,
+        )
+        db.add(population)
+
+    population.abstract_count += count
+
+    db.flush()
+
+    log_event(
+        db,
+        campaign_id,
+        EventType.SIMULATED_PLAYER_WORLD_ARRIVAL,
+        actor_type="world",
+        payload={
+            "location_id": location.id,
+            "location_name": location.name,
+            "count": count,
+        },
+    )
+
+    return population

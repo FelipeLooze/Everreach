@@ -1,5 +1,6 @@
-from app.game.character.service import create_character
 from app.core.enums import SimulatedPlayerActivity
+from app.ai.llm_service import LLMService
+from app.game.character.service import create_character
 from app.game.players.service import (
     meet_simulated_player,
     select_existing_simulated_player_for_encounter,
@@ -10,7 +11,29 @@ from app.game.world.seed import (
     create_campaign,
     seed_initial_region,
 )
+from app.game.players.encounter import (
+    resolve_simulated_player_encounter,
+)
 
+class _FailIfCalledLLM(LLMService):
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def generate(
+        self,
+        system: str,
+        prompt: str,
+    ) -> str:
+        self.calls += 1
+        raise AssertionError(
+            "LLM must not be called when a persistent "
+            "person can resolve the encounter."
+        )
+
+
+class _ChooseLast:
+    def choice(self, candidates):
+        return candidates[-1]
 
 def test_known_present_transportee_can_be_selected_for_reencounter(
     db_session,
@@ -338,3 +361,103 @@ def test_resting_transportees_are_not_selected_for_casual_encounter(
     )
 
     assert selected is None
+
+def test_encounter_resolver_prioritizes_known_present_transportee(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Resolver Reencounter Priority",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    assert len(players) >= 2
+
+    known_player = players[0]
+    other_player = players[-1]
+
+    assert known_player.id != other_player.id
+
+    meet_simulated_player(
+        db_session,
+        campaign.id,
+        character.id,
+        known_player.id,
+    )
+
+    llm = _FailIfCalledLLM()
+
+    resolved = resolve_simulated_player_encounter(
+        db_session,
+        llm,
+        campaign.id,
+        location.id,
+        rng=_ChooseLast(),
+        character_id=character.id,
+    )
+
+    assert resolved is not None
+    assert resolved.id == known_player.id
+    assert llm.calls == 0
+
+def test_encounter_resolver_falls_back_to_unknown_persistent_transportee(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Resolver Persistent Fallback",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    assert players
+
+    expected = players[-1]
+
+    llm = _FailIfCalledLLM()
+
+    resolved = resolve_simulated_player_encounter(
+        db_session,
+        llm,
+        campaign.id,
+        location.id,
+        rng=_ChooseLast(),
+        character_id=character.id,
+    )
+
+    assert resolved is not None
+    assert resolved.id == expected.id
+    assert llm.calls == 0

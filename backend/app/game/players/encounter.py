@@ -10,6 +10,7 @@ from app.game.players.generator import (
 from app.game.players.service import (
     abstract_simulated_player_count_at_location,
     select_existing_simulated_player_for_encounter,
+    select_known_simulated_player_for_reencounter,
 )
 
 
@@ -19,14 +20,33 @@ def resolve_simulated_player_encounter(
     campaign_id: str,
     location_id: str,
     rng: random.Random | None = None,
+    *,
+    character_id: str | None = None,
 ) -> SimulatedPlayer | None:
     """
     Resolve one transported person for an encounter.
 
-    Existing persistent people who are physically present are always
-    preferred. A new identity is materialized only when nobody suitable
-    is already present and abstract population exists.
+    When a character is known, previously met people who are genuinely
+    present and available are preferred. Otherwise, another suitable
+    persistent person may be selected.
+
+    A new identity is materialized only when nobody suitable is already
+    present and abstract population exists.
     """
+
+    if character_id is not None:
+        known = (
+            select_known_simulated_player_for_reencounter(
+                db,
+                campaign_id,
+                character_id,
+                location_id,
+                rng=rng,
+            )
+        )
+
+        if known is not None:
+            return known
 
     existing = (
         select_existing_simulated_player_for_encounter(

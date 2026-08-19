@@ -1,11 +1,12 @@
 import json
-
+import random
 import pytest
 
 from app.core.enums import EventType
 from app.db.models.event import WorldEvent
 from app.game.time.clock import get_world_time
 from app.game.players.service import (
+    schedule_next_simulated_player_world_arrival,
     abstract_simulated_player_count_at_location,
     register_simulated_player_world_arrival,
     set_abstract_simulated_player_population,
@@ -271,3 +272,49 @@ def test_scheduled_arrival_executes_once_at_canonical_world_minute(
     )
 
     assert len(events_after_second_tick) == 1
+
+def test_next_arrival_is_scheduled_irregularly_inside_given_window(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Irregular Arrival",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    current_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    arrival = schedule_next_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+        location.id,
+        count=2,
+        min_delay_minutes=100,
+        max_delay_minutes=500,
+        rng=random.Random(42),
+    )
+
+    delay = (
+        arrival.scheduled_world_minute
+        - current_world_minute
+    )
+
+    assert 100 <= delay <= 500
+    assert arrival.count == 2
+    assert arrival.executed_world_minute is None
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 0
+    )

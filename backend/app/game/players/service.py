@@ -546,3 +546,51 @@ def schedule_simulated_player_world_arrival(
     db.flush()
 
     return arrival
+
+
+def schedule_next_simulated_player_world_arrival(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    count: int,
+    min_delay_minutes: int,
+    max_delay_minutes: int,
+    rng: random.Random | None = None,
+) -> ScheduledSimulatedPlayerArrival:
+    """
+    Schedule an irregular future arrival inside a caller-provided window.
+
+    This function defines the scheduling mechanism, not the world's
+    canonical arrival frequency or group size.
+    """
+
+    if min_delay_minutes <= 0:
+        raise ValueError(
+            "Minimum arrival delay must be greater than zero."
+        )
+
+    if max_delay_minutes < min_delay_minutes:
+        raise ValueError(
+            "Maximum arrival delay cannot be smaller "
+            "than minimum arrival delay."
+        )
+
+    current_world_minute = get_world_time(
+        db,
+        campaign_id,
+    ).total_minutes()
+
+    random_source = rng or random.Random()
+
+    delay_minutes = random_source.randint(
+        min_delay_minutes,
+        max_delay_minutes,
+    )
+
+    return schedule_simulated_player_world_arrival(
+        db,
+        campaign_id,
+        location_id,
+        count,
+        current_world_minute + delay_minutes,
+    )

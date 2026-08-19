@@ -2,6 +2,7 @@ from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
+    SimulatedPlayerActivity,
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
     SimulatedPlayerStatus,
@@ -54,6 +55,13 @@ class SimulatedPlayer(Base):
     goal_subject: Mapped[str | None] = mapped_column(
         String,
         nullable=True,
+    )
+
+    activity: Mapped[str] = mapped_column(
+        String,
+        default=SimulatedPlayerActivity.AVAILABLE,
+        server_default=SimulatedPlayerActivity.AVAILABLE,
+        nullable=False,
     )
 
     status: Mapped[str] = mapped_column(String, default=SimulatedPlayerStatus.ACTIVE)

@@ -71,6 +71,13 @@ class SimulatedPlayerGoalType(StrEnum):
     GATHER_KNOWLEDGE = "GATHER_KNOWLEDGE"
     SEEK_DANGER = "SEEK_DANGER"
 
+class SimulatedPlayerActivity(StrEnum):
+    AVAILABLE = "AVAILABLE"
+    RESTING = "RESTING"
+    TRAINING = "TRAINING"
+    SOCIALIZING = "SOCIALIZING"
+    WORKING = "WORKING"
+
 class SimulatedPlayerStatus(StrEnum):
     ACTIVE = "ACTIVE"
     DEAD = "DEAD"

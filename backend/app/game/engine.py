@@ -232,6 +232,13 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
         is_dialogue
         and action_simulated_player is not None
     ):
+        relationship_service.record_simulated_player_interaction(
+            db,
+            campaign_id,
+            character.id,
+            action_simulated_player.id,
+        )
+        
         memory_manager.remember_simulated_player_dialogue(
             db,
             story_event,

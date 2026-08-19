@@ -5,6 +5,9 @@ from app.core.enums import SimulatedPlayerStatus
 from app.game.players.encounter import (
     resolve_simulated_player_encounter,
 )
+from app.game.relationships.service import (
+    get_character_simulated_player_relationship,
+)
 from app.ai.llm_service import LLMService
 from app.db.models.event import WorldEvent
 from app.game.players.service import (
@@ -68,7 +71,7 @@ class EncounterMaterializationLLM(LLMService):
             }
         )
 
-def test_conversation_creates_memories_for_both_character_and_transported_person(
+def test_conversation_creates_memories_and_relationship_with_transported_person(
     db_session,
 ):
     campaign = create_campaign(
@@ -153,6 +156,20 @@ def test_conversation_creates_memories_for_both_character_and_transported_person
     assert character.name in (
         transported_memories[-1].summary_text
     )
+
+    relationship = (
+        get_character_simulated_player_relationship(
+            db_session,
+            campaign.id,
+            character.id,
+            transported.id,
+        )
+    )
+
+    assert relationship is not None
+    assert relationship.familiarity == 1
+    assert relationship.trust == 0
+    assert relationship.affinity == 0
 
 def test_encounter_reuses_existing_transported_person(
     db_session,

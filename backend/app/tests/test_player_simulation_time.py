@@ -550,7 +550,7 @@ def test_transportee_rests_at_night_and_wakes_at_six(
 
     assert (
         trainer.activity
-        == SimulatedPlayerActivity.AVAILABLE.value
+        == SimulatedPlayerActivity.TRAINING.value
     )
 
 
@@ -628,5 +628,151 @@ def test_rest_sync_does_not_change_local_activity_while_traveling():
 
     assert (
         player.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+def test_train_self_goal_overrides_social_archetype(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Goal Driven Training",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    social = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.SOCIAL
+    )
+
+    social.goal_type = (
+        SimulatedPlayerGoalType.TRAIN_SELF
+    )
+
+    social.activity = (
+        SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    db_session.flush()
+
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        1.0,
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    player_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+        rng=random.Random(123),
+    )
+
+    training_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_TRAINED.value,
+            WorldEvent.actor_id == social.id,
+        )
+        .all()
+    )
+
+    assert len(training_events) == 1
+
+    assert (
+        social.activity
+        == SimulatedPlayerActivity.TRAINING.value
+    )
+
+def test_gather_knowledge_goal_does_not_fall_back_to_training(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Knowledge Goal Priority",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    trainer = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.TRAINER
+    )
+
+    trainer.goal_type = (
+        SimulatedPlayerGoalType.GATHER_KNOWLEDGE
+    )
+
+    trainer.activity = (
+        SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    db_session.flush()
+
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        1.0,
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    player_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+        rng=random.Random(123),
+    )
+
+    training_events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_TRAINED.value,
+            WorldEvent.actor_id == trainer.id,
+        )
+        .all()
+    )
+
+    assert training_events == []
+
+    assert (
+        trainer.activity
         == SimulatedPlayerActivity.AVAILABLE.value
     )

@@ -134,6 +134,48 @@ def tick(
             if r.random() > ACTION_CHANCE_PER_HOUR:
                 continue
 
+            if (
+                player.goal_type
+                == SimulatedPlayerGoalType.TRAIN_SELF
+            ):
+                player.activity = (
+                    SimulatedPlayerActivity.TRAINING.value
+                )
+
+                _train(
+                    db,
+                    campaign_id,
+                    player,
+                    opportunity_world_minute,
+                )
+
+                trained += 1
+                continue
+
+            if player.goal_type in (
+                SimulatedPlayerGoalType.EXPLORE_REGION,
+                SimulatedPlayerGoalType.SEEK_DANGER,
+            ):
+                if _try_start_travel(
+                    db,
+                    campaign_id,
+                    player,
+                    r,
+                    opportunity_world_minute,
+                ):
+                    travel_started += 1
+
+                continue
+
+            if (
+                player.goal_type
+                == SimulatedPlayerGoalType.GATHER_KNOWLEDGE
+            ):
+                # There is no dedicated autonomous knowledge-gathering
+                # action yet. Do not invent one or fall back to an
+                # unrelated archetype action.
+                continue
+
             if player.archetype in (
                 SimulatedPlayerArchetype.EXPLORER,
                 SimulatedPlayerArchetype.ADVENTURER,
@@ -151,6 +193,10 @@ def tick(
                 player.archetype
                 == SimulatedPlayerArchetype.TRAINER
             ):
+                player.activity = (
+                    SimulatedPlayerActivity.TRAINING.value
+                )
+
                 _train(
                     db,
                     campaign_id,
@@ -626,7 +672,9 @@ def _try_start_travel(
         opportunity_world_minute
         + travel_minutes
     )
-
+    player.activity = (
+        SimulatedPlayerActivity.AVAILABLE.value
+    )
     player.travel_connection_id = connection.id
     player.travel_destination_id = (
         connection.to_location_id

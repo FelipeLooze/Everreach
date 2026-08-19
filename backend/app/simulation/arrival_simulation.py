@@ -63,6 +63,20 @@ def tick(
         campaign_id,
     ).total_minutes()
 
+    tick_start_world_minute = (
+        current_world_minute - minutes
+    )
+
+    players_service.ensure_automatic_simulated_player_world_arrival_scheduled(
+        db,
+        campaign_id,
+        rng=_arrival_rng(
+            campaign_id,
+            tick_start_world_minute,
+        ),
+        base_world_minute=tick_start_world_minute,
+    )
+
     executed = 0
 
     while True:

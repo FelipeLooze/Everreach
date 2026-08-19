@@ -922,3 +922,81 @@ def test_large_tick_catches_up_entire_automatic_arrival_chain(
         pending.scheduled_world_minute
         == start_world_minute + 300
     )
+
+def test_world_tick_bootstraps_first_automatic_arrival_without_manual_schedule(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Automatic Arrival Bootstrap",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    set_simulated_player_arrival_policy(
+        db_session,
+        campaign.id,
+        enabled=True,
+        min_delay_minutes=60,
+        max_delay_minutes=60,
+        min_group_size=1,
+        max_group_size=1,
+    )
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        location.id,
+        enabled=True,
+    )
+
+    assert (
+        get_pending_simulated_player_world_arrival(
+            db_session,
+            campaign.id,
+        )
+        is None
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        120,
+    )
+
+    result = world_simulation.tick(
+        db_session,
+        campaign.id,
+        120,
+    )
+
+    assert result.simulated_player_arrivals == 2
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 2
+    )
+
+    pending = get_pending_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+    )
+
+    assert pending is not None
+
+    assert (
+        pending.scheduled_world_minute
+        == start_world_minute + 180
+    )

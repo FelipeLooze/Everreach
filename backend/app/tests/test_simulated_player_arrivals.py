@@ -9,6 +9,7 @@ from app.game.time.clock import get_world_time
 from app.game.players.service import (
     set_simulated_player_arrival_location_enabled,
     simulated_player_arrival_locations,
+    select_simulated_player_arrival_location,
     ensure_simulated_player_world_arrival_scheduled,
     get_pending_simulated_player_world_arrival,
     schedule_simulated_player_world_arrival_from_policy,
@@ -578,3 +579,73 @@ def test_only_explicitly_enabled_locations_are_valid_for_automatic_arrivals(
         )
         == []
     )
+
+def test_arrival_location_selector_uses_only_explicitly_enabled_locations(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Arrival Location Selection",
+    )
+
+    region, first_location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    second_location = Location(
+        region_id=region.id,
+        name="Second Arrival Place",
+        type="forest",
+    )
+
+    third_location = Location(
+        region_id=region.id,
+        name="Not An Arrival Place",
+        type="village",
+    )
+
+    db_session.add_all(
+        [
+            second_location,
+            third_location,
+        ]
+    )
+    db_session.flush()
+
+    assert (
+        select_simulated_player_arrival_location(
+            db_session,
+            campaign.id,
+            rng=random.Random(42),
+        )
+        is None
+    )
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        first_location.id,
+        enabled=True,
+    )
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        second_location.id,
+        enabled=True,
+    )
+
+    selected = select_simulated_player_arrival_location(
+        db_session,
+        campaign.id,
+        rng=random.Random(42),
+    )
+
+    assert selected is not None
+    assert selected.id in {
+        first_location.id,
+        second_location.id,
+    }
+
+    assert selected.id != third_location.id

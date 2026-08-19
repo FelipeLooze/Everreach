@@ -847,3 +847,27 @@ def simulated_player_arrival_locations(
         .order_by(Location.id)
         .all()
     )
+
+def select_simulated_player_arrival_location(
+    db: Session,
+    campaign_id: str,
+    rng: random.Random | None = None,
+) -> Location | None:
+    """
+    Select one explicitly enabled arrival location.
+
+    If the campaign has no enabled arrival locations, return None.
+    Never fall back to arbitrary world locations.
+    """
+
+    locations = simulated_player_arrival_locations(
+        db,
+        campaign_id,
+    )
+
+    if not locations:
+        return None
+
+    random_source = rng or random.Random()
+
+    return random_source.choice(locations)

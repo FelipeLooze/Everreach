@@ -7,6 +7,7 @@ from app.core.enums import (
     EventType,
     KnowledgeCertainty,
     KnowerType,
+    SimulatedPlayerActivity,
     SimulatedPlayerArchetype,
     SimulatedPlayerStatus,
     SimulatedPlayerGoalType,
@@ -18,7 +19,11 @@ from app.db.models.knowledge import (
 from app.db.models.location import Location, LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.event import WorldEvent
-from app.game.time.clock import get_world_time
+from app.game.time.clock import (
+    HOURS_PER_DAY,
+    MINUTES_PER_HOUR,
+    get_world_time,
+)
 from app.game.travel.service import calculate_travel_minutes
 from app.services.event_log import log_event
 from app.simulation.cadence import boundary_minutes_crossed
@@ -101,6 +106,7 @@ def tick(
         for player in players:
             # Someone whose arrival happened before this opportunity
             # is already physically at the destination.
+
             if _complete_travel_if_due(
                 db,
                 campaign_id,
@@ -109,8 +115,20 @@ def tick(
             ):
                 moved += 1
 
-            # A person still in transit cannot perform another hourly action.
+            _sync_rest_activity(
+                player,
+                opportunity_world_minute,
+            )
+
+            # A person still in transit cannot perform a local activity.
             if _is_traveling(player):
+                continue
+
+            # Resting people do not roll for autonomous actions.
+            if (
+                player.activity
+                == SimulatedPlayerActivity.RESTING.value
+            ):
                 continue
 
             if r.random() > ACTION_CHANCE_PER_HOUR:
@@ -154,6 +172,10 @@ def tick(
         ):
             moved += 1
 
+        _sync_rest_activity(
+            player,
+            end_world_minute,
+        )
     return PlayerSimulationResult(
         travel_started=travel_started,
         moved=moved,
@@ -169,6 +191,38 @@ def _is_traveling(
         is not None
     )
 
+def _sync_rest_activity(
+    player: SimulatedPlayer,
+    world_minute: int,
+) -> None:
+    """
+    Synchronize the local resting state for one transported person.
+
+    Travel is a separate physical state and takes precedence over local
+    activity. Daytime only clears RESTING; it does not overwrite other
+    activity states.
+    """
+
+    if _is_traveling(player):
+        return
+
+    hour = (
+        world_minute // MINUTES_PER_HOUR
+    ) % HOURS_PER_DAY
+
+    if hour >= 22 or hour < 6:
+        player.activity = (
+            SimulatedPlayerActivity.RESTING.value
+        )
+        return
+
+    if (
+        player.activity
+        == SimulatedPlayerActivity.RESTING.value
+    ):
+        player.activity = (
+            SimulatedPlayerActivity.AVAILABLE.value
+        )
 
 def _known_outgoing_connections(
     db: Session,

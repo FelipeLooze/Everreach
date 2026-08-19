@@ -2,6 +2,7 @@ import random
 from types import SimpleNamespace
 from app.core.enums import (
     EventType,
+    SimulatedPlayerActivity,
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
 )
@@ -11,7 +12,10 @@ from app.game.world.seed import (
     seed_initial_region,
 )
 from app.simulation import player_simulation
-from app.game.time.clock import advance_world_time
+from app.game.time.clock import (
+    advance_world_time,
+    get_world_time,
+)
 from app.game.players.service import simulated_players_at_location
 from app.simulation.player_simulation import (
     _hour_boundaries_crossed,
@@ -457,3 +461,172 @@ def test_player_simulation_behaves_the_same_for_whole_and_split_time(
 
     assert len(whole_training_events) == 2
     assert len(split_training_events) == 2
+
+def test_transportee_rests_at_night_and_wakes_at_six(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Transported Rest Cycle",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    trainer = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.TRAINER
+    )
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 21
+    world_time.minute = 0
+
+    trainer.activity = (
+        SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    db_session.flush()
+
+    monkeypatch.setattr(
+        player_simulation,
+        "ACTION_CHANCE_PER_HOUR",
+        1.0,
+    )
+
+    # 21:00 -> 22:00.
+    # At 22:00 the trainer must rest instead of training.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    night_result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+        rng=random.Random(123),
+    )
+
+    assert night_result.trained == 0
+
+    assert (
+        trainer.activity
+        == SimulatedPlayerActivity.RESTING.value
+    )
+
+    # 22:00 -> 06:00.
+    # Every opportunity before 06:00 is resting.
+    # At exactly 06:00 the trainer becomes available and may act.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        480,
+    )
+
+    morning_result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        480,
+        rng=random.Random(123),
+    )
+
+    assert morning_result.trained == 1
+
+    assert (
+        trainer.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+
+def test_rest_state_syncs_without_hour_boundary(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Short Rest Tick",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    trainer = next(
+        player
+        for player in players
+        if player.archetype
+        == SimulatedPlayerArchetype.TRAINER
+    )
+
+    world_time = get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    world_time.hour = 22
+    world_time.minute = 10
+
+    trainer.activity = (
+        SimulatedPlayerActivity.AVAILABLE.value
+    )
+
+    db_session.flush()
+
+    # 22:10 -> 22:20 crosses no hourly action boundary.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        10,
+    )
+
+    result = player_simulation.tick(
+        db_session,
+        campaign.id,
+        10,
+        rng=random.Random(123),
+    )
+
+    assert result.trained == 0
+
+    assert (
+        trainer.activity
+        == SimulatedPlayerActivity.RESTING.value
+    )
+
+
+def test_rest_sync_does_not_change_local_activity_while_traveling():
+    player = SimpleNamespace(
+        activity=SimulatedPlayerActivity.AVAILABLE.value,
+        travel_arrival_world_minute=23 * 60,
+    )
+
+    player_simulation._sync_rest_activity(
+        player,
+        22 * 60,
+    )
+
+    assert (
+        player.activity
+        == SimulatedPlayerActivity.AVAILABLE.value
+    )

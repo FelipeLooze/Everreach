@@ -588,15 +588,25 @@ def test_secret_fact_is_not_eligible_for_automatic_social_transfer(
     db_session.add(secret)
     db_session.flush()
 
-    db_session.add(
-        KnowledgeKnower(
-            fact_id=secret.id,
-            knower_type=KnowerType.NPC.value,
-            knower_id=first.id,
-        )
+    teach_fact(
+        db_session,
+        campaign.id,
+        secret.fact_key,
+        KnowerType.NPC,
+        first.id,
+        source="percepcao direta",
+        certainty=KnowledgeCertainty.CONFIRMED,
     )
 
-    db_session.flush()
+    teach_fact(
+        db_session,
+        campaign.id,
+        secret.fact_key,
+        KnowerType.NPC,
+        second.id,
+        source="boato anterior",
+        certainty=KnowledgeCertainty.RUMOR,
+    )
 
     pair = knowledge_simulation.SocialPair(
         first=knowledge_simulation.SocialParticipant(

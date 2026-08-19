@@ -321,6 +321,33 @@ def _extract_active_npc_name(context: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def _extract_active_transported_person_name(
+    context: str,
+) -> str:
+    match = re.search(
+        r"(?:^|\n)ACTIVE TRANSPORTED PERSON CONTEXT\n"
+        r"Name: ([^\n(]+)",
+        context,
+    )
+
+    return (
+        match.group(1).strip()
+        if match
+        else ""
+    )
+
+
+def _extract_active_interlocutor_name(
+    context: str,
+) -> str:
+    return (
+        _extract_active_npc_name(context)
+        or _extract_active_transported_person_name(
+            context
+        )
+    )
+
+
 def _find_style_violations(text: str) -> list[str]:
     """Detect cosmetic prose/format issues for diagnostics only.
 
@@ -359,22 +386,51 @@ def _is_dialogue_paragraph(paragraph: str) -> bool:
     return paragraph.strip().startswith(("—", "-"))
 
 
-def _extract_simulated_player_names(context: str) -> list[str]:
-    """Return the names of visible transported people.
-    They came from another world and may know modern or videogame vocabulary from
-    their previous lives. This does not mean Everreach is a game.
+def _extract_simulated_player_names(
+    context: str,
+) -> list[str]:
     """
+    Return the names of transported people relevant to the scene.
+
+    The active transported interlocutor is included even if the visible
+    list is absent or truncated.
+    """
+
+    names = []
+
+    active_name = (
+        _extract_active_transported_person_name(
+            context
+        )
+    )
+
+    if active_name:
+        names.append(active_name)
+
     match = re.search(
-        r"(?:^|\n)(?:VISIBLE TRANSPORTED PEOPLE|VISIBLE PLAYERS)\n((?:-.*\n?)*)",
+        r"(?:^|\n)"
+        r"(?:VISIBLE TRANSPORTED PEOPLE|VISIBLE PLAYERS)"
+        r"\n((?:-.*\n?)*)",
         context,
     )
+
     if not match:
-        return []
-    names = []
+        return names
+
     for line in match.group(1).splitlines():
-        entry = re.match(r"-\s*(.+?)\s*\(", line.strip())
-        if entry:
-            names.append(entry.group(1).strip())
+        entry = re.match(
+            r"-\s*(.+?)\s*\(",
+            line.strip(),
+        )
+
+        if not entry:
+            continue
+
+        name = entry.group(1).strip()
+
+        if name not in names:
+            names.append(name)
+
     return names
 
 
@@ -621,9 +677,21 @@ def narrate(
             raw_response, response,
         )
 
-    character_name = _extract_character_name(context)
-    npc_name = _extract_active_npc_name(context)
-    simulated_player_names = _extract_simulated_player_names(context)
+    character_name = _extract_character_name(
+        context
+    )
+
+    active_interlocutor_name = (
+        _extract_active_interlocutor_name(
+            context
+        )
+    )
+
+    simulated_player_names = (
+        _extract_simulated_player_names(
+            context
+        )
+    )
 
     draft = response
 
@@ -635,7 +703,7 @@ def narrate(
         canon_violations = [] if empty_violations else _find_canon_violations(draft, context, player_input)
         meta_violations = [] if empty_violations else _find_meta_awareness_violations(draft, simulated_player_names)
         agency_violations = [] if empty_violations else _protagonist_agency_violations(draft, character_name, mode)
-        turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, npc_name)
+        turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
         style_violations = [] if empty_violations else _find_style_violations(draft)
 
         hard_violations = (
@@ -702,7 +770,7 @@ def narrate(
     # From this point onward, no unresolved HARD violation is intentionally
     # returned to the player. Style remains non-blocking.
     if not draft.strip():
-        safe = _safe_hard_failure_fallback(mode, npc_name)
+        safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
         logger.error(
             "FALLBACK REASON: response was empty after stripping leaked prompt/instruction "
             "text on every revision attempt. Returning deterministic safe fallback.\nFALLBACK:\n%s",
@@ -712,7 +780,7 @@ def narrate(
 
     remaining_style = _find_style_violations(draft)
     remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
-    remaining_turn = _fabricated_turn_violations(draft, character_name, npc_name)
+    remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
 
     logger.debug(
         "REVIEW RESULT (final)\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
@@ -732,7 +800,7 @@ def narrate(
     # deterministically remove those parts. Never knowingly return the flawed
     # draft merely because trimming would empty it.
     if remaining_agency or remaining_turn:
-        trimmed = _drop_agency_violations(draft, character_name, npc_name, mode)
+        trimmed = _drop_agency_violations(draft, character_name, active_interlocutor_name, mode)
         if trimmed:
             logger.warning(
                 "FALLBACK REASON: protagonist still had fabricated dialogue/actions after "
@@ -742,7 +810,7 @@ def narrate(
             )
             draft = trimmed
         else:
-            safe = _safe_hard_failure_fallback(mode, npc_name)
+            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
             logger.error(
                 "FALLBACK REASON: protagonist agency violation could not be removed without "
                 "emptying the response. Returning deterministic safe fallback instead of the "
@@ -777,9 +845,9 @@ def narrate(
     # agency violation that survived due to sentence reshaping. Recheck once.
     if filtered:
         filtered_agency = _protagonist_agency_violations(filtered, character_name, mode)
-        filtered_turn = _fabricated_turn_violations(filtered, character_name, npc_name)
+        filtered_turn = _fabricated_turn_violations(filtered, character_name, active_interlocutor_name)
         if filtered_agency or filtered_turn:
-            filtered = _drop_agency_violations(filtered, character_name, npc_name, mode)
+            filtered = _drop_agency_violations(filtered, character_name, active_interlocutor_name, mode)
 
     if filtered:
         logger.warning(
@@ -793,7 +861,7 @@ def narrate(
     # Only an active NPC answering a factual gap gets the epistemic refusal.
     # OPENING/no-NPC contexts use a neutral deterministic beat instead; we never
     # return a draft that is already known to violate canon.
-    if mode == "CONTINUATION" and npc_name:
+    if mode == "CONTINUATION" and active_interlocutor_name:
         logger.warning(
             "FALLBACK REASON: no supported segment survived canon filtering with an active NPC; "
             "using epistemic refusal"
@@ -801,7 +869,7 @@ def narrate(
         logger.debug("FINAL RESPONSE (epistemic fallback)\n— Não sei dizer.")
         return "— Não sei dizer."
 
-    safe = _safe_hard_failure_fallback(mode, npc_name)
+    safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
     logger.error(
         "FALLBACK REASON: no supported segment survived canon filtering and there is no active "
         "NPC for an epistemic refusal. Returning deterministic safe fallback instead of the "

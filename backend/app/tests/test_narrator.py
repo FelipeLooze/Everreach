@@ -843,3 +843,41 @@ def test_narrator_prompt_prevents_fatigue_from_becoming_damage():
     assert "Não transforme Stamina perdida em HP perdido." in system
 
     assert "FATIGUE causou gasto adicional de 2.0 Stamina" in prompt
+
+def test_active_transported_person_is_used_as_safe_interlocutor():
+    class EmptyLLM(LLMService):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def generate(
+            self,
+            system: str,
+            prompt: str,
+        ) -> str:
+            self.calls += 1
+            return ""
+
+    llm = EmptyLLM()
+
+    context = (
+        "CURRENT PLAYER\n"
+        "Name: Logan "
+        "(narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE TRANSPORTED PERSON CONTEXT\n"
+        "Name: Kaelen Voss\n\n"
+        "VISIBLE TRANSPORTED PEOPLE\n"
+        "- Kaelen Voss (Level 0)"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Nenhuma mudança mecânica.",
+        context,
+        "Kaelen?",
+        "(nenhuma troca anterior)",
+    )
+
+    assert (
+        result
+        == "Kaelen Voss permanece em silêncio."
+    )

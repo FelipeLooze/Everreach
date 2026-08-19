@@ -560,7 +560,11 @@ def build_context(
     visible_lines.append("VISIBLE TRANSPORTED PEOPLE")
     visible_lines.extend(
         [
-            f"- {_clip(player.name, 100)} (Level {player.level})"
+            (
+                f"- {_clip(player.name, 100)} "
+                f"(Level {player.level}; "
+                f"appearance={_clip(player.physical_description or 'unknown', 300)})"
+            )
             for player in state.nearby_simulated_players[:MAX_VISIBLE_ENTITIES]
         ]
         or ["- none"]

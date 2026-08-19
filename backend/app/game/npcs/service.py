@@ -34,12 +34,13 @@ from app.core.enums import (
 _CONVERSATION_BOUNDARY_EVENTS = (
     EventType.PLAYER_MET_NPC.value,
     EventType.PLAYER_TALKED_TO_NPC.value,
+    EventType.PLAYER_MET_SIMULATED_PLAYER.value,
+    EventType.PLAYER_TALKED_TO_SIMULATED_PLAYER.value,
     EventType.PLAYER_MOVED.value,
     EventType.PLAYER_RESTED.value,
     EventType.PLAYER_DIED.value,
     EventType.WORLD_STARTED.value,
 )
-
 
 def npcs_at_location(
     db: Session,

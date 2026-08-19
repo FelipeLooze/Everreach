@@ -14,6 +14,7 @@ from app.game.world.seed import (
 from app.ai.intent_parser import Intent
 from app.game import engine
 from app.game.game_state import build_game_state
+from app.ai.context_builder import build_context
 
 def test_encounter_reuses_existing_transported_person(
     db_session,
@@ -199,3 +200,76 @@ def test_talk_intent_can_target_simulated_player(
 
     assert active is not None
     assert active.id == transported.id
+
+def test_active_simulated_player_has_private_identity_context(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Transported Private Context",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    from app.game.character.service import (
+        create_character,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Logan",
+        region.id,
+        location.id,
+    )
+
+    state = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    assert state.nearby_simulated_players
+
+    transported = (
+        state.nearby_simulated_players[0]
+    )
+
+    transported.personality = (
+        "Calmo, desconfiado e observador."
+    )
+    transported.background = (
+        "Trabalhava como mecânico antes da Chegada."
+    )
+    transported.motivation = (
+        "Encontrar alguma estabilidade."
+    )
+    transported.goal = (
+        "Conseguir trabalho e um lugar para morar."
+    )
+    transported.physical_description = (
+        "Homem jovem de cabelos escuros e olhos castanhos."
+    )
+
+    db_session.flush()
+
+    context = build_context(
+        db_session,
+        state,
+        player_input="Quem é você?",
+        active_simulated_player=transported.id,
+    )
+
+    assert "ACTIVE TRANSPORTED PERSON CONTEXT" in context
+    assert transported.name in context
+    assert "Calmo, desconfiado e observador." in context
+    assert "Trabalhava como mecânico antes da Chegada." in context
+    assert "Encontrar alguma estabilidade." in context
+    assert "Conseguir trabalho e um lugar para morar." in context
+    assert (
+        "Homem jovem de cabelos escuros e olhos castanhos."
+        in context
+    )

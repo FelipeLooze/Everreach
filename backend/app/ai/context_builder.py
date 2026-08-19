@@ -280,6 +280,7 @@ def build_context(
     state: GameStateSnapshot,
     active_interlocutor: str | None = None,
     player_input: str = "",
+    active_simulated_player: str | None = None,
 ) -> str:
     """Build minimum scene context while separating truth, perception and knowledge."""
     active_npc = next(
@@ -287,6 +288,15 @@ def build_context(
             npc
             for npc in state.nearby_npcs
             if npc.id == active_interlocutor or npc.name == active_interlocutor
+        ),
+        None,
+    )
+    active_transported = next(
+        (
+            player
+            for player in state.nearby_simulated_players
+            if player.id == active_simulated_player
+            or player.name == active_simulated_player
         ),
         None,
     )
@@ -614,6 +624,50 @@ def build_context(
                 ),
             ]
         )
+    active_transported_lines = ["ACTIVE TRANSPORTED PERSON CONTEXT"]
+    if active_transported is None:
+        active_transported_lines.append("- none")
+    else:
+        active_transported_lines.extend(
+            [
+                f"Name: {active_transported.name}",
+                (
+                    "Location: "
+                    f"{state.location.name if state.location else 'unknown'}"
+                ),
+                (
+                    "Visibility: private character context; "
+                    "this information is NOT automatically "
+                    "known by the protagonist."
+                ),
+                (
+                    "Physical description: "
+                    f"{_clip(active_transported.physical_description or 'unknown', 500)}"
+                ),
+                (
+                    "Personality: "
+                    f"{_clip(active_transported.personality or 'unknown', 500)}"
+                ),
+                (
+                    "Background: "
+                    f"{_clip(active_transported.background or 'unknown', MAX_DESCRIPTION_CHARS)}"
+                ),
+                (
+                    "Current motivation: "
+                    f"{_clip(active_transported.motivation or 'unknown', 500)}"
+                ),
+                (
+                    "Current personal goal: "
+                    f"{_clip(active_transported.goal or 'unknown', 500)}"
+                ),
+                (
+                    "Use personality, background, motivation and goal "
+                    "to guide this person's behavior and dialogue. "
+                    "Do not reveal private information unless the "
+                    "conversation or circumstances justify it."
+                ),
+            ]
+        )
 
     npc_knowledge_section = "\n".join(
         ["NPC KNOWLEDGE", *([_format_known_fact(fact) for fact in npc_facts] or ["- none supplied"])]
@@ -658,6 +712,7 @@ def build_context(
         spatial_knowledge_section,
         "\n".join(visible_lines),
         "\n".join(active_lines),
+        "\n".join(active_transported_lines),
         npc_knowledge_section,
         player_knowledge_section,
         npc_memory_section,
@@ -673,6 +728,7 @@ def build_context(
     final_context = "\n\n".join(sections)
     logger.debug("CANONICAL LOCATION CONTEXT\n%s", "\n".join(location_lines))
     logger.debug("ACTIVE NPC CONTEXT\n%s", "\n".join(active_lines))
+    logger.debug("ACTIVE TRANSPORTED PERSON CONTEXT\n%s","\n".join(active_transported_lines),)
     logger.debug("NPC KNOWLEDGE\n%s", npc_knowledge_section)
     logger.debug("PLAYER KNOWLEDGE\n%s", player_knowledge_section)
     logger.debug("FINAL CONTEXT SENT TO LLM\n%s", final_context)

@@ -10,6 +10,7 @@ from app.game.players.service import (
     set_simulated_player_arrival_location_enabled,
     simulated_player_arrival_locations,
     select_simulated_player_arrival_location,
+    ensure_automatic_simulated_player_world_arrival_scheduled,
     ensure_simulated_player_world_arrival_scheduled,
     get_pending_simulated_player_world_arrival,
     schedule_simulated_player_world_arrival_from_policy,
@@ -649,3 +650,69 @@ def test_arrival_location_selector_uses_only_explicitly_enabled_locations(
     }
 
     assert selected.id != third_location.id
+
+def test_automatic_arrival_scheduler_combines_policy_location_and_pending_guard(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Automatic Arrival Scheduling",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    set_simulated_player_arrival_policy(
+        db_session,
+        campaign.id,
+        enabled=True,
+        min_delay_minutes=100,
+        max_delay_minutes=500,
+        min_group_size=2,
+        max_group_size=4,
+    )
+
+    # Policy alone is not enough.
+    # No location has explicitly been enabled yet.
+    missing_location = (
+        ensure_automatic_simulated_player_world_arrival_scheduled(
+            db_session,
+            campaign.id,
+            rng=random.Random(42),
+        )
+    )
+
+    assert missing_location is None
+
+    set_simulated_player_arrival_location_enabled(
+        db_session,
+        campaign.id,
+        location.id,
+        enabled=True,
+    )
+
+    first = (
+        ensure_automatic_simulated_player_world_arrival_scheduled(
+            db_session,
+            campaign.id,
+            rng=random.Random(42),
+        )
+    )
+
+    assert first is not None
+    assert first.location_id == location.id
+    assert first.executed_world_minute is None
+    assert 2 <= first.count <= 4
+
+    second = (
+        ensure_automatic_simulated_player_world_arrival_scheduled(
+            db_session,
+            campaign.id,
+            rng=random.Random(999),
+        )
+    )
+
+    assert second is not None
+    assert second.id == first.id

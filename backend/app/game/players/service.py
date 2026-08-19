@@ -871,3 +871,41 @@ def select_simulated_player_arrival_location(
     random_source = rng or random.Random()
 
     return random_source.choice(locations)
+
+def ensure_automatic_simulated_player_world_arrival_scheduled(
+    db: Session,
+    campaign_id: str,
+    rng: random.Random | None = None,
+) -> ScheduledSimulatedPlayerArrival | None:
+    """
+    Ensure the campaign has one pending automatic transported-person
+    arrival when its configuration allows one.
+
+    Existing pending schedules are preserved.
+
+    If there is no eligible arrival location, nothing is scheduled.
+    """
+
+    existing = get_pending_simulated_player_world_arrival(
+        db,
+        campaign_id,
+    )
+
+    if existing is not None:
+        return existing
+
+    location = select_simulated_player_arrival_location(
+        db,
+        campaign_id,
+        rng=rng,
+    )
+
+    if location is None:
+        return None
+
+    return schedule_simulated_player_world_arrival_from_policy(
+        db,
+        campaign_id,
+        location.id,
+        rng=rng,
+    )

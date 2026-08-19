@@ -1560,6 +1560,16 @@ def test_zero_priority_fact_is_not_eligible_for_social_transfer(
         certainty=KnowledgeCertainty.CONFIRMED,
     )
 
+    teach_fact(
+            db_session,
+            campaign.id,
+            fact.fact_key,
+            KnowerType.NPC,
+            target.id,
+            source="boato anterior",
+            certainty=KnowledgeCertainty.RUMOR,
+        )
+
     pair = knowledge_simulation.SocialPair(
         first=knowledge_simulation.SocialParticipant(
             knower_type=KnowerType.NPC,

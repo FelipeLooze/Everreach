@@ -5,6 +5,7 @@ from app.simulation.results import (
     KnowledgeSimulationResult,
     NPCSimulationResult,
     PlayerSimulationResult,
+    SimulatedPlayerArrivalSimulationResult,
     WorldDevelopmentSimulationResult,
 )
 
@@ -14,6 +15,24 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
     monkeypatch,
 ):
     calls = []
+
+    def fake_arrival_tick(
+        db,
+        campaign_id,
+        minutes,
+    ):
+        calls.append(
+            (
+                "arrivals",
+                campaign_id,
+                minutes,
+            )
+        )
+
+        return SimulatedPlayerArrivalSimulationResult(
+            arrivals=1,
+        )
+
     rng = random.Random(123)
 
     def fake_player_tick(
@@ -85,6 +104,12 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         )
 
     monkeypatch.setattr(
+        world_simulation.arrival_simulation,
+        "tick",
+        fake_arrival_tick,
+    )
+
+    monkeypatch.setattr(
         world_simulation.player_simulation,
         "tick",
         fake_player_tick,
@@ -116,6 +141,11 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
     )
 
     assert calls == [
+        (
+            "arrivals",
+            "campaign_1",
+            45,
+        ),
         (
             "players",
             "campaign_1",
@@ -150,8 +180,8 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
     )
 
     assert result.knowledge_propagations == 6
-
-    assert result.total_changes == 16
+    assert result.simulated_player_arrivals == 1
+    assert result.total_changes == 17
     assert result.has_changes is True
 
 
@@ -159,6 +189,14 @@ def test_knowledge_opportunity_does_not_count_as_world_change(
     db_session,
     monkeypatch,
 ):
+    monkeypatch.setattr(
+        world_simulation.arrival_simulation,
+        "tick",
+        lambda *args, **kwargs: (
+            SimulatedPlayerArrivalSimulationResult()
+        ),
+    )
+    
     monkeypatch.setattr(
         world_simulation.player_simulation,
         "tick",

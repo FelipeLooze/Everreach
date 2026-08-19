@@ -2,6 +2,10 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class SimulatedPlayerArrivalSimulationResult:
+    arrivals: int = 0
+
+@dataclass(frozen=True)
 class PlayerSimulationResult:
     travel_started: int = 0
     moved: int = 0
@@ -14,7 +18,6 @@ class PlayerSimulationResult:
             + self.moved
             + self.trained
         )
-
 
 @dataclass(frozen=True)
 class NPCSimulationResult:
@@ -33,6 +36,7 @@ class KnowledgeSimulationResult:
 
 @dataclass(frozen=True)
 class WorldTickResult:
+    simulated_player_arrivals: int = 0
     simulated_player_travel_started: int = 0
     simulated_player_moves: int = 0
     simulated_player_training: int = 0
@@ -44,7 +48,8 @@ class WorldTickResult:
     @property
     def total_changes(self) -> int:
         return (
-            self.simulated_player_travel_started
+            self.simulated_player_arrivals
+            + self.simulated_player_travel_started
             + self.simulated_player_moves
             + self.simulated_player_training
             + self.npc_changes

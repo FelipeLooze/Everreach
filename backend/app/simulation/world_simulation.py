@@ -3,6 +3,7 @@ import random
 from sqlalchemy.orm import Session
 from app.simulation.results import WorldTickResult
 from app.simulation import (
+    arrival_simulation,
     development_simulation,
     knowledge_simulation,
     npc_simulation,
@@ -20,6 +21,12 @@ def tick(
 
     if minutes <= 0:
         return WorldTickResult()
+
+    arrival_result = arrival_simulation.tick(
+        db,
+        campaign_id,
+        minutes,
+    )
 
     player_result = player_simulation.tick(
         db,
@@ -47,6 +54,9 @@ def tick(
     )
 
     return WorldTickResult(
+        simulated_player_arrivals=(
+            arrival_result.arrivals
+        ),
         simulated_player_travel_started=(
             player_result.travel_started
         ),

@@ -18,7 +18,8 @@ from app.game.world.seed import (
 from app.db.models.simulated_player_arrival import (
     ScheduledSimulatedPlayerArrival,
 )
-
+from app.game.time.clock import advance_world_time
+from app.simulation import world_simulation
 
 def test_world_arrival_adds_to_abstract_population_and_logs_event(
     db_session,
@@ -152,3 +153,121 @@ def test_future_arrival_is_persisted_without_happening_immediately(
     )
 
     assert arrival_events == []
+
+def test_scheduled_arrival_executes_once_at_canonical_world_minute(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Executed Scheduled Arrival",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    start_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    scheduled_world_minute = (
+        start_world_minute + 120
+    )
+
+    arrival = schedule_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+        location.id,
+        count=3,
+        scheduled_world_minute=(
+            scheduled_world_minute
+        ),
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        240,
+    )
+
+    result = world_simulation.tick(
+        db_session,
+        campaign.id,
+        240,
+    )
+
+    assert result.simulated_player_arrivals == 1
+
+    db_session.refresh(arrival)
+
+    assert (
+        arrival.executed_world_minute
+        == scheduled_world_minute
+    )
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 3
+    )
+
+    events = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_WORLD_ARRIVAL.value,
+        )
+        .all()
+    )
+
+    assert len(events) == 1
+    assert (
+        events[0].world_minute
+        == scheduled_world_minute
+    )
+
+    advance_world_time(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    second_result = world_simulation.tick(
+        db_session,
+        campaign.id,
+        60,
+    )
+
+    assert (
+        second_result.simulated_player_arrivals
+        == 0
+    )
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 3
+    )
+
+    events_after_second_tick = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_WORLD_ARRIVAL.value,
+        )
+        .all()
+    )
+
+    assert len(events_after_second_tick) == 1

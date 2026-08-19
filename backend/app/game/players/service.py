@@ -444,6 +444,8 @@ def register_simulated_player_world_arrival(
     campaign_id: str,
     location_id: str,
     count: int,
+    *,
+    occurred_world_minute: int | None = None,
 ) -> SimulatedPlayerPopulation:
     """
     Register newly transported people arriving in the world.
@@ -493,6 +495,7 @@ def register_simulated_player_world_arrival(
             "location_name": location.name,
             "count": count,
         },
+        occurred_world_minute=occurred_world_minute,
     )
 
     return population

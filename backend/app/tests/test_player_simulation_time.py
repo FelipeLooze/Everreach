@@ -1,6 +1,10 @@
 import random
 from types import SimpleNamespace
-from app.core.enums import EventType, SimulatedPlayerArchetype
+from app.core.enums import (
+    EventType,
+    SimulatedPlayerArchetype,
+    SimulatedPlayerGoalType,
+)
 from app.db.models.event import WorldEvent
 from app.game.world.seed import (
     create_campaign, 
@@ -18,6 +22,7 @@ def test_explorer_prefers_unvisited_known_destination(
 ):
     player = SimpleNamespace(
         archetype=SimulatedPlayerArchetype.EXPLORER,
+        goal_type=SimulatedPlayerGoalType.NONE,
     )
 
     visited_connection = SimpleNamespace(
@@ -53,6 +58,58 @@ def test_explorer_prefers_unvisited_known_destination(
     )
 
     assert selected is unvisited_connection
+
+def test_explore_region_goal_prioritizes_target_region(
+    monkeypatch,
+):
+    player = SimpleNamespace(
+        archetype=SimulatedPlayerArchetype.EXPLORER,
+        goal_type=SimulatedPlayerGoalType.EXPLORE_REGION,
+        goal_subject="region:target_region",
+    )
+
+    outside_region = SimpleNamespace(
+        to_location_id="outside",
+        danger=1,
+    )
+
+    target_region = SimpleNamespace(
+        to_location_id="target",
+        danger=1,
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "_visited_location_ids",
+        lambda db, campaign_id, player: {
+            "origin",
+        },
+    )
+
+    monkeypatch.setattr(
+        player_simulation,
+        "_unvisited_connections_in_region",
+        lambda db, connections, visited_location_ids, region_id: (
+            [target_region]
+            if region_id == "target_region"
+            else []
+        ),
+    )
+
+    selected = (
+        player_simulation._select_travel_connection(
+            None,
+            "campaign_test",
+            player,
+            [
+                outside_region,
+                target_region,
+            ],
+            random.Random(0),
+        )
+    )
+
+    assert selected is target_region
 
 def test_traveling_simulated_player_is_not_physically_present_at_origin(
     db_session,

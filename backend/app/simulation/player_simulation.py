@@ -9,12 +9,13 @@ from app.core.enums import (
     KnowerType,
     SimulatedPlayerArchetype,
     SimulatedPlayerStatus,
+    SimulatedPlayerGoalType,
 )
 from app.db.models.knowledge import (
     KnowledgeFact,
     KnowledgeKnower,
 )
-from app.db.models.location import LocationConnection
+from app.db.models.location import Location, LocationConnection
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.event import WorldEvent
 from app.game.time.clock import get_world_time
@@ -284,6 +285,65 @@ def _visited_location_ids(
 
     return visited
 
+def _goal_region_id(
+    player: SimulatedPlayer,
+) -> str | None:
+    if (
+        player.goal_type
+        != SimulatedPlayerGoalType.EXPLORE_REGION
+    ):
+        return None
+
+    if not player.goal_subject:
+        return None
+
+    prefix = "region:"
+
+    if not player.goal_subject.startswith(prefix):
+        return None
+
+    region_id = player.goal_subject[len(prefix):]
+
+    return region_id or None
+
+
+def _unvisited_connections_in_region(
+    db: Session,
+    connections: list[LocationConnection],
+    visited_location_ids: set[str],
+    region_id: str,
+) -> list[LocationConnection]:
+    destination_ids = {
+        connection.to_location_id
+        for connection in connections
+        if connection.to_location_id
+        not in visited_location_ids
+    }
+
+    if not destination_ids:
+        return []
+
+    locations = (
+        db.query(Location)
+        .filter(
+            Location.id.in_(destination_ids),
+            Location.region_id == region_id,
+        )
+        .all()
+    )
+
+    location_ids_in_region = {
+        location.id
+        for location in locations
+    }
+
+    return [
+        connection
+        for connection in connections
+        if connection.to_location_id
+        in location_ids_in_region
+    ]
+
 def _select_travel_connection(
     db: Session,
     campaign_id: str,
@@ -291,19 +351,73 @@ def _select_travel_connection(
     connections: list[LocationConnection],
     r: random.Random,
 ) -> LocationConnection:
-    """Choose a known route according to the traveler's archetype."""
+    """Choose a known route according to goal first, then archetype."""
+
+    visited_locations: set[str] | None = None
+
+    if (
+        player.goal_type
+        == SimulatedPlayerGoalType.EXPLORE_REGION
+    ):
+        target_region_id = _goal_region_id(
+            player
+        )
+
+        if target_region_id:
+            visited_locations = (
+                _visited_location_ids(
+                    db,
+                    campaign_id,
+                    player,
+                )
+            )
+
+            goal_connections = (
+                _unvisited_connections_in_region(
+                    db,
+                    connections,
+                    visited_locations,
+                    target_region_id,
+                )
+            )
+
+            if goal_connections:
+                return r.choice(
+                    goal_connections
+                )
+
+    if (
+        player.goal_type
+        == SimulatedPlayerGoalType.SEEK_DANGER
+    ):
+        highest_danger = max(
+            connection.danger
+            for connection in connections
+        )
+
+        dangerous_connections = [
+            connection
+            for connection in connections
+            if connection.danger
+            == highest_danger
+        ]
+
+        return r.choice(
+            dangerous_connections
+        )
 
     if (
         player.archetype
         == SimulatedPlayerArchetype.EXPLORER
     ):
-        visited_locations = (
-            _visited_location_ids(
-                db,
-                campaign_id,
-                player,
+        if visited_locations is None:
+            visited_locations = (
+                _visited_location_ids(
+                    db,
+                    campaign_id,
+                    player,
+                )
             )
-        )
 
         unexplored_connections = [
             connection

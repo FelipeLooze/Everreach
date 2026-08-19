@@ -2,7 +2,10 @@ import json
 
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.orm import Session
-
+from app.game.players.service import (
+    abstract_simulated_player_count_at_location,
+    consume_abstract_simulated_player_population,
+)
 from app.ai.llm_service import LLMService
 from app.core.enums import (
     SimulatedPlayerArchetype,
@@ -204,21 +207,35 @@ def materialize_simulated_player(
     location, region = location_and_region
 
     prompt = f"""
-CONTEXTO CANÔNICO DISPONÍVEL
+        CONTEXTO CANÔNICO DISPONÍVEL
 
-Região:
-Nome: {region.name}
-Descrição: {region.description or "Nenhuma descrição adicional."}
+        Região:
+        Nome: {region.name}
+        Descrição: {region.description or "Nenhuma descrição adicional."}
 
-Local atual:
-Nome: {location.name}
-Tipo: {location.type}
-Descrição: {location.description or "Nenhuma descrição adicional."}
+        Local atual:
+        Nome: {location.name}
+        Tipo: {location.type}
+        Descrição: {location.description or "Nenhuma descrição adicional."}
 
-Crie exatamente uma pessoa transportada que esteja atualmente neste local.
+        Crie exatamente uma pessoa transportada que esteja atualmente neste local.
 
-A identidade deve ser plausível sem acrescentar novos fatos ao mundo.
-""".strip()
+        A identidade deve ser plausível sem acrescentar novos fatos ao mundo.
+        """.strip()
+
+    available_population = (
+        abstract_simulated_player_count_at_location(
+            db,
+            campaign_id,
+            location_id,
+        )
+    )
+
+    if available_population <= 0:
+        raise ValueError(
+            "No abstract simulated player population "
+            "is available at this location."
+        )
 
     raw = llm_service.generate(
         _SYSTEM_PROMPT,
@@ -226,6 +243,12 @@ A identidade deve ser plausível sem acrescentar novos fatos ao mundo.
     )
 
     identity = _parse_identity(raw)
+
+    consume_abstract_simulated_player_population(
+        db,
+        campaign_id,
+        location_id,
+    )
 
     player = SimulatedPlayer(
         campaign_id=campaign_id,

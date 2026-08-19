@@ -1,3 +1,4 @@
+import pytest
 from app.ai.llm_service import LLMService
 from app.core.enums import (
     SimulatedPlayerArchetype,
@@ -7,7 +8,10 @@ from app.core.enums import (
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.players.generator import materialize_simulated_player
 from app.game.world.seed import create_campaign, seed_initial_region
-
+from app.game.players.service import (
+    abstract_simulated_player_count_at_location,
+    set_abstract_simulated_player_population,
+)
 
 class IdentityLLM(LLMService):
     def __init__(self) -> None:
@@ -49,6 +53,13 @@ def test_materialize_simulated_player_persists_llm_identity(
     )
 
     llm = IdentityLLM()
+
+    set_abstract_simulated_player_population(
+        db_session,
+        campaign.id,
+        location.id,
+        1,
+    )
 
     created = materialize_simulated_player(
         db_session,
@@ -115,3 +126,27 @@ def test_materialize_simulated_player_persists_llm_identity(
 
     assert len(llm.calls) == 1
     assert location.name in llm.calls[0][1]
+
+    assert (
+        abstract_simulated_player_count_at_location(
+            db_session,
+            campaign.id,
+            location.id,
+        )
+        == 0
+    )
+
+    calls_before_second_attempt = len(llm.calls)
+
+    with pytest.raises(
+        ValueError,
+        match="No abstract simulated player population",
+    ):
+        materialize_simulated_player(
+            db_session,
+            llm,
+            campaign.id,
+            location.id,
+        )
+
+    assert len(llm.calls) == calls_before_second_attempt

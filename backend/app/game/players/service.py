@@ -400,3 +400,38 @@ def set_abstract_simulated_player_population(
     db.flush()
 
     return population
+
+def consume_abstract_simulated_player_population(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+) -> SimulatedPlayerPopulation:
+    _require_location_in_campaign(
+        db,
+        campaign_id,
+        location_id,
+    )
+
+    population = (
+        db.query(SimulatedPlayerPopulation)
+        .filter(
+            SimulatedPlayerPopulation.location_id
+            == location_id
+        )
+        .first()
+    )
+
+    if (
+        population is None
+        or population.abstract_count <= 0
+    ):
+        raise ValueError(
+            "No abstract simulated player population "
+            "is available at this location."
+        )
+
+    population.abstract_count -= 1
+
+    db.flush()
+
+    return population

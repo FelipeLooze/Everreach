@@ -1,5 +1,5 @@
+import random
 from sqlalchemy.orm import Session
-
 from app.core.enums import SimulatedPlayerStatus
 from app.db.models.simulated_player import SimulatedPlayer
 
@@ -38,6 +38,36 @@ def simulated_players_at_location(
         .order_by(SimulatedPlayer.id)
         .all()
     )
+
+
+def select_existing_simulated_player_for_encounter(
+    db: Session,
+    campaign_id: str,
+    location_id: str,
+    rng: random.Random | None = None,
+) -> SimulatedPlayer | None:
+    """
+    Select an already-persistent transported person who is physically
+    present at the location.
+
+    This function NEVER creates a new person.
+    """
+
+    candidates = [
+        player
+        for player in simulated_players_at_location(
+            db,
+            location_id,
+        )
+        if player.campaign_id == campaign_id
+    ]
+
+    if not candidates:
+        return None
+
+    r = rng or random.Random()
+
+    return r.choice(candidates)
 
 
 def simulated_players_in_campaign(

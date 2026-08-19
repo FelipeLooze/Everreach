@@ -716,3 +716,57 @@ def test_automatic_arrival_scheduler_combines_policy_location_and_pending_guard(
 
     assert second is not None
     assert second.id == first.id
+
+def test_next_arrival_can_use_canonical_base_world_minute(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Canonical Arrival Chain",
+    )
+
+    _region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    current_world_minute = get_world_time(
+        db_session,
+        campaign.id,
+    ).total_minutes()
+
+    canonical_base = current_world_minute + 120
+
+    # Simulate the world clock already having moved beyond the
+    # canonical occurrence time.
+    advance_world_time(
+        db_session,
+        campaign.id,
+        240,
+    )
+
+    arrival = schedule_next_simulated_player_world_arrival(
+        db_session,
+        campaign.id,
+        location.id,
+        count=2,
+        min_delay_minutes=100,
+        max_delay_minutes=500,
+        rng=random.Random(42),
+        base_world_minute=canonical_base,
+    )
+
+    delay_from_canonical_base = (
+        arrival.scheduled_world_minute
+        - canonical_base
+    )
+
+    assert 100 <= delay_from_canonical_base <= 500
+
+    assert (
+        arrival.scheduled_world_minute
+        < get_world_time(
+            db_session,
+            campaign.id,
+        ).total_minutes() + 500
+    )

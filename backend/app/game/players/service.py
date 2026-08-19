@@ -558,6 +558,8 @@ def schedule_next_simulated_player_world_arrival(
     min_delay_minutes: int,
     max_delay_minutes: int,
     rng: random.Random | None = None,
+    *,
+    base_world_minute: int | None = None,
 ) -> ScheduledSimulatedPlayerArrival:
     """
     Schedule an irregular future arrival inside a caller-provided window.
@@ -577,10 +579,11 @@ def schedule_next_simulated_player_world_arrival(
             "than minimum arrival delay."
         )
 
-    current_world_minute = get_world_time(
-        db,
-        campaign_id,
-    ).total_minutes()
+    if base_world_minute is None:
+        base_world_minute = get_world_time(
+            db,
+            campaign_id,
+        ).total_minutes()
 
     random_source = rng or random.Random()
 
@@ -594,7 +597,7 @@ def schedule_next_simulated_player_world_arrival(
         campaign_id,
         location_id,
         count,
-        current_world_minute + delay_minutes,
+        base_world_minute + delay_minutes,
     )
 
 def get_simulated_player_arrival_policy(
@@ -693,6 +696,8 @@ def schedule_simulated_player_world_arrival_from_policy(
     campaign_id: str,
     location_id: str,
     rng: random.Random | None = None,
+    *,
+    base_world_minute: int | None = None,
 ) -> ScheduledSimulatedPlayerArrival | None:
     """
     Schedule one future arrival using the campaign policy.
@@ -726,6 +731,7 @@ def schedule_simulated_player_world_arrival_from_policy(
         min_delay_minutes=policy.min_delay_minutes,
         max_delay_minutes=policy.max_delay_minutes,
         rng=random_source,
+        base_world_minute=base_world_minute,
     )
 
 def get_pending_simulated_player_world_arrival(
@@ -876,6 +882,8 @@ def ensure_automatic_simulated_player_world_arrival_scheduled(
     db: Session,
     campaign_id: str,
     rng: random.Random | None = None,
+    *,
+    base_world_minute: int | None = None,
 ) -> ScheduledSimulatedPlayerArrival | None:
     """
     Ensure the campaign has one pending automatic transported-person
@@ -908,4 +916,5 @@ def ensure_automatic_simulated_player_world_arrival_scheduled(
         campaign_id,
         location.id,
         rng=rng,
+        base_world_minute=base_world_minute,
     )

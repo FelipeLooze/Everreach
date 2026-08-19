@@ -285,6 +285,93 @@ def _visited_location_ids(
 
     return visited
 
+def _explore_region_goal_is_complete(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    region_id: str,
+) -> bool:
+    region_location_ids = {
+        location_id
+        for (location_id,) in (
+            db.query(Location.id)
+            .filter(
+                Location.region_id == region_id,
+            )
+            .all()
+        )
+    }
+
+    if not region_location_ids:
+        return False
+
+    visited_location_ids = _visited_location_ids(
+        db,
+        campaign_id,
+        player,
+    )
+
+    return region_location_ids.issubset(
+        visited_location_ids
+    )
+
+def _complete_goal_if_satisfied(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    world_minute: int,
+) -> bool:
+    if (
+        player.goal_type
+        == SimulatedPlayerGoalType.NONE
+    ):
+        return False
+
+    if (
+        player.goal_type
+        == SimulatedPlayerGoalType.EXPLORE_REGION
+    ):
+        region_id = _goal_region_id(
+            player
+        )
+
+        if not region_id:
+            return False
+
+        if not _explore_region_goal_is_complete(
+            db,
+            campaign_id,
+            player,
+            region_id,
+        ):
+            return False
+
+    else:
+        return False
+
+    completed_goal_type = player.goal_type
+    completed_goal_subject = player.goal_subject
+    completed_goal_description = player.goal
+
+    player.goal_type = SimulatedPlayerGoalType.NONE
+    player.goal_subject = None
+
+    log_event(
+        db,
+        campaign_id,
+        EventType.SIMULATED_PLAYER_GOAL_COMPLETED,
+        actor_type="simulated_player",
+        actor_id=player.id,
+        payload={
+            "goal_type": completed_goal_type,
+            "goal_subject": completed_goal_subject,
+            "goal": completed_goal_description,
+        },
+        occurred_world_minute=world_minute,
+    )
+
+    return True
+
 def _goal_region_id(
     player: SimulatedPlayer,
 ) -> str | None:
@@ -573,6 +660,13 @@ def _complete_travel_if_due(
         occurred_world_minute=(
             arrival_world_minute
         ),
+    )
+
+    _complete_goal_if_satisfied(
+        db,
+        campaign_id,
+        player,
+        arrival_world_minute,
     )
 
     return True

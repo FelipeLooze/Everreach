@@ -111,6 +111,81 @@ def test_explore_region_goal_prioritizes_target_region(
 
     assert selected is target_region
 
+def test_explore_region_goal_completion_clears_goal_and_logs_event(
+    db_session,
+    monkeypatch,
+):
+    campaign = create_campaign(
+        db_session,
+        "Goal Completion",
+    )
+
+    _region, village = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        village.id,
+    )
+
+    explorer = next(
+        player
+        for player in players
+        if (
+            player.goal_type
+            == SimulatedPlayerGoalType.EXPLORE_REGION
+        )
+    )
+
+    original_goal = explorer.goal
+
+    monkeypatch.setattr(
+        player_simulation,
+        "_explore_region_goal_is_complete",
+        lambda db, campaign_id, player, region_id: True,
+    )
+
+    completed = (
+        player_simulation._complete_goal_if_satisfied(
+            db_session,
+            campaign.id,
+            explorer,
+            600,
+        )
+    )
+
+    db_session.flush()
+
+    assert completed is True
+
+    assert (
+        explorer.goal_type
+        == SimulatedPlayerGoalType.NONE
+    )
+    assert explorer.goal_subject is None
+
+    # Human-readable history is preserved.
+    assert explorer.goal == original_goal
+
+    event = (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id
+            == campaign.id,
+            WorldEvent.event_type
+            == EventType.SIMULATED_PLAYER_GOAL_COMPLETED.value,
+            WorldEvent.actor_type
+            == "simulated_player",
+            WorldEvent.actor_id
+            == explorer.id,
+        )
+        .one()
+    )
+
+    assert event.world_minute == 600
+
 def test_traveling_simulated_player_is_not_physically_present_at_origin(
     db_session,
 ):

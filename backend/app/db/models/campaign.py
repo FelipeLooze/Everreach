@@ -32,6 +32,13 @@ class WorldTime(Base):
     day: Mapped[int] = mapped_column(Integer, default=1)
     hour: Mapped[int] = mapped_column(Integer, default=8)
     minute: Mapped[int] = mapped_column(Integer, default=0)
+    subminute_seconds: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+        nullable=False,
+    )
+
 
     campaign: Mapped["Campaign"] = relationship(back_populates="world_time")
 

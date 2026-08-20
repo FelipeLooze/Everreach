@@ -11,6 +11,9 @@ export interface CampaignWithCharacters extends Campaign {
 export interface Character {
   id: string;
   name: string;
+  background: string | null;
+  profession_affinity_key: string | null;
+  active_class_id: string | null;
   level: number;
   xp: number;
   hp_current: number;
@@ -118,6 +121,25 @@ export interface CharacterSkill {
   mastery: number;
 }
 
+export interface CharacterProfession {
+  key: string;
+  name: string;
+  level: number;
+  xp: number;
+}
+
+export interface CharacterClassDefinition {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface CharacterClassOffer {
+  id: string;
+  status: "AVAILABLE" | "DELAYED";
+  class_definition: CharacterClassDefinition;
+}
+
 export interface CharacterTechnique {
   name: string;
   description: string;
@@ -126,6 +148,9 @@ export interface CharacterTechnique {
 export interface CharacterSheet {
   character: Character;
   attributes: CharacterAttribute[];
+  professions: CharacterProfession[];
+  active_class: CharacterClassDefinition | null;
+  class_offers: CharacterClassOffer[];
   skills: CharacterSkill[];
   techniques: CharacterTechnique[];
 }

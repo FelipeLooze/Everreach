@@ -8,6 +8,9 @@ const state: GameState = {
   character: {
     id: "char_1",
     name: "Hero",
+    background: null,
+    profession_affinity_key: null,
+    active_class_id: null,
     level: 0,
     xp: 0,
     hp_current: 20,

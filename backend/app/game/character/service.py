@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 
-from app.core.enums import CharacterStatus, EventType
+from app.core.enums import CharacterStatus, EarthProfession, EventType
 from app.db.models.character import Character, CharacterAttribute
 from app.services.event_log import log_event
+from app.game.professions.backgrounds import affinity_for_earth_profession
+from app.game.professions.service import get_or_create_profession
 
 DEFAULT_ATTRIBUTES = {
     "Força": 10,
@@ -20,10 +22,23 @@ def create_character(
     name: str,
     region_id: str | None = None,
     location_id: str | None = None,
+    *,
+    earth_profession: EarthProfession | None = None,
 ) -> Character:
+    affinity = affinity_for_earth_profession(earth_profession)
+    if affinity is not None:
+        get_or_create_profession(
+            db,
+            affinity.profession_key,
+            affinity.profession_name,
+        )
     character = Character(
         campaign_id=campaign_id,
         name=name,
+        background=(affinity.background_label if affinity else None),
+        profession_affinity_key=(
+            affinity.profession_key if affinity else None
+        ),
         level=0,
         xp=0,
         hp_current=20,
@@ -48,7 +63,11 @@ def create_character(
         EventType.CHARACTER_CREATED,
         actor_type="character",
         actor_id=character.id,
-        payload={"name": name},
+        payload={
+            "name": name,
+            "background": character.background,
+            "profession_affinity_key": character.profession_affinity_key,
+        },
     )
 
     db.flush()

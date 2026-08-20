@@ -1,5 +1,6 @@
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
+from app.db.models.character_class import CharacterClassOffer, ClassDefinition
 from app.db.models.event import WorldEvent
 from app.db.models.item import InventoryItem, Item
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
@@ -12,6 +13,7 @@ from app.db.models.location import (
 )
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
+from app.db.models.profession import CharacterProfession, Profession
 from app.db.models.quest import (
     CharacterQuest,
     CharacterQuestObjective,
@@ -49,6 +51,8 @@ __all__ = [
     "WorldTime",
     "Character",
     "CharacterAttribute",
+    "ClassDefinition",
+    "CharacterClassOffer",
     "WorldEvent",
     "InventoryItem",
     "Item",
@@ -61,6 +65,8 @@ __all__ = [
     "LocationFeature",
     "Memory",
     "NPC",
+    "Profession",
+    "CharacterProfession",
     "CharacterQuest",
     "CharacterQuestObjective",
     "Quest",

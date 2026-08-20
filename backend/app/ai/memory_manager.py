@@ -76,6 +76,8 @@ def _event_subject(payload: dict, event: WorldEvent) -> str:
         ("to_location_id", "location"),
         ("location_id", "location"),
         ("quest_id", "quest"),
+        ("profession_id", "profession"),
+        ("class_id", "class"),
         ("fact_id", "fact"),
     ):
         if payload.get(key):
@@ -141,6 +143,21 @@ def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
         return f"{actor_name} concluiu uma missão."
     if event_type == EventType.PLAYER_LEVELED_UP.value:
         return f"{actor_name} alcançou o Level {payload.get('new_level', '?')}."
+    if event_type == EventType.PLAYER_PROFESSION_LEVELED_UP.value:
+        return (
+            f"{actor_name} alcançou o Level {payload.get('new_level', '?')} "
+            f"em {payload.get('profession_name', 'uma profissão')}."
+        )
+    if event_type == EventType.PLAYER_CLASS_OFFERED.value:
+        return (
+            f"O System disponibilizou a classe "
+            f"{payload.get('class_name', 'desconhecida')} para {actor_name}."
+        )
+    if event_type == EventType.PLAYER_CLASS_ACCEPTED.value:
+        return (
+            f"{actor_name} aceitou a classe "
+            f"{payload.get('class_name', 'desconhecida')}."
+        )
     if event_type == EventType.PLAYER_DIED.value:
         return f"{actor_name} morreu permanentemente."
     if event_type == EventType.SIMULATED_PLAYER_DIED.value:

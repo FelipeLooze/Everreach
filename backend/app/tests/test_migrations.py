@@ -39,6 +39,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "simulated_player_groups",
             "simulated_player_group_members",
             "simulated_player_skills",
+            "professions",
+            "character_professions",
+            "class_definitions",
+            "character_class_offers",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
@@ -75,6 +79,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             item["name"]
             for item in inspect(engine).get_columns("simulated_players")
         }
+        character_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("characters")
+        }
         assert "uq_knowledge_fact_campaign_key" in fact_constraints
         assert "social_priority" in fact_columns
         assert "uq_knowledge_knower_fact_identity" in knower_constraints
@@ -95,6 +103,24 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             in simulated_player_indexes
         )
         assert {"xp", "risk_tolerance"}.issubset(simulated_player_columns)
+        assert {"background", "profession_affinity_key"}.issubset(
+            character_columns
+        )
+        assert "active_class_id" in character_columns
+        assert "profession_affinity_key" in simulated_player_columns
+        profession_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints(
+                "character_professions"
+            )
+        }
+        profession_xp_type = next(
+            item["type"]
+            for item in inspect(engine).get_columns("character_professions")
+            if item["name"] == "xp"
+        )
+        assert "uq_character_profession" in profession_constraints
+        assert profession_xp_type.python_type is float
 
         with Session(engine) as session:
             campaign = create_campaign(session, "Banco migrado")

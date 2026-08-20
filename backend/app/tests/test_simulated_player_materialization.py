@@ -39,6 +39,26 @@ class IdentityLLM(LLMService):
         """
 
 
+class ProfessionalIdentityLLM(LLMService):
+    def __init__(self, background: str, earth_profession: str) -> None:
+        self.background = background
+        self.earth_profession = earth_profession
+
+    def generate(self, system: str, prompt: str) -> str:
+        return f"""
+        {{
+          "name": "Marina Costa",
+          "personality": "Prática e paciente.",
+          "background": "{self.background}",
+          "earth_profession": "{self.earth_profession}",
+          "motivation": "Encontrar trabalho seguro.",
+          "goal": "Conseguir abrigo.",
+          "physical_description": "Mulher adulta de cabelos castanhos e olhos escuros.",
+          "archetype": "SOCIAL"
+        }}
+        """
+
+
 def test_materialize_simulated_player_persists_llm_identity(
     db_session,
 ):
@@ -150,3 +170,39 @@ def test_materialize_simulated_player_persists_llm_identity(
         )
 
     assert len(llm.calls) == calls_before_second_attempt
+
+
+@pytest.mark.parametrize(
+    ("background", "declared_profession", "expected_affinity"),
+    [
+        ("Era chef profissional na Terra.", "CHEF", "CULINARY"),
+        (
+            "Trabalhava como engenheira de software na Terra.",
+            "BLACKSMITH",
+            None,
+        ),
+    ],
+)
+def test_materialization_only_accepts_matching_background_affinity(
+    db_session,
+    background,
+    declared_profession,
+    expected_affinity,
+):
+    campaign = create_campaign(db_session, "Generated Affinity")
+    _region, location = seed_initial_region(db_session, campaign.id)
+    set_abstract_simulated_player_population(
+        db_session,
+        campaign.id,
+        location.id,
+        1,
+    )
+
+    player = materialize_simulated_player(
+        db_session,
+        ProfessionalIdentityLLM(background, declared_profession),
+        campaign.id,
+        location.id,
+    )
+
+    assert player.profession_affinity_key == expected_affinity

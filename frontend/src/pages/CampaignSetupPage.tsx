@@ -6,6 +6,7 @@ import {
   deleteCampaign,
   listCampaigns,
 } from "@/api/campaigns";
+import type { EarthProfession } from "@/api/campaigns";
 import { useGameStore } from "@/stores/useGameStore";
 import type { CampaignWithCharacters, Character } from "@/types/game";
 
@@ -15,6 +16,7 @@ export function CampaignSetupPage() {
   const [menu, setMenu] = useState<"main" | "play" | "create" | "campaigns" | "settings">("main");
   const [campaignName, setCampaignName] = useState("");
   const [characterName, setCharacterName] = useState("");
+  const [earthProfession, setEarthProfession] = useState<EarthProfession | "">("");
   const [campaigns, setCampaigns] = useState<CampaignWithCharacters[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -42,7 +44,11 @@ export function CampaignSetupPage() {
     setError(null);
     try {
       const campaign = await createCampaign(campaignName.trim());
-      const character = await createCharacter(campaign.id, characterName.trim());
+      const character = await createCharacter(
+        campaign.id,
+        characterName.trim(),
+        earthProfession || null,
+      );
       setSession(campaign.id, character.id);
       navigate("/game");
     } catch (err) {
@@ -130,6 +136,27 @@ export function CampaignSetupPage() {
               disabled={busy}
             />
           </label>
+
+          <label htmlFor="earth-profession">
+            Experiência profissional na Terra
+          </label>
+          <select
+            id="earth-profession"
+            value={earthProfession}
+            onChange={(event) =>
+              setEarthProfession(event.target.value as EarthProfession | "")
+            }
+            disabled={busy}
+          >
+            <option value="">Nenhuma afinidade profissional</option>
+            <option value="CHEF">Chef profissional — Culinária</option>
+            <option value="FARMER">Agricultor — Agricultura</option>
+            <option value="CARPENTER">Carpinteiro — Carpintaria</option>
+            <option value="BLACKSMITH">Ferreiro — Ferraria</option>
+          </select>
+          <small>
+            Concede somente +10% de XP na profissão correspondente; não concede níveis.
+          </small>
 
           <button
             className="primary-menu-button"

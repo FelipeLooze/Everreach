@@ -261,11 +261,17 @@ npm run build
   tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
   grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
   e cobertos por testes de múltiplos dias.
-- **Fase 8 — Progressão: PARTIAL (8A concluída).** XP de personagem é autoritativo,
+- **Fase 8 — Progressão: PARTIAL (8A–8E concluídas).** XP de personagem é autoritativo,
   permanece fracionário e usa a curva `round(25 * (level + 1) ** 1.7)`, sem limite arbitrário.
   Somente experiências significativas, categorizadas pelo backend e identificadas de forma
-  idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões,
-  classes, domínios e demais integrações continuam pendentes nas subfases seguintes.
+  idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões
+  possuem catálogo extensível, XP/Level independentes e criação preguiçosa no primeiro ganho de
+  pelo menos 0,1 XP. Cada transportado pode ter no máximo uma afinidade profissional coerente
+  com sua experiência na Terra, concedendo somente +10% de Profession XP na profissão associada.
+  Coleta, trabalho, crafting e prática possuem fontes mecânicas separadas, com resultados parciais,
+  relevância por complexidade e diminishing returns por repetição. Classes são opcionais,
+  não dependem de Level e possuem ofertas pendentes, disponíveis e adiadas, com apenas uma classe
+  ativa por personagem. Domínios e geração dinâmica continuam pendentes nas subfases seguintes.
 
 ## Fora do MVP
 

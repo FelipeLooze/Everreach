@@ -100,6 +100,7 @@ def create_character_route(
         body.name,
         None,
         None,
+        earth_profession=body.earth_profession,
     )
 
     db.commit()

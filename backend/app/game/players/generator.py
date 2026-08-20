@@ -8,14 +8,17 @@ from app.game.players.service import (
 )
 from app.ai.llm_service import LLMService
 from app.core.enums import (
+    EarthProfession,
+    RiskTolerance,
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
     SimulatedPlayerStatus,
-    RiskTolerance,
 )
 from app.db.models.location import Location
 from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
+from app.game.professions.backgrounds import affinity_supported_by_background
+from app.game.professions.service import get_or_create_profession
 
 
 _SYSTEM_PROMPT = """
@@ -31,6 +34,7 @@ Responda SOMENTE com um objeto JSON válido neste formato:
   "name": "nome da pessoa",
   "personality": "descrição curta da personalidade",
   "background": "breve passado da pessoa antes da Chegada",
+  "earth_profession": null,
   "motivation": "motivação pessoal atual",
   "physical_description": "descrição física objetiva da pessoa",
   "goal": "objetivo atual em texto livre",
@@ -43,6 +47,13 @@ Valores permitidos para "archetype":
 - SOCIAL
 - ADVENTURER
 
+Valores permitidos para "earth_profession":
+- "CHEF" somente para chef/cozinheiro profissional
+- "FARMER" somente para agricultor/fazendeiro
+- "CARPENTER" somente para carpinteiro
+- "BLACKSMITH" somente para ferreiro
+- null quando não houver correspondência profissional direta
+
 REGRAS:
 
 - A pessoa veio da Terra e foi fisicamente transportada.
@@ -51,6 +62,9 @@ REGRAS:
 - O nome pode ter estética terrestre, fantástica ou uma mistura das duas.
 - Não use o estilo do nome para determinar a origem da pessoa.
 - O background deve tratar principalmente da vida anterior na Terra.
+- A profissão terrestre deve corresponder diretamente ao background.
+- Empregos sem correspondência direta, como desenvolvimento de software,
+  devem usar null.
 - A pessoa é comum e não é escolhida por profecia, destino ou linhagem especial.
 - Não conceda poderes especiais, conhecimento secreto ou vantagens gratuitas.
 - Não invente fatos sobre o mundo além do contexto fornecido.
@@ -93,6 +107,8 @@ class SimulatedPlayerIdentity(BaseModel):
         min_length=1,
         max_length=1500,
     )
+
+    earth_profession: EarthProfession | None = None
 
     motivation: str = Field(
         min_length=1,
@@ -245,6 +261,17 @@ def materialize_simulated_player(
 
     identity = _parse_identity(raw)
 
+    affinity = affinity_supported_by_background(
+        identity.background,
+        identity.earth_profession,
+    )
+    if affinity is not None:
+        get_or_create_profession(
+            db,
+            affinity.profession_key,
+            affinity.profession_name,
+        )
+
     consume_abstract_simulated_player_population(
         db,
         campaign_id,
@@ -268,6 +295,9 @@ def materialize_simulated_player(
         goal_subject=None,
         personality=identity.personality,
         background=identity.background,
+        profession_affinity_key=(
+            affinity.profession_key if affinity else None
+        ),
         motivation=identity.motivation,
         physical_description=identity.physical_description,
         status=SimulatedPlayerStatus.ACTIVE.value,

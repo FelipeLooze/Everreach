@@ -31,6 +31,9 @@ const savedCampaign = {
     {
       id: "char_1",
       name: "Logan",
+      background: null,
+      profession_affinity_key: null,
+      active_class_id: null,
       level: 0,
       xp: 0,
       hp_current: 20,
@@ -95,9 +98,38 @@ describe("CampaignSetupPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
 
     await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Nova Jornada"));
-    expect(mocks.createCharacter).toHaveBeenCalledWith("campaign_new", "Nova Heroína");
+    expect(mocks.createCharacter).toHaveBeenCalledWith(
+      "campaign_new",
+      "Nova Heroína",
+      null,
+    );
     expect(mocks.setSession).toHaveBeenCalledWith("campaign_new", "char_new");
     expect(await screen.findByText("Tela do jogo")).toBeInTheDocument();
+  });
+
+  it("permite selecionar uma única afinidade profissional de background", async () => {
+    mocks.listCampaigns.mockResolvedValue([]);
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    fireEvent.change(screen.getByLabelText("Nome da campanha"), {
+      target: { value: "Nova Jornada" },
+    });
+    fireEvent.change(screen.getByLabelText("Nome do personagem"), {
+      target: { value: "Nova Heroína" },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Experiência profissional na Terra"),
+      { target: { value: "CHEF" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+
+    await waitFor(() =>
+      expect(mocks.createCharacter).toHaveBeenCalledWith(
+        "campaign_new",
+        "Nova Heroína",
+        "CHEF",
+      ),
+    );
   });
 
   it("lista campanhas e continua com o personagem persistido", async () => {

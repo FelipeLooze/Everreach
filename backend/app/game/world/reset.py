@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
+from app.db.models.character_class import CharacterClassOffer, ClassDefinition
 from app.db.models.event import WorldEvent
 from app.db.models.item import InventoryItem
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
@@ -32,6 +33,7 @@ from app.db.models.simulated_player_arrival import (
     SimulatedPlayerArrivalPolicy,
 )
 from app.db.models.skill import CharacterSkill, CharacterTechnique
+from app.db.models.profession import CharacterProfession
 from app.db.models.world_development import WorldDevelopment
 
 def delete_campaign(db: Session, campaign_id: str) -> bool:
@@ -56,6 +58,12 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         or_(CharacterQuest.character_id.in_(character_ids), CharacterQuest.quest_id.in_(quest_ids))
     ).delete(synchronize_session=False)
     db.query(CharacterSkill).filter(CharacterSkill.character_id.in_(character_ids)).delete(synchronize_session=False)
+    db.query(CharacterProfession).filter(
+        CharacterProfession.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(CharacterClassOffer).filter(
+        CharacterClassOffer.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
     db.query(CharacterTechnique).filter(CharacterTechnique.character_id.in_(character_ids)).delete(
         synchronize_session=False
     )
@@ -128,6 +136,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         CharacterConnectionDiscovery.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(Character).filter(Character.id.in_(character_ids)).delete(synchronize_session=False)
+    db.query(ClassDefinition).filter(
+        ClassDefinition.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
 
     db.query(LocationConnection).filter(
         or_(

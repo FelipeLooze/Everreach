@@ -51,6 +51,11 @@ class SimulatedPlayer(Base):
         nullable=True,
     )
 
+    profession_affinity_key: Mapped[str | None] = mapped_column(
+        ForeignKey("professions.key"),
+        nullable=True,
+    )
+
     motivation: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,

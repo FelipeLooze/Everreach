@@ -99,6 +99,15 @@ class ItemInstanceMode(StrEnum):
     UNIQUE = "UNIQUE"
 
 
+class ItemQuality(StrEnum):
+    CRUDE = "CRUDE"
+    POOR = "POOR"
+    STANDARD = "STANDARD"
+    GOOD = "GOOD"
+    EXCELLENT = "EXCELLENT"
+    MASTERWORK = "MASTERWORK"
+
+
 class ItemLocationType(StrEnum):
     UNPLACED = "UNPLACED"
     CHARACTER = "CHARACTER"

@@ -48,6 +48,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                 name=item.name,
                 type=item.type,
                 quantity=entry.quantity,
+                quality=entry.quality,
                 equipped=entry.equipped,
                 unit_weight=item.base_weight,
                 total_weight=round(item.base_weight * entry.quantity, 3),

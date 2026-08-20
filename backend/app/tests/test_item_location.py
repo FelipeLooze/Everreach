@@ -8,6 +8,7 @@ from app.core.enums import (
     ItemInstanceMode,
     ItemLocationType,
     ItemOwnerType,
+    ItemQuality,
     ItemType,
 )
 from app.db.models.event import WorldEvent
@@ -161,6 +162,25 @@ def test_character_death_does_not_delete_or_unplace_carried_items(db_session):
     assert persisted.owner_type == ItemOwnerType.CHARACTER.value
 
 
+def test_stackable_items_only_merge_when_quality_matches(db_session):
+    _campaign, _region, _location, character, _npc = _world(db_session)
+    standard = add_item(
+        db_session, character.id, "Pão", quantity=2, quality=ItemQuality.STANDARD
+    )
+    same = add_item(
+        db_session, character.id, "Pão", quantity=1, quality=ItemQuality.STANDARD
+    )
+    good = add_item(
+        db_session, character.id, "Pão", quantity=1, quality=ItemQuality.GOOD
+    )
+
+    assert same.id == standard.id
+    assert standard.quantity == 3
+    assert good.id != standard.id
+    assert good.quality == ItemQuality.GOOD.value
+    assert len(list_inventory(db_session, character.id)) == 2
+
+
 def test_inventory_api_reads_item_instances_as_the_authoritative_source(
     client, db_session
 ):
@@ -183,16 +203,17 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "name": "Pão",
             "type": "MISC",
             "quantity": 3,
+            "quality": "STANDARD",
             "equipped": False,
             "unit_weight": 0.0,
             "total_weight": 0.0,
             "equipped_slot": None,
             "accessibility": "STOWED",
             "allowed_slots": [],
-                "weapon": None,
-                "armor": None,
-                "tool": None,
-            }
+            "weapon": None,
+            "armor": None,
+            "tool": None,
+        }
     ]
     assert response.json()["total_weight"] == 0.0
     assert response.json()["carrying_capacity"] == 25.0

@@ -187,6 +187,7 @@ export interface InventoryItem {
   name: string;
   type: string;
   quantity: number;
+  quality: ItemQuality;
   equipped: boolean;
   unit_weight: number;
   total_weight: number;
@@ -197,6 +198,14 @@ export interface InventoryItem {
   armor: ArmorProfile | null;
   tool: ToolProfile | null;
 }
+
+export type ItemQuality =
+  | "CRUDE"
+  | "POOR"
+  | "STANDARD"
+  | "GOOD"
+  | "EXCELLENT"
+  | "MASTERWORK";
 
 export interface WeaponProfile {
   family: WeaponFamily;

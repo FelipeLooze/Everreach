@@ -43,6 +43,11 @@ class ItemInstance(Base):
             name="ck_item_instance_quantity_positive",
         ),
         CheckConstraint(
+            "quality IN ('CRUDE', 'POOR', 'STANDARD', 'GOOD', 'EXCELLENT', "
+            "'MASTERWORK')",
+            name="ck_item_instance_quality",
+        ),
+        CheckConstraint(
             "(location_type = 'UNPLACED' AND location_ref IS NULL) OR "
             "(location_type <> 'UNPLACED' AND location_ref IS NOT NULL)",
             name="ck_item_instance_location_ref",
@@ -108,6 +113,7 @@ class ItemInstance(Base):
         nullable=True,
     )
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    quality: Mapped[str] = mapped_column(String, default="STANDARD", nullable=False)
     location_type: Mapped[str] = mapped_column(
         String,
         default="UNPLACED",

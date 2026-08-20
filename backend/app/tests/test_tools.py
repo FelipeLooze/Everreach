@@ -54,6 +54,7 @@ def test_tool_profile_is_typed_immutable_and_has_no_generic_bonus(db_session):
     )
     assert use.instance_id == instance.id
     assert use.accessibility.value == "STOWED"
+    assert use.quality.value == "STANDARD"
 
     with pytest.raises(ToolError, match="different canonical"):
         configure_item_tool_profile(
@@ -120,6 +121,7 @@ def test_profession_activity_records_tool_evidence_without_extra_xp(db_session):
     assert payload["tool_instance_id"] == instance.id
     assert payload["tool_capability"] == "MINING"
     assert payload["tool_accessibility"] == "STOWED"
+    assert payload["tool_quality"] == "STANDARD"
 
 
 def test_profession_activity_rejects_incomplete_tool_requirement(db_session):

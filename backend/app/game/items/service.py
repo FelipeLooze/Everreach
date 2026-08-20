@@ -9,6 +9,7 @@ from app.core.enums import (
     ItemInstanceMode,
     ItemLocationType,
     ItemOwnerType,
+    ItemQuality,
     ItemType,
 )
 from app.db.models.character import Character
@@ -92,11 +93,14 @@ def create_item_instance(
     definition: ItemDefinition,
     *,
     quantity: int = 1,
+    quality: ItemQuality = ItemQuality.STANDARD,
 ) -> ItemInstance:
     if db.get(ItemDefinition, definition.id) is None:
         raise ItemFoundationError("Item definition must be persisted first.")
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
         raise ItemFoundationError("Item instance quantity must be a positive integer.")
+    if not isinstance(quality, ItemQuality):
+        raise ItemFoundationError("Invalid item quality.")
     try:
         mode = ItemInstanceMode(definition.instance_mode)
     except ValueError as exc:
@@ -104,7 +108,11 @@ def create_item_instance(
     if mode == ItemInstanceMode.UNIQUE and quantity != 1:
         raise ItemFoundationError("Unique item instances must have quantity 1.")
 
-    instance = ItemInstance(definition_id=definition.id, quantity=quantity)
+    instance = ItemInstance(
+        definition_id=definition.id,
+        quantity=quantity,
+        quality=quality.value,
+    )
     db.add(instance)
     db.flush()
     return instance

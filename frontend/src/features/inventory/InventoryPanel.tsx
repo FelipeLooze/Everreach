@@ -29,6 +29,15 @@ const accessibilityLabels = {
   STOWED: "guardado",
 };
 
+const qualityLabels = {
+  CRUDE: "rudimentar",
+  POOR: "ruim",
+  STANDARD: "padrão",
+  GOOD: "boa",
+  EXCELLENT: "excelente",
+  MASTERWORK: "obra-prima",
+};
+
 const weaponFamilyLabels = {
   DAGGER: "adaga",
   KNIFE: "faca",
@@ -115,6 +124,7 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
           {inventory.items.map((item) => (
             <li key={item.item_instance_id}>
               {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso
+              {` — qualidade ${qualityLabels[item.quality]}`}
               {item.equipped_slot && ` — ${equipmentSlotLabels[item.equipped_slot]}`}
               {` — ${accessibilityLabels[item.accessibility]}`}
               {item.weapon && (

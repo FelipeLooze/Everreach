@@ -3,7 +3,13 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import ItemAccessibility, ItemLocationType, ItemType, ToolCapability
+from app.core.enums import (
+    ItemAccessibility,
+    ItemLocationType,
+    ItemQuality,
+    ItemType,
+    ToolCapability,
+)
 from app.db.models.item import ItemDefinition, ItemInstance
 from app.db.models.tool import ItemToolProfile
 from app.game.items.equipment import item_accessibility
@@ -18,6 +24,7 @@ class ToolUseContext:
     instance_id: str
     capability: ToolCapability
     accessibility: ItemAccessibility
+    quality: ItemQuality
 
 
 def configure_item_tool_profile(
@@ -85,6 +92,7 @@ def validate_character_tool_use(
         instance_id=instance.id,
         capability=required_capability,
         accessibility=item_accessibility(instance),
+        quality=ItemQuality(instance.quality),
     )
 
 

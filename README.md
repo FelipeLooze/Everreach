@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10G concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10H concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -411,9 +411,16 @@ npm run build
   A ferramenta não concede XP ou bônus genérico por existir ou estar equipada, não duplica as
   fórmulas da Fase 8 e não precisa ocupar um slot para ter perfil — panelas e instrumentos grandes
   continuam representáveis. API e inventário exibem somente suas capacidades compreensíveis.
+  A 10H persiste qualidade artesanal em cada instância como `CRUDE`, `POOR`, `STANDARD`, `GOOD`,
+  `EXCELLENT` ou `MASTERWORK`, sem linguagem de raridade de loot. Itens criados antes da migration
+  tornam-se `STANDARD`; itens únicos da mesma definição podem ter qualidades diferentes, e pilhas
+  só se fundem quando definição, portador, posição e qualidade coincidem. A qualidade acompanha a
+  evidência de uso de ferramentas e os eventos de aquisição, e aparece traduzida no inventário.
+  Ela não concede bônus universal de dano, proteção, atributos ou XP; efeitos de confiabilidade e
+  integridade serão consumidos pela condição/durabilidade da 10I de forma específica por categoria.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Qualidade, condição, materiais, recipientes, transferências por intenção e contexto do System
-  permanecem deliberadamente nas subfases 10H–10M.
+  Condição, materiais, recipientes, transferências por intenção e contexto do System permanecem
+  deliberadamente nas subfases 10I–10M.
 
 ## Fora do MVP
 

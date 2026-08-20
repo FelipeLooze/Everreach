@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.core.enums import ItemInstanceMode, ItemType
+from app.core.enums import ItemInstanceMode, ItemQuality, ItemType
 from app.db.models.item import ItemDefinition, ItemInstance
 from app.game.items.service import (
     ItemFoundationError,
@@ -53,6 +53,26 @@ def test_unique_definition_creates_distinct_objects_and_never_a_quantity_stack(
     assert first_sword.quantity == second_sword.quantity == 1
     with pytest.raises(ItemFoundationError, match="quantity 1"):
         create_item_instance(db_session, definition, quantity=2)
+
+
+def test_quality_is_instance_craftsmanship_not_definition_rarity(db_session):
+    definition = create_item_definition(
+        db_session,
+        key="faca_de_trabalho",
+        name="Faca de Trabalho",
+        item_type=ItemType.TOOL,
+        instance_mode=ItemInstanceMode.UNIQUE,
+    )
+    standard = create_item_instance(db_session, definition)
+    masterwork = create_item_instance(
+        db_session, definition, quality=ItemQuality.MASTERWORK
+    )
+
+    assert standard.quality == ItemQuality.STANDARD.value
+    assert masterwork.quality == ItemQuality.MASTERWORK.value
+    assert not hasattr(definition, "rarity")
+    with pytest.raises(ItemFoundationError, match="Invalid item quality"):
+        create_item_instance(db_session, definition, quality="EPIC")
 
 
 def test_item_definitions_are_idempotent_but_canonical_data_is_immutable(db_session):

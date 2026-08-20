@@ -5,6 +5,7 @@ from app.core.enums import (
     ItemInstanceMode,
     ItemLocationType,
     ItemOwnerType,
+    ItemQuality,
     ItemType,
 )
 from app.db.models.character import Character
@@ -65,9 +66,12 @@ def add_item(
     quantity: int = 1,
     *,
     base_weight: float | None = None,
+    quality: ItemQuality = ItemQuality.STANDARD,
 ) -> ItemInstance:
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
         raise ValueError("Item quantity must be a positive integer.")
+    if not isinstance(quality, ItemQuality):
+        raise ValueError("Invalid item quality.")
     character = db.get(Character, character_id)
     if character is None:
         raise ValueError("Character does not exist.")
@@ -80,11 +84,12 @@ def add_item(
                 ItemInstance.definition_id == item.id,
                 ItemInstance.location_type == ItemLocationType.CHARACTER.value,
                 ItemInstance.location_ref == character_id,
+                ItemInstance.quality == quality.value,
             )
             .one_or_none()
         )
     if entry is None:
-        entry = create_item_instance(db, item, quantity=quantity)
+        entry = create_item_instance(db, item, quantity=quantity, quality=quality)
         move_item_instance(
             db,
             entry,
@@ -111,6 +116,7 @@ def add_item(
             "definition_id": item.id,
             "quantity": quantity,
             "quantity_after": entry.quantity,
+            "quality": entry.quality,
         },
     )
     return entry

@@ -129,6 +129,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "id",
             "definition_id",
             "quantity",
+            "quality",
             "campaign_id",
             "location_type",
             "location_ref",
@@ -137,6 +138,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "equipped_slot",
         } == item_instance_columns
         assert "ck_item_instance_quantity_positive" in item_instance_checks
+        assert "ck_item_instance_quality" in item_instance_checks
         assert "ck_item_instance_location_ref" in item_instance_checks
         assert "ck_item_instance_location_type" in item_instance_checks
         assert "ck_item_instance_owner_ref" in item_instance_checks

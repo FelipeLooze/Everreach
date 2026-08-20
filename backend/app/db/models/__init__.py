@@ -84,6 +84,7 @@ from app.db.models.skill import (
     TechniqueUseRecord,
 )
 from app.db.models.world_development import WorldDevelopment
+from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
     "Campaign",
@@ -156,4 +157,5 @@ __all__ = [
     "TechniqueDomain",
     "TechniqueUseRecord",
     "WorldDevelopment",
+    "ItemWeaponProfile",
 ]

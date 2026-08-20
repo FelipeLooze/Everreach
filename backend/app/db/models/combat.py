@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
@@ -224,6 +225,16 @@ class CombatAction(Base):
             "action_key",
             name="uq_combat_action_key",
         ),
+        CheckConstraint(
+            "(weapon_instance_id IS NULL AND physical_damage_profile IS NULL) OR "
+            "(weapon_instance_id IS NOT NULL AND physical_damage_profile IS NOT NULL)",
+            name="ck_combat_action_weapon_mechanics",
+        ),
+        CheckConstraint(
+            "physical_damage_profile IS NULL OR "
+            "physical_damage_profile IN ('SLASH', 'PIERCE', 'BLUNT')",
+            name="ck_combat_action_physical_damage_profile",
+        ),
         Index("ix_combat_action_encounter_time", "encounter_id", "created_world_minute"),
     )
 
@@ -246,6 +257,13 @@ class CombatAction(Base):
     action_type: Mapped[str] = mapped_column(String, nullable=False)
     technique_id: Mapped[str | None] = mapped_column(
         ForeignKey("techniques.id"), nullable=True
+    )
+    weapon_instance_id: Mapped[str | None] = mapped_column(
+        ForeignKey("item_instances.id"), nullable=True
+    )
+    physical_damage_profile: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
     )
     attack_attribute: Mapped[str] = mapped_column(String, nullable=False)
     target_range_band: Mapped[str] = mapped_column(String, nullable=False)

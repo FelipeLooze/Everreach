@@ -1,6 +1,21 @@
 from pydantic import BaseModel
 
-from app.core.enums import EncumbranceTier, EquipmentSlot, ItemAccessibility
+from app.core.enums import (
+    EncumbranceTier,
+    EquipmentSlot,
+    ItemAccessibility,
+    PhysicalDamageProfile,
+    WeaponFamily,
+    WeaponHandRequirement,
+    WeaponReach,
+)
+
+
+class WeaponProfileResponse(BaseModel):
+    family: WeaponFamily
+    damage_profiles: list[PhysicalDamageProfile]
+    reach: WeaponReach
+    hand_requirement: WeaponHandRequirement
 
 
 class InventoryItemResponse(BaseModel):
@@ -15,6 +30,7 @@ class InventoryItemResponse(BaseModel):
     equipped_slot: EquipmentSlot | None
     accessibility: ItemAccessibility
     allowed_slots: list[EquipmentSlot]
+    weapon: WeaponProfileResponse | None
 
 
 class InventoryResponse(BaseModel):

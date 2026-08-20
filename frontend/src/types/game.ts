@@ -193,7 +193,37 @@ export interface InventoryItem {
   equipped_slot: EquipmentSlot | null;
   accessibility: ItemAccessibility;
   allowed_slots: EquipmentSlot[];
+  weapon: WeaponProfile | null;
 }
+
+export interface WeaponProfile {
+  family: WeaponFamily;
+  damage_profiles: PhysicalDamageProfile[];
+  reach: WeaponReach;
+  hand_requirement: WeaponHandRequirement;
+}
+
+export type WeaponFamily =
+  | "DAGGER"
+  | "KNIFE"
+  | "SWORD"
+  | "AXE"
+  | "HAMMER"
+  | "MACE"
+  | "SPEAR"
+  | "POLEARM"
+  | "BOW"
+  | "CROSSBOW"
+  | "SLING"
+  | "STAFF"
+  | "CLUB";
+
+export type PhysicalDamageProfile = "SLASH" | "PIERCE" | "BLUNT";
+export type WeaponReach = "NORMAL" | "LONG" | "RANGED";
+export type WeaponHandRequirement =
+  | "ONE_HAND"
+  | "ONE_OR_TWO_HANDS"
+  | "TWO_HANDS";
 
 export type EquipmentSlot =
   | "HEAD"

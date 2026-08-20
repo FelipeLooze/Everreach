@@ -29,6 +29,40 @@ const accessibilityLabels = {
   STOWED: "guardado",
 };
 
+const weaponFamilyLabels = {
+  DAGGER: "adaga",
+  KNIFE: "faca",
+  SWORD: "espada",
+  AXE: "machado",
+  HAMMER: "martelo",
+  MACE: "maça",
+  SPEAR: "lança",
+  POLEARM: "arma de haste",
+  BOW: "arco",
+  CROSSBOW: "besta",
+  SLING: "funda",
+  STAFF: "bastão",
+  CLUB: "clava",
+};
+
+const damageProfileLabels = {
+  SLASH: "corte",
+  PIERCE: "perfuração",
+  BLUNT: "impacto",
+};
+
+const weaponReachLabels = {
+  NORMAL: "alcance normal",
+  LONG: "alcance longo",
+  RANGED: "à distância",
+};
+
+const handRequirementLabels = {
+  ONE_HAND: "uma mão",
+  ONE_OR_TWO_HANDS: "uma ou duas mãos",
+  TWO_HANDS: "duas mãos",
+};
+
 export function InventoryPanel({ campaignId, characterId }: { campaignId: string; characterId: string }) {
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +97,11 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
               {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso
               {item.equipped_slot && ` — ${equipmentSlotLabels[item.equipped_slot]}`}
               {` — ${accessibilityLabels[item.accessibility]}`}
+              {item.weapon && (
+                <small>
+                  {` — ${weaponFamilyLabels[item.weapon.family]}; ${item.weapon.damage_profiles.map((profile) => damageProfileLabels[profile]).join("/")}; ${weaponReachLabels[item.weapon.reach]}; ${handRequirementLabels[item.weapon.hand_requirement]}`}
+                </small>
+              )}
             </li>
           ))}
         </ul>

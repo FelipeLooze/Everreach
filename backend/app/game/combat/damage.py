@@ -146,6 +146,8 @@ def apply_attack_damage(
             "damage_modifier": damage_modifier,
             "damage_total": damage_total,
             "damage_type": action.damage_type,
+            "weapon_instance_id": action.weapon_instance_id,
+            "physical_damage_profile": action.physical_damage_profile,
             "damage_before_mitigation": damage_before_mitigation,
             "armor_mitigation": mitigation.armor,
             "resistance_mitigation": mitigation.resistance,

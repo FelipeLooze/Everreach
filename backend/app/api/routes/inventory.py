@@ -5,10 +5,16 @@ from app.db.database import get_db
 from app.db.models.character import Character
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item
+from app.db.models.weapon import ItemWeaponProfile
 from app.game.inventory.service import list_inventory
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
-from app.schemas.inventory import InventoryItemResponse, InventoryResponse
+from app.game.items.weapons import get_weapon_damage_profiles
+from app.schemas.inventory import (
+    InventoryItemResponse,
+    InventoryResponse,
+    WeaponProfileResponse,
+)
 
 router = APIRouter(prefix="/api/campaigns", tags=["inventory"])
 
@@ -26,6 +32,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
         if item is None:
             continue
         equipment_profile = db.get(ItemEquipmentProfile, item.id)
+        weapon_profile = db.get(ItemWeaponProfile, item.id)
         items.append(
             InventoryItemResponse(
                 item_instance_id=entry.id,
@@ -45,6 +52,19 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                     )
                     if equipment_profile is not None
                     else []
+                ),
+                weapon=(
+                    WeaponProfileResponse(
+                        family=weapon_profile.weapon_family,
+                        damage_profiles=sorted(
+                            get_weapon_damage_profiles(weapon_profile),
+                            key=lambda profile: profile.value,
+                        ),
+                        reach=weapon_profile.reach,
+                        hand_requirement=weapon_profile.hand_requirement,
+                    )
+                    if weapon_profile is not None
+                    else None
                 ),
             )
         )

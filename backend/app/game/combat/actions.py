@@ -15,6 +15,7 @@ from app.core.enums import (
     CombatEncounterStatus,
     CombatRangeBand,
     EventType,
+    PhysicalDamageProfile,
 )
 from app.db.models.combat import (
     CombatAction,
@@ -62,6 +63,9 @@ class AttackMechanics:
     damage_attribute: CharacterAttributeKey
     damage_type: CombatDamageType = CombatDamageType.PHYSICAL
     technique_id: str | None = None
+    weapon_instance_id: str | None = None
+    physical_damage_profile: PhysicalDamageProfile | None = None
+    allowed_target_ranges: frozenset[CombatRangeBand] | None = None
 
 
 def resolve_attack(
@@ -77,23 +81,13 @@ def resolve_attack(
     """Resolve one basic attack, apply its damage and consume its turn."""
     if not isinstance(action_type, CombatActionType):
         raise CombatActionError("Invalid combat action type.")
-    attribute = _attack_attribute(action_type)
+    mechanics = basic_attack_mechanics(action_type)
     return resolve_profiled_attack(
         db,
         encounter,
         actor,
         target,
-        mechanics=AttackMechanics(
-            action_type=action_type,
-            attack_attribute=attribute,
-            resource_key=CharacterResourceKey.STAMINA,
-            resource_cost=(
-                2.0 if action_type == CombatActionType.MELEE_ATTACK else 1.0
-            ),
-            base_damage_dice=1,
-            damage_die_sides=6,
-            damage_attribute=attribute,
-        ),
+        mechanics=mechanics,
         action_key=action_key,
         rng=rng,
     )
@@ -123,14 +117,29 @@ def resolve_profiled_attack(
         raise CombatActionError("Luck cannot determine combat damage.")
     if not isinstance(mechanics.damage_type, CombatDamageType):
         raise CombatActionError("Invalid combat damage type.")
+    if (mechanics.weapon_instance_id is None) != (
+        mechanics.physical_damage_profile is None
+    ):
+        raise CombatActionError("Weapon attacks require complete weapon mechanics.")
+    if (
+        mechanics.physical_damage_profile is not None
+        and not isinstance(mechanics.physical_damage_profile, PhysicalDamageProfile)
+    ):
+        raise CombatActionError("Invalid physical weapon damage profile.")
     if mechanics.base_damage_dice < 1 or mechanics.damage_die_sides < 2:
         raise CombatActionError("Invalid combat damage dice.")
+    if mechanics.allowed_target_ranges is not None and any(
+        not isinstance(range_band, CombatRangeBand)
+        for range_band in mechanics.allowed_target_ranges
+    ):
+        raise CombatActionError("Invalid weapon target ranges.")
+    if (mechanics.weapon_instance_id is None) != (
+        mechanics.allowed_target_ranges is None
+    ):
+        raise CombatActionError("Weapon attacks require authoritative target ranges.")
     normalized_key = action_key.strip()
     if not _ACTION_KEY_PATTERN.fullmatch(normalized_key):
         raise CombatActionError("Invalid combat action key.")
-    if not isinstance(action_type, CombatActionType):
-        raise CombatActionError("Invalid combat action type.")
-
     existing = (
         db.query(CombatAction)
         .filter(
@@ -145,11 +154,18 @@ def resolve_profiled_attack(
             or existing.target_participant_id != target.id
             or existing.action_type != action_type.value
             or existing.technique_id != mechanics.technique_id
+            or existing.weapon_instance_id != mechanics.weapon_instance_id
+            or existing.physical_damage_profile
+            != (
+                mechanics.physical_damage_profile.value
+                if mechanics.physical_damage_profile
+                else None
+            )
         ):
             raise CombatActionError("Action key already belongs to another combat action.")
         return CombatActionResolution(existing, replayed=True)
 
-    _validate_attack(encounter, actor, target, action_type)
+    _validate_attack(encounter, actor, target, mechanics)
     current_turn = get_current_turn(db, encounter)
     if current_turn is None:
         raise CombatActionError("Initiative has not been rolled.")
@@ -208,6 +224,12 @@ def resolve_profiled_attack(
         action_key=normalized_key,
         action_type=action_type.value,
         technique_id=mechanics.technique_id,
+        weapon_instance_id=mechanics.weapon_instance_id,
+        physical_damage_profile=(
+            mechanics.physical_damage_profile.value
+            if mechanics.physical_damage_profile
+            else None
+        ),
         attack_attribute=attack_attribute.value,
         target_range_band=target.range_band,
         attack_roll=roll.raw,
@@ -239,6 +261,12 @@ def resolve_profiled_attack(
             "action_key": normalized_key,
             "action_type": action_type.value,
             "technique_id": mechanics.technique_id,
+            "weapon_instance_id": mechanics.weapon_instance_id,
+            "physical_damage_profile": (
+                mechanics.physical_damage_profile.value
+                if mechanics.physical_damage_profile
+                else None
+            ),
             "actor_participant_id": actor.id,
             "target_participant_id": target.id,
             "attack_attribute": attack_attribute.value,
@@ -289,8 +317,9 @@ def _validate_attack(
     encounter: CombatEncounter,
     actor: CombatParticipant,
     target: CombatParticipant,
-    action_type: CombatActionType,
+    mechanics: AttackMechanics,
 ) -> None:
+    action_type = mechanics.action_type
     if encounter.status != CombatEncounterStatus.ACTIVE.value:
         raise CombatActionError("Combat encounter is not active.")
     if actor.encounter_id != encounter.id or target.encounter_id != encounter.id:
@@ -302,11 +331,32 @@ def _validate_attack(
     if actor.side_key == target.side_key:
         raise CombatActionError("A participant cannot attack its own side.")
     target_range = CombatRangeBand(target.range_band)
+    if mechanics.allowed_target_ranges is not None:
+        if target_range not in mechanics.allowed_target_ranges:
+            raise CombatActionError("Target is outside this weapon's reach.")
+        return
     if action_type == CombatActionType.MELEE_ATTACK:
         if target_range != CombatRangeBand.ENGAGED:
             raise CombatActionError("Melee attack requires an engaged target.")
     elif target_range == CombatRangeBand.OUT_OF_REACH:
         raise CombatActionError("Target is out of ranged attack reach.")
+
+
+def basic_attack_mechanics(action_type: CombatActionType) -> AttackMechanics:
+    if not isinstance(action_type, CombatActionType):
+        raise CombatActionError("Invalid combat action type.")
+    attribute = _attack_attribute(action_type)
+    return AttackMechanics(
+        action_type=action_type,
+        attack_attribute=attribute,
+        resource_key=CharacterResourceKey.STAMINA,
+        resource_cost=(
+            2.0 if action_type == CombatActionType.MELEE_ATTACK else 1.0
+        ),
+        base_damage_dice=1,
+        damage_die_sides=6,
+        damage_attribute=attribute,
+    )
 
 
 def _attack_attribute(action_type: CombatActionType) -> CharacterAttributeKey:

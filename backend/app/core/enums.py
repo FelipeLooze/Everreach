@@ -128,6 +128,40 @@ class ItemAccessibility(StrEnum):
     STOWED = "STOWED"
 
 
+class WeaponFamily(StrEnum):
+    DAGGER = "DAGGER"
+    KNIFE = "KNIFE"
+    SWORD = "SWORD"
+    AXE = "AXE"
+    HAMMER = "HAMMER"
+    MACE = "MACE"
+    SPEAR = "SPEAR"
+    POLEARM = "POLEARM"
+    BOW = "BOW"
+    CROSSBOW = "CROSSBOW"
+    SLING = "SLING"
+    STAFF = "STAFF"
+    CLUB = "CLUB"
+
+
+class PhysicalDamageProfile(StrEnum):
+    SLASH = "SLASH"
+    PIERCE = "PIERCE"
+    BLUNT = "BLUNT"
+
+
+class WeaponReach(StrEnum):
+    NORMAL = "NORMAL"
+    LONG = "LONG"
+    RANGED = "RANGED"
+
+
+class WeaponHandRequirement(StrEnum):
+    ONE_HAND = "ONE_HAND"
+    ONE_OR_TWO_HANDS = "ONE_OR_TWO_HANDS"
+    TWO_HANDS = "TWO_HANDS"
+
+
 class CombatEncounterStatus(StrEnum):
     ACTIVE = "ACTIVE"
     VICTORY = "VICTORY"

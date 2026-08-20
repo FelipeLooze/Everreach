@@ -30,6 +30,7 @@ describe("InventoryPanel", () => {
           equipped_slot: null,
           accessibility: "STOWED",
           allowed_slots: [],
+          weapon: null,
         },
       ],
       total_weight: 4.5,
@@ -77,6 +78,12 @@ describe("InventoryPanel", () => {
           equipped_slot: "MAIN_HAND",
           accessibility: "IMMEDIATE",
           allowed_slots: ["MAIN_HAND", "WAIST"],
+          weapon: {
+            family: "SWORD",
+            damage_profiles: ["PIERCE", "SLASH"],
+            reach: "NORMAL",
+            hand_requirement: "ONE_HAND",
+          },
         },
       ],
       total_weight: 2,
@@ -89,6 +96,9 @@ describe("InventoryPanel", () => {
 
     expect(await screen.findByText(/Espada/)).toHaveTextContent(
       "mão principal — uso imediato",
+    );
+    expect(screen.getByText(/Espada/)).toHaveTextContent(
+      "espada; perfuração/corte; alcance normal; uma mão",
     );
   });
 });

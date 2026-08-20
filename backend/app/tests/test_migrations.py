@@ -68,6 +68,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_combat_profiles",
             "item_instances",
             "item_equipment_profiles",
+            "item_weapon_profiles",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -89,6 +90,14 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         item_equipment_profile_columns = {
             item["name"]
             for item in inspect(engine).get_columns("item_equipment_profiles")
+        }
+        item_weapon_profile_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("item_weapon_profiles")
+        }
+        item_weapon_profile_checks = {
+            item["name"]
+            for item in inspect(engine).get_check_constraints("item_weapon_profiles")
         }
         assert {"key", "type", "instance_mode", "base_weight"}.issubset(
             item_definition_columns
@@ -121,6 +130,18 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert "ix_item_instance_campaign_owner" in item_instance_indexes
         assert "uq_item_instance_character_equipment_slot" in item_instance_indexes
         assert {"item_id", "allowed_slots_json"} == item_equipment_profile_columns
+        assert {
+            "item_id",
+            "weapon_family",
+            "damage_profiles_json",
+            "reach",
+            "hand_requirement",
+        } == item_weapon_profile_columns
+        assert {
+            "ck_item_weapon_family",
+            "ck_item_weapon_reach",
+            "ck_item_weapon_hand_requirement",
+        }.issubset(item_weapon_profile_checks)
         assert "inventory_items" not in tables
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -141,6 +162,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         combat_action_constraints = {
             item["name"]
             for item in inspect(engine).get_unique_constraints("combat_actions")
+        }
+        combat_action_checks = {
+            item["name"]
+            for item in inspect(engine).get_check_constraints("combat_actions")
         }
         assert {
             "turn_id",
@@ -170,6 +195,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "damage_before_mitigation",
             "armor_mitigation",
             "resistance_mitigation",
+            "weapon_instance_id",
+            "physical_damage_profile",
         }.issubset(combat_action_columns)
         npc_columns = {item["name"] for item in inspect(engine).get_columns("npcs")}
         assert "incapacitated" in npc_columns
@@ -205,6 +232,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "uq_combat_action_key",
             "uq_combat_action_turn",
         }.issubset(combat_action_constraints)
+        assert "ck_combat_action_weapon_mechanics" in combat_action_checks
+        assert "ck_combat_action_physical_damage_profile" in combat_action_checks
         combat_tactical_columns = {
             item["name"]
             for item in inspect(engine).get_columns("combat_tactical_actions")

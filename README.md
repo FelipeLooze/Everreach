@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10D concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10E concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -387,10 +387,20 @@ npm run build
   9K foi migrada de `BODY` para `TORSO`, e o combate agora consome o mesmo estado físico da 10D.
   API e painel expõem instância, posição, acessibilidade e posições permitidas. Operações por
   intenção continuam reservadas para a 10L.
+  A 10E acrescenta perfis imutáveis de arma apenas a definições `WEAPON`: família, modos físicos
+  `SLASH`, `PIERCE` e `BLUNT`, alcance `NORMAL`, `LONG` ou `RANGED` e exigência de uma, uma-ou-duas
+  ou duas mãos. A configuração é coerente com os slots permitidos pela 10D. Ataques com arma
+  exigem uma instância realmente empunhada, recebem explicitamente do jogador o tipo de ataque e
+  o modo de dano e deixam ambos persistidos na ação e no Event Log. Alcance longo permite combate
+  corpo a corpo em `NEAR`; armas à distância alcançam `FAR` e ainda recebem a penalidade existente
+  quando usadas em `ENGAGED`. O Combat Engine continua sendo a única autoridade para acerto, dano,
+  mitigação, recursos e turnos. Nenhuma arma fornece `attack_bonus`, bônus de atributo, raridade ou
+  estatísticas de equilíbrio; o dano básico permanece na curva já validada da Fase 9, enquanto a
+  proteção diferenciada contra corte, perfuração e impacto será consumida pela 10F.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Armas, armaduras,
+  Armaduras,
   ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
-  do System permanecem deliberadamente nas subfases 10E–10M.
+  do System permanecem deliberadamente nas subfases 10F–10M.
 
 ## Fora do MVP
 

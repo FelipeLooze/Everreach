@@ -22,7 +22,7 @@ export interface Character {
   mana_max: number;
   stamina_current: number;
   stamina_max: number;
-  status: "ALIVE" | "DEAD";
+  status: "ALIVE" | "INCAPACITATED" | "DEAD";
   region_id: string | null;
   location_id: string | null;
 }

@@ -62,4 +62,14 @@ describe("StatusBar", () => {
 
     expect(screen.queryByText("Cardal")).not.toBeInTheDocument();
   });
+
+  it("mostra quando o personagem está incapacitado", () => {
+    render(
+      <StatusBar
+        state={{ ...state, character: { ...state.character, status: "INCAPACITATED", hp_current: 0 } }}
+      />
+    );
+
+    expect(screen.getByText("INCAPACITADO")).toBeInTheDocument();
+  });
 });

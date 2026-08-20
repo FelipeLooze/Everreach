@@ -51,6 +51,7 @@ def npcs_at_location(
         .filter(
             NPC.location_id == location_id,
             NPC.alive.is_(True),
+            NPC.incapacitated.is_(False),
             NPC.activity != NPCActivity.RESTING.value,
         )
         .order_by(NPC.id)

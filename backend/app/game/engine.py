@@ -43,6 +43,10 @@ class CharacterDeadError(Exception):
     pass
 
 
+class CharacterIncapacitatedError(Exception):
+    pass
+
+
 class WorldNotStartedError(Exception):
     pass
 
@@ -71,6 +75,10 @@ def resolve_action(
         raise ValueError(f"Personagem desconhecido nesta campanha: {character_id}")
     if character.status == CharacterStatus.DEAD:
         raise CharacterDeadError("Este personagem morreu. A morte é permanente — nenhuma ação é mais possível.")
+    if character.status == CharacterStatus.INCAPACITATED:
+        raise CharacterIncapacitatedError(
+            "Este personagem está incapacitado e precisa ser estabilizado antes de agir."
+        )
     if character.region_id is None or character.location_id is None:
         raise WorldNotStartedError("Inicie o mundo antes de realizar uma ação.")
 

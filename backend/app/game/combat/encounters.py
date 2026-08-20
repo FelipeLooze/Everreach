@@ -374,7 +374,7 @@ def _validate_actor(
             actor is not None
             and actor.campaign_id == campaign_id
             and actor.location_id == location_id
-            and actor.status != CharacterStatus.DEAD.value
+            and actor.status == CharacterStatus.ALIVE.value
         )
     elif spec.actor_type == CombatActorType.NPC:
         actor = db.get(NPC, spec.actor_id)
@@ -383,6 +383,7 @@ def _validate_actor(
             and actor.campaign_id == campaign_id
             and actor.location_id == location_id
             and actor.alive
+            and not actor.incapacitated
         )
     else:
         actor = db.get(SimulatedPlayer, spec.actor_id)
@@ -390,7 +391,7 @@ def _validate_actor(
             actor is not None
             and actor.campaign_id == campaign_id
             and actor.location_id == location_id
-            and actor.status != SimulatedPlayerStatus.DEAD.value
+            and actor.status == SimulatedPlayerStatus.ACTIVE.value
         )
     if not valid:
         raise CombatEncounterError(

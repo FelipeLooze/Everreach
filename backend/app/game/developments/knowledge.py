@@ -106,6 +106,7 @@ def local_npc_witnesses(
             NPC.campaign_id == event.campaign_id,
             NPC.location_id == location_id,
             NPC.alive.is_(True),
+            NPC.incapacitated.is_(False),
         )
         .order_by(NPC.id)
         .all()

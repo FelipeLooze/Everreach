@@ -22,6 +22,9 @@ export function StatusBar({ state }: { state: GameState }) {
       <div className="status-identity">
         <span className="char-name">{character.name}</span>
         <span className="char-level">Nível {character.level}</span>
+        {character.status === "INCAPACITATED" && (
+          <span className="char-incapacitated">INCAPACITADO</span>
+        )}
         {character.status === "DEAD" && <span className="char-dead">FALECIDO</span>}
       </div>
       <div className="status-stats">

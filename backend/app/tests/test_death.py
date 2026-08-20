@@ -31,3 +31,17 @@ def test_death_is_permanent_status(db_session):
     db_session.commit()
 
     assert character.status == "DEAD"
+
+
+def test_incapacitated_character_cannot_send_world_actions(db_session, fake_llm):
+    campaign = create_campaign(db_session, "Critical Campaign")
+    region, village = seed_initial_region(db_session, campaign.id)
+    character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
+    character.status = CharacterStatus.INCAPACITATED.value
+    character.hp_current = 0
+    db_session.flush()
+
+    with pytest.raises(engine.CharacterIncapacitatedError):
+        engine.resolve_action(db_session, fake_llm, campaign.id, character.id, "Eu me levanto")
+
+    assert fake_llm.calls == []

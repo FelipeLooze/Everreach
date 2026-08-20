@@ -502,7 +502,7 @@ def test_critical_hit_rolls_two_damage_dice_and_modifier_once(db_session):
     assert enemy.hp_current == 13
 
 
-def test_lethal_npc_damage_removes_target_and_ends_encounter_as_victory(db_session):
+def test_zero_hp_incapacitates_npc_and_ends_encounter_as_victory(db_session):
     (
         _campaign,
         _region,
@@ -526,9 +526,11 @@ def test_lethal_npc_damage_removes_target_and_ends_encounter_as_victory(db_sessi
         rng=SequenceRng(10, 2),
     ).action
 
-    assert action.lethal is True
+    assert action.lethal is False
+    assert action.incapacitating is True
     assert enemy.hp_current == 0
-    assert enemy.alive is False
+    assert enemy.alive is True
+    assert enemy.incapacitated is True
     assert bandit.active is False
     assert encounter.status == CombatEncounterStatus.VICTORY.value
     assert encounter.current_turn_order is None
@@ -536,13 +538,13 @@ def test_lethal_npc_damage_removes_target_and_ends_encounter_as_victory(db_sessi
     assert action.turn.status == "COMPLETED"
     assert (
         db_session.query(WorldEvent)
-        .filter(WorldEvent.event_type == EventType.NPC_DIED.value)
+        .filter(WorldEvent.event_type == EventType.COMBAT_PARTICIPANT_INCAPACITATED.value)
         .count()
         == 1
     )
 
 
-def test_lethal_character_damage_is_permanent_defeat(db_session):
+def test_zero_hp_incapacitates_character_and_causes_defeat(db_session):
     (
         _campaign,
         _region,
@@ -567,19 +569,20 @@ def test_lethal_character_damage_is_permanent_defeat(db_session):
         rng=SequenceRng(10, 1),
     ).action
 
-    assert action.lethal is True
+    assert action.lethal is False
+    assert action.incapacitating is True
     assert character.hp_current == 0
-    assert character.status == CharacterStatus.DEAD.value
+    assert character.status == CharacterStatus.INCAPACITATED.value
     assert encounter.status == CombatEncounterStatus.DEFEAT.value
     assert (
         db_session.query(WorldEvent)
-        .filter(WorldEvent.event_type == EventType.PLAYER_DIED.value)
+        .filter(WorldEvent.event_type == EventType.COMBAT_PARTICIPANT_INCAPACITATED.value)
         .count()
         == 1
     )
 
 
-def test_lethal_damage_uses_simulated_players_persistent_hp_and_death_service(
+def test_zero_hp_incapacitates_simulated_player_persistently(
     db_session,
 ):
     campaign = create_campaign(db_session, "Simulated Player Combat")
@@ -632,12 +635,13 @@ def test_lethal_damage_uses_simulated_players_persistent_hp_and_death_service(
         rng=SequenceRng(10, 1),
     ).action
 
-    assert action.lethal is True
+    assert action.lethal is False
+    assert action.incapacitating is True
     assert transported.hp_current == 0
-    assert transported.status == SimulatedPlayerStatus.DEAD.value
+    assert transported.status == SimulatedPlayerStatus.INCAPACITATED.value
     assert (
         db_session.query(WorldEvent)
-        .filter(WorldEvent.event_type == EventType.SIMULATED_PLAYER_DIED.value)
+        .filter(WorldEvent.event_type == EventType.COMBAT_PARTICIPANT_INCAPACITATED.value)
         .count()
         == 1
     )

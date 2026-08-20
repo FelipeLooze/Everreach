@@ -33,6 +33,8 @@ def post_action(
         )
     except engine.CharacterDeadError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except engine.CharacterIncapacitatedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except engine.WorldNotStartedError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except CombatRecoveryError as exc:

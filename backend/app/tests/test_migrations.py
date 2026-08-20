@@ -103,6 +103,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "target_hp_before",
             "target_hp_after",
             "lethal",
+            "incapacitating",
             "resource_key",
             "resource_cost",
             "resource_before",
@@ -116,6 +117,36 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "armor_mitigation",
             "resistance_mitigation",
         }.issubset(combat_action_columns)
+        npc_columns = {item["name"] for item in inspect(engine).get_columns("npcs")}
+        assert "incapacitated" in npc_columns
+        incapacitation_columns = {
+            item["name"] for item in inspect(engine).get_columns("combat_incapacitations")
+        }
+        assert {
+            "encounter_id",
+            "participant_id",
+            "source_action_id",
+            "actor_type",
+            "actor_id",
+            "status",
+            "stabilization_successes",
+            "death_failures",
+            "recovery_key",
+        }.issubset(incapacitation_columns)
+        critical_check_columns = {
+            item["name"] for item in inspect(engine).get_columns("combat_critical_checks")
+        }
+        assert {
+            "incapacitation_id",
+            "check_key",
+            "roll",
+            "modifier",
+            "total",
+            "dc",
+            "success",
+            "successes_after",
+            "failures_after",
+        }.issubset(critical_check_columns)
         assert {
             "uq_combat_action_key",
             "uq_combat_action_turn",

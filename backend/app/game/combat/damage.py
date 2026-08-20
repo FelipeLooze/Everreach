@@ -16,11 +16,10 @@ from app.db.models.combat import CombatAction, CombatEncounter, CombatParticipan
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.attributes.service import attribute_check_modifier, get_character_attribute
-from app.game.character.service import kill_character
 from app.game.combat.encounters import list_active_participants, remove_participant
 from app.game.combat.defense import resolve_damage_mitigation
+from app.game.combat.incapacitation import incapacitate_actor, kill_devastated_actor
 from app.game.dice import roll
-from app.game.players.death import kill_simulated_player
 from app.services.event_log import log_event
 
 
@@ -30,6 +29,7 @@ class DamageResolution:
     target_hp_before: float
     target_hp_after: float
     lethal: bool
+    incapacitating: bool
     encounter_should_end: bool
     damage_before_mitigation: int = 0
     armor_mitigation: int = 0
@@ -63,6 +63,7 @@ def apply_attack_damage(
             target_hp_before=float(action.target_hp_before or 0),
             target_hp_after=float(action.target_hp_after or 0),
             lethal=bool(action.lethal),
+            incapacitating=bool(action.incapacitating),
             encounter_should_end=_has_one_or_fewer_active_sides(db, encounter.id),
             damage_before_mitigation=action.damage_before_mitigation or 0,
             armor_mitigation=action.armor_mitigation or 0,
@@ -85,8 +86,9 @@ def apply_attack_damage(
         action.target_hp_before = hp_before
         action.target_hp_after = hp_before
         action.lethal = False
+        action.incapacitating = False
         db.flush()
-        return DamageResolution(0, hp_before, hp_before, False, False)
+        return DamageResolution(0, hp_before, hp_before, False, False, False)
 
     base_dice = action.base_damage_dice or 1
     die_sides = action.damage_die_sides or 6
@@ -112,7 +114,9 @@ def apply_attack_damage(
     )
     damage_total = mitigation.apply(damage_before_mitigation)
     hp_after = max(0.0, hp_before - damage_total)
-    lethal = hp_before > 0 and hp_after <= 0
+    reduced_to_zero = hp_before > 0 and hp_after <= 0
+    lethal = reduced_to_zero and damage_total >= hp_before + float(target_actor.hp_max)
+    incapacitating = reduced_to_zero and not lethal
     target_actor.hp_current = hp_after
     action.damage_roll = damage_roll
     action.damage_dice = dice_count
@@ -124,6 +128,7 @@ def apply_attack_damage(
     action.target_hp_before = hp_before
     action.target_hp_after = hp_after
     action.lethal = lethal
+    action.incapacitating = incapacitating
     log_event(
         db,
         encounter.campaign_id,
@@ -147,11 +152,15 @@ def apply_attack_damage(
             "target_hp_before": hp_before,
             "target_hp_after": hp_after,
             "lethal": lethal,
+            "incapacitating": incapacitating,
         },
     )
-    if lethal:
+    if reduced_to_zero:
         cause = f"combat_action:{action.id}"
-        _kill_target(db, encounter, target, target_actor, cause)
+        if lethal:
+            kill_devastated_actor(db, encounter, target, cause=cause)
+        else:
+            incapacitate_actor(db, encounter, target, action)
         remove_participant(db, encounter, target, reason=cause)
     db.flush()
     return DamageResolution(
@@ -159,6 +168,7 @@ def apply_attack_damage(
         hp_before,
         hp_after,
         lethal,
+        incapacitating,
         _has_one_or_fewer_active_sides(db, encounter.id),
         damage_before_mitigation,
         mitigation.armor,
@@ -190,35 +200,6 @@ def _damage_modifier(
         return 0
     attribute = get_character_attribute(db, participant.actor_id, attribute_key)
     return attribute_check_modifier(attribute.value)
-
-
-def _kill_target(
-    db: Session,
-    encounter: CombatEncounter,
-    participant: CombatParticipant,
-    actor: Character | NPC | SimulatedPlayer,
-    cause: str,
-) -> None:
-    if participant.actor_type == CombatActorType.CHARACTER.value:
-        kill_character(db, encounter.campaign_id, actor, cause=cause)
-    elif participant.actor_type == CombatActorType.NPC.value:
-        actor.alive = False
-        log_event(
-            db,
-            encounter.campaign_id,
-            EventType.NPC_DIED,
-            actor_type="npc",
-            actor_id=actor.id,
-            payload={"npc_id": actor.id, "name": actor.name, "cause": cause},
-            importance=5,
-        )
-    else:
-        kill_simulated_player(
-            db,
-            encounter.campaign_id,
-            actor,
-            cause=cause,
-        )
 
 
 def _has_one_or_fewer_active_sides(db: Session, encounter_id: str) -> bool:

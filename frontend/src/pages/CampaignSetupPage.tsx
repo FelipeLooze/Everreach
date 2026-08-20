@@ -221,6 +221,9 @@ export function CampaignSetupPage() {
                     {character.status === "DEAD" && (
                       <small className="char-dead">Morto</small>
                     )}
+                    {character.status === "INCAPACITATED" && (
+                      <small className="char-incapacitated">Incapacitado</small>
+                    )}
                   </span>
 
                   <button

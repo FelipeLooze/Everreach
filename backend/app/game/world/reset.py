@@ -7,7 +7,9 @@ from app.db.models.combat import (
     CombatAction,
     CombatAutonomousDecision,
     CombatCondition,
+    CombatCriticalCheck,
     CombatEncounter,
+    CombatIncapacitation,
     CombatParticipant,
     CombatTurn,
     CombatTacticalAction,
@@ -95,6 +97,18 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         ).all()
     ]
 
+    incapacitation_ids = [
+        row[0]
+        for row in db.query(CombatIncapacitation.id).filter(
+            CombatIncapacitation.encounter_id.in_(combat_ids)
+        ).all()
+    ]
+    db.query(CombatCriticalCheck).filter(
+        CombatCriticalCheck.incapacitation_id.in_(incapacitation_ids)
+    ).delete(synchronize_session=False)
+    db.query(CombatIncapacitation).filter(
+        CombatIncapacitation.encounter_id.in_(combat_ids)
+    ).delete(synchronize_session=False)
     db.query(CombatCondition).filter(
         CombatCondition.encounter_id.in_(combat_ids)
     ).delete(synchronize_session=False)

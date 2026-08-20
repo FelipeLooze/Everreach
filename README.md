@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9K concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: COMPLETE (9A–9L concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -313,8 +313,8 @@ npm run build
   extremos naturais e reenvio idempotente. Cada resultado é persistido e registrado no Event Log.
   A 9C determina acerto ou erro. A 9D aplica dano idempotente (`1d6 + atributo`, ou `2d6`
   no crítico), mantém HP persistente para personagens, NPCs e pessoas transportadas simuladas e
-  registra os valores anterior e posterior. HP zero produz morte permanente, remove o participante
-  e encerra o encontro quando resta apenas um lado. A 9E adiciona Mana e Stamina persistentes aos
+  registra os valores anterior e posterior. HP zero remove o participante e encerra o encontro
+  quando resta apenas um lado; a resolução entre incapacitação e morte é concluída pela 9L. A 9E adiciona Mana e Stamina persistentes aos
   demais atores e cobra Stamina antes de ataques básicos: 2 no corpo a corpo e 1 à distância.
   Ações sem recurso são recusadas antes do dado e custos ficam registrados com snapshots, sem
   cobrança duplicada em retries. A 9F mantém condições temporárias por turnos do afetado:
@@ -350,11 +350,16 @@ npm run build
   produzir dano zero. Personagens recebem proteção de itens realmente equipados, com um item
   mecânico por slot, enquanto NPCs e transportados podem possuir defesas intrínsecas persistentes.
   Dano bruto, armadura, resistência e dano final ficam registrados separadamente e preservam a
-  idempotência do ataque.
+  idempotência do ataque. A 9L transforma dano comum que reduz HP a zero em estado crítico
+  persistente para personagens, NPCs e pessoas transportadas. Testes `d20 + Vitalidade` contra 10
+  acumulam três sucessos para estabilizar ou três falhas para morte permanente; 20 natural
+  estabiliza imediatamente e 1 natural conta duas falhas. A recuperação estabilizada restaura no
+  mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
+  registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
+  somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
 
 ## Fora do MVP
 
-- Incapacitação e estado crítico não letal no combate (Fase 9 continua em andamento; 9A–9K prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

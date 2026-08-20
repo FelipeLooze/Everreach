@@ -141,7 +141,7 @@ export function GameScreen() {
       {worldStarted && (
         <ActionInput
           onSubmit={handleAction}
-          disabled={submitting || state?.character.status === "DEAD"}
+          disabled={submitting || state?.character.status !== "ALIVE"}
           techniques={techniques}
         />
       )}

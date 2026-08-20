@@ -36,6 +36,7 @@ class NPC(Base):
     )
 
     alive: Mapped[bool] = mapped_column(Boolean, default=True)
+    incapacitated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     hp_current: Mapped[float] = mapped_column(Float, default=10, nullable=False)
     hp_max: Mapped[float] = mapped_column(Float, default=10, nullable=False)
     mana_current: Mapped[float] = mapped_column(Float, default=0, nullable=False)

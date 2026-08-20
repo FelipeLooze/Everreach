@@ -180,6 +180,11 @@ select {
   font-weight: bold;
 }
 
+.char-incapacitated {
+  color: var(--accent);
+  font-weight: bold;
+}
+
 .status-stats {
   display: flex;
   gap: 0.75rem;

@@ -136,6 +136,7 @@ def eligible_social_participants(
         .filter(
             NPC.campaign_id == campaign_id,
             NPC.alive.is_(True),
+            NPC.incapacitated.is_(False),
             NPC.activity != NPCActivity.RESTING.value,
         )
     )

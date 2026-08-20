@@ -39,6 +39,7 @@ def tick(
     base_filters = (
         NPC.campaign_id == campaign_id,
         NPC.alive.is_(True),
+        NPC.incapacitated.is_(False),
     )
 
     if active_scope.unrestricted:

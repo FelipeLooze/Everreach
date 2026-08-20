@@ -17,6 +17,7 @@ from app.core.enums import (
     CombatActionOutcome,
     CombatConditionType,
     CombatEncounterStatus,
+    CombatIncapacitationStatus,
     CombatRangeBand,
     CombatTurnStatus,
 )
@@ -98,6 +99,11 @@ class CombatEncounter(Base):
         back_populates="encounter",
         cascade="all, delete-orphan",
         order_by="CombatCondition.id",
+    )
+    incapacitations: Mapped[list["CombatIncapacitation"]] = relationship(
+        back_populates="encounter",
+        cascade="all, delete-orphan",
+        order_by="CombatIncapacitation.created_world_minute",
     )
 
 
@@ -261,6 +267,7 @@ class CombatAction(Base):
     target_hp_before: Mapped[float | None] = mapped_column(Float, nullable=True)
     target_hp_after: Mapped[float | None] = mapped_column(Float, nullable=True)
     lethal: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    incapacitating: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     base_damage_dice: Mapped[int | None] = mapped_column(Integer, nullable=True)
     damage_die_sides: Mapped[int | None] = mapped_column(Integer, nullable=True)
     damage_attribute: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -456,3 +463,61 @@ class CombatCondition(Base):
     )
     source_action: Mapped["CombatAction | None"] = relationship()
     source_tactical_action: Mapped["CombatTacticalAction | None"] = relationship()
+
+
+class CombatIncapacitation(Base):
+    """Persistent critical state created when a non-devastating hit reduces HP to zero."""
+
+    __tablename__ = "combat_incapacitations"
+    __table_args__ = (
+        UniqueConstraint("encounter_id", "participant_id", name="uq_combat_incapacitation_participant"),
+        UniqueConstraint("source_action_id", name="uq_combat_incapacitation_source_action"),
+        Index("ix_combat_incapacitation_actor_status", "actor_type", "actor_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("critical"))
+    encounter_id: Mapped[str] = mapped_column(ForeignKey("combat_encounters.id"), nullable=False)
+    participant_id: Mapped[str] = mapped_column(ForeignKey("combat_participants.id"), nullable=False)
+    source_action_id: Mapped[str] = mapped_column(ForeignKey("combat_actions.id"), nullable=False)
+    actor_type: Mapped[str] = mapped_column(String, nullable=False)
+    actor_id: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, default=CombatIncapacitationStatus.CRITICAL.value, nullable=False)
+    stabilization_successes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    death_failures: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    resolved_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    resolution_reason: Mapped[str] = mapped_column(String, default="", nullable=False)
+    recovery_key: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    encounter: Mapped["CombatEncounter"] = relationship(back_populates="incapacitations")
+    participant: Mapped["CombatParticipant"] = relationship()
+    source_action: Mapped["CombatAction"] = relationship()
+    checks: Mapped[list["CombatCriticalCheck"]] = relationship(
+        back_populates="incapacitation", cascade="all, delete-orphan", order_by="CombatCriticalCheck.id"
+    )
+
+
+class CombatCriticalCheck(Base):
+    """Idempotent death/stabilization check for a critical actor."""
+
+    __tablename__ = "combat_critical_checks"
+    __table_args__ = (
+        UniqueConstraint("incapacitation_id", "check_key", name="uq_combat_critical_check_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("critical_check"))
+    incapacitation_id: Mapped[str] = mapped_column(ForeignKey("combat_incapacitations.id"), nullable=False)
+    check_key: Mapped[str] = mapped_column(String, nullable=False)
+    roll: Mapped[int] = mapped_column(Integer, nullable=False)
+    modifier: Mapped[int] = mapped_column(Integer, nullable=False)
+    total: Mapped[int] = mapped_column(Integer, nullable=False)
+    dc: Mapped[int] = mapped_column(Integer, nullable=False)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    successes_before: Mapped[int] = mapped_column(Integer, nullable=False)
+    successes_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    failures_before: Mapped[int] = mapped_column(Integer, nullable=False)
+    failures_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    outcome: Mapped[str] = mapped_column(String, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    incapacitation: Mapped["CombatIncapacitation"] = relationship(back_populates="checks")

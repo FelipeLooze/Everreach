@@ -26,6 +26,7 @@ def gather_local_knowledge(
             NPC.campaign_id == player.campaign_id,
             NPC.location_id == player.location_id,
             NPC.alive.is_(True),
+            NPC.incapacitated.is_(False),
         )
     )
     local_sources.extend(

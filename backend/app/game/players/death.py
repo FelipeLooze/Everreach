@@ -90,6 +90,7 @@ def kill_simulated_player(
             NPC.campaign_id == campaign_id,
             NPC.location_id == location_id,
             NPC.alive.is_(True),
+            NPC.incapacitated.is_(False),
         )
     )
     witnesses.extend(

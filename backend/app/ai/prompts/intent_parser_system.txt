@@ -5,7 +5,7 @@ apenas classifica a intenção.
 Responda com APENAS um objeto JSON, sem nenhum outro texto, neste formato exato
 (os valores de "intent" devem ficar em inglês, exatamente como abaixo — são um
 identificador interno do sistema, não texto para o jogador):
-{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "FREEFORM", "target": "<nome curto do alvo ou null>", "pace": "SLOW" | "NORMAL" | "FAST"}
+{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "pace": "SLOW" | "NORMAL" | "FAST"}
 
 Guia:
 - MOVE: o jogador está tentando viajar até um lugar.
@@ -15,6 +15,19 @@ Guia:
 - WAIT: o jogador está deixando o tempo passar sem um objetivo específico.
 - SKILL_CHECK: o jogador tenta uma ação arriscada, física ou baseada em perícia
   (atacar, pular, se esgueirar, forçar algo) cujo sucesso é incerto.
+- PICK_UP: pegar do chão um item presente no local.
+- DROP: deixar no chão um item possuído pelo jogador.
+- GIVE: entregar um item a outra pessoa. Use o item em "target" e a pessoa em
+  "secondary_target".
+- TAKE: tomar de outra pessoa um item específico.
+- EQUIP: equipar ou empunhar um item. Use em "slot" um destes valores quando
+  estiver claro: HEAD, TORSO, LEGS, FEET, HANDS, MAIN_HAND, OFF_HAND,
+  BOTH_HANDS, BACK, WAIST ou ACCESSORY.
+- UNEQUIP: desequipar ou guardar um item atualmente equipado.
+- STORE: colocar um item em um recipiente. Use o recipiente em "secondary_target".
+- RETRIEVE: retirar um item de seu recipiente e mantê-lo diretamente consigo.
+- MOVE_BETWEEN_CONTAINERS: mover um item já guardado para outro recipiente. Use
+  o recipiente de destino em "secondary_target".
 - FREEFORM: qualquer outra coisa, ou texto puramente conversacional/descritivo sem
   uma ação mecânica clara.
 - "pace" representa o ritmo físico de deslocamento quando a intenção for MOVE.
@@ -27,26 +40,33 @@ Use:
 - FAST: o jogador explicitamente indica pressa, corrida, deslocamento rápido,
   "o mais rápido possível" ou equivalente.
 
-Para intenções que não sejam MOVE, use NORMAL.
+Para intenções que não sejam MOVE, use NORMAL. Use null em "secondary_target" e
+"slot" quando esses campos não se aplicarem ou não estiverem claros.
 
 Não invente outros valores de pace.
 Não use pace para decidir sucesso, duração, stamina ou qualquer consequência.
 O backend calcula essas regras.
 
 "Vou até o bosque."
-→ {"intent":"MOVE","target":"Bosque","pace":"NORMAL"}
+→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"pace":"NORMAL"}
 
 "Vou devagar até o bosque."
-→ {"intent":"MOVE","target":"Bosque","pace":"SLOW"}
+→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"pace":"SLOW"}
 
 "Corro até o bosque."
-→ {"intent":"MOVE","target":"Bosque","pace":"FAST"}
+→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"pace":"FAST"}
 
 "Vou o mais rápido possível para a estrada."
-→ {"intent":"MOVE","target":"Estrada","pace":"FAST"}
+→ {"intent":"MOVE","target":"Estrada","secondary_target":null,"slot":null,"pace":"FAST"}
 
 "Falo com Osgar."
-→ {"intent":"TALK","target":"Osgar","pace":"NORMAL"}
+→ {"intent":"TALK","target":"Osgar","secondary_target":null,"slot":null,"pace":"NORMAL"}
+
+"Guardo a poção na mochila."
+→ {"intent":"STORE","target":"poção","secondary_target":"mochila","slot":null,"pace":"NORMAL"}
+
+"Empunho a espada na mão principal."
+→ {"intent":"EQUIP","target":"espada","secondary_target":null,"slot":"MAIN_HAND","pace":"NORMAL"}
 
 
 "target" deve ser o nome do lugar, NPC ou objeto envolvido (no idioma em que o

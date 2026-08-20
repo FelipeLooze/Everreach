@@ -20,6 +20,8 @@ class Intent:
     target: str | None
     raw_text: str
     pace: TravelPace = TravelPace.NORMAL
+    secondary_target: str | None = None
+    slot: str | None = None
 
 
 def parse(llm_service: LLMService, text: str, context: str) -> Intent:
@@ -35,13 +37,27 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         logger.info("intent parser: LLM unavailable, falling back to FREEFORM")
         return Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=text)
 
-    intent_type, target, pace = _parse_response(raw)
-    return Intent(type=intent_type, target=target, raw_text=text, pace=pace,)
+    intent_type, target, pace, secondary_target, slot = _decode_response(raw)
+    return Intent(
+        type=intent_type,
+        target=target,
+        raw_text=text,
+        pace=pace,
+        secondary_target=secondary_target,
+        slot=slot,
+    )
 
 
 def _parse_response(
     raw: str,
 ) -> tuple[ActionIntentType, str | None, TravelPace]:
+    intent_type, target, pace, _secondary_target, _slot = _decode_response(raw)
+    return intent_type, target, pace
+
+
+def _decode_response(
+    raw: str,
+) -> tuple[ActionIntentType, str | None, TravelPace, str | None, str | None]:
     try:
         start = raw.index("{")
         end = raw.rindex("}") + 1
@@ -55,19 +71,23 @@ def _parse_response(
             ActionIntentType.FREEFORM,
             None,
             TravelPace.NORMAL,
+            None,
+            None,
         )
 
     intent_str = str(
         data.get("intent", "")
     ).upper()
 
-    target = data.get("target")
+    target = _optional_text(data.get("target"))
 
     if intent_str not in _VALID_INTENTS:
         return (
             ActionIntentType.FREEFORM,
             target,
             TravelPace.NORMAL,
+            None,
+            None,
         )
 
     pace_str = str(
@@ -83,4 +103,15 @@ def _parse_response(
         ActionIntentType(intent_str),
         target,
         pace,
+        _optional_text(data.get("secondary_target")),
+        _optional_text(data.get("slot")),
     )
+
+
+def _optional_text(value) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None

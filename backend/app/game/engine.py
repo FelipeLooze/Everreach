@@ -20,6 +20,10 @@ from app.db.models.quest import QuestObjective
 from app.game import game_state
 from app.game.combat import service as combat_service
 from app.game.combat.recovery import recover_character
+from app.game.items.interactions import (
+    ITEM_INTERACTION_INTENTS,
+    resolve_item_interaction,
+)
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
 from app.game.quests import service as quests_service
@@ -396,8 +400,40 @@ def _apply_intent(
         return f"{character.name} espera, deixando o tempo passar.", 15
     if intent.type == ActionIntentType.SKILL_CHECK:
         return _handle_skill_check(db, campaign_id, character, intent)
+    if intent.type in ITEM_INTERACTION_INTENTS:
+        return _handle_item_interaction(
+            db,
+            campaign_id,
+            character,
+            intent,
+            action_key=action_key,
+        )
 
     return f"{character.name} tenta: \"{intent.raw_text}\". Nenhum sistema mecânico específico se aplica ainda.", 1
+
+
+def _handle_item_interaction(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    intent: Intent,
+    *,
+    action_key: str | None,
+) -> tuple[str, int]:
+    try:
+        result = resolve_item_interaction(
+            db,
+            campaign_id,
+            character,
+            interaction=intent.type,
+            target=intent.target,
+            secondary_target=intent.secondary_target,
+            slot=intent.slot,
+            interaction_key=action_key,
+        )
+    except ValueError as exc:
+        return f"A interação com o item não pôde ser realizada: {exc}", 0
+    return result.summary, 0 if result.replayed else 1
 
 
 def _handle_move(db: Session, campaign_id: str, character: Character, intent: Intent) -> tuple[str, int]:

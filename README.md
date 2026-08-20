@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10K concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10L concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -385,8 +385,7 @@ npm run build
   guardado, sem antecipar fórmulas de tempo de combate. Equipar, reposicionar e desequipar passam
   por serviço autoritativo, validam conflitos, são idempotentes e geram eventos. A estrutura da
   9K foi migrada de `BODY` para `TORSO`, e o combate agora consome o mesmo estado físico da 10D.
-  API e painel expõem instância, posição, acessibilidade e posições permitidas. Operações por
-  intenção continuam reservadas para a 10L.
+  API e painel expõem instância, posição, acessibilidade e posições permitidas.
   A 10E acrescenta perfis imutáveis de arma apenas a definições `WEAPON`: família, modos físicos
   `SLASH`, `PIERCE` e `BLUNT`, alcance `NORMAL`, `LONG` ou `RANGED` e exigência de uma, uma-ou-duas
   ou duas mãos. A configuração é coerente com os slots permitidos pela 10D. Ataques com arma
@@ -443,8 +442,12 @@ npm run build
   alvo e seus recipientes externos, impedindo excesso indireto e ciclos recursivos. O peso carregado
   inclui cada recipiente e todo o seu conteúdo uma única vez. Itens continuam visíveis no inventário,
   com o recipiente pai e acesso rápido somente para conteúdo direto de uma bolsa na cintura.
-  Transferências por intenção e contexto do System permanecem deliberadamente nas
-  subfases 10L–10M.
+  A 10L integra ao fluxo normal de ações as intenções `PICK_UP`, `DROP`, `GIVE`, `TAKE`, `EQUIP`,
+  `UNEQUIP`, `STORE`, `RETRIEVE` e `MOVE_BETWEEN_CONTAINERS`. O parser identifica alvos, mas o
+  backend resolve nomes somente no alcance físico aplicável, valida posse, presença, destinatário,
+  recipiente e slot, executa a mudança pelos serviços existentes e registra a interação antes da
+  narração. Pegar e tomar preservam propriedade anterior; entregar transfere posse e propriedade.
+  Chaves de ação tornam retries idempotentes. O contexto seletivo do System permanece para a 10M.
 
 ## Fora do MVP
 

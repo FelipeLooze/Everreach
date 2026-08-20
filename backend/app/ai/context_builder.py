@@ -4,10 +4,12 @@ import unicodedata
 
 from sqlalchemy.orm import Session
 from app.db.models.npc import NPC
+from app.db.models.simulated_player import SimulatedPlayer
 from app.core.enums import (
     DiscoveryStatus,
     KnowerType,
     MemoryOwnerType,
+    SimulatedPlayerStatus,
 )
 from app.core.logging import get_logger
 from app.db.models.location import (
@@ -319,6 +321,28 @@ def build_context(
             and candidate.alive
         ):
             active_npc = candidate
+
+    if (
+        active_transported is None
+        and active_simulated_player
+    ):
+        candidate = db.get(
+            SimulatedPlayer,
+            active_simulated_player,
+        )
+
+        if (
+            candidate is not None
+            and candidate.campaign_id
+            == state.campaign_id
+            and state.location is not None
+            and candidate.location_id
+            == state.location.id
+            and candidate.status
+            == SimulatedPlayerStatus.ACTIVE.value
+        ):
+            active_transported = candidate
+
     outgoing_connections = (
         db.query(LocationConnection)
         .filter(
@@ -602,6 +626,15 @@ def build_context(
             for npc in state.nearby_npcs
         )
     )
+
+    active_transported_visible_now = (
+        active_transported is not None
+        and any(
+            player.id == active_transported.id
+            for player in state.nearby_simulated_players
+        )
+    )
+
     active_lines = ["ACTIVE NPC CONTEXT"]
     if active_npc is None:
         active_lines.append("- none")
@@ -684,6 +717,34 @@ def build_context(
                         f"familiarity={transported_relationship.familiarity}, "
                         f"trust={transported_relationship.trust}, "
                         f"affinity={transported_relationship.affinity}"
+                    )
+                ),
+                f"Current activity: {active_transported.activity}",
+                (
+                    "Conversation status: the transported person "
+                    "remains available in the current scene. "
+                    "The conversation may continue naturally."
+                    if active_transported_visible_now
+                    else (
+                        "Conversation status: this transported person "
+                        "participated in the action that just occurred "
+                        "but is no longer available in the current scene. "
+                        "Narrate the completed interaction, but do not "
+                        "continue the conversation afterward."
+                    )
+                ),
+                f"Current activity: {active_transported.activity}",
+                (
+                    "Conversation status: the transported person "
+                    "remains available in the current scene. "
+                    "The conversation may continue naturally."
+                    if active_transported_visible_now
+                    else (
+                        "Conversation status: this transported person "
+                        "participated in the action that just occurred "
+                        "but is no longer available in the current scene. "
+                        "Narrate the completed interaction, but do not "
+                        "continue the conversation afterward."
                     )
                 ),
                 (

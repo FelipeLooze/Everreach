@@ -1,7 +1,10 @@
 import random
 import json
 
-from app.core.enums import SimulatedPlayerStatus
+from app.core.enums import (
+    SimulatedPlayerActivity,
+    SimulatedPlayerStatus,
+)
 from app.game.players.encounter import (
     resolve_simulated_player_encounter,
 )
@@ -530,6 +533,11 @@ def test_resolve_action_sends_active_transported_identity_to_narrator(
 
     db_session.flush()
 
+    state.world_time.hour = 21
+    state.world_time.minute = 55
+
+    db_session.flush()
+
     llm = TransportedConversationLLM(
         transported.name
     )
@@ -543,6 +551,37 @@ def test_resolve_action_sends_active_transported_identity_to_narrator(
     )
 
     assert result.intent_type == ActionIntentType.TALK.value
+
+    db_session.refresh(transported)
+
+    state_after = build_game_state(
+        db_session,
+        campaign.id,
+        character.id,
+    )
+
+    assert state_after.world_time.hour == 22
+    assert state_after.world_time.minute == 5
+
+    assert (
+        transported.activity
+        == SimulatedPlayerActivity.RESTING.value
+    )
+
+    assert transported.id not in {
+        player.id
+        for player in state_after.nearby_simulated_players
+    }
+
+    assert (
+        get_active_simulated_player_interlocutor(
+            db_session,
+            campaign.id,
+            character.id,
+            location.id,
+        )
+        is None
+    )
 
     narrator_prompts = [
         prompt
@@ -561,6 +600,21 @@ def test_resolve_action_sends_active_transported_identity_to_narrator(
     assert transported.name in narrator_prompt
     assert "Paciente e observador." in narrator_prompt
     assert "Trabalhava como mecânico na Terra." in narrator_prompt
+
+    assert (
+        "Current activity: RESTING"
+        in narrator_prompt
+    )
+
+    assert (
+        "participated in the action that just occurred"
+        in narrator_prompt
+    )
+
+    assert (
+        "do not continue the conversation afterward"
+        in narrator_prompt
+    )
 
 def test_encounter_reuses_persistent_person_before_materializing_new_one(
     db_session,

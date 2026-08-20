@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String
+from sqlalchemy import CheckConstraint, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.ids import generate_id
@@ -9,6 +9,9 @@ class ItemDefinition(Base):
     """The shared mechanical concept of an item, not a physical object."""
 
     __tablename__ = "items"
+    __table_args__ = (
+        CheckConstraint("base_weight >= 0", name="ck_item_base_weight_nonnegative"),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("item"))
     key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
@@ -20,6 +23,7 @@ class ItemDefinition(Base):
         nullable=False,
     )
     description: Mapped[str] = mapped_column(String, default="")
+    base_weight: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     # Legacy extension field. Phase 10 does not treat arbitrary values stored
     # here as mechanical authority; category services must use validated data.
     stats_json: Mapped[str] = mapped_column(String, default="{}")

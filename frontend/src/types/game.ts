@@ -187,6 +187,22 @@ export interface InventoryItem {
   type: string;
   quantity: number;
   equipped: boolean;
+  unit_weight: number;
+  total_weight: number;
+}
+
+export type EncumbranceTier =
+  | "NORMAL"
+  | "LIGHTLY_ENCUMBERED"
+  | "HEAVILY_ENCUMBERED"
+  | "OVERLOADED";
+
+export interface Inventory {
+  items: InventoryItem[];
+  total_weight: number;
+  carrying_capacity: number;
+  load_ratio: number;
+  encumbrance: EncumbranceTier;
 }
 
 export interface QuestObjective {

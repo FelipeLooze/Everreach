@@ -114,6 +114,13 @@ class ItemOwnerType(StrEnum):
     NPC = "NPC"
 
 
+class EncumbranceTier(StrEnum):
+    NORMAL = "NORMAL"
+    LIGHTLY_ENCUMBERED = "LIGHTLY_ENCUMBERED"
+    HEAVILY_ENCUMBERED = "HEAVILY_ENCUMBERED"
+    OVERLOADED = "OVERLOADED"
+
+
 class CombatEncounterStatus(StrEnum):
     ACTIVE = "ACTIVE"
     VICTORY = "VICTORY"

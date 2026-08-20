@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10B concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10C concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -369,10 +369,18 @@ npm run build
   localização e propriedade são validadas contra entidades reais, não atravessam campanhas, são
   idempotentes e geram eventos estruturados. O inventário legado foi migrado para instâncias e
   removido como segunda fonte de verdade; API e proteção de combate consomem a nova localização.
-  A morte do portador não apaga nem desloca itens. Recipientes permanecem bloqueados até a 10K,
-  quando ciclos poderão ser impedidos corretamente. Peso, equipamento completo, armas, armaduras,
+  A morte do portador não apaga nem desloca itens. Na 10C, cada definição recebe peso base
+  não negativo e pilhas multiplicam esse valor pela quantidade. A carga contabiliza apenas itens
+  fisicamente carregados ou equipados; propriedade social e objetos no chão não pesam sobre o
+  personagem. A capacidade padrão é `Força × 2,5`, com limites configuráveis e testados em 50%,
+  75% e 100% para `NORMAL`, `LIGHTLY_ENCUMBERED`, `HEAVILY_ENCUMBERED` e `OVERLOADED`.
+  Sobrecarga aumenta progressivamente os custos de Stamina de viagem e ações táticas e penaliza
+  testes de Agilidade, sem apagar itens, impedir sua posse ou criar um limite binário de inventário.
+  A API e o painel exibem peso por entrada, peso total, capacidade e estado de carga.
+  Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
+  Equipamento completo, armas, armaduras,
   ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
-  do System permanecem deliberadamente nas subfases 10C–10M.
+  do System permanecem deliberadamente nas subfases 10D–10M.
 
 ## Fora do MVP
 

@@ -5,6 +5,7 @@ from app.db.database import get_db
 from app.db.models.character import Character
 from app.db.models.item import Item
 from app.game.inventory.service import list_inventory
+from app.game.items.encumbrance import get_character_encumbrance
 from app.schemas.inventory import InventoryItemResponse, InventoryResponse
 
 router = APIRouter(prefix="/api/campaigns", tags=["inventory"])
@@ -26,6 +27,15 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
             InventoryItemResponse(
                 item_id=item.id, name=item.name, type=item.type,
                 quantity=entry.quantity, equipped=entry.equipped,
+                unit_weight=item.base_weight,
+                total_weight=round(item.base_weight * entry.quantity, 3),
             )
         )
-    return InventoryResponse(items=items)
+    encumbrance = get_character_encumbrance(db, character_id)
+    return InventoryResponse(
+        items=items,
+        total_weight=encumbrance.total_weight,
+        carrying_capacity=encumbrance.carrying_capacity,
+        load_ratio=encumbrance.load_ratio,
+        encumbrance=encumbrance.tier,
+    )

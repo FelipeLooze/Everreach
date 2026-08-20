@@ -15,6 +15,7 @@ from app.game.discovery.service import (
     get_location_discovery,
     set_location_discovery,
 )
+from app.game.items.encumbrance import get_character_encumbrance
 from app.services.event_log import log_event
 
 BASE_MINUTES_PER_DISTANCE = 15
@@ -128,16 +129,20 @@ def calculate_travel_minutes(
 def calculate_travel_stamina_cost(
     connection: LocationConnection,
     pace: TravelPace = TravelPace.NORMAL,
+    encumbrance_multiplier: float = 1.0,
 ) -> float:
     """Calculate the physical stamina cost of traversing one route."""
 
     pace = TravelPace(pace)
+    if not math.isfinite(encumbrance_multiplier) or encumbrance_multiplier < 1.0:
+        raise TravelError("O multiplicador de carga não pode ser menor que um.")
 
     raw_cost = (
         BASE_STAMINA_PER_DISTANCE
         * connection.distance
         * connection.travel_time_modifier
         * PACE_STAMINA_MULTIPLIERS[pace]
+        * encumbrance_multiplier
     )
 
     return round(max(0.1, raw_cost), 1)
@@ -230,9 +235,11 @@ def move_character(
         effective_speed_multiplier,
     )
 
+    encumbrance = get_character_encumbrance(db, character.id)
     stamina_cost = calculate_travel_stamina_cost(
         connection,
         pace,
+        encumbrance.stamina_multiplier,
     )
 
     if character.stamina_current < stamina_cost:

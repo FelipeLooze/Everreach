@@ -19,7 +19,13 @@ from app.game.items.service import (
 from app.services.event_log import log_event
 
 
-def get_or_create_item(db: Session, name: str, item_type: str = "misc", description: str = "") -> Item:
+def get_or_create_item(
+    db: Session,
+    name: str,
+    item_type: str = "misc",
+    description: str = "",
+    base_weight: float | None = None,
+) -> Item:
     normalized_type = item_type.strip().upper()
     try:
         definition_type = ItemType(normalized_type)
@@ -27,6 +33,8 @@ def get_or_create_item(db: Session, name: str, item_type: str = "misc", descript
         definition_type = ItemType.MISC
     item = db.query(Item).filter(Item.name == name).first()
     if item:
+        if base_weight is not None and item.base_weight != float(base_weight):
+            raise ValueError("Item already exists with a different canonical weight.")
         return item
     instance_mode = (
         ItemInstanceMode.UNIQUE
@@ -46,16 +54,24 @@ def get_or_create_item(db: Session, name: str, item_type: str = "misc", descript
         item_type=definition_type,
         instance_mode=instance_mode,
         description=description,
+        base_weight=base_weight if base_weight is not None else 0.0,
     )
 
 
-def add_item(db: Session, character_id: str, item_name: str, quantity: int = 1) -> ItemInstance:
+def add_item(
+    db: Session,
+    character_id: str,
+    item_name: str,
+    quantity: int = 1,
+    *,
+    base_weight: float | None = None,
+) -> ItemInstance:
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
         raise ValueError("Item quantity must be a positive integer.")
     character = db.get(Character, character_id)
     if character is None:
         raise ValueError("Character does not exist.")
-    item = get_or_create_item(db, item_name)
+    item = get_or_create_item(db, item_name, base_weight=base_weight)
     entry = None
     if item.instance_mode == ItemInstanceMode.STACKABLE.value:
         entry = (

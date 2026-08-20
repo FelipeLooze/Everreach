@@ -85,7 +85,13 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         item_instance_indexes = {
             item["name"] for item in inspect(engine).get_indexes("item_instances")
         }
-        assert {"key", "type", "instance_mode"}.issubset(item_definition_columns)
+        assert {"key", "type", "instance_mode", "base_weight"}.issubset(
+            item_definition_columns
+        )
+        item_definition_checks = {
+            item["name"] for item in inspect(engine).get_check_constraints("items")
+        }
+        assert "ck_item_base_weight_nonnegative" in item_definition_checks
         assert "uq_item_definition_key" in item_definition_constraints
         assert {
             "id",

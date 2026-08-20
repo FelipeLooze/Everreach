@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from math import isfinite
 
 from sqlalchemy.orm import Session
 
@@ -43,6 +44,7 @@ def create_item_definition(
     item_type: ItemType,
     instance_mode: ItemInstanceMode,
     description: str = "",
+    base_weight: float = 0.0,
 ) -> ItemDefinition:
     normalized_key = key.strip().lower()
     normalized_name = name.strip()
@@ -57,6 +59,8 @@ def create_item_definition(
         raise ItemFoundationError("Invalid item type.")
     if not isinstance(instance_mode, ItemInstanceMode):
         raise ItemFoundationError("Invalid item instance mode.")
+    if isinstance(base_weight, bool) or not isfinite(base_weight) or base_weight < 0:
+        raise ItemFoundationError("Item base weight must be finite and non-negative.")
 
     existing = (
         db.query(ItemDefinition)
@@ -68,6 +72,7 @@ def create_item_definition(
         "type": item_type.value,
         "instance_mode": instance_mode.value,
         "description": normalized_description,
+        "base_weight": float(base_weight),
     }
     if existing is not None:
         if any(getattr(existing, field) != value for field, value in values.items()):

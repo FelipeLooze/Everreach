@@ -182,5 +182,11 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "type": "MISC",
             "quantity": 3,
             "equipped": False,
+            "unit_weight": 0.0,
+            "total_weight": 0.0,
         }
     ]
+    assert response.json()["total_weight"] == 0.0
+    assert response.json()["carrying_capacity"] == 25.0
+    assert response.json()["load_ratio"] == 0.0
+    assert response.json()["encumbrance"] == "NORMAL"

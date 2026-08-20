@@ -83,6 +83,37 @@ def test_item_definitions_are_idempotent_but_canonical_data_is_immutable(db_sess
     assert item_key_from_name("Poção Básica") == "pocao_basica"
 
 
+def test_item_weight_is_non_negative_and_part_of_canonical_definition(db_session):
+    definition = create_item_definition(
+        db_session,
+        key="lingote_de_ferro",
+        name="Lingote de Ferro",
+        item_type=ItemType.MATERIAL,
+        instance_mode=ItemInstanceMode.STACKABLE,
+        base_weight=2.5,
+    )
+
+    assert definition.base_weight == 2.5
+    with pytest.raises(ItemFoundationError, match="non-negative"):
+        create_item_definition(
+            db_session,
+            key="peso_impossivel",
+            name="Peso Impossível",
+            item_type=ItemType.MATERIAL,
+            instance_mode=ItemInstanceMode.STACKABLE,
+            base_weight=-1,
+        )
+    with pytest.raises(ItemFoundationError, match="different canonical data"):
+        create_item_definition(
+            db_session,
+            key="lingote_de_ferro",
+            name="Lingote de Ferro",
+            item_type=ItemType.MATERIAL,
+            instance_mode=ItemInstanceMode.STACKABLE,
+            base_weight=3.0,
+        )
+
+
 def test_instance_quantity_is_protected_by_service_and_database(db_session):
     definition = create_item_definition(
         db_session,

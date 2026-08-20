@@ -28,6 +28,7 @@ from app.game.combat.costs import apply_action_cost, validate_resource_cost
 from app.game.combat.encounters import end_encounter, list_active_participants, remove_participant
 from app.game.combat.turns import complete_current_turn, get_current_turn
 from app.game.dice import d20
+from app.game.items.encumbrance import get_character_encumbrance
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -117,7 +118,7 @@ def resolve_tactical_action(
     ):
         raise CombatTacticalActionError("Current turn already has a resolved action.")
 
-    action_cost = _ACTION_COSTS[action_type]
+    action_cost = _encumbrance_adjusted_action_cost(db, actor, action_type)
     cost = (
         validate_resource_cost(
             db,
@@ -298,7 +299,20 @@ def _agility_modifier(db: Session, participant: CombatParticipant) -> int:
         character.id,
         CharacterAttributeKey.AGILITY,
     )
-    return attribute_check_modifier(agility.value)
+    encumbrance = get_character_encumbrance(db, character.id)
+    return attribute_check_modifier(agility.value) - encumbrance.agility_penalty
+
+
+def _encumbrance_adjusted_action_cost(
+    db: Session,
+    participant: CombatParticipant,
+    action_type: CombatTacticalActionType,
+) -> float:
+    base_cost = _ACTION_COSTS[action_type]
+    if base_cost == 0 or participant.actor_type != CombatActorType.CHARACTER.value:
+        return base_cost
+    encumbrance = get_character_encumbrance(db, participant.actor_id)
+    return round(base_cost * encumbrance.stamina_multiplier, 1)
 
 
 def _remaining_side_count(

@@ -62,6 +62,7 @@ class ClassOfferResponse(BaseModel):
 
 
 class TechniqueResponse(BaseModel):
+    id: str
     name: str
     description: str
 

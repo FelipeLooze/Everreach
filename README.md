@@ -204,7 +204,7 @@ npm run build
 | POST | `/api/campaigns/{campaign_id}/characters` | Criar personagem Level 0 |
 | POST | `/api/campaigns/{campaign_id}/start?character_id=...` | Iniciar mundo e obter introdução |
 | GET | `/api/campaigns/{campaign_id}/state?character_id=...` | Obter GameState |
-| POST | `/api/campaigns/{campaign_id}/actions?character_id=...` | Resolver uma ação textual |
+| POST | `/api/campaigns/{campaign_id}/actions?character_id=...` | Resolver ação textual ou uso explícito e idempotente de técnica |
 | GET | `/api/campaigns/{campaign_id}/character?character_id=...` | Ficha do personagem |
 | GET | `/api/campaigns/{campaign_id}/character/progression?character_id=...` | Contexto de progressão visível no System |
 | GET | `/api/campaigns/{campaign_id}/inventory?character_id=...` | Inventário |
@@ -220,7 +220,9 @@ npm run build
 - Uma região inicial com locais conectados, habitantes nativos e outras pessoas transportadas.
 - Mapa limitado ao conhecimento atual do jogador.
 - Missão inicial e conclusão simples de objetivo por conversa.
-- Ações de movimento, conversa, descanso, espera, exame e checagem simples de perícia.
+- Ações de movimento, conversa, descanso, espera, exame, checagem simples de perícia e uso
+  explícito de técnicas conhecidas. O cliente envia `technique_id` e uma `action_key`; texto livre
+  isolado nunca comprova capacidade ou integração mecânica.
 - Relógio persistido e avanço do mundo conforme ações.
 - World Tick com simulação detalhada, relevante e abstrata.
 - Event Log estruturado e introdução narrativa persistida.
@@ -274,8 +276,15 @@ npm run build
   não dependem de Level e possuem ofertas pendentes, disponíveis e adiadas, com apenas uma classe
   ativa por personagem. O catálogo possui 129 domínios; evidências, sinergias, maturidade e
   diminishing returns são persistidos sem exposição ao jogador ou à LLM. O backend detecta
-  caminhos maduros simples e integrados, envia à LLM somente os domínios e sinergias factuais,
-  valida estritamente a identidade semântica proposta e persiste ofertas dinâmicas como `PENDING`.
+  caminhos maduros simples e integrados por meio de um resolvedor mecânico determinístico. Ele
+  audita profundidade, consistência, diversidade e evidência explícita de integração, pontua e
+  ordena candidatos, limita cada identidade a quatro domínios conectados e mantém os motivos de
+  rejeição internos. Somente após essa decisão o gerador envia à LLM os domínios e sinergias
+  factuais, valida estritamente a identidade semântica proposta e persiste ofertas como `PENDING`.
+  Técnicas possuem associações de domínio autoritativas e ocultas: quando o jogador seleciona uma
+  técnica realmente conhecida e o uso mecânico tem sucesso, a ponte registra evidência dos
+  domínios e de suas integrações. Falhas, técnicas não aprendidas, texto livre e retries não geram
+  evidência indevida.
   A proposta não pode criar poderes ou alterar mecânicas, chamadas repetidas são idempotentes e a
   oferta somente fica visível quando um sistema autoritativo confirma um momento seguro. Força,
   Agilidade, Vitalidade, Inteligência, Sabedoria e Resistência possuem chaves mecânicas estáveis,

@@ -13,6 +13,7 @@ from app.core.enums import (
     TravelIncidentKind,
 )
 from app.core.logging import get_logger
+from app.core.ids import generate_id
 from app.db.models.character import Character
 from app.db.models.location import CharacterLocationDiscovery, Location
 from app.db.models.quest import QuestObjective
@@ -22,6 +23,11 @@ from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
 from app.game.quests import service as quests_service
 from app.game.relationships import service as relationship_service
+from app.game.progression.outcomes import resolve_progression_outcome
+from app.game.skills.techniques import (
+    TECHNIQUE_ACTION_MINUTES,
+    resolve_technique_use,
+)
 from app.game.time import clock
 from app.game.travel import service as travel_service
 from app.services.event_log import log_event
@@ -49,7 +55,16 @@ class ActionResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, character_id: str, text: str) -> ActionResult:
+def resolve_action(
+    db: Session,
+    llm_service: LLMService,
+    campaign_id: str,
+    character_id: str,
+    text: str,
+    *,
+    technique_id: str | None = None,
+    action_key: str | None = None,
+) -> ActionResult:
     character = db.get(Character, character_id)
     if character is None or character.campaign_id != campaign_id:
         raise ValueError(f"Personagem desconhecido nesta campanha: {character_id}")
@@ -92,10 +107,46 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
         ),
     )
 
-    intent = intent_parser.parse(llm_service, text, context)
+    mechanical_warnings: list[str] = []
+    resolved_action_key = action_key
+    technique_use = None
+    if technique_id is not None:
+        resolved_action_key = action_key or generate_id("action")
+        technique_use = resolve_technique_use(
+            db,
+            campaign_id,
+            character,
+            technique_id=technique_id,
+            action_key=resolved_action_key,
+        )
+        intent = Intent(
+            type=ActionIntentType.TECHNIQUE,
+            target=technique_use.technique.name,
+            raw_text=text,
+        )
+    else:
+        intent = intent_parser.parse(llm_service, text, context)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
-    mechanical_summary, minutes = _apply_intent(db, campaign_id, character, intent, state)
+    if technique_use is not None:
+        mechanical_summary = technique_use.mechanical_summary
+        minutes = 0 if technique_use.replayed else TECHNIQUE_ACTION_MINUTES
+        progression = resolve_progression_outcome(
+            db,
+            llm_service,
+            campaign_id,
+            character,
+            technique_use.progression_outcome,
+        )
+        mechanical_warnings.extend(progression.warnings)
+    else:
+        mechanical_summary, minutes = _apply_intent(
+            db,
+            campaign_id,
+            character,
+            intent,
+            state,
+        )
 
     # Capture who this action involved before advancing world time.
     # The NPC may become unavailable during the tick that follows.
@@ -208,6 +259,8 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
         actor_type="character",
         actor_id=character.id,
         payload={
+            "action_key": resolved_action_key,
+            "technique_id": technique_id,
             "player_text": text,
             "narrative": validation.text,
             "narrator_unavailable": narrator_unavailable,
@@ -269,7 +322,7 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
         narrator_unavailable=narrator_unavailable,
         mechanical_summary=mechanical_summary,
         intent_type=intent.type.value,
-        warnings=validation.warnings,
+        warnings=[*mechanical_warnings, *validation.warnings],
     )
 
 

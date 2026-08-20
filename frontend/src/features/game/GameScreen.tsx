@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { postAction } from "@/api/actions";
+import { getCharacterSheet } from "@/api/character";
 import { startWorld } from "@/api/campaigns";
 import { getStoryLog } from "@/api/story";
 import { Panel } from "@/components/Panel";
@@ -15,7 +16,7 @@ import { QuestPanel } from "@/features/quests/QuestPanel";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { useGameState } from "@/hooks/useGameState";
 import { useGameStore } from "@/stores/useGameStore";
-import type { StoryEntry } from "@/types/game";
+import type { CharacterTechnique, StoryEntry } from "@/types/game";
 
 type PanelKind = "map" | "inventory" | "character" | "quests" | "journal" | "log" | "settings" | null;
 
@@ -39,6 +40,7 @@ export function GameScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [startingWorld, setStartingWorld] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [techniques, setTechniques] = useState<CharacterTechnique[]>([]);
 
   useEffect(() => {
     if (!state || !campaignId || !characterId) return;
@@ -51,16 +53,23 @@ export function GameScreen() {
       .catch((err) => setStoryError(err instanceof Error ? err.message : "Falha ao carregar o log."));
   }, [campaignId, characterId, state?.opening_narrative]);
 
+  useEffect(() => {
+    if (!campaignId || !characterId) return;
+    getCharacterSheet(campaignId, characterId)
+      .then((sheet) => setTechniques(sheet.techniques))
+      .catch(() => setTechniques([]));
+  }, [campaignId, characterId]);
+
   if (!campaignId || !characterId) {
     return <p>Nenhuma campanha ativa. Comece uma nova primeiro.</p>;
   }
 
-  const handleAction = async (text: string) => {
+  const handleAction = async (text: string, techniqueId?: string) => {
     setEntries((prev) => [...prev, { id: nextId(), kind: "player", text }]);
     setSubmitting(true);
     setActionError(null);
     try {
-      const result = await postAction(campaignId, characterId, text);
+      const result = await postAction(campaignId, characterId, text, techniqueId);
       setState(result.state);
       const persistedEntries: StoryEntry[] = [
         { id: nextId(), kind: "player", text, created_at: new Date().toISOString() },
@@ -130,7 +139,11 @@ export function GameScreen() {
         </div>
       )}
       {worldStarted && (
-        <ActionInput onSubmit={handleAction} disabled={submitting || state?.character.status === "DEAD"} />
+        <ActionInput
+          onSubmit={handleAction}
+          disabled={submitting || state?.character.status === "DEAD"}
+          techniques={techniques}
+        />
       )}
 
       <div className="action-bar">

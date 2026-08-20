@@ -113,6 +113,7 @@ class ActionIntentType(StrEnum):
     REST = "REST"
     WAIT = "WAIT"
     SKILL_CHECK = "SKILL_CHECK"
+    TECHNIQUE = "TECHNIQUE"
     FREEFORM = "FREEFORM"
     UNKNOWN = "UNKNOWN"
 

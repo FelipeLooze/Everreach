@@ -60,7 +60,14 @@ from app.db.models.simulated_player_group import (
 from app.db.models.simulated_player_routine import (
     SimulatedPlayerRoutine,
 )
-from app.db.models.skill import CharacterSkill, CharacterTechnique, Skill, Technique
+from app.db.models.skill import (
+    CharacterSkill,
+    CharacterTechnique,
+    Skill,
+    Technique,
+    TechniqueDomain,
+    TechniqueUseRecord,
+)
 from app.db.models.world_development import WorldDevelopment
 
 __all__ = [
@@ -116,5 +123,7 @@ __all__ = [
     "CharacterTechnique",
     "Skill",
     "Technique",
+    "TechniqueDomain",
+    "TechniqueUseRecord",
     "WorldDevelopment",
 ]

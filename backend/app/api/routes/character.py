@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.character import Character
 from app.db.models.character_class import CharacterClassOffer
-from app.db.models.skill import CharacterSkill, CharacterTechnique, Skill, Technique
+from app.db.models.skill import CharacterSkill, Skill
 from app.schemas.character import (
     AttributeResponse,
     CharacterResponse,
@@ -25,6 +25,7 @@ from app.game.classes.service import (
     list_visible_class_offers,
 )
 from app.game.progression.context import build_system_progression_context
+from app.game.skills.techniques import list_character_techniques
 from app.schemas.progression import (
     CharacterXPProgressResponse,
     ResourceProgressResponse,
@@ -152,12 +153,14 @@ def get_character_sheet(campaign_id: str, character_id: str, db: Session = Depen
         if skill:
             skills.append(SkillResponse(name=skill.name, mastery=link.mastery))
 
-    technique_links = db.query(CharacterTechnique).filter(CharacterTechnique.character_id == character_id).all()
-    techniques = []
-    for link in technique_links:
-        technique = db.get(Technique, link.technique_id)
-        if technique:
-            techniques.append(TechniqueResponse(name=technique.name, description=technique.description))
+    techniques = [
+        TechniqueResponse(
+            id=technique.id,
+            name=technique.name,
+            description=technique.description,
+        )
+        for technique in list_character_techniques(db, character_id)
+    ]
 
     professions = [
         ProfessionResponse(

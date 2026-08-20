@@ -59,6 +59,15 @@ input {
   padding: 0.5rem;
 }
 
+select {
+  font-family: inherit;
+  background: var(--bg-panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.5rem;
+}
+
 /* Setup page */
 .setup-page {
   width: 420px;

@@ -142,6 +142,7 @@ export interface CharacterClassOffer {
 }
 
 export interface CharacterTechnique {
+  id: string;
   name: string;
   description: string;
 }

@@ -1,6 +1,5 @@
 import json
 import re
-from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.orm import Session
@@ -11,22 +10,15 @@ from app.db.models.character_class import (
     CharacterClassOffer,
     ClassDefinition,
 )
-from app.db.models.domain import (
-    CharacterDomainEvidence,
-    CharacterDomainSynergy,
-    DomainDefinition,
+from app.db.models.domain import DomainDefinition
+from app.game.classes.resolver import (
+    MatureClassPath,
+    resolve_class_paths,
 )
 from app.game.classes.service import (
     create_class_definition,
     create_class_offer,
 )
-from app.game.domains.service import domain_maturity
-
-
-MIN_DOMAIN_DEPTH = 3.0
-MIN_DOMAIN_CONSISTENCY = 2
-MIN_DOMAIN_DIVERSITY = 2
-MIN_SYNERGY_DEPTH = 1.0
 
 
 _SYSTEM_PROMPT = """
@@ -76,69 +68,12 @@ class DynamicClassProposal(BaseModel):
     domains: list[str] = Field(min_length=1, max_length=12)
 
 
-@dataclass(frozen=True)
-class MatureClassPath:
-    domains: tuple[str, ...]
-    integrations: tuple[tuple[str, str], ...]
-
-    @property
-    def generation_key(self) -> str:
-        return "domains:" + "+".join(self.domains)
-
-
 def detect_mature_class_paths(
     db: Session,
     character: Character,
 ) -> list[MatureClassPath]:
-    """Detect eligible paths without consulting the LLM or exposing thresholds."""
-    evidence_rows = (
-        db.query(CharacterDomainEvidence)
-        .filter(CharacterDomainEvidence.character_id == character.id)
-        .all()
-    )
-    mature_domains = {
-        row.domain_key
-        for row in evidence_rows
-        if _is_mature(db, character.id, row.domain_key)
-    }
-    if not mature_domains:
-        return []
-
-    synergy_rows = (
-        db.query(CharacterDomainSynergy)
-        .filter(
-            CharacterDomainSynergy.character_id == character.id,
-            CharacterDomainSynergy.depth >= MIN_SYNERGY_DEPTH,
-        )
-        .all()
-    )
-    edges = {
-        tuple(sorted((row.first_domain_key, row.second_domain_key)))
-        for row in synergy_rows
-        if {row.first_domain_key, row.second_domain_key} <= mature_domains
-    }
-
-    paths: list[MatureClassPath] = []
-    for component in _connected_components(mature_domains, edges):
-        if len(component) >= 3:
-            component_edges = tuple(
-                sorted(edge for edge in edges if set(edge) <= component)
-            )
-            paths.append(
-                MatureClassPath(tuple(sorted(component)), component_edges)
-            )
-    paths.extend(
-        MatureClassPath(edge, (edge,)) for edge in sorted(edges)
-    )
-    paths.extend(
-        MatureClassPath((domain_key,), ())
-        for domain_key in sorted(mature_domains)
-    )
-
-    unique: dict[str, MatureClassPath] = {}
-    for path in paths:
-        unique.setdefault(path.generation_key, path)
-    return list(unique.values())
+    """Compatibility facade over the authoritative mechanical resolver."""
+    return list(resolve_class_paths(db, character).candidates)
 
 
 def generate_dynamic_class_offers(
@@ -205,41 +140,6 @@ def generate_dynamic_class_offers(
         if len(created) >= max_new_offers:
             break
     return created
-
-
-def _is_mature(db: Session, character_id: str, domain_key: str) -> bool:
-    maturity = domain_maturity(db, character_id, domain_key)
-    return (
-        maturity.depth >= MIN_DOMAIN_DEPTH
-        and maturity.consistency >= MIN_DOMAIN_CONSISTENCY
-        and maturity.diversity >= MIN_DOMAIN_DIVERSITY
-    )
-
-
-def _connected_components(
-    domains: set[str],
-    edges: set[tuple[str, str]],
-) -> list[set[str]]:
-    adjacency = {domain: set() for domain in domains}
-    for first, second in edges:
-        adjacency[first].add(second)
-        adjacency[second].add(first)
-
-    components: list[set[str]] = []
-    unseen = set(domains)
-    while unseen:
-        root = unseen.pop()
-        component = {root}
-        pending = [root]
-        while pending:
-            current = pending.pop()
-            neighbors = adjacency[current] & unseen
-            unseen -= neighbors
-            component |= neighbors
-            pending.extend(neighbors)
-        if len(component) > 1:
-            components.append(component)
-    return components
 
 
 def _request_and_validate_proposal(

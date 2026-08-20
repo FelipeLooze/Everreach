@@ -21,7 +21,15 @@ def post_action(
     llm_service: LLMService = Depends(get_llm_service),
 ):
     try:
-        result = engine.resolve_action(db, llm_service, campaign_id, character_id, body.text)
+        result = engine.resolve_action(
+            db,
+            llm_service,
+            campaign_id,
+            character_id,
+            body.text,
+            technique_id=body.technique_id,
+            action_key=body.action_key,
+        )
     except engine.CharacterDeadError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except engine.WorldNotStartedError as exc:

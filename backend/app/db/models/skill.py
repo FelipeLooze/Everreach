@@ -1,4 +1,12 @@
-from sqlalchemy import Float, ForeignKey, String
+from sqlalchemy import (
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.ids import generate_id
@@ -39,6 +47,26 @@ class Technique(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, default="")
 
+    domains: Mapped[list["TechniqueDomain"]] = relationship(
+        cascade="all, delete-orphan",
+        order_by="TechniqueDomain.domain_key",
+    )
+
+
+class TechniqueDomain(Base):
+    """A capability domain that a technique mechanically integrates."""
+
+    __tablename__ = "technique_domains"
+
+    technique_id: Mapped[str] = mapped_column(
+        ForeignKey("techniques.id"),
+        primary_key=True,
+    )
+    domain_key: Mapped[str] = mapped_column(
+        ForeignKey("domain_definitions.key"),
+        primary_key=True,
+    )
+
 
 class CharacterTechnique(Base):
     __tablename__ = "character_techniques"
@@ -46,5 +74,52 @@ class CharacterTechnique(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("ctech"))
     character_id: Mapped[str] = mapped_column(ForeignKey("characters.id"), nullable=False)
     technique_id: Mapped[str] = mapped_column(ForeignKey("techniques.id"), nullable=False)
+
+    technique: Mapped["Technique"] = relationship()
+
+
+class TechniqueUseRecord(Base):
+    """Idempotent mechanical result of one explicitly selected technique use."""
+
+    __tablename__ = "technique_use_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "campaign_id",
+            "character_id",
+            "action_key",
+            name="uq_technique_use_action",
+        ),
+        Index(
+            "ix_technique_use_character_time",
+            "character_id",
+            "world_minute",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("tuse"),
+    )
+    campaign_id: Mapped[str] = mapped_column(
+        ForeignKey("campaigns.id"),
+        nullable=False,
+    )
+    character_id: Mapped[str] = mapped_column(
+        ForeignKey("characters.id"),
+        nullable=False,
+    )
+    technique_id: Mapped[str] = mapped_column(
+        ForeignKey("techniques.id"),
+        nullable=False,
+    )
+    action_key: Mapped[str] = mapped_column(String, nullable=False)
+    roll: Mapped[int] = mapped_column(Integer, nullable=False)
+    modifier: Mapped[int] = mapped_column(Integer, nullable=False)
+    total: Mapped[int] = mapped_column(Integer, nullable=False)
+    dc: Mapped[int] = mapped_column(Integer, nullable=False)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    critical: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
 
     technique: Mapped["Technique"] = relationship()

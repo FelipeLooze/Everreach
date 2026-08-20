@@ -14,6 +14,7 @@ from app.game.classes.generator import (
     detect_mature_class_paths,
     generate_dynamic_class_offers,
 )
+from app.game.classes.resolver import MAX_CLASS_DOMAINS, resolve_class_paths
 from app.game.classes.service import (
     list_visible_class_offers,
     make_pending_class_offers_available,
@@ -146,6 +147,30 @@ def test_two_mature_domains_do_not_form_combined_path_without_synergy(db_session
     assert {path.domains for path in paths} == {("SWORD",), ("WIND",)}
 
 
+def test_resolver_explains_why_domain_is_not_mature(db_session):
+    campaign, character = _character(db_session)
+    award_domain_evidence(
+        db_session,
+        campaign.id,
+        character,
+        domain_key="SWORD",
+        source=DomainEvidenceSource.TRAINING,
+        evidence_key="same-form",
+        context_key="same-yard",
+        amount=10.0,
+    )
+
+    resolution = resolve_class_paths(db_session, character)
+
+    sword = next(row for row in resolution.domains if row.domain_key == "SWORD")
+    assert sword.eligible is False
+    assert sword.rejection_reasons == (
+        "insufficient_consistency",
+        "insufficient_diversity",
+    )
+    assert resolution.candidates == ()
+
+
 def test_real_synergy_enables_combined_dynamic_class_path(db_session):
     campaign, character = _character(db_session)
     _mature_domain(db_session, campaign, character, "SWORD")
@@ -177,6 +202,93 @@ def test_real_synergy_enables_combined_dynamic_class_path(db_session):
         "WIND",
     ]
     assert "SWORD + WIND" in llm.calls[0][1]
+
+
+def test_resolver_ranks_confirmed_integration_before_isolated_paths(db_session):
+    campaign, character = _character(db_session)
+    _mature_domain(db_session, campaign, character, "SWORD")
+    _mature_domain(db_session, campaign, character, "WIND")
+    award_domain_synergy_evidence(
+        db_session,
+        campaign.id,
+        character,
+        first_domain_key="SWORD",
+        second_domain_key="WIND",
+        source=DomainEvidenceSource.TECHNIQUE_USED,
+        evidence_key="wind-cut",
+        context_key="real-combat",
+        amount=1.0,
+    )
+
+    resolution = resolve_class_paths(db_session, character)
+
+    assert resolution.candidates[0].domains == ("SWORD", "WIND")
+    assert resolution.candidates[0].score > resolution.candidates[1].score
+    assert resolution.synergies[0].eligible is True
+
+
+def test_weak_synergy_is_audited_but_does_not_combine_paths(db_session):
+    campaign, character = _character(db_session)
+    _mature_domain(db_session, campaign, character, "SWORD")
+    _mature_domain(db_session, campaign, character, "WIND")
+    award_domain_synergy_evidence(
+        db_session,
+        campaign.id,
+        character,
+        first_domain_key="SWORD",
+        second_domain_key="WIND",
+        source=DomainEvidenceSource.TRAINING,
+        evidence_key="first-combination-drill",
+        context_key="training-yard",
+        amount=0.5,
+    )
+
+    resolution = resolve_class_paths(db_session, character)
+
+    assert {path.domains for path in resolution.candidates} == {
+        ("SWORD",),
+        ("WIND",),
+    }
+    assert resolution.synergies[0].eligible is False
+    assert resolution.synergies[0].rejection_reasons == (
+        "insufficient_synergy_depth",
+    )
+
+
+def test_connected_evidence_builds_bounded_multi_domain_paths(db_session):
+    campaign, character = _character(db_session)
+    extra_domains = ("FIRE", "MOBILITY", "PRECISION")
+    for key in extra_domains:
+        db_session.add(
+            DomainDefinition(key=key, family="STYLE", description="")
+        )
+    db_session.flush()
+    domain_keys = ("SWORD", "WIND", *extra_domains)
+    for key in domain_keys:
+        _mature_domain(db_session, campaign, character, key)
+    for first, second in zip(domain_keys, domain_keys[1:]):
+        award_domain_synergy_evidence(
+            db_session,
+            campaign.id,
+            character,
+            first_domain_key=first,
+            second_domain_key=second,
+            source=DomainEvidenceSource.TECHNIQUE_USED,
+            evidence_key=f"{first.lower()}-{second.lower()}",
+            context_key="integrated-technique",
+            amount=1.0,
+        )
+
+    resolution = resolve_class_paths(db_session, character)
+
+    assert any(
+        len(path.domains) == MAX_CLASS_DOMAINS
+        for path in resolution.candidates
+    )
+    assert all(
+        len(path.domains) <= MAX_CLASS_DOMAINS
+        for path in resolution.candidates
+    )
 
 
 def test_backend_rejects_domains_or_mechanics_invented_by_llm(db_session):

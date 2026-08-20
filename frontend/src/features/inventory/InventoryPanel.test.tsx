@@ -25,6 +25,7 @@ describe("InventoryPanel", () => {
           type: "CONSUMABLE",
           quantity: 3,
           quality: "STANDARD",
+          condition: null,
           equipped: false,
           unit_weight: 1.5,
           total_weight: 4.5,
@@ -76,6 +77,7 @@ describe("InventoryPanel", () => {
           type: "WEAPON",
           quantity: 1,
           quality: "GOOD",
+          condition: "EXCELLENT",
           equipped: true,
           unit_weight: 2,
           total_weight: 2,
@@ -114,6 +116,7 @@ describe("InventoryPanel", () => {
         item_instance_id: "instance_3", item_id: "item_3", name: "Gibão",
         type: "ARMOR", quantity: 1, equipped: true, unit_weight: 4,
         quality: "POOR",
+        condition: "WORN",
         total_weight: 4, equipped_slot: "TORSO", accessibility: "WORN",
         allowed_slots: ["TORSO"], weapon: null,
         armor: {
@@ -136,6 +139,7 @@ describe("InventoryPanel", () => {
         item_instance_id: "instance_4", item_id: "item_4", name: "Picareta",
         type: "TOOL", quantity: 1, equipped: false, unit_weight: 3,
         quality: "MASTERWORK",
+        condition: "DAMAGED",
         total_weight: 3, equipped_slot: null, accessibility: "STOWED",
         allowed_slots: ["MAIN_HAND", "BACK"], weapon: null, armor: null,
         tool: { capabilities: ["HAMMERING", "MINING"] },
@@ -148,5 +152,6 @@ describe("InventoryPanel", () => {
       "ferramenta para martelar, minerar",
     );
     expect(screen.getByText(/Picareta/)).toHaveTextContent("qualidade obra-prima");
+    expect(screen.getByText(/Picareta/)).toHaveTextContent("condição danificada");
   });
 });

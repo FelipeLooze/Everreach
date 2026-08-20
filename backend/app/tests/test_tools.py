@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from app.core.enums import EventType, ItemType, ToolCapability
+from app.core.enums import EventType, ItemType, ItemWearSeverity, ToolCapability
 from app.db.models.event import WorldEvent
 from app.game.character.service import create_character
 from app.game.inventory.service import add_item, get_or_create_item
@@ -12,6 +12,7 @@ from app.game.items.tools import (
     get_tool_capabilities,
     validate_character_tool_use,
 )
+from app.game.items.durability import apply_item_wear
 from app.game.professions.activities import award_work_xp
 from app.game.world.seed import create_campaign, seed_initial_region
 
@@ -55,12 +56,27 @@ def test_tool_profile_is_typed_immutable_and_has_no_generic_bonus(db_session):
     assert use.instance_id == instance.id
     assert use.accessibility.value == "STOWED"
     assert use.quality.value == "STANDARD"
+    assert use.condition.value == "EXCELLENT"
 
     with pytest.raises(ToolError, match="different canonical"):
         configure_item_tool_profile(
             db_session,
             profile.item,
             capabilities={ToolCapability.FISHING},
+        )
+    apply_item_wear(
+        db_session,
+        instance,
+        wear_key="break:test",
+        severity=ItemWearSeverity.DEVASTATING,
+        cause="test breakage",
+    )
+    with pytest.raises(ToolError, match="Broken tool"):
+        validate_character_tool_use(
+            db_session,
+            character.id,
+            instance.id,
+            required_capability=ToolCapability.MINING,
         )
 
 
@@ -122,6 +138,7 @@ def test_profession_activity_records_tool_evidence_without_extra_xp(db_session):
     assert payload["tool_capability"] == "MINING"
     assert payload["tool_accessibility"] == "STOWED"
     assert payload["tool_quality"] == "STANDARD"
+    assert payload["tool_condition"] == "EXCELLENT"
 
 
 def test_profession_activity_rejects_incomplete_tool_requirement(db_session):

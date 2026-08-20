@@ -386,3 +386,22 @@ def test_inventory_api_exposes_weapon_capabilities_without_generic_bonuses(
     }
     assert "attack_bonus" not in item["weapon"]
     assert "balance" not in item["weapon"]
+
+
+def test_broken_weapon_cannot_resolve_a_new_attack(db_session):
+    character, encounter, hero, enemy = _combat(db_session)
+    _profile, sword = _weapon(db_session, character.id)
+    sword.durability_current = 0
+    db_session.flush()
+
+    with pytest.raises(WeaponError, match="Broken weapon"):
+        resolve_weapon_attack(
+            db_session,
+            encounter,
+            hero,
+            enemy,
+            weapon_instance_id=sword.id,
+            action_type=CombatActionType.MELEE_ATTACK,
+            damage_profile=PhysicalDamageProfile.SLASH,
+            action_key="broken-sword",
+        )

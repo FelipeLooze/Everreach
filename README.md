@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10H concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10I concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -418,9 +418,20 @@ npm run build
   evidência de uso de ferramentas e os eventos de aquisição, e aparece traduzida no inventário.
   Ela não concede bônus universal de dano, proteção, atributos ou XP; efeitos de confiabilidade e
   integridade serão consumidos pela condição/durabilidade da 10I de forma específica por categoria.
+  A 10I atribui durabilidade somente a armas, armaduras, ferramentas e recipientes; itens comuns
+  não recebem manutenção artificial. O valor interno é representado ao jogador como condição
+  `EXCELLENT`, `GOOD`, `WORN`, `DAMAGED`, `CRITICAL` ou `BROKEN`. Desgaste exige um evento explícito
+  com causa e severidade — negligenciável, leve, moderada, severa ou devastadora — e cada evento
+  possui chave idempotente, snapshot anterior/posterior e registro próprio, evitando perda repetida
+  em retries. Qualidade reduz especificamente o desgaste estrutural, sem virar multiplicador geral.
+  Uso normal pode ser negligenciável; nenhum item perde automaticamente um ponto por ação. O estado
+  quebrado é autoritativo: armas não atacam, ferramentas não satisfazem capacidades profissionais e
+  armaduras não mitigam dano. Mudanças de condição e quebra entram no Event Log, enquanto a API
+  mostra apenas a faixa compreensível, não o número interno. Reparos e sua relação com profissões
+  permanecem deliberadamente adiados, pois uma economia de reparo profunda não pertence à 10I.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Condição, materiais, recipientes, transferências por intenção e contexto do System permanecem
-  deliberadamente nas subfases 10I–10M.
+  Materiais, recipientes, transferências por intenção e contexto do System permanecem
+  deliberadamente nas subfases 10J–10M.
 
 ## Fora do MVP
 

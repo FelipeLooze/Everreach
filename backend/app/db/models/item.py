@@ -1,4 +1,12 @@
-from sqlalchemy import CheckConstraint, Float, ForeignKey, Index, Integer, String
+from sqlalchemy import (
+    CheckConstraint,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.ids import generate_id
@@ -46,6 +54,13 @@ class ItemInstance(Base):
             "quality IN ('CRUDE', 'POOR', 'STANDARD', 'GOOD', 'EXCELLENT', "
             "'MASTERWORK')",
             name="ck_item_instance_quality",
+        ),
+        CheckConstraint(
+            "(durability_current IS NULL AND durability_max IS NULL) OR "
+            "(durability_current IS NOT NULL AND durability_max IS NOT NULL "
+            "AND durability_max > 0 AND durability_current >= 0 "
+            "AND durability_current <= durability_max)",
+            name="ck_item_instance_durability",
         ),
         CheckConstraint(
             "(location_type = 'UNPLACED' AND location_ref IS NULL) OR "
@@ -114,6 +129,8 @@ class ItemInstance(Base):
     )
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     quality: Mapped[str] = mapped_column(String, default="STANDARD", nullable=False)
+    durability_current: Mapped[float | None] = mapped_column(Float, nullable=True)
+    durability_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     location_type: Mapped[str] = mapped_column(
         String,
         default="UNPLACED",
@@ -149,3 +166,32 @@ class ItemInstance(Base):
 # Compatibility name for Phase 9 call sites. New Phase 10 code should say
 # ItemDefinition explicitly so definition and physical instance cannot be confused.
 Item = ItemDefinition
+
+
+class ItemWearRecord(Base):
+    """Idempotent durability change caused by one meaningful world event."""
+
+    __tablename__ = "item_wear_records"
+    __table_args__ = (
+        UniqueConstraint("item_instance_id", "wear_key", name="uq_item_wear_key"),
+        Index("ix_item_wear_instance_time", "item_instance_id", "created_world_minute"),
+        CheckConstraint("wear_amount >= 0", name="ck_item_wear_amount_nonnegative"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("item_wear"),
+    )
+    item_instance_id: Mapped[str] = mapped_column(
+        ForeignKey("item_instances.id"), nullable=False
+    )
+    wear_key: Mapped[str] = mapped_column(String, nullable=False)
+    severity: Mapped[str] = mapped_column(String, nullable=False)
+    cause: Mapped[str] = mapped_column(String, nullable=False)
+    wear_amount: Mapped[float] = mapped_column(Float, nullable=False)
+    durability_before: Mapped[float] = mapped_column(Float, nullable=False)
+    durability_after: Mapped[float] = mapped_column(Float, nullable=False)
+    condition_before: Mapped[str] = mapped_column(String, nullable=False)
+    condition_after: Mapped[str] = mapped_column(String, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -103,6 +103,15 @@ def test_armor_profile_has_coverage_and_differentiated_physical_protection(db_se
         physical_damage_profile=PhysicalDamageProfile.SLASH,
         target_body_area=BodyArea.HEAD,
     ).armor == 0
+    entry.durability_current = 0
+    db_session.flush()
+    assert resolve_damage_mitigation(
+        db_session,
+        hero,
+        CombatDamageType.PHYSICAL,
+        physical_damage_profile=PhysicalDamageProfile.SLASH,
+        target_body_area=BodyArea.TORSO,
+    ).armor == 0
 
 
 def test_armor_profile_rejects_non_armor_and_unwearable_coverage(db_session):

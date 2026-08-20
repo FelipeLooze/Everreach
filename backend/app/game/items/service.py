@@ -17,6 +17,7 @@ from app.db.models.item import ItemDefinition, ItemInstance
 from app.db.models.location import Location
 from app.db.models.npc import NPC
 from app.db.models.region import Region
+from app.game.items.durability import initial_durability
 from app.services.event_log import log_event
 
 
@@ -108,10 +109,13 @@ def create_item_instance(
     if mode == ItemInstanceMode.UNIQUE and quantity != 1:
         raise ItemFoundationError("Unique item instances must have quantity 1.")
 
+    durability = initial_durability(ItemType(definition.type))
     instance = ItemInstance(
         definition_id=definition.id,
         quantity=quantity,
         quality=quality.value,
+        durability_current=durability,
+        durability_max=durability,
     )
     db.add(instance)
     db.flush()

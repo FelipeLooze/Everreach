@@ -20,6 +20,7 @@ from app.db.models.item import Item, ItemInstance
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
+from app.game.items.durability import is_item_broken
 from app.game.items.equipment import (
     EquipmentError,
     configure_item_equipment_profile,
@@ -212,6 +213,8 @@ def resolve_damage_mitigation(
                 )
             occupied_slots.add(physical_slot)
             armor_profile = db.get(ItemArmorProfile, entry.definition_id)
+            if armor_profile is not None and is_item_broken(entry):
+                continue
             if physical_damage_profile is None:
                 # Compatibility for actions recorded before Phase 10F.
                 armor += profile.armor_rating
@@ -248,6 +251,8 @@ def resolve_damage_mitigation(
                 .all()
             )
             for entry, profile in profiled_armor:
+                if is_item_broken(entry):
+                    continue
                 if (
                     item_accessibility(entry) == ItemAccessibility.WORN
                     and target_body_area in get_armor_coverage(profile)

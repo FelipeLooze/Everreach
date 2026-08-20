@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import (
     ItemAccessibility,
+    ItemCondition,
     ItemLocationType,
     ItemQuality,
     ItemType,
@@ -12,6 +13,7 @@ from app.core.enums import (
 )
 from app.db.models.item import ItemDefinition, ItemInstance
 from app.db.models.tool import ItemToolProfile
+from app.game.items.durability import get_item_condition, is_item_broken
 from app.game.items.equipment import item_accessibility
 
 
@@ -25,6 +27,7 @@ class ToolUseContext:
     capability: ToolCapability
     accessibility: ItemAccessibility
     quality: ItemQuality
+    condition: ItemCondition | None
 
 
 def configure_item_tool_profile(
@@ -86,6 +89,8 @@ def validate_character_tool_use(
     profile = db.get(ItemToolProfile, instance.definition_id)
     if profile is None:
         raise ToolError("Item has no authoritative tool profile.")
+    if is_item_broken(instance):
+        raise ToolError("Broken tool cannot provide a practical capability.")
     if required_capability not in get_tool_capabilities(profile):
         raise ToolError("Tool does not provide the required capability.")
     return ToolUseContext(
@@ -93,6 +98,7 @@ def validate_character_tool_use(
         capability=required_capability,
         accessibility=item_accessibility(instance),
         quality=ItemQuality(instance.quality),
+        condition=get_item_condition(instance),
     )
 
 

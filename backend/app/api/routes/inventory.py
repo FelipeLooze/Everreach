@@ -10,6 +10,7 @@ from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 from app.game.inventory.service import list_inventory
 from app.game.items.encumbrance import get_character_encumbrance
+from app.game.items.durability import get_item_condition
 from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
 from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
 from app.game.items.tools import get_tool_capabilities
@@ -49,6 +50,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                 type=item.type,
                 quantity=entry.quantity,
                 quality=entry.quality,
+                condition=get_item_condition(entry),
                 equipped=entry.equipped,
                 unit_weight=item.base_weight,
                 total_weight=round(item.base_weight * entry.quantity, 3),

@@ -71,6 +71,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_weapon_profiles",
             "item_armor_profiles",
             "item_tool_profiles",
+            "item_wear_records",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -130,6 +131,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "definition_id",
             "quantity",
             "quality",
+            "durability_current",
+            "durability_max",
             "campaign_id",
             "location_type",
             "location_ref",
@@ -139,6 +142,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         } == item_instance_columns
         assert "ck_item_instance_quantity_positive" in item_instance_checks
         assert "ck_item_instance_quality" in item_instance_checks
+        assert "ck_item_instance_durability" in item_instance_checks
         assert "ck_item_instance_location_ref" in item_instance_checks
         assert "ck_item_instance_location_type" in item_instance_checks
         assert "ck_item_instance_owner_ref" in item_instance_checks
@@ -713,7 +717,8 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
             migrated_instance = connection.execute(
                 text(
                     "SELECT definition_id, quantity, campaign_id, location_type, "
-                    "location_ref, owner_type, owner_ref, equipped_slot "
+                    "location_ref, owner_type, owner_ref, equipped_slot, "
+                    "durability_current, durability_max "
                     "FROM item_instances "
                     "WHERE id = 'item_instance_inv_legacy'"
                 )
@@ -748,6 +753,8 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
             "owner_type": "CHARACTER",
             "owner_ref": "char_legacy",
             "equipped_slot": "TORSO",
+            "durability_current": 100.0,
+            "durability_max": 100.0,
         }
         assert dict(fallback_equipment) == {
             "equipped_slot": "BACK",

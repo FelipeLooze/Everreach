@@ -38,6 +38,15 @@ const qualityLabels = {
   MASTERWORK: "obra-prima",
 };
 
+const conditionLabels = {
+  EXCELLENT: "excelente",
+  GOOD: "boa",
+  WORN: "desgastada",
+  DAMAGED: "danificada",
+  CRITICAL: "crítica",
+  BROKEN: "quebrada",
+};
+
 const weaponFamilyLabels = {
   DAGGER: "adaga",
   KNIFE: "faca",
@@ -125,6 +134,7 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
             <li key={item.item_instance_id}>
               {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso
               {` — qualidade ${qualityLabels[item.quality]}`}
+              {item.condition && ` — condição ${conditionLabels[item.condition]}`}
               {item.equipped_slot && ` — ${equipmentSlotLabels[item.equipped_slot]}`}
               {` — ${accessibilityLabels[item.accessibility]}`}
               {item.weapon && (

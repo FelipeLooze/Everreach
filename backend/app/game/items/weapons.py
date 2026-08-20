@@ -28,6 +28,7 @@ from app.game.combat.actions import (
     basic_attack_mechanics,
     resolve_profiled_attack,
 )
+from app.game.items.durability import is_item_broken
 from app.game.items.equipment import (
     EquipmentError,
     get_allowed_equipment_slots,
@@ -157,6 +158,8 @@ def resolve_weapon_attack(
         or item_accessibility(instance) != ItemAccessibility.IMMEDIATE
     ):
         raise WeaponError("Weapon must be equipped in hand and immediately usable.")
+    if is_item_broken(instance):
+        raise WeaponError("Broken weapon cannot resolve an attack.")
     profile = db.get(ItemWeaponProfile, instance.definition_id)
     if profile is None:
         raise WeaponError("Item has no authoritative weapon profile.")

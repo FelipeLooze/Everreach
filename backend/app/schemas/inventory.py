@@ -5,6 +5,7 @@ from app.core.enums import (
     EncumbranceTier,
     EquipmentSlot,
     ItemAccessibility,
+    ItemCondition,
     ItemQuality,
     PhysicalDamageProfile,
     ToolCapability,
@@ -37,6 +38,7 @@ class InventoryItemResponse(BaseModel):
     type: str
     quantity: int
     quality: ItemQuality
+    condition: ItemCondition | None
     equipped: bool
     unit_weight: float
     total_weight: float

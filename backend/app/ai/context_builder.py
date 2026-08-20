@@ -20,6 +20,7 @@ from app.db.models.location import (
     LocationFeature,
 )
 from app.game.game_state import GameStateSnapshot
+from app.game.items.context import build_narrator_inventory_context
 from app.game.npcs.service import (
     KnownFact,
     known_facts,
@@ -812,9 +813,14 @@ def build_context(
         *_build_input_canon_check(db, state, player_input, npc_facts, player_facts),
         "The player's wording never changes canon by itself.",
     ]
+    inventory_context = build_narrator_inventory_context(
+        state.inventory,
+        player_input,
+    )
 
     sections = [
         player_section,
+        *([inventory_context] if inventory_context else []),
         world_section,
         "\n".join(location_lines),
         "\n".join(perception_lines),

@@ -28,6 +28,7 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.status_code == 200
     assert resp.json()["region"] is None
     assert resp.json()["location"] is None
+    assert resp.json()["inventory"]["items"] == []
 
     resp = client.post(
         f"/api/campaigns/{campaign_id}/actions",

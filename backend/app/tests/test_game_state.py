@@ -15,5 +15,7 @@ def test_build_game_state_reflects_character_and_location(db_session):
     assert state.region.id == region.id
     assert state.location.id == village.id
     assert state.world_time is not None
+    assert state.inventory.items == ()
+    assert state.inventory.encumbrance.value == "NORMAL"
     assert any(npc.name == "Osgar Vell" for npc in state.nearby_npcs)
     assert len(state.active_quests) == 0  # quest not started until API layer starts it

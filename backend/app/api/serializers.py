@@ -12,6 +12,8 @@ from app.schemas.game_state import (
     NearbyNPC,
     NearbySimulatedPlayer,
     RegionSummary,
+    SystemInventoryItemSummary,
+    SystemInventorySummary,
     WorldTimeResponse,
 )
 from app.game.players.groups import active_group_for_player
@@ -120,6 +122,26 @@ def to_game_state_response(
             )
             for cq, q in state.active_quests
         ],
+        inventory=SystemInventorySummary(
+            items=[
+                SystemInventoryItemSummary(
+                    item_instance_id=item.item_instance_id,
+                    name=item.name,
+                    type=item.type,
+                    quantity=item.quantity,
+                    quality=item.quality,
+                    condition=item.condition,
+                    material_name=item.material_name,
+                    equipped_slot=item.equipped_slot,
+                    accessibility=item.accessibility,
+                    contained_in_name=item.contained_in_name,
+                )
+                for item in state.inventory.items
+            ],
+            total_weight=state.inventory.total_weight,
+            carrying_capacity=state.inventory.carrying_capacity,
+            encumbrance=state.inventory.encumbrance,
+        ),
         opening_narrative=state.opening_narrative,
         opening_narrator_unavailable=state.opening_narrator_unavailable,
     )

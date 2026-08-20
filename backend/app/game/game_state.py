@@ -17,6 +17,7 @@ from app.game.players.service import (
     simulated_players_available_for_encounter_at_location,
 )
 from app.game.quests.service import list_character_quests
+from app.game.items.context import SystemInventorySnapshot, build_system_inventory
 
 
 @dataclass
@@ -32,6 +33,7 @@ class GameStateSnapshot:
     nearby_npcs: list[NPC]
     nearby_simulated_players: list[SimulatedPlayer]
     active_quests: list[tuple[CharacterQuest, Quest]]
+    inventory: SystemInventorySnapshot
     opening_narrative: str | None
     opening_narrator_unavailable: bool
 
@@ -80,6 +82,7 @@ def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameSt
         nearby_npcs=nearby_npcs,
         nearby_simulated_players=nearby_players,
         active_quests=active_quests,
+        inventory=build_system_inventory(db, character.id),
         opening_narrative=opening_payload.get("narrative"),
         opening_narrator_unavailable=bool(opening_payload.get("narrator_unavailable", False)),
     )

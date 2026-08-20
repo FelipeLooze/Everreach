@@ -81,6 +81,7 @@ export interface GameState {
   nearby_npcs: NearbyNPC[];
   nearby_simulated_players: NearbySimulatedPlayer[];
   active_quests: ActiveQuestSummary[];
+  inventory: SystemInventory;
   opening_narrative: string | null;
   opening_narrator_unavailable: boolean;
 }
@@ -202,6 +203,26 @@ export interface InventoryItem {
   weapon: WeaponProfile | null;
   armor: ArmorProfile | null;
   tool: ToolProfile | null;
+}
+
+export interface SystemInventoryItem {
+  item_instance_id: string;
+  name: string;
+  type: string;
+  quantity: number;
+  quality: ItemQuality;
+  condition: ItemCondition | null;
+  material_name: string | null;
+  equipped_slot: EquipmentSlot | null;
+  accessibility: ItemAccessibility;
+  contained_in_name: string | null;
+}
+
+export interface SystemInventory {
+  items: SystemInventoryItem[];
+  total_weight: number;
+  carrying_capacity: number;
+  encumbrance: EncumbranceTier;
 }
 
 export type ItemQuality =

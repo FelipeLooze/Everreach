@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10L concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: COMPLETE (10A–10M concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -447,7 +447,14 @@ npm run build
   backend resolve nomes somente no alcance físico aplicável, valida posse, presença, destinatário,
   recipiente e slot, executa a mudança pelos serviços existentes e registra a interação antes da
   narração. Pegar e tomar preservam propriedade anterior; entregar transfere posse e propriedade.
-  Chaves de ação tornam retries idempotentes. O contexto seletivo do System permanece para a 10M.
+  Chaves de ação tornam retries idempotentes.
+  A 10M inclui no `GameState` um resumo de inventário voltado ao jogador: nome, quantidade,
+  qualidade, condição qualitativa, material, posição equipada, acessibilidade, recipiente pai e
+  estado geral de carga. Durabilidade numérica e multiplicadores internos não atravessam esse
+  contrato. O Context Builder não envia o inventário inteiro por padrão: inclui equipamento
+  fisicamente visível e itens mencionados na ação; pedidos explícitos de inventário recebem um
+  resumo limitado a 12 entradas. Assim, o narrador conhece somente os objetos relevantes sem
+  ganhar autoridade mecânica ou transformar o prompt em um espelho do banco.
 
 ## Fora do MVP
 

@@ -30,6 +30,8 @@ class SimulatedPlayer(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     level: Mapped[int] = mapped_column(Integer, default=0)
     xp: Mapped[float] = mapped_column(Float, default=0)
+    hp_current: Mapped[float] = mapped_column(Float, default=20, nullable=False)
+    hp_max: Mapped[float] = mapped_column(Float, default=20, nullable=False)
     location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
 
     archetype: Mapped[str] = mapped_column(String, default=SimulatedPlayerArchetype.EXPLORER)

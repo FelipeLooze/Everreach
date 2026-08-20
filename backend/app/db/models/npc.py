@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, Index, String
+from sqlalchemy import Boolean, Float, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import generate_id
@@ -36,3 +36,5 @@ class NPC(Base):
     )
 
     alive: Mapped[bool] = mapped_column(Boolean, default=True)
+    hp_current: Mapped[float] = mapped_column(Float, default=10, nullable=False)
+    hp_max: Mapped[float] = mapped_column(Float, default=10, nullable=False)

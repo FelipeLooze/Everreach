@@ -4,15 +4,19 @@ import pytest
 
 from app.core.enums import (
     CharacterAttributeKey,
+    CharacterStatus,
     CombatActionOutcome,
     CombatActionType,
     CombatActorType,
+    CombatEncounterStatus,
     CombatRangeBand,
     EventType,
+    SimulatedPlayerStatus,
 )
 from app.db.models.combat import CombatAction, CombatParticipant, CombatTurn
 from app.db.models.event import WorldEvent
 from app.db.models.npc import NPC
+from app.db.models.simulated_player import SimulatedPlayer
 from app.game.attributes.service import get_character_attribute
 from app.game.character.service import create_character
 from app.game.combat.actions import CombatActionError, resolve_attack
@@ -115,7 +119,7 @@ def test_melee_attack_uses_strength_resolves_hit_and_advances_turn(db_session):
         bandit,
         action_type=CombatActionType.MELEE_ATTACK,
         action_key="round-1:hero-melee",
-        rng=FixedRng(8),
+        rng=SequenceRng(8, 1),
     )
 
     assert result.replayed is False
@@ -271,7 +275,7 @@ def test_attack_retry_returns_same_result_without_roll_or_second_advance(db_sess
         bandit,
         action_type=CombatActionType.MELEE_ATTACK,
         action_key="stable-action",
-        rng=FixedRng(13),
+        rng=SequenceRng(13, 1),
     )
     current_after_first = get_current_turn(db_session, encounter)
 
@@ -289,6 +293,8 @@ def test_attack_retry_returns_same_result_without_roll_or_second_advance(db_sess
     assert replay.action.id == first.action.id
     assert replay.action.attack_roll == 13
     assert get_current_turn(db_session, encounter).id == current_after_first.id
+    stored_bandit = db_session.get(NPC, bandit.actor_id)
+    assert stored_bandit.hp_current == 9
     assert db_session.query(CombatAction).count() == 1
     assert (
         db_session.query(WorldEvent)
@@ -358,3 +364,272 @@ def test_campaign_reset_removes_actions_before_turns(db_session):
     assert delete_campaign(db_session, campaign.id) is True
     assert db_session.query(CombatAction).count() == 0
     assert db_session.query(CombatTurn).count() == 0
+
+
+def test_hit_persists_damage_and_reduces_real_npc_hp(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    enemy.hp_current = enemy.hp_max = 20
+    get_character_attribute(
+        db_session,
+        character.id,
+        CharacterAttributeKey.STRENGTH,
+    ).value = 14
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="damage-once",
+        rng=SequenceRng(10, 4),
+    ).action
+
+    assert action.damage_roll == 4
+    assert action.damage_dice == 1
+    assert action.damage_modifier == 2
+    assert action.damage_total == 6
+    assert action.target_hp_before == 20
+    assert action.target_hp_after == 14
+    assert action.lethal is False
+    assert enemy.hp_current == 14
+    damage_event = (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.COMBAT_DAMAGE_APPLIED.value)
+        .one()
+    )
+    assert json.loads(damage_event.payload_json)["damage_total"] == 6
+
+    replay = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="damage-once",
+        rng=SequenceRng(20, 6, 6),
+    )
+    assert replay.replayed is True
+    assert enemy.hp_current == 14
+
+
+def test_miss_persists_zero_damage_without_damage_event(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        _character,
+        enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="clean-miss",
+        rng=FixedRng(2),
+    ).action
+
+    assert action.damage_total == 0
+    assert action.target_hp_before == action.target_hp_after == 10
+    assert enemy.hp_current == 10
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.COMBAT_DAMAGE_APPLIED.value)
+        .count()
+        == 0
+    )
+
+
+def test_critical_hit_rolls_two_damage_dice_and_modifier_once(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    enemy.hp_current = enemy.hp_max = 20
+    get_character_attribute(
+        db_session,
+        character.id,
+        CharacterAttributeKey.STRENGTH,
+    ).value = 14
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="critical-damage",
+        rng=SequenceRng(20, 2, 3),
+    ).action
+
+    assert action.outcome == CombatActionOutcome.CRITICAL_HIT.value
+    assert action.damage_dice == 2
+    assert action.damage_roll == 5
+    assert action.damage_modifier == 2
+    assert action.damage_total == 7
+    assert enemy.hp_current == 13
+
+
+def test_lethal_npc_damage_removes_target_and_ends_encounter_as_victory(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        _character,
+        enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    enemy.hp_current = 2
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="lethal-npc",
+        rng=SequenceRng(10, 2),
+    ).action
+
+    assert action.lethal is True
+    assert enemy.hp_current == 0
+    assert enemy.alive is False
+    assert bandit.active is False
+    assert encounter.status == CombatEncounterStatus.VICTORY.value
+    assert encounter.current_turn_order is None
+    assert get_current_turn(db_session, encounter) is None
+    assert action.turn.status == "COMPLETED"
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.NPC_DIED.value)
+        .count()
+        == 1
+    )
+
+
+def test_lethal_character_damage_is_permanent_defeat(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    character.hp_current = 1
+    hero.range_band = CombatRangeBand.ENGAGED.value
+    roll_initiative(db_session, encounter, rng=SequenceRng(1, 20))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        bandit,
+        hero,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="lethal-character",
+        rng=SequenceRng(10, 1),
+    ).action
+
+    assert action.lethal is True
+    assert character.hp_current == 0
+    assert character.status == CharacterStatus.DEAD.value
+    assert encounter.status == CombatEncounterStatus.DEFEAT.value
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.PLAYER_DIED.value)
+        .count()
+        == 1
+    )
+
+
+def test_lethal_damage_uses_simulated_players_persistent_hp_and_death_service(
+    db_session,
+):
+    campaign = create_campaign(db_session, "Simulated Player Combat")
+    region, location = seed_initial_region(db_session, campaign.id)
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+    transported = SimulatedPlayer(
+        campaign_id=campaign.id,
+        name="Rival",
+        location_id=location.id,
+        hp_current=1,
+        hp_max=20,
+    )
+    db_session.add(transported)
+    db_session.flush()
+    encounter = start_encounter(
+        db_session,
+        campaign.id,
+        location.id,
+        (
+            CombatantSpec(CombatActorType.CHARACTER, character.id, "heroes"),
+            CombatantSpec(
+                CombatActorType.SIMULATED_PLAYER,
+                transported.id,
+                "rivals",
+                range_band=CombatRangeBand.ENGAGED,
+            ),
+        ),
+    )
+    participants = {
+        row.actor_id: row
+        for row in db_session.query(CombatParticipant)
+        .filter(CombatParticipant.encounter_id == encounter.id)
+        .all()
+    }
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        participants[character.id],
+        participants[transported.id],
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="lethal-transported",
+        rng=SequenceRng(10, 1),
+    ).action
+
+    assert action.lethal is True
+    assert transported.hp_current == 0
+    assert transported.status == SimulatedPlayerStatus.DEAD.value
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.SIMULATED_PLAYER_DIED.value)
+        .count()
+        == 1
+    )

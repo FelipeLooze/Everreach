@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -230,6 +231,13 @@ class CombatAction(Base):
         default=CombatActionOutcome.MISS.value,
         nullable=False,
     )
+    damage_roll: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    damage_dice: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    damage_modifier: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    damage_total: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    target_hp_before: Mapped[float | None] = mapped_column(Float, nullable=True)
+    target_hp_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lethal: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
 
     encounter: Mapped["CombatEncounter"] = relationship(back_populates="actions")

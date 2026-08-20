@@ -126,6 +126,7 @@ def complete_current_turn(
     participant: CombatParticipant,
     *,
     completion_key: str,
+    advance: bool = True,
 ) -> TurnAdvanceResult:
     normalized_key = completion_key.strip()
     if not _COMPLETION_KEY_PATTERN.fullmatch(normalized_key):
@@ -152,7 +153,11 @@ def complete_current_turn(
         raise CombatTurnError("Inactive participant cannot complete a turn.")
 
     _finish_turn(db, encounter, current, CombatTurnStatus.COMPLETED, normalized_key)
-    next_turn = _advance(db, encounter, current.turn_order)
+    if advance:
+        next_turn = _advance(db, encounter, current.turn_order)
+    else:
+        encounter.current_turn_order = None
+        next_turn = None
     db.flush()
     return TurnAdvanceResult(current, next_turn)
 

@@ -78,6 +78,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   COMBAT_INITIATIVE_ROLLED: "Iniciativa definida",
   COMBAT_TURN_ADVANCED: "Turno avançado",
   COMBAT_ACTION_RESOLVED: "Ação de combate resolvida",
+  COMBAT_DAMAGE_APPLIED: "Dano de combate aplicado",
   COMBAT_ENDED: "Combate encerrado",
   QUEST_STARTED: "Missão iniciada",
   QUEST_OBJECTIVE_COMPLETED: "Objetivo de missão concluído",

@@ -91,6 +91,11 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "attack_total",
             "defense_total",
             "outcome",
+            "damage_roll",
+            "damage_total",
+            "target_hp_before",
+            "target_hp_after",
+            "lethal",
         }.issubset(combat_action_columns)
         assert {
             "uq_combat_action_key",
@@ -150,11 +155,17 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             in development_indexes
         )
         assert "ix_npcs_campaign_location_alive" in npc_indexes
+        npc_columns = {
+            item["name"] for item in inspect(engine).get_columns("npcs")
+        }
+        assert {"hp_current", "hp_max"}.issubset(npc_columns)
         assert (
             "ix_simulated_players_campaign_location_status"
             in simulated_player_indexes
         )
-        assert {"xp", "risk_tolerance"}.issubset(simulated_player_columns)
+        assert {"xp", "risk_tolerance", "hp_current", "hp_max"}.issubset(
+            simulated_player_columns
+        )
         assert {"background", "profession_affinity_key"}.issubset(
             character_columns
         )

@@ -20,6 +20,8 @@ from app.db.models.combat import (
 )
 from app.game.attributes.service import attribute_check_modifier, get_character_attribute
 from app.game.combat.turns import complete_current_turn, get_current_turn
+from app.game.combat.damage import apply_attack_damage
+from app.game.combat.encounters import end_encounter
 from app.game.dice import d20
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
@@ -50,7 +52,7 @@ def resolve_attack(
     action_key: str,
     rng: random.Random | None = None,
 ) -> CombatActionResolution:
-    """Resolve one basic attack and consume its turn, without applying damage."""
+    """Resolve one basic attack, apply its damage and consume its turn."""
     normalized_key = action_key.strip()
     if not _ACTION_KEY_PATTERN.fullmatch(normalized_key):
         raise CombatActionError("Invalid combat action key.")
@@ -147,12 +149,33 @@ def resolve_attack(
             "outcome": outcome.value,
         },
     )
+    damage = apply_attack_damage(
+        db,
+        encounter,
+        action,
+        actor,
+        target,
+        rng=rng,
+    )
     complete_current_turn(
         db,
         encounter,
         actor,
         completion_key=normalized_key,
+        advance=not damage.encounter_should_end,
     )
+    if damage.encounter_should_end:
+        status = (
+            CombatEncounterStatus.DEFEAT
+            if target.actor_type == CombatActorType.CHARACTER.value
+            else CombatEncounterStatus.VICTORY
+        )
+        end_encounter(
+            db,
+            encounter,
+            status,
+            reason=f"side:{actor.side_key}",
+        )
     db.flush()
     return CombatActionResolution(action)
 

@@ -32,6 +32,10 @@ class SimulatedPlayer(Base):
     xp: Mapped[float] = mapped_column(Float, default=0)
     hp_current: Mapped[float] = mapped_column(Float, default=20, nullable=False)
     hp_max: Mapped[float] = mapped_column(Float, default=20, nullable=False)
+    mana_current: Mapped[float] = mapped_column(Float, default=10, nullable=False)
+    mana_max: Mapped[float] = mapped_column(Float, default=10, nullable=False)
+    stamina_current: Mapped[float] = mapped_column(Float, default=20, nullable=False)
+    stamina_max: Mapped[float] = mapped_column(Float, default=20, nullable=False)
     location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
 
     archetype: Mapped[str] = mapped_column(String, default=SimulatedPlayerArchetype.EXPLORER)

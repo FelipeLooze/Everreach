@@ -238,6 +238,10 @@ class CombatAction(Base):
     target_hp_before: Mapped[float | None] = mapped_column(Float, nullable=True)
     target_hp_after: Mapped[float | None] = mapped_column(Float, nullable=True)
     lethal: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    resource_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    resource_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    resource_before: Mapped[float | None] = mapped_column(Float, nullable=True)
+    resource_after: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
 
     encounter: Mapped["CombatEncounter"] = relationship(back_populates="actions")

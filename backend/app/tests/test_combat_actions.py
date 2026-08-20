@@ -5,6 +5,7 @@ import pytest
 from app.core.enums import (
     CharacterAttributeKey,
     CharacterStatus,
+    CharacterResourceKey,
     CombatActionOutcome,
     CombatActionType,
     CombatActorType,
@@ -20,6 +21,7 @@ from app.db.models.simulated_player import SimulatedPlayer
 from app.game.attributes.service import get_character_attribute
 from app.game.character.service import create_character
 from app.game.combat.actions import CombatActionError, resolve_attack
+from app.game.combat.costs import CombatResourceError
 from app.game.combat.encounters import CombatantSpec, start_encounter
 from app.game.combat.turns import get_current_turn, roll_initiative
 from app.game.world.reset import delete_campaign
@@ -40,6 +42,11 @@ class SequenceRng:
 
     def randint(self, _minimum: int, _maximum: int) -> int:
         return next(self.values)
+
+
+class ExplodingRng:
+    def randint(self, _minimum: int, _maximum: int) -> int:
+        raise AssertionError("A roll must not happen without enough resource.")
 
 
 def _setup(db_session):
@@ -295,6 +302,7 @@ def test_attack_retry_returns_same_result_without_roll_or_second_advance(db_sess
     assert get_current_turn(db_session, encounter).id == current_after_first.id
     stored_bandit = db_session.get(NPC, bandit.actor_id)
     assert stored_bandit.hp_current == 9
+    assert _character.stamina_current == 18
     assert db_session.query(CombatAction).count() == 1
     assert (
         db_session.query(WorldEvent)
@@ -633,3 +641,151 @@ def test_lethal_damage_uses_simulated_players_persistent_hp_and_death_service(
         .count()
         == 1
     )
+
+
+def test_melee_attack_spends_stamina_once_and_persists_snapshot(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    first = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="stamina-once",
+        rng=FixedRng(2),
+    )
+
+    assert first.action.resource_key == CharacterResourceKey.STAMINA.value
+    assert first.action.resource_cost == 2
+    assert first.action.resource_before == 20
+    assert first.action.resource_after == 18
+    assert character.stamina_current == 18
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.COMBAT_RESOURCE_SPENT.value)
+        .count()
+        == 1
+    )
+
+    replay = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="stamina-once",
+        rng=ExplodingRng(),
+    )
+    assert replay.replayed is True
+    assert character.stamina_current == 18
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.COMBAT_RESOURCE_SPENT.value)
+        .count()
+        == 1
+    )
+
+
+def test_ranged_attack_spends_one_stamina_even_when_it_misses(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.RANGED_ATTACK,
+        action_key="miss-costs-stamina",
+        rng=FixedRng(1),
+    ).action
+
+    assert action.outcome == CombatActionOutcome.CRITICAL_MISS.value
+    assert action.resource_cost == 1
+    assert character.stamina_current == 19
+
+
+def test_insufficient_stamina_rejects_before_roll_and_keeps_turn(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    character.stamina_current = 1
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+    current = get_current_turn(db_session, encounter)
+
+    with pytest.raises(CombatResourceError, match="Insufficient stamina"):
+        resolve_attack(
+            db_session,
+            encounter,
+            hero,
+            bandit,
+            action_type=CombatActionType.MELEE_ATTACK,
+            action_key="too-tired",
+            rng=ExplodingRng(),
+        )
+
+    assert character.stamina_current == 1
+    assert db_session.query(CombatAction).count() == 0
+    assert get_current_turn(db_session, encounter).id == current.id
+    assert (
+        db_session.query(WorldEvent)
+        .filter(WorldEvent.event_type == EventType.COMBAT_RESOURCE_SPENT.value)
+        .count()
+        == 0
+    )
+
+
+def test_npc_attack_uses_npcs_own_persistent_stamina(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        _character,
+        enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    hero.range_band = CombatRangeBand.ENGAGED.value
+    roll_initiative(db_session, encounter, rng=SequenceRng(1, 20))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        bandit,
+        hero,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="npc-stamina",
+        rng=FixedRng(1),
+    ).action
+
+    assert action.resource_before == 10
+    assert action.resource_after == 8
+    assert enemy.stamina_current == 8

@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9D concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A–9E concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -314,12 +314,14 @@ npm run build
   A 9C determina acerto ou erro. A 9D aplica dano idempotente (`1d6 + atributo`, ou `2d6`
   no crítico), mantém HP persistente para personagens, NPCs e pessoas transportadas simuladas e
   registra os valores anterior e posterior. HP zero produz morte permanente, remove o participante
-  e encerra o encontro quando resta apenas um lado. Custos de Stamina/Mana e condições continuam
-  reservados às próximas subfases.
+  e encerra o encontro quando resta apenas um lado. A 9E adiciona Mana e Stamina persistentes aos
+  demais atores e cobra Stamina antes de ataques básicos: 2 no corpo a corpo e 1 à distância.
+  Ações sem recurso são recusadas antes do dado e custos ficam registrados com snapshots, sem
+  cobrança duplicada em retries. Técnicas mágicas, recuperação e condições seguem reservadas.
 
 ## Fora do MVP
 
-- Combate completo com custos, condições e decisões de inimigos (Fase 9 em andamento; 9A–9D prontas).
+- Combate completo com técnicas, condições e decisões de inimigos (Fase 9 em andamento; 9A–9E prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

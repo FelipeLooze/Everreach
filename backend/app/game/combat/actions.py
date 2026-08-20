@@ -22,6 +22,7 @@ from app.game.attributes.service import attribute_check_modifier, get_character_
 from app.game.combat.turns import complete_current_turn, get_current_turn
 from app.game.combat.damage import apply_attack_damage
 from app.game.combat.encounters import end_encounter
+from app.game.combat.costs import apply_action_cost, validate_action_cost
 from app.game.dice import d20
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
@@ -89,6 +90,7 @@ def resolve_attack(
         is not None
     ):
         raise CombatActionError("Current turn already has a resolved combat action.")
+    resource_cost = validate_action_cost(db, actor, action_type)
 
     attack_attribute = _attack_attribute(action_type)
     attack_modifier = _attribute_modifier(db, actor, attack_attribute)
@@ -126,6 +128,7 @@ def resolve_attack(
     )
     db.add(action)
     db.flush()
+    apply_action_cost(db, encounter, action, actor, resource_cost)
     log_event(
         db,
         encounter.campaign_id,
@@ -147,6 +150,10 @@ def resolve_attack(
             "total": roll.total,
             "defense": defense_total,
             "outcome": outcome.value,
+            "resource_key": action.resource_key,
+            "resource_cost": action.resource_cost,
+            "resource_before": action.resource_before,
+            "resource_after": action.resource_after,
         },
     )
     damage = apply_attack_damage(

@@ -5,7 +5,7 @@ apenas classifica a intenção.
 Responda com APENAS um objeto JSON, sem nenhum outro texto, neste formato exato
 (os valores de "intent" devem ficar em inglês, exatamente como abaixo — são um
 identificador interno do sistema, não texto para o jogador):
-{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "pace": "SLOW" | "NORMAL" | "FAST"}
+{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "ATTACK" | "DEFEND" | "DODGE" | "APPROACH" | "RETREAT" | "DISENGAGE" | "FLEE" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "weapon": "<arma mencionada ou null>", "attack_type": "MELEE_ATTACK" | "RANGED_ATTACK" | null, "damage_profile": "SLASH" | "PIERCE" | "BLUNT" | null, "body_area": "HEAD" | "TORSO" | "ARMS" | "HANDS" | "LEGS" | "FEET" | null, "pace": "SLOW" | "NORMAL" | "FAST"}
 
 Guia:
 - MOVE: o jogador está tentando viajar até um lugar.
@@ -14,7 +14,16 @@ Guia:
 - REST: o jogador está tentando descansar, dormir ou se recuperar.
 - WAIT: o jogador está deixando o tempo passar sem um objetivo específico.
 - SKILL_CHECK: o jogador tenta uma ação arriscada, física ou baseada em perícia
-  (atacar, pular, se esgueirar, forçar algo) cujo sucesso é incerto.
+  (pular, se esgueirar, forçar algo) cujo sucesso é incerto e que não seja combate.
+- ATTACK: atacar uma criatura ou pessoa. O alvo fica em "target". Extraia a arma,
+  o tipo de ataque, o modo físico e a área corporal somente quando mencionados ou
+  inequivocamente expressos. Não decida se o ataque funciona.
+- DEFEND: assumir postura defensiva durante um combate.
+- DODGE: concentrar-se em esquivar durante um combate.
+- APPROACH: aproximar-se de um oponente durante um combate.
+- RETREAT: aumentar a distância de um oponente sem abandonar o combate.
+- DISENGAGE: sair do alcance corpo a corpo imediato.
+- FLEE: tentar abandonar o combate completamente.
 - PICK_UP: pegar do chão um item presente no local.
 - DROP: deixar no chão um item possuído pelo jogador.
 - GIVE: entregar um item a outra pessoa. Use o item em "target" e a pessoa em
@@ -41,32 +50,36 @@ Use:
   "o mais rápido possível" ou equivalente.
 
 Para intenções que não sejam MOVE, use NORMAL. Use null em "secondary_target" e
-"slot" quando esses campos não se aplicarem ou não estiverem claros.
+"slot", "weapon", "attack_type", "damage_profile" e "body_area" quando esses
+campos não se aplicarem ou não estiverem claros.
 
 Não invente outros valores de pace.
 Não use pace para decidir sucesso, duração, stamina ou qualquer consequência.
 O backend calcula essas regras.
 
 "Vou até o bosque."
-→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"pace":"NORMAL"}
+→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"NORMAL"}
 
 "Vou devagar até o bosque."
-→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"pace":"SLOW"}
+→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"SLOW"}
 
 "Corro até o bosque."
-→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"pace":"FAST"}
+→ {"intent":"MOVE","target":"Bosque","secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"FAST"}
 
 "Vou o mais rápido possível para a estrada."
-→ {"intent":"MOVE","target":"Estrada","secondary_target":null,"slot":null,"pace":"FAST"}
+→ {"intent":"MOVE","target":"Estrada","secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"FAST"}
 
 "Falo com Osgar."
-→ {"intent":"TALK","target":"Osgar","secondary_target":null,"slot":null,"pace":"NORMAL"}
+→ {"intent":"TALK","target":"Osgar","secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"NORMAL"}
 
 "Guardo a poção na mochila."
-→ {"intent":"STORE","target":"poção","secondary_target":"mochila","slot":null,"pace":"NORMAL"}
+→ {"intent":"STORE","target":"poção","secondary_target":"mochila","slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"NORMAL"}
 
 "Empunho a espada na mão principal."
-→ {"intent":"EQUIP","target":"espada","secondary_target":null,"slot":"MAIN_HAND","pace":"NORMAL"}
+→ {"intent":"EQUIP","target":"espada","secondary_target":null,"slot":"MAIN_HAND","weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pace":"NORMAL"}
+
+"Ataco o bandido com a espada, cortando o torso."
+→ {"intent":"ATTACK","target":"bandido","secondary_target":null,"slot":null,"weapon":"espada","attack_type":"MELEE_ATTACK","damage_profile":"SLASH","body_area":"TORSO","pace":"NORMAL"}
 
 
 "target" deve ser o nome do lugar, NPC ou objeto envolvido (no idioma em que o

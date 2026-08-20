@@ -22,6 +22,10 @@ class Intent:
     pace: TravelPace = TravelPace.NORMAL
     secondary_target: str | None = None
     slot: str | None = None
+    weapon: str | None = None
+    attack_type: str | None = None
+    damage_profile: str | None = None
+    body_area: str | None = None
 
 
 def parse(llm_service: LLMService, text: str, context: str) -> Intent:
@@ -37,7 +41,17 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         logger.info("intent parser: LLM unavailable, falling back to FREEFORM")
         return Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=text)
 
-    intent_type, target, pace, secondary_target, slot = _decode_response(raw)
+    (
+        intent_type,
+        target,
+        pace,
+        secondary_target,
+        slot,
+        weapon,
+        attack_type,
+        damage_profile,
+        body_area,
+    ) = _decode_response(raw)
     return Intent(
         type=intent_type,
         target=target,
@@ -45,19 +59,33 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         pace=pace,
         secondary_target=secondary_target,
         slot=slot,
+        weapon=weapon,
+        attack_type=attack_type,
+        damage_profile=damage_profile,
+        body_area=body_area,
     )
 
 
 def _parse_response(
     raw: str,
 ) -> tuple[ActionIntentType, str | None, TravelPace]:
-    intent_type, target, pace, _secondary_target, _slot = _decode_response(raw)
+    intent_type, target, pace, *_details = _decode_response(raw)
     return intent_type, target, pace
 
 
 def _decode_response(
     raw: str,
-) -> tuple[ActionIntentType, str | None, TravelPace, str | None, str | None]:
+) -> tuple[
+    ActionIntentType,
+    str | None,
+    TravelPace,
+    str | None,
+    str | None,
+    str | None,
+    str | None,
+    str | None,
+    str | None,
+]:
     try:
         start = raw.index("{")
         end = raw.rindex("}") + 1
@@ -73,6 +101,10 @@ def _decode_response(
             TravelPace.NORMAL,
             None,
             None,
+            None,
+            None,
+            None,
+            None,
         )
 
     intent_str = str(
@@ -86,6 +118,10 @@ def _decode_response(
             ActionIntentType.FREEFORM,
             target,
             TravelPace.NORMAL,
+            None,
+            None,
+            None,
+            None,
             None,
             None,
         )
@@ -105,6 +141,10 @@ def _decode_response(
         pace,
         _optional_text(data.get("secondary_target")),
         _optional_text(data.get("slot")),
+        _optional_text(data.get("weapon")),
+        _optional_text(data.get("attack_type")),
+        _optional_text(data.get("damage_profile")),
+        _optional_text(data.get("body_area")),
     )
 
 

@@ -39,3 +39,17 @@ def test_parse_invalid_pace_defaults_to_normal():
 
     assert intent_type == ActionIntentType.MOVE
     assert pace == TravelPace.NORMAL
+
+
+def test_parse_combat_details_without_granting_outcome_authority():
+    from app.ai.intent_parser import _decode_response
+
+    decoded = _decode_response(
+        '{"intent":"ATTACK","target":"bandido","weapon":"espada",'
+        '"attack_type":"MELEE_ATTACK","damage_profile":"SLASH",'
+        '"body_area":"TORSO","pace":"NORMAL"}'
+    )
+
+    assert decoded[0] == ActionIntentType.ATTACK
+    assert decoded[1] == "bandido"
+    assert decoded[5:] == ("espada", "MELEE_ATTACK", "SLASH", "TORSO")

@@ -5,7 +5,8 @@ from app.db.database import get_db
 from app.db.models.character import Character
 from app.db.models.defense import ItemArmorProfile
 from app.db.models.equipment import ItemEquipmentProfile
-from app.db.models.item import Item
+from app.db.models.container import ItemContainerProfile
+from app.db.models.item import Item, ItemInstance
 from app.db.models.material import MaterialDefinition
 from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
@@ -13,12 +14,17 @@ from app.game.inventory.service import list_inventory
 from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.items.durability import get_item_condition
-from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
+from app.game.items.containers import get_container_content_weight
+from app.game.items.equipment import (
+    get_allowed_equipment_slots,
+    resolve_item_accessibility,
+)
 from app.game.items.materials import material_weight_factor
 from app.game.items.tools import get_tool_capabilities
 from app.game.items.weapons import get_weapon_damage_profiles
 from app.schemas.inventory import (
     ArmorProfileResponse,
+    ContainerProfileResponse,
     InventoryItemResponse,
     InventoryResponse,
     MaterialResponse,
@@ -45,6 +51,15 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
         weapon_profile = db.get(ItemWeaponProfile, item.id)
         armor_profile = db.get(ItemArmorProfile, item.id)
         tool_profile = db.get(ItemToolProfile, item.id)
+        container_profile = db.get(ItemContainerProfile, item.id)
+        parent = (
+            db.get(ItemInstance, entry.location_ref)
+            if entry.location_type == "CONTAINER" and entry.location_ref
+            else None
+        )
+        parent_definition = (
+            db.get(Item, parent.definition_id) if parent is not None else None
+        )
         material = (
             db.get(MaterialDefinition, entry.material_id)
             if entry.material_id is not None
@@ -65,11 +80,23 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                     if material is not None
                     else None
                 ),
+                container=(
+                    ContainerProfileResponse(
+                        weight_capacity=container_profile.weight_capacity,
+                        content_weight=round(
+                            get_container_content_weight(db, entry), 3
+                        ),
+                    )
+                    if container_profile is not None
+                    else None
+                ),
+                contained_in_item_instance_id=(parent.id if parent else None),
+                contained_in_name=(parent_definition.name if parent_definition else None),
                 equipped=entry.equipped,
                 unit_weight=round(unit_weight, 3),
                 total_weight=round(unit_weight * entry.quantity, 3),
                 equipped_slot=entry.equipped_slot,
-                accessibility=item_accessibility(entry),
+                accessibility=resolve_item_accessibility(db, entry),
                 allowed_slots=(
                     sorted(
                         get_allowed_equipment_slots(equipment_profile),

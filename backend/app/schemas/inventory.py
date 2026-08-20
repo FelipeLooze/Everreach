@@ -36,6 +36,11 @@ class MaterialResponse(BaseModel):
     name: str
 
 
+class ContainerProfileResponse(BaseModel):
+    weight_capacity: float
+    content_weight: float
+
+
 class InventoryItemResponse(BaseModel):
     item_instance_id: str
     item_id: str
@@ -45,6 +50,9 @@ class InventoryItemResponse(BaseModel):
     quality: ItemQuality
     condition: ItemCondition | None
     material: MaterialResponse | None
+    container: ContainerProfileResponse | None
+    contained_in_item_instance_id: str | None
+    contained_in_name: str | None
     equipped: bool
     unit_weight: float
     total_weight: float

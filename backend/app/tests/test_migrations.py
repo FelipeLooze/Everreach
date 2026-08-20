@@ -73,6 +73,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_tool_profiles",
             "item_wear_records",
             "material_definitions",
+            "item_container_profiles",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -118,6 +119,20 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         material_definition_checks = {
             item["name"]
             for item in inspect(engine).get_check_constraints("material_definitions")
+        }
+        container_profile_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("item_container_profiles")
+        }
+        container_profile_checks = {
+            item["name"]
+            for item in inspect(engine).get_check_constraints(
+                "item_container_profiles"
+            )
+        }
+        assert container_profile_columns == {"item_id", "weight_capacity"}
+        assert container_profile_checks == {
+            "ck_item_container_weight_capacity_positive"
         }
         combat_action_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_actions")

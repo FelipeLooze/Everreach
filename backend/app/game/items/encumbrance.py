@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 from math import isfinite
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.enums import CharacterAttributeKey, EncumbranceTier, ItemLocationType
-from app.db.models.item import ItemDefinition, ItemInstance
-from app.db.models.material import MaterialDefinition
+from app.db.models.item import ItemInstance
 from app.game.attributes.service import get_character_attribute
+from app.game.items.containers import get_item_total_weight
 
 
 @dataclass(frozen=True)
@@ -89,22 +88,8 @@ def calculate_encumbrance(
 
 
 def get_carried_weight(db: Session, character_id: str) -> float:
-    value = (
-        db.query(
-            func.coalesce(
-                func.sum(
-                    ItemDefinition.base_weight
-                    * ItemInstance.quantity
-                    * func.coalesce(MaterialDefinition.weight_factor, 1.0)
-                ),
-                0.0,
-            )
-        )
-        .join(ItemInstance, ItemInstance.definition_id == ItemDefinition.id)
-        .outerjoin(
-            MaterialDefinition,
-            MaterialDefinition.id == ItemInstance.material_id,
-        )
+    roots = (
+        db.query(ItemInstance)
         .filter(
             ItemInstance.location_type.in_(
                 (
@@ -114,9 +99,9 @@ def get_carried_weight(db: Session, character_id: str) -> float:
             ),
             ItemInstance.location_ref == character_id,
         )
-        .scalar()
+        .all()
     )
-    return float(value or 0.0)
+    return sum(get_item_total_weight(db, root) for root in roots)
 
 
 def get_character_encumbrance(db: Session, character_id: str) -> EncumbranceSnapshot:

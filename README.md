@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10J concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10K concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -439,9 +439,12 @@ npm run build
   materiais fantásticos — por exemplo, uma liga mais leve e resistente — sem outra arquitetura.
   Não foram adicionadas dureza, flexibilidade, condutividade mágica ou simulação metalúrgica sem
   consumidores autoritativos atuais; proteção física continua pertencendo ao perfil da armadura.
-  Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Recipientes, transferências por intenção e contexto do System permanecem deliberadamente nas
-  subfases 10K–10M.
+  A 10K adiciona recipientes aninháveis com capacidade de peso. Toda inserção valida o recipiente
+  alvo e seus recipientes externos, impedindo excesso indireto e ciclos recursivos. O peso carregado
+  inclui cada recipiente e todo o seu conteúdo uma única vez. Itens continuam visíveis no inventário,
+  com o recipiente pai e acesso rápido somente para conteúdo direto de uma bolsa na cintura.
+  Transferências por intenção e contexto do System permanecem deliberadamente nas
+  subfases 10L–10M.
 
 ## Fora do MVP
 

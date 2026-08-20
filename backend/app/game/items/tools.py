@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.core.enums import (
     ItemAccessibility,
     ItemCondition,
-    ItemLocationType,
     ItemQuality,
     ItemType,
     ToolCapability,
@@ -15,7 +14,8 @@ from app.db.models.item import ItemDefinition, ItemInstance
 from app.db.models.material import MaterialDefinition
 from app.db.models.tool import ItemToolProfile
 from app.game.items.durability import get_item_condition, is_item_broken
-from app.game.items.equipment import item_accessibility
+from app.game.items.containers import is_item_possessed_by_character
+from app.game.items.equipment import resolve_item_accessibility
 
 
 class ToolError(ValueError):
@@ -83,10 +83,7 @@ def validate_character_tool_use(
     instance = db.get(ItemInstance, tool_instance_id)
     if instance is None:
         raise ToolError("Tool instance does not exist.")
-    if instance.location_ref != character_id or instance.location_type not in {
-        ItemLocationType.CHARACTER.value,
-        ItemLocationType.CHARACTER_EQUIPPED.value,
-    }:
+    if not is_item_possessed_by_character(db, instance, character_id):
         raise ToolError("Tool must be physically carried by the acting character.")
     profile = db.get(ItemToolProfile, instance.definition_id)
     if profile is None:
@@ -98,7 +95,7 @@ def validate_character_tool_use(
     return ToolUseContext(
         instance_id=instance.id,
         capability=required_capability,
-        accessibility=item_accessibility(instance),
+        accessibility=resolve_item_accessibility(db, instance),
         quality=ItemQuality(instance.quality),
         condition=get_item_condition(instance),
         material_key=(

@@ -136,7 +136,7 @@ def add_item(
 
 
 def list_inventory(db: Session, character_id: str) -> list[ItemInstance]:
-    return (
+    direct = (
         db.query(ItemInstance)
         .join(Item, Item.id == ItemInstance.definition_id)
         .filter(
@@ -151,3 +151,23 @@ def list_inventory(db: Session, character_id: str) -> list[ItemInstance]:
         .order_by(Item.name, ItemInstance.id)
         .all()
     )
+    result = list(direct)
+    pending = [entry.id for entry in direct]
+    visited = set(pending)
+    while pending:
+        children = (
+            db.query(ItemInstance)
+            .filter(
+                ItemInstance.location_type == ItemLocationType.CONTAINER.value,
+                ItemInstance.location_ref.in_(pending),
+            )
+            .all()
+        )
+        pending = []
+        for child in children:
+            if child.id in visited:
+                raise ValueError("Invalid recursive container hierarchy.")
+            visited.add(child.id)
+            result.append(child)
+            pending.append(child.id)
+    return sorted(result, key=lambda entry: (entry.definition.name, entry.id))

@@ -190,6 +190,9 @@ export interface InventoryItem {
   quality: ItemQuality;
   condition: ItemCondition | null;
   material: ItemMaterial | null;
+  container?: ContainerProfile | null;
+  contained_in_item_instance_id?: string | null;
+  contained_in_name?: string | null;
   equipped: boolean;
   unit_weight: number;
   total_weight: number;
@@ -218,6 +221,11 @@ export type ItemCondition =
 export interface ItemMaterial {
   key: string;
   name: string;
+}
+
+export interface ContainerProfile {
+  weight_capacity: number;
+  content_weight: number;
 }
 
 export interface WeaponProfile {

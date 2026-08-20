@@ -146,6 +146,10 @@ def move_item_instance(
         raise ItemFoundationError(
             "Items must be equipped through the authoritative equipment service."
         )
+    if location_type == ItemLocationType.CONTAINER:
+        raise ItemFoundationError(
+            "Items must be stored through the authoritative container service."
+        )
     if instance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value:
         raise ItemFoundationError(
             "Equipped items must be unequipped before they can move."
@@ -288,10 +292,10 @@ def _location_campaign(
             raise ItemFoundationError("World item location does not exist.")
         return region.campaign_id
     if location_type == ItemLocationType.CONTAINER:
-        raise ItemFoundationError(
-            "Container placement remains unavailable until container-cycle "
-            "validation is implemented in Phase 10K."
-        )
+        container = db.get(ItemInstance, location_ref)
+        if container is None:
+            raise ItemFoundationError("Item container location does not exist.")
+        return container.campaign_id
     raise ItemFoundationError("Unsupported item location type.")
 
 

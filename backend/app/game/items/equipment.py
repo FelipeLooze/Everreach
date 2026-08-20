@@ -218,6 +218,30 @@ def item_accessibility(instance: ItemInstance) -> ItemAccessibility:
     return ItemAccessibility.WORN
 
 
+def resolve_item_accessibility(
+    db: Session,
+    instance: ItemInstance,
+) -> ItemAccessibility:
+    """Resolve accessibility through the physical container hierarchy."""
+    if instance.location_type != ItemLocationType.CONTAINER.value:
+        return item_accessibility(instance)
+    current = instance
+    depth = 0
+    visited: set[str] = set()
+    while current.location_type == ItemLocationType.CONTAINER.value:
+        if current.id in visited or not current.location_ref:
+            raise EquipmentError("Invalid recursive container hierarchy.")
+        visited.add(current.id)
+        parent = db.get(ItemInstance, current.location_ref)
+        if parent is None:
+            raise EquipmentError("Container hierarchy references a missing item.")
+        current = parent
+        depth += 1
+    if depth == 1 and item_accessibility(current) == ItemAccessibility.QUICK:
+        return ItemAccessibility.QUICK
+    return ItemAccessibility.STOWED
+
+
 def equipment_slots_conflict(first: EquipmentSlot, second: EquipmentSlot) -> bool:
     if first == second:
         return True

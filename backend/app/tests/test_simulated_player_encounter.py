@@ -346,7 +346,7 @@ def test_talk_intent_can_target_simulated_player(
     )
 
     assert transported.name in summary
-    assert minutes == 10
+    assert minutes == 0
 
     active = (
         get_active_simulated_player_interlocutor(
@@ -534,7 +534,8 @@ def test_resolve_action_sends_active_transported_identity_to_narrator(
     db_session.flush()
 
     state.world_time.hour = 21
-    state.world_time.minute = 55
+    state.world_time.minute = 59
+    state.world_time.subminute_seconds = 59
 
     db_session.flush()
 
@@ -561,7 +562,8 @@ def test_resolve_action_sends_active_transported_identity_to_narrator(
     )
 
     assert state_after.world_time.hour == 22
-    assert state_after.world_time.minute == 5
+    assert state_after.world_time.minute == 0
+    assert state_after.world_time.subminute_seconds == 1
 
     assert (
         transported.activity

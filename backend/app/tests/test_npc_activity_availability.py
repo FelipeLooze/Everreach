@@ -108,7 +108,7 @@ def test_working_npc_remains_available_for_interaction(
     )
 
     assert npc.name in summary
-    assert minutes == 10
+    assert minutes == 0
 
 
 def test_resting_npc_cannot_be_talk_target(

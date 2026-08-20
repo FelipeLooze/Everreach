@@ -128,7 +128,14 @@ def test_apply_intent_talk_completes_matching_quest_objective(db_session):
     summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
     assert "Osgar Vell" in summary
-    assert minutes > 0
+    assert minutes == 0
+
+    world_time = clock.get_world_time(
+        db_session,
+        campaign.id,
+    )
+
+    assert world_time.subminute_seconds == 2
 
     completed = (
         db_session.query(CharacterQuestObjective)
@@ -650,7 +657,13 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
     clock.advance_world_time(
         db_session,
         campaign.id,
-        13 * 60 + 55,
+        13 * 60 + 59,
+    )
+
+    clock.advance_world_time_seconds(
+        db_session,
+        campaign.id,
+        59,
     )
 
     db_session.refresh(osgar)
@@ -697,7 +710,8 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
     )
 
     assert state.world_time.hour == 22
-    assert state.world_time.minute == 5
+    assert state.world_time.minute == 0
+    assert state.world_time.subminute_seconds == 2
 
     # O World Tick já colocou Osgar para descansar.
     assert osgar.activity == NPCActivity.RESTING.value
@@ -772,3 +786,24 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
     assert npc_memories_after > npc_memories_before
 
     assert result.intent_type == ActionIntentType.TALK.value
+
+def test_talk_duration_scales_with_message_length():
+    assert engine._estimate_talk_seconds(
+        "Olá."
+    ) == 2
+
+    thirty_words = " ".join(
+        ["palavra"] * 30
+    )
+
+    assert engine._estimate_talk_seconds(
+        thirty_words
+    ) == 12
+
+    one_hundred_fifty_words = " ".join(
+        ["palavra"] * 150
+    )
+
+    assert engine._estimate_talk_seconds(
+        one_hundred_fifty_words
+    ) == 60

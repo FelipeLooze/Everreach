@@ -117,8 +117,18 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
     )
 
     if minutes > 0:
-        clock.advance_world_time(db, campaign_id, minutes)
-        world_simulation.tick(db, campaign_id, minutes)
+        if intent.type != ActionIntentType.TALK:
+            clock.advance_world_time(
+                db,
+                campaign_id,
+                minutes,
+            )
+
+        world_simulation.tick(
+            db,
+            campaign_id,
+            minutes,
+        )
 
     db.flush()
 
@@ -238,7 +248,7 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
             character.id,
             action_simulated_player.id,
         )
-        
+
         memory_manager.remember_simulated_player_dialogue(
             db,
             story_event,
@@ -261,6 +271,26 @@ def resolve_action(db: Session, llm_service: LLMService, campaign_id: str, chara
         mechanical_summary=mechanical_summary,
         intent_type=intent.type.value,
         warnings=validation.warnings,
+    )
+
+
+def _estimate_talk_seconds(text: str) -> int:
+    """
+    Estimate conversational time from the player's text.
+
+    Uses roughly 2.5 spoken words per second, with a
+    minimum of 2 seconds for very short interactions.
+    """
+
+    word_count = len(text.split())
+
+    estimated_seconds = (
+        word_count * 2 + 4
+    ) // 5
+
+    return max(
+        2,
+        estimated_seconds,
     )
 
 
@@ -442,10 +472,16 @@ def _handle_talk(
             npc,
         )
 
+        crossed_minutes = clock.advance_world_time_seconds(
+            db,
+            campaign_id,
+            _estimate_talk_seconds(intent.raw_text),
+        )
+
         return (
             f"{character.name} conversa com "
             f"{npc.name} ({npc.role}).",
-            10,
+            crossed_minutes,
         )
 
     players_service.meet_simulated_player(
@@ -454,11 +490,17 @@ def _handle_talk(
         character.id,
         simulated_player.id,
     )
+    
+    crossed_minutes = clock.advance_world_time_seconds(
+        db,
+        campaign_id,
+        _estimate_talk_seconds(intent.raw_text),
+    )
 
     return (
         f"{character.name} conversa com "
         f"{simulated_player.name}.",
-        10,
+        crossed_minutes,
     )
 
 

@@ -300,10 +300,17 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
+- **Fase 9 — Combate: IN PROGRESS (9A concluída).** Encontros possuem fronteira persistente,
+  campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
+  polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
+  um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
+  ocupar dois confrontos ativos. Entrada, saída, reentrada e encerramento são autoritativos,
+  idempotentes e registrados no Event Log. Iniciativa, turnos, ataques, defesa, dano e condições
+  começam nas próximas subfases.
 
 ## Fora do MVP
 
-- Combate completo com turnos, dano e inimigos.
+- Combate completo com turnos, dano e decisões de inimigos (Fase 9 em andamento; apenas 9A pronta).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

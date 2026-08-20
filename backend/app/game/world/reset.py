@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
+from app.db.models.combat import CombatEncounter, CombatParticipant
 from app.db.models.attribute import AttributeEvidenceRecord
 from app.db.models.character_class import (
     CharacterClassOffer,
@@ -67,6 +68,19 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     quest_ids = [row[0] for row in db.query(Quest.id).filter(Quest.region_id.in_(region_ids)).all()]
     objective_ids = [row[0] for row in db.query(QuestObjective.id).filter(QuestObjective.quest_id.in_(quest_ids)).all()]
     fact_ids = [row[0] for row in db.query(KnowledgeFact.id).filter(KnowledgeFact.campaign_id == campaign_id).all()]
+    combat_ids = [
+        row[0]
+        for row in db.query(CombatEncounter.id).filter(
+            CombatEncounter.campaign_id == campaign_id
+        ).all()
+    ]
+
+    db.query(CombatParticipant).filter(
+        CombatParticipant.encounter_id.in_(combat_ids)
+    ).delete(synchronize_session=False)
+    db.query(CombatEncounter).filter(
+        CombatEncounter.id.in_(combat_ids)
+    ).delete(synchronize_session=False)
 
     db.query(CharacterQuestObjective).filter(
         or_(

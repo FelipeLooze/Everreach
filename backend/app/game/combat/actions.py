@@ -19,6 +19,7 @@ from app.db.models.combat import (
     CombatAction,
     CombatEncounter,
     CombatParticipant,
+    CombatTacticalAction,
 )
 from app.game.attributes.service import attribute_check_modifier, get_character_attribute
 from app.game.combat.turns import complete_current_turn, get_current_turn
@@ -35,6 +36,7 @@ BASE_DEFENSE = 10
 ENGAGED_RANGED_PENALTY = -2
 WEAKENED_ATTACK_PENALTY = -2
 EXPOSED_DEFENSE_PENALTY = -2
+DEFENSIVE_STANCE_BONUS = 2
 _ACTION_KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 
 
@@ -156,6 +158,13 @@ def resolve_profiled_attack(
         is not None
     ):
         raise CombatActionError("Current turn already has a resolved combat action.")
+    if (
+        db.query(CombatTacticalAction)
+        .filter(CombatTacticalAction.turn_id == current_turn.id)
+        .one_or_none()
+        is not None
+    ):
+        raise CombatActionError("Current turn already has a resolved tactical action.")
     resource_cost = validate_resource_cost(
         db,
         actor,
@@ -179,6 +188,10 @@ def resolve_profiled_attack(
     )
     if has_condition(db, target.id, CombatConditionType.EXPOSED):
         defense_modifier += EXPOSED_DEFENSE_PENALTY
+    if has_condition(
+        db, target.id, CombatConditionType.GUARDED
+    ) or has_condition(db, target.id, CombatConditionType.DODGING):
+        defense_modifier += DEFENSIVE_STANCE_BONUS
     defense_total = BASE_DEFENSE + defense_modifier
     roll = d20(attack_modifier, rng)
     outcome = _resolve_outcome(roll.raw, roll.total, defense_total)

@@ -84,6 +84,11 @@ class CombatEncounter(Base):
         cascade="all, delete-orphan",
         order_by="CombatAction.created_world_minute, CombatAction.id",
     )
+    tactical_actions: Mapped[list["CombatTacticalAction"]] = relationship(
+        back_populates="encounter",
+        cascade="all, delete-orphan",
+        order_by="CombatTacticalAction.created_world_minute, CombatTacticalAction.id",
+    )
     conditions: Mapped[list["CombatCondition"]] = relationship(
         back_populates="encounter",
         cascade="all, delete-orphan",
@@ -270,6 +275,64 @@ class CombatAction(Base):
     )
 
 
+class CombatTacticalAction(Base):
+    """Persisted non-attack action that consumes exactly one combat turn."""
+
+    __tablename__ = "combat_tactical_actions"
+    __table_args__ = (
+        UniqueConstraint("turn_id", name="uq_combat_tactical_action_turn"),
+        UniqueConstraint(
+            "encounter_id",
+            "action_key",
+            name="uq_combat_tactical_action_key",
+        ),
+        Index(
+            "ix_combat_tactical_action_encounter_time",
+            "encounter_id",
+            "created_world_minute",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("tactical_action"),
+    )
+    encounter_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_encounters.id"), nullable=False
+    )
+    turn_id: Mapped[str] = mapped_column(ForeignKey("combat_turns.id"), nullable=False)
+    actor_participant_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=False
+    )
+    target_participant_id: Mapped[str | None] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=True
+    )
+    action_key: Mapped[str] = mapped_column(String, nullable=False)
+    action_type: Mapped[str] = mapped_column(String, nullable=False)
+    resource_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    resource_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    resource_before: Mapped[float | None] = mapped_column(Float, nullable=True)
+    resource_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    previous_range_band: Mapped[str | None] = mapped_column(String, nullable=True)
+    new_range_band: Mapped[str | None] = mapped_column(String, nullable=True)
+    roll: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    modifier: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dc: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    encounter: Mapped["CombatEncounter"] = relationship(back_populates="tactical_actions")
+    turn: Mapped["CombatTurn"] = relationship()
+    actor_participant: Mapped["CombatParticipant"] = relationship(
+        foreign_keys=[actor_participant_id]
+    )
+    target_participant: Mapped["CombatParticipant | None"] = relationship(
+        foreign_keys=[target_participant_id]
+    )
+
+
 class CombatCondition(Base):
     """One idempotently applied temporary condition measured in owner turns."""
 
@@ -301,6 +364,9 @@ class CombatCondition(Base):
     source_action_id: Mapped[str | None] = mapped_column(
         ForeignKey("combat_actions.id"), nullable=True
     )
+    source_tactical_action_id: Mapped[str | None] = mapped_column(
+        ForeignKey("combat_tactical_actions.id"), nullable=True
+    )
     application_key: Mapped[str] = mapped_column(String, nullable=False)
     condition_type: Mapped[str] = mapped_column(
         String,
@@ -318,3 +384,4 @@ class CombatCondition(Base):
         back_populates="conditions"
     )
     source_action: Mapped["CombatAction | None"] = relationship()
+    source_tactical_action: Mapped["CombatTacticalAction | None"] = relationship()

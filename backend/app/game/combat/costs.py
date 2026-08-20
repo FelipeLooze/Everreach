@@ -10,7 +10,12 @@ from app.core.enums import (
     EventType,
 )
 from app.db.models.character import Character
-from app.db.models.combat import CombatAction, CombatEncounter, CombatParticipant
+from app.db.models.combat import (
+    CombatAction,
+    CombatEncounter,
+    CombatParticipant,
+    CombatTacticalAction,
+)
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
 from app.services.event_log import log_event
@@ -69,10 +74,10 @@ def validate_resource_cost(
 def apply_action_cost(
     db: Session,
     encounter: CombatEncounter,
-    action: CombatAction,
+    action: CombatAction | CombatTacticalAction,
     participant: CombatParticipant,
     cost: CombatResourceCost,
-) -> CombatAction:
+) -> CombatAction | CombatTacticalAction:
     """Deduct one validated action cost once and persist its exact resource snapshot."""
     if action.resource_cost is not None:
         return action

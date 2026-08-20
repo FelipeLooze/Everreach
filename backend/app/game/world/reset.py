@@ -9,6 +9,7 @@ from app.db.models.combat import (
     CombatEncounter,
     CombatParticipant,
     CombatTurn,
+    CombatTacticalAction,
 )
 from app.db.models.attribute import AttributeEvidenceRecord
 from app.db.models.character_class import (
@@ -83,6 +84,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
 
     db.query(CombatCondition).filter(
         CombatCondition.encounter_id.in_(combat_ids)
+    ).delete(synchronize_session=False)
+    db.query(CombatTacticalAction).filter(
+        CombatTacticalAction.encounter_id.in_(combat_ids)
     ).delete(synchronize_session=False)
     db.query(CombatAction).filter(
         CombatAction.encounter_id.in_(combat_ids)

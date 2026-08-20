@@ -13,6 +13,7 @@ from app.db.models.combat import (
     CombatCondition,
     CombatEncounter,
     CombatParticipant,
+    CombatTacticalAction,
 )
 from app.services.event_log import log_event
 
@@ -40,6 +41,7 @@ def apply_condition(
     duration_turns: int,
     application_key: str,
     source_action: CombatAction | None = None,
+    source_tactical_action: CombatTacticalAction | None = None,
 ) -> ConditionApplicationResult:
     normalized_key = application_key.strip()
     if not _APPLICATION_KEY_PATTERN.fullmatch(normalized_key):
@@ -63,6 +65,8 @@ def apply_condition(
             existing.participant_id != participant.id
             or existing.condition_type != condition_type.value
             or existing.source_action_id != (source_action.id if source_action else None)
+            or existing.source_tactical_action_id
+            != (source_tactical_action.id if source_tactical_action else None)
         ):
             raise CombatConditionError(
                 "Application key already belongs to another condition."
@@ -74,11 +78,23 @@ def apply_condition(
         raise CombatConditionError("Condition target must be active in encounter.")
     if source_action is not None and source_action.encounter_id != encounter.id:
         raise CombatConditionError("Condition source action belongs to another encounter.")
+    if (
+        source_tactical_action is not None
+        and source_tactical_action.encounter_id != encounter.id
+    ):
+        raise CombatConditionError(
+            "Condition source tactical action belongs to another encounter."
+        )
+    if source_action is not None and source_tactical_action is not None:
+        raise CombatConditionError("Condition may have only one action source.")
 
     condition = CombatCondition(
         encounter_id=encounter.id,
         participant_id=participant.id,
         source_action_id=source_action.id if source_action else None,
+        source_tactical_action_id=(
+            source_tactical_action.id if source_tactical_action else None
+        ),
         application_key=normalized_key,
         condition_type=condition_type.value,
         remaining_turns=duration_turns,
@@ -101,6 +117,7 @@ def apply_condition(
             "condition_type": condition_type.value,
             "duration_turns": duration_turns,
             "source_action_id": condition.source_action_id,
+            "source_tactical_action_id": condition.source_tactical_action_id,
         },
     )
     db.flush()

@@ -7,6 +7,7 @@ from app.db.models.combat import (
     CombatEncounter,
     CombatParticipant,
     CombatTurn,
+    CombatTacticalAction,
 )
 from app.db.models.character_class import (
     CharacterClassOffer,
@@ -88,6 +89,7 @@ __all__ = [
     "CombatEncounter",
     "CombatAction",
     "CombatCondition",
+    "CombatTacticalAction",
     "CombatParticipant",
     "CombatTurn",
     "ClassDefinition",

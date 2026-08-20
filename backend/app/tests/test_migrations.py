@@ -62,6 +62,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_actions",
             "combat_conditions",
             "combat_technique_profiles",
+            "combat_tactical_actions",
         }.issubset(tables)
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -111,6 +112,48 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "uq_combat_action_key",
             "uq_combat_action_turn",
         }.issubset(combat_action_constraints)
+        combat_tactical_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("combat_tactical_actions")
+        }
+        combat_tactical_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints(
+                "combat_tactical_actions"
+            )
+        }
+        combat_tactical_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes("combat_tactical_actions")
+        }
+        assert {
+            "encounter_id",
+            "turn_id",
+            "actor_participant_id",
+            "target_participant_id",
+            "action_key",
+            "action_type",
+            "resource_key",
+            "resource_cost",
+            "resource_before",
+            "resource_after",
+            "previous_range_band",
+            "new_range_band",
+            "roll",
+            "modifier",
+            "total",
+            "dc",
+            "success",
+            "created_world_minute",
+        }.issubset(combat_tactical_columns)
+        assert {
+            "uq_combat_tactical_action_key",
+            "uq_combat_tactical_action_turn",
+        }.issubset(combat_tactical_constraints)
+        assert (
+            "ix_combat_tactical_action_encounter_time"
+            in combat_tactical_indexes
+        )
         combat_condition_columns = {
             item["name"]
             for item in inspect(engine).get_columns("combat_conditions")
@@ -131,6 +174,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "remaining_turns",
             "active",
             "removal_reason",
+            "source_tactical_action_id",
         }.issubset(combat_condition_columns)
         assert "uq_combat_condition_application" in combat_condition_constraints
         assert (

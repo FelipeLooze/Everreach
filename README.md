@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9G concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A–9H concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -324,11 +324,17 @@ npm run build
   imutável com alcance, atributo de ataque e dano, custo de Mana/Stamina, dados de dano e condição.
   Apenas personagens que conhecem a técnica podem usá-la; custo, rolagem, dano, condição e turno
   passam pelos mesmos resolvedores idempotentes. O resultado também gera evidência real de domínio
-  e sinergia para a progressão de classes. Recuperação e decisões autônomas seguem reservadas.
+  e sinergia para a progressão de classes. A 9H introduz ações táticas autoritativas que também
+  consomem exatamente um turno: defender, esquivar, aproximar, recuar, desengajar e fugir.
+  Defender e esquivar concedem +2 de defesa até o fim do próximo turno do usuário, sem acumular;
+  deslocamentos alteram uma faixa de distância por ação; e fugir usa `d20 + Agilidade` contra
+  dificuldade 12, encerrando o encontro como fuga do protagonista ou vitória quando o último
+  inimigo abandona o combate. Todas cobram Stamina, persistem custos, alcance e rolagens e são
+  idempotentes. Recuperação e decisões autônomas seguem reservadas.
 
 ## Fora do MVP
 
-- Combate completo com ações táticas e decisões de inimigos (Fase 9 em andamento; 9A–9G prontas).
+- Combate completo com recuperação e decisões de inimigos (Fase 9 em andamento; 9A–9H prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

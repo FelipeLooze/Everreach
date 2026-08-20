@@ -13,6 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import (
     CombatAwareness,
+    CombatActionOutcome,
     CombatEncounterStatus,
     CombatRangeBand,
     CombatTurnStatus,
@@ -75,6 +76,11 @@ class CombatEncounter(Base):
         back_populates="encounter",
         cascade="all, delete-orphan",
         order_by="CombatTurn.round_number, CombatTurn.turn_order",
+    )
+    actions: Mapped[list["CombatAction"]] = relationship(
+        back_populates="encounter",
+        cascade="all, delete-orphan",
+        order_by="CombatAction.created_world_minute, CombatAction.id",
     )
 
 
@@ -178,3 +184,59 @@ class CombatTurn(Base):
 
     encounter: Mapped["CombatEncounter"] = relationship(back_populates="turns")
     participant: Mapped["CombatParticipant"] = relationship()
+
+
+class CombatAction(Base):
+    """Persisted mechanical result of the single attack resolved for one turn."""
+
+    __tablename__ = "combat_actions"
+    __table_args__ = (
+        UniqueConstraint("turn_id", name="uq_combat_action_turn"),
+        UniqueConstraint(
+            "encounter_id",
+            "action_key",
+            name="uq_combat_action_key",
+        ),
+        Index("ix_combat_action_encounter_time", "encounter_id", "created_world_minute"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("combat_action"),
+    )
+    encounter_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_encounters.id"), nullable=False
+    )
+    turn_id: Mapped[str] = mapped_column(ForeignKey("combat_turns.id"), nullable=False)
+    actor_participant_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=False
+    )
+    target_participant_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=False
+    )
+    action_key: Mapped[str] = mapped_column(String, nullable=False)
+    action_type: Mapped[str] = mapped_column(String, nullable=False)
+    attack_attribute: Mapped[str] = mapped_column(String, nullable=False)
+    target_range_band: Mapped[str] = mapped_column(String, nullable=False)
+    attack_roll: Mapped[int] = mapped_column(Integer, nullable=False)
+    attack_modifier: Mapped[int] = mapped_column(Integer, nullable=False)
+    attack_total: Mapped[int] = mapped_column(Integer, nullable=False)
+    defense_base: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    defense_modifier: Mapped[int] = mapped_column(Integer, nullable=False)
+    defense_total: Mapped[int] = mapped_column(Integer, nullable=False)
+    outcome: Mapped[str] = mapped_column(
+        String,
+        default=CombatActionOutcome.MISS.value,
+        nullable=False,
+    )
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    encounter: Mapped["CombatEncounter"] = relationship(back_populates="actions")
+    turn: Mapped["CombatTurn"] = relationship()
+    actor_participant: Mapped["CombatParticipant"] = relationship(
+        foreign_keys=[actor_participant_id]
+    )
+    target_participant: Mapped["CombatParticipant"] = relationship(
+        foreign_keys=[target_participant_id]
+    )

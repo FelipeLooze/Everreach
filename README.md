@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A e 9B concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A, 9B e 9C concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -308,11 +308,14 @@ npm run build
   idempotentes e registrados no Event Log. A iniciativa usa Agilidade do personagem e penalidades
   de percepção, possui desempate determinístico e é persistida junto da ordem. Rodadas e turnos
   têm histórico próprio, turno atual recuperável, conclusão idempotente e tratamento seguro de
-  entrada, saída e encerramento. Ataques, defesa, dano e condições começam nas próximas subfases.
+  entrada, saída e encerramento. Ataques corpo a corpo e à distância são resolvidos apenas pelo
+  backend no turno correto, com validação de lado e alcance, Força ou Agilidade, defesa derivada,
+  extremos naturais e reenvio idempotente. Cada resultado é persistido e registrado no Event Log.
+  A 9C determina acerto ou erro, mas ainda não aplica dano, recursos ou condições.
 
 ## Fora do MVP
 
-- Combate completo com ataques, dano e decisões de inimigos (Fase 9 em andamento; 9A e 9B prontas).
+- Combate completo com dano e decisões de inimigos (Fase 9 em andamento; 9A–9C prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

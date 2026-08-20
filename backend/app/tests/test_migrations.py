@@ -53,6 +53,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "attribute_evidence_records",
             "character_resource_growth",
             "resource_growth_evidence_records",
+            "applied_progression_outcomes",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")

@@ -3,10 +3,16 @@ import type {
   CharacterClassDefinition,
   CharacterClassOffer,
   CharacterSheet,
+  SystemProgression,
 } from "@/types/game";
 
 export const getCharacterSheet = (campaignId: string, characterId: string) =>
   api.get<CharacterSheet>(`/campaigns/${campaignId}/character?character_id=${characterId}`);
+
+export const getSystemProgression = (campaignId: string, characterId: string) =>
+  api.get<SystemProgression>(
+    `/campaigns/${campaignId}/character/progression?character_id=${characterId}`,
+  );
 
 export const acceptClassOffer = (
   campaignId: string,

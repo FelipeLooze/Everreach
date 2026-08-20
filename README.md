@@ -206,6 +206,7 @@ npm run build
 | GET | `/api/campaigns/{campaign_id}/state?character_id=...` | Obter GameState |
 | POST | `/api/campaigns/{campaign_id}/actions?character_id=...` | Resolver uma ação textual |
 | GET | `/api/campaigns/{campaign_id}/character?character_id=...` | Ficha do personagem |
+| GET | `/api/campaigns/{campaign_id}/character/progression?character_id=...` | Contexto de progressão visível no System |
 | GET | `/api/campaigns/{campaign_id}/inventory?character_id=...` | Inventário |
 | GET | `/api/campaigns/{campaign_id}/quests?character_id=...` | Missões |
 | GET | `/api/campaigns/{campaign_id}/map?character_id=...` | Mapa conhecido pelo personagem |
@@ -261,7 +262,7 @@ npm run build
   tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
   grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
   e cobertos por testes de múltiplos dias.
-- **Fase 8 — Progressão: PARTIAL (8A–8I concluídas).** XP de personagem é autoritativo,
+- **Fase 8 — Progressão: COMPLETE (8A–8J).** XP de personagem é autoritativo,
   permanece fracionário e usa a curva `round(25 * (level + 1) ** 1.7)`, sem limite arbitrário.
   Somente experiências significativas, categorizadas pelo backend e identificadas de forma
   idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões
@@ -281,11 +282,15 @@ npm run build
   valores independentes de Level, profissão e classe, além de desenvolvimento autoritativo oculto
   com diminishing returns. Checagens podem selecionar explicitamente um atributo relevante com
   influência moderada. Sorte é um atributo adicional exclusivo do protagonista, não existe nos
-  transportados simulados, não substitui competência e tem influência limitada apenas em resoluções
-  explicitamente baseadas em acaso. HP, Mana e Stamina possuem desenvolvimento independente e
+  transportados simulados, não substitui competência e permanece reservado ao futuro sistema de
+  loot, sem efeito atual em checagens ou probabilidades gerais. HP, Mana e Stamina possuem desenvolvimento independente e
   protegido contra farming: Vitalidade relaciona-se diretamente ao HP, Resistência à Stamina e Mana
   exige desenvolvimento mágico real, sem bônus automático de Inteligência ou Character Level.
-  Fórmulas definitivas de combate permanecem corretamente adiadas à Fase 9.
+  Fórmulas definitivas de combate permanecem corretamente adiadas à Fase 9. Resultados mecânicos
+  estruturados atravessam uma única ponte idempotente de progressão, que distribui recompensas aos
+  serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
+  System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
+  domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
 
 ## Fora do MVP
 

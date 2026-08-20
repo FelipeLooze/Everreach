@@ -49,6 +49,7 @@ from app.db.models.simulated_player_arrival import (
 )
 from app.db.models.skill import CharacterSkill, CharacterTechnique
 from app.db.models.profession import CharacterProfession
+from app.db.models.progression_outcome import AppliedProgressionOutcome
 from app.db.models.world_development import WorldDevelopment
 
 def delete_campaign(db: Session, campaign_id: str) -> bool:
@@ -75,6 +76,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(CharacterSkill).filter(CharacterSkill.character_id.in_(character_ids)).delete(synchronize_session=False)
     db.query(CharacterProfession).filter(
         CharacterProfession.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(AppliedProgressionOutcome).filter(
+        AppliedProgressionOutcome.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(CharacterClassOffer).filter(
         CharacterClassOffer.character_id.in_(character_ids)

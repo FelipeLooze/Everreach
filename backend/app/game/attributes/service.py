@@ -43,7 +43,7 @@ ATTRIBUTE_CATALOG: dict[CharacterAttributeKey, tuple[str, str]] = {
     ),
     CharacterAttributeKey.LUCK: (
         "Sorte",
-        "Influência excepcional do acaso em situações realmente incertas.",
+        "Atributo reservado para futuras resoluções autoritativas de loot.",
     ),
 }
 
@@ -258,14 +258,3 @@ def award_attribute_development(
         repetition_multiplier=repetition_multiplier,
         increases=increases,
     )
-
-
-def adjust_probability_for_luck(
-    base_probability: float,
-    luck_value: int,
-) -> float:
-    """Bound Luck's effect on explicitly chance-based player resolutions."""
-    if not 0.0 <= base_probability <= 1.0:
-        raise ValueError("Base probability must be between zero and one.")
-    adjustment = max(-0.15, min(0.15, (luck_value - 10) * 0.01))
-    return max(0.0, min(1.0, base_probability + adjustment))

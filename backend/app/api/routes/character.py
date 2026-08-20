@@ -24,6 +24,12 @@ from app.game.classes.service import (
     get_active_class,
     list_visible_class_offers,
 )
+from app.game.progression.context import build_system_progression_context
+from app.schemas.progression import (
+    CharacterXPProgressResponse,
+    ResourceProgressResponse,
+    SystemProgressionResponse,
+)
 
 router = APIRouter(prefix="/api/campaigns", tags=["character"])
 
@@ -57,6 +63,78 @@ def _character_and_offer(
     if offer is None or offer.character_id != character.id:
         raise HTTPException(status_code=404, detail="Oferta de classe não encontrada")
     return character, offer
+
+
+@router.get(
+    "/{campaign_id}/character/progression",
+    response_model=SystemProgressionResponse,
+)
+def get_system_progression(
+    campaign_id: str,
+    character_id: str,
+    db: Session = Depends(get_db),
+):
+    try:
+        context = build_system_progression_context(
+            db,
+            campaign_id,
+            character_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Personagem não encontrado") from exc
+    character = context.character
+    return SystemProgressionResponse(
+        character_id=character.id,
+        character_name=character.name,
+        character_xp=CharacterXPProgressResponse(
+            level=character.level,
+            current=round(character.xp, 1),
+            to_next_level=round(context.xp_to_next_level, 1),
+        ),
+        professions=[
+            ProfessionResponse(
+                key=link.profession.key,
+                name=link.profession.name,
+                level=link.level,
+                xp=round(link.xp, 1),
+            )
+            for link in context.professions
+        ],
+        active_class=(
+            _class_response(context.active_class)
+            if context.active_class is not None
+            else None
+        ),
+        class_offers=[_offer_response(offer) for offer in context.class_offers],
+        attributes=[
+            AttributeResponse(
+                key=attribute.key,
+                name=attribute.definition.name,
+                value=attribute.value,
+            )
+            for attribute in context.attributes
+        ],
+        resources=[
+            ResourceProgressResponse(
+                key="HP",
+                name="Vida",
+                current=round(character.hp_current, 1),
+                maximum=round(character.hp_max, 1),
+            ),
+            ResourceProgressResponse(
+                key="MANA",
+                name="Mana",
+                current=round(character.mana_current, 1),
+                maximum=round(character.mana_max, 1),
+            ),
+            ResourceProgressResponse(
+                key="STAMINA",
+                name="Fôlego",
+                current=round(character.stamina_current, 1),
+                maximum=round(character.stamina_max, 1),
+            ),
+        ],
+    )
 
 
 @router.get("/{campaign_id}/character", response_model=CharacterSheetResponse)

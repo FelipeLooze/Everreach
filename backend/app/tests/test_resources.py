@@ -12,7 +12,6 @@ from app.db.models.resource import (
 )
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.attributes.service import (
-    adjust_probability_for_luck,
     award_attribute_development,
     get_character_attribute,
 )
@@ -53,14 +52,10 @@ def test_luck_exists_only_in_player_character_attribute_system(db_session):
     assert not hasattr(SimulatedPlayer, "attributes")
 
 
-def test_luck_is_bounded_and_cannot_replace_skill_or_be_routinely_trained(
+def test_luck_is_reserved_for_future_loot_and_cannot_be_routinely_trained(
     db_session,
 ):
     campaign, character = _character(db_session)
-
-    assert adjust_probability_for_luck(0.50, 10) == 0.50
-    assert adjust_probability_for_luck(0.50, 20) == pytest.approx(0.60)
-    assert adjust_probability_for_luck(0.95, 100) == 1.0
 
     with pytest.raises(ValueError, match="ordinary training"):
         award_attribute_development(

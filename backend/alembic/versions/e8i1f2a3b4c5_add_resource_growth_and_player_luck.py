@@ -32,8 +32,8 @@ def upgrade() -> None:
                 "key": "LUCK",
                 "name": "Sorte",
                 "description": (
-                    "Influência excepcional do acaso em situações "
-                    "realmente incertas. Exclusiva do protagonista."
+                    "Atributo exclusivo do protagonista reservado "
+                    "para futuras resoluções autoritativas de loot."
                 ),
             }
         ],

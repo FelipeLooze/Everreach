@@ -26,6 +26,7 @@ from app.db.models.location import (
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.profession import CharacterProfession, Profession
+from app.db.models.progression_outcome import AppliedProgressionOutcome
 from app.db.models.quest import (
     CharacterQuest,
     CharacterQuestObjective,
@@ -91,6 +92,7 @@ __all__ = [
     "NPC",
     "Profession",
     "CharacterProfession",
+    "AppliedProgressionOutcome",
     "CharacterQuest",
     "CharacterQuestObjective",
     "Quest",

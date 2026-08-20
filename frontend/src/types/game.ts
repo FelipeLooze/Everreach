@@ -156,6 +156,30 @@ export interface CharacterSheet {
   techniques: CharacterTechnique[];
 }
 
+export interface SystemXPProgress {
+  level: number;
+  current: number;
+  to_next_level: number;
+}
+
+export interface SystemResourceProgress {
+  key: "HP" | "MANA" | "STAMINA";
+  name: string;
+  current: number;
+  maximum: number;
+}
+
+export interface SystemProgression {
+  character_id: string;
+  character_name: string;
+  character_xp: SystemXPProgress;
+  professions: CharacterProfession[];
+  active_class: CharacterClassDefinition | null;
+  class_offers: CharacterClassOffer[];
+  attributes: CharacterAttribute[];
+  resources: SystemResourceProgress[];
+}
+
 export interface InventoryItem {
   item_id: string;
   name: string;

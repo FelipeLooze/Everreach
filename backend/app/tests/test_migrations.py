@@ -60,6 +60,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_participants",
             "combat_turns",
             "combat_actions",
+            "combat_conditions",
         }.issubset(tables)
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -105,6 +106,32 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "uq_combat_action_key",
             "uq_combat_action_turn",
         }.issubset(combat_action_constraints)
+        combat_condition_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("combat_conditions")
+        }
+        combat_condition_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints("combat_conditions")
+        }
+        combat_condition_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes("combat_conditions")
+        }
+        assert {
+            "participant_id",
+            "source_action_id",
+            "application_key",
+            "condition_type",
+            "remaining_turns",
+            "active",
+            "removal_reason",
+        }.issubset(combat_condition_columns)
+        assert "uq_combat_condition_application" in combat_condition_constraints
+        assert (
+            "ix_combat_condition_participant_active"
+            in combat_condition_indexes
+        )
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
         }

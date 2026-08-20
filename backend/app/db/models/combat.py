@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.enums import (
     CombatAwareness,
     CombatActionOutcome,
+    CombatConditionType,
     CombatEncounterStatus,
     CombatRangeBand,
     CombatTurnStatus,
@@ -83,6 +84,11 @@ class CombatEncounter(Base):
         cascade="all, delete-orphan",
         order_by="CombatAction.created_world_minute, CombatAction.id",
     )
+    conditions: Mapped[list["CombatCondition"]] = relationship(
+        back_populates="encounter",
+        cascade="all, delete-orphan",
+        order_by="CombatCondition.id",
+    )
 
 
 class CombatParticipant(Base):
@@ -137,6 +143,10 @@ class CombatParticipant(Base):
 
     encounter: Mapped["CombatEncounter"] = relationship(
         back_populates="participants"
+    )
+    conditions: Mapped[list["CombatCondition"]] = relationship(
+        back_populates="participant",
+        order_by="CombatCondition.id",
     )
 
 
@@ -252,3 +262,53 @@ class CombatAction(Base):
     target_participant: Mapped["CombatParticipant"] = relationship(
         foreign_keys=[target_participant_id]
     )
+
+
+class CombatCondition(Base):
+    """One idempotently applied temporary condition measured in owner turns."""
+
+    __tablename__ = "combat_conditions"
+    __table_args__ = (
+        UniqueConstraint(
+            "encounter_id",
+            "application_key",
+            name="uq_combat_condition_application",
+        ),
+        Index(
+            "ix_combat_condition_participant_active",
+            "participant_id",
+            "active",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("condition"),
+    )
+    encounter_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_encounters.id"), nullable=False
+    )
+    participant_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=False
+    )
+    source_action_id: Mapped[str | None] = mapped_column(
+        ForeignKey("combat_actions.id"), nullable=True
+    )
+    application_key: Mapped[str] = mapped_column(String, nullable=False)
+    condition_type: Mapped[str] = mapped_column(
+        String,
+        default=CombatConditionType.WEAKENED.value,
+        nullable=False,
+    )
+    remaining_turns: Mapped[int] = mapped_column(Integer, nullable=False)
+    applied_round: Mapped[int] = mapped_column(Integer, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    removed_round: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    removal_reason: Mapped[str] = mapped_column(String, default="", nullable=False)
+
+    encounter: Mapped["CombatEncounter"] = relationship(back_populates="conditions")
+    participant: Mapped["CombatParticipant"] = relationship(
+        back_populates="conditions"
+    )
+    source_action: Mapped["CombatAction | None"] = relationship()

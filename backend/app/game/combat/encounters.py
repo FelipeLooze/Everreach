@@ -200,6 +200,14 @@ def remove_participant(
         encounter.campaign_id,
     ).total_minutes()
     participant.left_reason = normalized_reason
+    from app.game.combat.conditions import remove_participant_conditions
+
+    remove_participant_conditions(
+        db,
+        encounter,
+        participant,
+        reason=f"participant_left:{normalized_reason}",
+    )
     if encounter.round_number > 0:
         from app.game.combat.turns import skip_current_turn_if_inactive
 
@@ -244,6 +252,13 @@ def end_encounter(
     encounter.status = status.value
     encounter.ended_world_minute = world_minute
     encounter.end_reason = normalized_reason
+    from app.game.combat.conditions import remove_encounter_conditions
+
+    remove_encounter_conditions(
+        db,
+        encounter,
+        reason=f"encounter_ended:{status.value.lower()}",
+    )
     if encounter.round_number > 0:
         from app.game.combat.turns import close_active_turn
 

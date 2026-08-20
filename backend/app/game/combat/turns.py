@@ -8,6 +8,7 @@ from app.core.enums import (
     CharacterAttributeKey,
     CombatActorType,
     CombatAwareness,
+    CombatConditionType,
     CombatEncounterStatus,
     CombatTurnStatus,
     EventType,
@@ -15,6 +16,11 @@ from app.core.enums import (
 from app.db.models.combat import CombatEncounter, CombatParticipant, CombatTurn
 from app.game.attributes.service import attribute_check_modifier, get_character_attribute
 from app.game.dice import d20
+from app.game.combat.conditions import (
+    consume_participant_turn_conditions,
+    has_condition,
+    log_condition_triggered,
+)
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -116,7 +122,7 @@ def get_current_turn(db: Session, encounter: CombatEncounter) -> CombatTurn | No
     if current is None:
         raise CombatTurnError("Active combat has no persisted current turn.")
     if encounter.status == CombatEncounterStatus.ACTIVE.value:
-        current = _skip_inactive_turns(db, encounter, current)
+        current = _skip_unavailable_turns(db, encounter, current)
     return current
 
 
@@ -153,6 +159,7 @@ def complete_current_turn(
         raise CombatTurnError("Inactive participant cannot complete a turn.")
 
     _finish_turn(db, encounter, current, CombatTurnStatus.COMPLETED, normalized_key)
+    consume_participant_turn_conditions(db, encounter, participant)
     if advance:
         next_turn = _advance(db, encounter, current.turn_order)
     else:
@@ -171,7 +178,7 @@ def skip_current_turn_if_inactive(
     current = _active_turn(db, encounter.id)
     if current is None:
         return None
-    return _skip_inactive_turns(db, encounter, current)
+    return _skip_unavailable_turns(db, encounter, current)
 
 
 def close_active_turn(db: Session, encounter: CombatEncounter) -> None:
@@ -181,21 +188,40 @@ def close_active_turn(db: Session, encounter: CombatEncounter) -> None:
     encounter.current_turn_order = None
 
 
-def _skip_inactive_turns(
+def _skip_unavailable_turns(
     db: Session,
     encounter: CombatEncounter,
     current: CombatTurn,
 ) -> CombatTurn | None:
     seen: set[str] = set()
-    while not current.participant.active:
+    while True:
+        inactive = not current.participant.active
+        stunned = (
+            not inactive
+            and has_condition(
+                db,
+                current.participant_id,
+                CombatConditionType.STUNNED,
+            )
+        )
+        if not inactive and not stunned:
+            return current
         if current.id in seen:
             raise CombatTurnError("Combat has no active participant available for a turn.")
         seen.add(current.id)
+        if stunned:
+            log_condition_triggered(
+                db,
+                encounter,
+                current.participant,
+                CombatConditionType.STUNNED,
+            )
         _finish_turn(db, encounter, current, CombatTurnStatus.SKIPPED, None)
+        if stunned:
+            consume_participant_turn_conditions(db, encounter, current.participant)
         current = _advance(db, encounter, current.turn_order)
         if current is None:
             return None
-    return current
 
 
 def _advance(

@@ -9,6 +9,7 @@ from app.core.enums import (
     CombatActionOutcome,
     CombatActionType,
     CombatActorType,
+    CombatConditionType,
     CombatEncounterStatus,
     CombatRangeBand,
     EventType,
@@ -23,6 +24,7 @@ from app.game.combat.turns import complete_current_turn, get_current_turn
 from app.game.combat.damage import apply_attack_damage
 from app.game.combat.encounters import end_encounter
 from app.game.combat.costs import apply_action_cost, validate_action_cost
+from app.game.combat.conditions import has_condition
 from app.game.dice import d20
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
@@ -30,6 +32,8 @@ from app.services.event_log import log_event
 
 BASE_DEFENSE = 10
 ENGAGED_RANGED_PENALTY = -2
+WEAKENED_ATTACK_PENALTY = -2
+EXPOSED_DEFENSE_PENALTY = -2
 _ACTION_KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 
 
@@ -94,6 +98,8 @@ def resolve_attack(
 
     attack_attribute = _attack_attribute(action_type)
     attack_modifier = _attribute_modifier(db, actor, attack_attribute)
+    if has_condition(db, actor.id, CombatConditionType.WEAKENED):
+        attack_modifier += WEAKENED_ATTACK_PENALTY
     if (
         action_type == CombatActionType.RANGED_ATTACK
         and target.range_band == CombatRangeBand.ENGAGED.value
@@ -104,6 +110,8 @@ def resolve_attack(
         target,
         CharacterAttributeKey.AGILITY,
     )
+    if has_condition(db, target.id, CombatConditionType.EXPOSED):
+        defense_modifier += EXPOSED_DEFENSE_PENALTY
     defense_total = BASE_DEFENSE + defense_modifier
     roll = d20(attack_modifier, rng)
     outcome = _resolve_outcome(roll.raw, roll.total, defense_total)

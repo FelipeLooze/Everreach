@@ -3,6 +3,7 @@ from app.db.models.attribute import AttributeDefinition, AttributeEvidenceRecord
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.combat import (
     CombatAction,
+    CombatCondition,
     CombatEncounter,
     CombatParticipant,
     CombatTurn,
@@ -85,6 +86,7 @@ __all__ = [
     "CharacterAttribute",
     "CombatEncounter",
     "CombatAction",
+    "CombatCondition",
     "CombatParticipant",
     "CombatTurn",
     "ClassDefinition",

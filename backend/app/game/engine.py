@@ -20,7 +20,6 @@ from app.game import game_state
 from app.game.combat import service as combat_service
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
-from app.game.progression import service as progression_service
 from app.game.quests import service as quests_service
 from app.game.relationships import service as relationship_service
 from app.game.time import clock
@@ -557,14 +556,6 @@ def _handle_skill_check(db: Session, campaign_id: str, character: Character, int
             "success": result.success,
         },
     )
-
-    if result.success:
-        progression_service.award_character_xp(
-            db,
-            campaign_id,
-            character,
-            5,
-        )
 
     outcome = "tem sucesso" if result.success else "falha"
     critical = " (rolagem crítica)" if result.critical else ""

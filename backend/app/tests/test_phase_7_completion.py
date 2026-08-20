@@ -78,7 +78,7 @@ def test_training_advances_xp_mastery_level_and_renews_goal(db_session):
         .one()
     )
     assert trainer.level == 1
-    assert trainer.xp == 0
+    assert trainer.xp == 25.0
     assert skill.name == "Sobrevivência"
     assert skill.mastery == 12.5
     assert trainer.goal_type == SimulatedPlayerGoalType.TRAIN_SELF

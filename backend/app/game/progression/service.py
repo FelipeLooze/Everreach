@@ -1,13 +1,16 @@
+import json
+
 from sqlalchemy.orm import Session
 
-from app.core.enums import EventType
+from app.core.enums import CharacterXPSource, EventType
 from app.db.models.character import Character
+from app.db.models.event import WorldEvent
 from app.services.event_log import log_event
 
 
 def xp_to_next_level(level: int) -> float:
     """XP required to go from `level` to `level + 1`. Grows progressively — no fixed cap."""
-    return round(50 * (level + 1) ** 1.5, 1)
+    return float(round(25 * (level + 1) ** 1.7))
 
 
 def add_xp(character: Character, amount: float) -> int:
@@ -31,12 +34,16 @@ def award_character_xp(
     campaign_id: str,
     character: Character,
     amount: float,
+    *,
+    source: CharacterXPSource,
+    experience_key: str,
 ) -> int:
     """
     Authoritatively award XP to a character.
 
-    Applies XP and level changes and records the resulting
-    structured events. Returns the number of levels gained.
+    Applies XP and level changes for one backend-approved significant
+    experience and records the resulting structured events. Reusing the
+    same experience key for the same character is idempotent.
     """
 
     if amount <= 0:
@@ -46,6 +53,31 @@ def award_character_xp(
         raise ValueError(
             "Character does not belong to campaign."
         )
+
+    if not isinstance(source, CharacterXPSource):
+        raise ValueError("Invalid Character XP source.")
+
+    normalized_experience_key = experience_key.strip()
+    if not normalized_experience_key:
+        raise ValueError("Character XP requires an experience key.")
+
+    previous_awards = (
+        db.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign_id,
+            WorldEvent.event_type == EventType.PLAYER_GAINED_XP.value,
+            WorldEvent.actor_type == "character",
+            WorldEvent.actor_id == character.id,
+        )
+        .all()
+    )
+    for event in previous_awards:
+        try:
+            payload = json.loads(event.payload_json)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if payload.get("experience_key") == normalized_experience_key:
+            return 0
 
     previous_level = character.level
 
@@ -64,6 +96,8 @@ def award_character_xp(
         actor_id=character.id,
         payload={
             "amount": amount,
+            "source": source.value,
+            "experience_key": normalized_experience_key,
             "current_xp": character.xp,
             "current_level": character.level,
         },
@@ -88,5 +122,3 @@ def award_character_xp(
     db.flush()
 
     return levels_gained
-
-

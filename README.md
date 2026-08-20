@@ -261,9 +261,11 @@ npm run build
   tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
   grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
   e cobertos por testes de múltiplos dias.
-- **Fase 8 — Progressão: PARTIAL.** XP autoritativo, curva de nível, atributos, skills e mastery
-  possuem fundação. Treino do protagonista, descoberta de skills e progressão integrada por uso
-  ainda não estão completos.
+- **Fase 8 — Progressão: PARTIAL (8A concluída).** XP de personagem é autoritativo,
+  permanece fracionário e usa a curva `round(25 * (level + 1) ** 1.7)`, sem limite arbitrário.
+  Somente experiências significativas, categorizadas pelo backend e identificadas de forma
+  idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões,
+  classes, domínios e demais integrações continuam pendentes nas subfases seguintes.
 
 ## Fora do MVP
 

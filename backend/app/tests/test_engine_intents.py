@@ -17,6 +17,8 @@ from app.db.models.quest import CharacterQuestObjective
 from app.db.models.memory import Memory
 from app.db.models.relationship import CharacterNPCRelationship
 from app.game import engine
+from app.game import dice
+from app.game.combat import service as combat_service
 from app.game.character.service import create_character
 from app.game.game_state import build_game_state
 from app.game.quests.service import start_quest
@@ -155,6 +157,41 @@ def test_apply_intent_skill_check_produces_dice_backed_result(db_session):
     assert "Atletismo" in summary
     assert ("tem sucesso" in summary) or ("falha" in summary)
     assert minutes > 0
+
+
+def test_successful_skill_check_does_not_automatically_award_character_xp(
+    db_session,
+    monkeypatch,
+):
+    campaign, _region, _village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+    result = combat_service.SkillCheckResult(
+        skill_name="Atletismo",
+        dc=12,
+        roll=dice.RollResult(sides=20, raw=20, modifier=0),
+        success=True,
+        critical=True,
+    )
+    monkeypatch.setattr(combat_service, "resolve_skill_check", lambda *_args, **_kwargs: result)
+
+    intent = Intent(
+        type=ActionIntentType.SKILL_CHECK,
+        target="Atletismo",
+        raw_text="Repito a mesma ação fácil.",
+    )
+    engine._apply_intent(db_session, campaign.id, character, intent, state)
+
+    assert character.xp == 0
+    assert (
+        db_session.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == campaign.id,
+            WorldEvent.event_type == EventType.PLAYER_GAINED_XP.value,
+            WorldEvent.actor_id == character.id,
+        )
+        .count()
+        == 0
+    )
 
 
 def test_apply_intent_move_rejects_unreachable_target(db_session):

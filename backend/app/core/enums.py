@@ -44,6 +44,17 @@ class ClassOfferStatus(StrEnum):
     ACCEPTED = "ACCEPTED"
 
 
+class DomainEvidenceSource(StrEnum):
+    TRAINING = "TRAINING"
+    TECHNIQUE_LEARNED = "TECHNIQUE_LEARNED"
+    TECHNIQUE_USED = "TECHNIQUE_USED"
+    EXPERIENCE = "EXPERIENCE"
+    COMBAT = "COMBAT"
+    STUDY = "STUDY"
+    EXPERIMENTATION = "EXPERIMENTATION"
+    ACHIEVEMENT = "ACHIEVEMENT"
+
+
 class DiscoveryStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
     RUMORED = "RUMORED"

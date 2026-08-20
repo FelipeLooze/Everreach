@@ -2,6 +2,13 @@ from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.character_class import CharacterClassOffer, ClassDefinition
 from app.db.models.event import WorldEvent
+from app.db.models.domain import (
+    CharacterDomainEvidence,
+    CharacterDomainSynergy,
+    DomainDefinition,
+    DomainEvidenceRecord,
+    DomainSynergyRecord,
+)
 from app.db.models.item import InventoryItem, Item
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import (
@@ -54,6 +61,11 @@ __all__ = [
     "ClassDefinition",
     "CharacterClassOffer",
     "WorldEvent",
+    "DomainDefinition",
+    "CharacterDomainEvidence",
+    "DomainEvidenceRecord",
+    "CharacterDomainSynergy",
+    "DomainSynergyRecord",
     "InventoryItem",
     "Item",
     "KnowledgeFact",

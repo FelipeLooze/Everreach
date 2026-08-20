@@ -2,7 +2,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, event, inspect
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -43,6 +43,11 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "character_professions",
             "class_definitions",
             "character_class_offers",
+            "domain_definitions",
+            "character_domain_evidence",
+            "domain_evidence_records",
+            "character_domain_synergies",
+            "domain_synergy_records",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
@@ -107,6 +112,21 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             character_columns
         )
         assert "active_class_id" in character_columns
+        with engine.connect() as connection:
+            domain_count = connection.execute(
+                text("SELECT COUNT(*) FROM domain_definitions")
+            ).scalar_one()
+            rare_domains = {
+                row[0]
+                for row in connection.execute(
+                    text(
+                        "SELECT key FROM domain_definitions "
+                        "WHERE key IN ('TIME', 'VOID', 'FATE')"
+                    )
+                )
+            }
+        assert domain_count >= 100
+        assert rare_domains == {"TIME", "VOID", "FATE"}
         assert "profession_affinity_key" in simulated_player_columns
         profession_constraints = {
             item["name"]

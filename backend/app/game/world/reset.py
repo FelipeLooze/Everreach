@@ -5,6 +5,12 @@ from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.character_class import CharacterClassOffer, ClassDefinition
 from app.db.models.event import WorldEvent
+from app.db.models.domain import (
+    CharacterDomainEvidence,
+    CharacterDomainSynergy,
+    DomainEvidenceRecord,
+    DomainSynergyRecord,
+)
 from app.db.models.item import InventoryItem
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import CharacterLocationDiscovery, Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
@@ -63,6 +69,18 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     ).delete(synchronize_session=False)
     db.query(CharacterClassOffer).filter(
         CharacterClassOffer.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(DomainEvidenceRecord).filter(
+        DomainEvidenceRecord.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(DomainSynergyRecord).filter(
+        DomainSynergyRecord.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(CharacterDomainSynergy).filter(
+        CharacterDomainSynergy.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(CharacterDomainEvidence).filter(
+        CharacterDomainEvidence.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(CharacterTechnique).filter(CharacterTechnique.character_id.in_(character_ids)).delete(
         synchronize_session=False

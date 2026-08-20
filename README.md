@@ -261,7 +261,7 @@ npm run build
   tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
   grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
   e cobertos por testes de múltiplos dias.
-- **Fase 8 — Progressão: PARTIAL (8A–8E concluídas).** XP de personagem é autoritativo,
+- **Fase 8 — Progressão: PARTIAL (8A–8F concluídas).** XP de personagem é autoritativo,
   permanece fracionário e usa a curva `round(25 * (level + 1) ** 1.7)`, sem limite arbitrário.
   Somente experiências significativas, categorizadas pelo backend e identificadas de forma
   idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões
@@ -271,7 +271,9 @@ npm run build
   Coleta, trabalho, crafting e prática possuem fontes mecânicas separadas, com resultados parciais,
   relevância por complexidade e diminishing returns por repetição. Classes são opcionais,
   não dependem de Level e possuem ofertas pendentes, disponíveis e adiadas, com apenas uma classe
-  ativa por personagem. Domínios e geração dinâmica continuam pendentes nas subfases seguintes.
+  ativa por personagem. O catálogo possui 129 domínios; evidências, sinergias, maturidade e
+  diminishing returns são persistidos sem exposição ao jogador ou à LLM. Elegibilidade e geração
+  dinâmica de classes continuam pendentes na 8G.
 
 ## Fora do MVP
 

@@ -85,6 +85,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   COMBAT_CONDITION_EXPIRED: "Condição de combate encerrada",
   COMBAT_CONDITION_REMOVED: "Condição de combate removida",
   COMBAT_TACTICAL_ACTION_RESOLVED: "Ação tática resolvida",
+  COMBAT_AUTONOMOUS_DECISION_RESOLVED: "Decisão autônoma de combate",
   COMBAT_ENDED: "Combate encerrado",
   QUEST_STARTED: "Missão iniciada",
   QUEST_OBJECTIVE_COMPLETED: "Objetivo de missão concluído",

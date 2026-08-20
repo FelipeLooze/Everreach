@@ -63,6 +63,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_conditions",
             "combat_technique_profiles",
             "combat_tactical_actions",
+            "combat_autonomous_decisions",
             "character_recoveries",
         }.issubset(tables)
         combat_encounter_columns = {
@@ -154,6 +155,48 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert (
             "ix_combat_tactical_action_encounter_time"
             in combat_tactical_indexes
+        )
+        autonomous_decision_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns(
+                "combat_autonomous_decisions"
+            )
+        }
+        autonomous_decision_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints(
+                "combat_autonomous_decisions"
+            )
+        }
+        autonomous_decision_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes(
+                "combat_autonomous_decisions"
+            )
+        }
+        assert {
+            "encounter_id",
+            "turn_id",
+            "actor_participant_id",
+            "target_participant_id",
+            "combat_action_id",
+            "tactical_action_id",
+            "decision_key",
+            "decision_kind",
+            "action_type",
+            "reason",
+            "risk_tolerance",
+            "hp_ratio",
+            "stamina_ratio",
+            "created_world_minute",
+        }.issubset(autonomous_decision_columns)
+        assert {
+            "uq_combat_autonomous_decision_key",
+            "uq_combat_autonomous_decision_turn",
+        }.issubset(autonomous_decision_constraints)
+        assert (
+            "ix_combat_autonomous_decision_encounter_time"
+            in autonomous_decision_indexes
         )
         combat_condition_columns = {
             item["name"]

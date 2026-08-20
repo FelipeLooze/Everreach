@@ -41,6 +41,7 @@ _ACTION_COSTS = {
     CombatTacticalActionType.RETREAT: 1.0,
     CombatTacticalActionType.DISENGAGE: 1.0,
     CombatTacticalActionType.FLEE: 2.0,
+    CombatTacticalActionType.WAIT: 0.0,
 }
 _DEFENSIVE_CONDITIONS = {
     CombatTacticalActionType.GUARD: CombatConditionType.GUARDED,
@@ -116,11 +117,16 @@ def resolve_tactical_action(
     ):
         raise CombatTacticalActionError("Current turn already has a resolved action.")
 
-    cost = validate_resource_cost(
-        db,
-        actor,
-        CharacterResourceKey.STAMINA,
-        _ACTION_COSTS[action_type],
+    action_cost = _ACTION_COSTS[action_type]
+    cost = (
+        validate_resource_cost(
+            db,
+            actor,
+            CharacterResourceKey.STAMINA,
+            action_cost,
+        )
+        if action_cost > 0
+        else None
     )
     previous_range: str | None = None
     new_range: str | None = None
@@ -162,7 +168,8 @@ def resolve_tactical_action(
     )
     db.add(action)
     db.flush()
-    apply_action_cost(db, encounter, action, actor, cost)
+    if cost is not None:
+        apply_action_cost(db, encounter, action, actor, cost)
     if new_range is not None:
         target.range_band = new_range
     log_event(

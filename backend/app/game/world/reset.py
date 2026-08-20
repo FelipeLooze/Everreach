@@ -5,6 +5,7 @@ from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.combat import (
     CombatAction,
+    CombatAutonomousDecision,
     CombatCondition,
     CombatEncounter,
     CombatParticipant,
@@ -85,6 +86,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
 
     db.query(CombatCondition).filter(
         CombatCondition.encounter_id.in_(combat_ids)
+    ).delete(synchronize_session=False)
+    db.query(CombatAutonomousDecision).filter(
+        CombatAutonomousDecision.encounter_id.in_(combat_ids)
     ).delete(synchronize_session=False)
     db.query(CombatTacticalAction).filter(
         CombatTacticalAction.encounter_id.in_(combat_ids)

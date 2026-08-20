@@ -89,6 +89,11 @@ class CombatEncounter(Base):
         cascade="all, delete-orphan",
         order_by="CombatTacticalAction.created_world_minute, CombatTacticalAction.id",
     )
+    autonomous_decisions: Mapped[list["CombatAutonomousDecision"]] = relationship(
+        back_populates="encounter",
+        cascade="all, delete-orphan",
+        order_by="CombatAutonomousDecision.created_world_minute, CombatAutonomousDecision.id",
+    )
     conditions: Mapped[list["CombatCondition"]] = relationship(
         back_populates="encounter",
         cascade="all, delete-orphan",
@@ -331,6 +336,68 @@ class CombatTacticalAction(Base):
     target_participant: Mapped["CombatParticipant | None"] = relationship(
         foreign_keys=[target_participant_id]
     )
+
+
+class CombatAutonomousDecision(Base):
+    """Auditable backend choice made for one non-protagonist combat turn."""
+
+    __tablename__ = "combat_autonomous_decisions"
+    __table_args__ = (
+        UniqueConstraint("turn_id", name="uq_combat_autonomous_decision_turn"),
+        UniqueConstraint(
+            "encounter_id",
+            "decision_key",
+            name="uq_combat_autonomous_decision_key",
+        ),
+        Index(
+            "ix_combat_autonomous_decision_encounter_time",
+            "encounter_id",
+            "created_world_minute",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("combat_decision"),
+    )
+    encounter_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_encounters.id"), nullable=False
+    )
+    turn_id: Mapped[str] = mapped_column(ForeignKey("combat_turns.id"), nullable=False)
+    actor_participant_id: Mapped[str] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=False
+    )
+    target_participant_id: Mapped[str | None] = mapped_column(
+        ForeignKey("combat_participants.id"), nullable=True
+    )
+    combat_action_id: Mapped[str | None] = mapped_column(
+        ForeignKey("combat_actions.id"), nullable=True
+    )
+    tactical_action_id: Mapped[str | None] = mapped_column(
+        ForeignKey("combat_tactical_actions.id"), nullable=True
+    )
+    decision_key: Mapped[str] = mapped_column(String, nullable=False)
+    decision_kind: Mapped[str] = mapped_column(String, nullable=False)
+    action_type: Mapped[str] = mapped_column(String, nullable=False)
+    reason: Mapped[str] = mapped_column(String, nullable=False)
+    risk_tolerance: Mapped[str] = mapped_column(String, nullable=False)
+    hp_ratio: Mapped[float] = mapped_column(Float, nullable=False)
+    stamina_ratio: Mapped[float] = mapped_column(Float, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    encounter: Mapped["CombatEncounter"] = relationship(
+        back_populates="autonomous_decisions"
+    )
+    turn: Mapped["CombatTurn"] = relationship()
+    actor_participant: Mapped["CombatParticipant"] = relationship(
+        foreign_keys=[actor_participant_id]
+    )
+    target_participant: Mapped["CombatParticipant | None"] = relationship(
+        foreign_keys=[target_participant_id]
+    )
+    combat_action: Mapped["CombatAction | None"] = relationship()
+    tactical_action: Mapped["CombatTacticalAction | None"] = relationship()
 
 
 class CombatCondition(Base):

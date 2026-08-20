@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9I concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A–9J concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -334,11 +334,21 @@ npm run build
   60 minutos e recupera 25% do HP máximo, 25% da Mana máxima e 50% da Stamina máxima, sempre
   limitado pelos máximos atuais. A recuperação é proibida durante combate ou após a morte, mantém
   snapshots persistentes, registra o resultado no Event Log e não recupera recursos nem avança o
-  relógio novamente em retries da mesma ação. Decisões autônomas seguem reservadas.
+  relógio novamente em retries da mesma ação. A 9J resolve turnos de NPCs e pessoas transportadas
+  sem consultar a LLM. O backend seleciona primeiro o oponente alcançável mais próximo e, em caso
+  de empate, o mais ferido; então escolhe ataque, aproximação, defesa, fuga ou espera conforme HP,
+  Stamina e distância. Ataques à distância só são escolhidos quando função ou habilidade persistida
+  comprova essa capacidade; caso contrário, o ator se aproxima. A tolerância a risco é efetiva:
+  `CAUTIOUS`, `BALANCED` e `BOLD` começam a
+  tentar fugir respectivamente com 50%, 30% e 15% de HP. Cada decisão e seu motivo ficam ligados
+  ao turno e à ação resolvida, com snapshots de risco e recursos, Event Log e retry idempotente.
+  Um orquestrador resolve turnos autônomos consecutivos e para antes do turno do protagonista.
+  O Narrator continua sem qualquer autoridade sobre escolhas ou resultados mecânicos.
 
 ## Fora do MVP
 
-- Combate completo com decisões de inimigos (Fase 9 em andamento; 9A–9I prontas).
+- Armadura, resistências especializadas e incapacitação não letal no combate (Fase 9 continua em
+  andamento; 9A–9J prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

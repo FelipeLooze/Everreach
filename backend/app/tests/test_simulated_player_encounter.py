@@ -421,8 +421,8 @@ def test_active_simulated_player_has_private_identity_context(
         character.id,
         transported.id,
         familiarity_delta=7,
-        trust_delta=3,
-        affinity_delta=-2,
+        trust_delta=60,
+        affinity_delta=-60,
     )
 
     context = build_context(
@@ -445,7 +445,22 @@ def test_active_simulated_player_has_private_identity_context(
 
     assert (
         "Relationship with player: "
-        "familiarity=7, trust=3, affinity=-2"
+        "familiarity=7, trust=60, affinity=-60"
+        in context
+    )
+
+    assert (
+        "Relationship behavior guidance "
+        "(private narrator constraint):"
+        in context
+    )
+
+    assert "Strong trust" in context
+
+    assert "Strong negative affinity" in context
+
+    assert (
+        "never override personality, goals, safety"
         in context
     )
 

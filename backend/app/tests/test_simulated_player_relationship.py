@@ -6,6 +6,7 @@ from app.db.models.event import WorldEvent
 from app.game.relationships.service import (
     get_character_simulated_player_relationship,
     record_simulated_player_interaction,
+    simulated_player_relationship_behavior_guidance,
 )
 from app.game.character.service import create_character
 from app.game.players.service import (
@@ -277,3 +278,50 @@ def test_simulated_player_relationship_change_is_evented(
         in event.payload_json
     )
     assert transported.id in event.payload_json
+
+def test_simulated_player_relationship_behavior_guidance(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Transported Relationship Behavior",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    transported = simulated_players_at_location(
+        db_session,
+        location.id,
+    )[0]
+
+    relationship = record_simulated_player_interaction(
+        db_session,
+        campaign.id,
+        character.id,
+        transported.id,
+        trust_delta=60,
+        affinity_delta=-60,
+    )
+
+    trust_guidance, affinity_guidance = (
+        simulated_player_relationship_behavior_guidance(
+            relationship
+        )
+    )
+
+    assert "Strong trust" in trust_guidance
+    assert "Strong negative affinity" in affinity_guidance
+
+    assert "personality" in trust_guidance
+    assert "without forcing hostility" in affinity_guidance

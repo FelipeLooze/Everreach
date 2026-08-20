@@ -199,3 +199,68 @@ def record_simulated_player_interaction(
     )
 
     return relationship
+
+def simulated_player_relationship_behavior_guidance(
+    relationship: CharacterSimulatedPlayerRelationship,
+) -> tuple[str, str]:
+    """
+    Derive private behavioral guidance from authoritative
+    relationship values.
+
+    These values influence behavior but never override
+    personality, goals, safety, interests, or free choice.
+    """
+
+    if relationship.trust <= -50:
+        trust_guidance = (
+            "Strong distrust: avoid relying on the player, "
+            "be guarded with vulnerable information, and "
+            "question the player's intentions when relevant."
+        )
+    elif relationship.trust <= -20:
+        trust_guidance = (
+            "Low trust: be cautious about relying on the player "
+            "or sharing vulnerable information without reason."
+        )
+    elif relationship.trust >= 50:
+        trust_guidance = (
+            "Strong trust: may rely on or confide in the player "
+            "more readily when doing so fits personality, goals, "
+            "safety, and circumstances."
+        )
+    elif relationship.trust >= 20:
+        trust_guidance = (
+            "Growing trust: may be somewhat more willing to rely "
+            "on the player or share personal information when justified."
+        )
+    else:
+        trust_guidance = (
+            "Neutral trust: do not apply a special trust or distrust bias."
+        )
+
+    if relationship.affinity <= -50:
+        affinity_guidance = (
+            "Strong negative affinity: interaction may be cold, irritated, "
+            "or reluctant, without forcing hostility or violence."
+        )
+    elif relationship.affinity <= -20:
+        affinity_guidance = (
+            "Negative affinity: tend toward a cooler, less welcoming "
+            "interaction when circumstances allow."
+        )
+    elif relationship.affinity >= 50:
+        affinity_guidance = (
+            "Strong positive affinity: interaction may be notably warm "
+            "and voluntarily engaged, without overriding other motives."
+        )
+    elif relationship.affinity >= 20:
+        affinity_guidance = (
+            "Positive affinity: tend toward a warmer and more voluntarily "
+            "engaged interaction when circumstances allow."
+        )
+    else:
+        affinity_guidance = (
+            "Neutral affinity: do not apply a special warmth or hostility bias."
+        )
+
+    return trust_guidance, affinity_guidance

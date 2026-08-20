@@ -29,6 +29,7 @@ from app.ai.memory_manager import get_relevant_memories
 from app.game.relationships.service import (
     get_character_npc_relationship,
     get_character_simulated_player_relationship,
+    simulated_player_relationship_behavior_guidance,
 )
 
 
@@ -460,6 +461,14 @@ def build_context(
         else None
     )
 
+    transported_relationship_guidance = (
+        simulated_player_relationship_behavior_guidance(
+            transported_relationship
+        )
+        if transported_relationship is not None
+        else ()
+    )
+
     features = (
         db.query(LocationFeature)
         .filter(
@@ -719,19 +728,23 @@ def build_context(
                         f"affinity={transported_relationship.affinity}"
                     )
                 ),
-                f"Current activity: {active_transported.activity}",
-                (
-                    "Conversation status: the transported person "
-                    "remains available in the current scene. "
-                    "The conversation may continue naturally."
-                    if active_transported_visible_now
-                    else (
-                        "Conversation status: this transported person "
-                        "participated in the action that just occurred "
-                        "but is no longer available in the current scene. "
-                        "Narrate the completed interaction, but do not "
-                        "continue the conversation afterward."
-                    )
+                *(
+                    [
+                        "Relationship behavior guidance "
+                        "(private narrator constraint):",
+                        *[
+                            f"- {guidance}"
+                            for guidance
+                            in transported_relationship_guidance
+                        ],
+                        (
+                            "- Relationship values influence behavior but "
+                            "never override personality, goals, safety, "
+                            "interests, circumstances, or free choice."
+                        ),
+                    ]
+                    if transported_relationship_guidance
+                    else []
                 ),
                 f"Current activity: {active_transported.activity}",
                 (

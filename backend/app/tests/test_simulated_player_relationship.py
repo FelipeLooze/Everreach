@@ -6,6 +6,7 @@ from app.db.models.event import WorldEvent
 from app.game.relationships.service import (
     get_character_simulated_player_relationship,
     record_simulated_player_interaction,
+    simulated_player_reencounter_weight,
     simulated_player_relationship_behavior_guidance,
 )
 from app.game.character.service import create_character
@@ -325,3 +326,25 @@ def test_simulated_player_relationship_behavior_guidance(
 
     assert "personality" in trust_guidance
     assert "without forcing hostility" in affinity_guidance
+
+def test_simulated_player_reencounter_weight_uses_relationship():
+    assert simulated_player_reencounter_weight(None) == 10
+
+    relationship = CharacterSimulatedPlayerRelationship(
+        campaign_id="campaign_test",
+        character_id="character_test",
+        simulated_player_id="player_test",
+        trust=60,
+        affinity=60,
+    )
+
+    assert simulated_player_reencounter_weight(
+        relationship
+    ) == 21
+
+    relationship.trust = -60
+    relationship.affinity = -60
+
+    assert simulated_player_reencounter_weight(
+        relationship
+    ) == 2    

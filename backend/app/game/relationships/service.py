@@ -264,3 +264,40 @@ def simulated_player_relationship_behavior_guidance(
         )
 
     return trust_guidance, affinity_guidance
+
+def simulated_player_reencounter_weight(
+    relationship: CharacterSimulatedPlayerRelationship | None,
+) -> int:
+    """
+    Weight a socially plausible reencounter without affecting
+    physical presence, travel, availability, or eligibility.
+
+    Affinity has the stronger influence because it more directly
+    affects willingness to engage socially. Trust is a smaller
+    modifier.
+    """
+
+    if relationship is None:
+        return 10
+
+    weight = 10
+
+    if relationship.affinity <= -50:
+        weight -= 6
+    elif relationship.affinity <= -20:
+        weight -= 3
+    elif relationship.affinity >= 50:
+        weight += 8
+    elif relationship.affinity >= 20:
+        weight += 4
+
+    if relationship.trust <= -50:
+        weight -= 2
+    elif relationship.trust <= -20:
+        weight -= 1
+    elif relationship.trust >= 50:
+        weight += 3
+    elif relationship.trust >= 20:
+        weight += 1
+
+    return max(1, weight)

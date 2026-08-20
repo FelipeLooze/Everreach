@@ -8,6 +8,10 @@ from app.db.models.simulated_player_arrival import (
     SimulatedPlayerArrivalLocation,
 )
 from app.game.time.clock import get_world_time
+from app.game.relationships.service import (
+    get_character_simulated_player_relationship,
+    simulated_player_reencounter_weight,
+)
 from app.core.enums import (
     EventType,
     SimulatedPlayerActivity,
@@ -425,9 +429,31 @@ def select_known_simulated_player_for_reencounter(
     if not candidates:
         return None
 
+    weighted_candidates: list[SimulatedPlayer] = []
+
+    for player in candidates:
+        relationship = (
+            get_character_simulated_player_relationship(
+                db,
+                campaign_id,
+                character_id,
+                player.id,
+            )
+        )
+
+        weight = simulated_player_reencounter_weight(
+            relationship
+        )
+
+        weighted_candidates.extend(
+            [player] * weight
+        )
+
     random_source = rng or random.Random()
 
-    return random_source.choice(candidates)
+    return random_source.choice(
+        weighted_candidates
+    )
 
 
 def meet_simulated_player(

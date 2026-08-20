@@ -2,6 +2,9 @@ from app.core.enums import SimulatedPlayerActivity
 from app.ai.llm_service import LLMService
 from app.game.game_state import build_game_state
 from app.game.character.service import create_character
+from app.game.relationships.service import (
+    record_simulated_player_interaction,
+)
 from app.game.players.service import (
     meet_simulated_player,
     select_existing_simulated_player_for_encounter,
@@ -36,6 +39,27 @@ class _FailIfCalledLLM(LLMService):
 class _ChooseLast:
     def choice(self, candidates):
         return candidates[-1]
+
+class _ChooseMostFrequent:
+    def __init__(self) -> None:
+        self.counts: dict[str, int] = {}
+
+    def choice(self, candidates):
+        for candidate in candidates:
+            self.counts[candidate.id] = (
+                self.counts.get(
+                    candidate.id,
+                    0,
+                )
+                + 1
+            )
+
+        return max(
+            candidates,
+            key=lambda candidate: self.counts[
+                candidate.id
+            ],
+        )
 
 def test_known_present_transportee_can_be_selected_for_reencounter(
     db_session,
@@ -87,6 +111,102 @@ def test_known_present_transportee_can_be_selected_for_reencounter(
     assert selected is not None
     assert selected.id == known_player.id
     assert selected.id != unknown_player.id
+
+
+def test_relationship_biases_plausible_reencounter_without_excluding_anyone(
+    db_session,
+):
+    campaign = create_campaign(
+        db_session,
+        "Relationship Reencounter Bias",
+    )
+
+    region, location = seed_initial_region(
+        db_session,
+        campaign.id,
+    )
+
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Hero",
+        region.id,
+        location.id,
+    )
+
+    players = simulated_players_at_location(
+        db_session,
+        location.id,
+    )
+
+    assert len(players) >= 2
+
+    disliked_player = players[0]
+    liked_player = players[1]
+
+    meet_simulated_player(
+        db_session,
+        campaign.id,
+        character.id,
+        disliked_player.id,
+    )
+
+    meet_simulated_player(
+        db_session,
+        campaign.id,
+        character.id,
+        liked_player.id,
+    )
+
+    record_simulated_player_interaction(
+        db_session,
+        campaign.id,
+        character.id,
+        disliked_player.id,
+        trust_delta=-60,
+        affinity_delta=-60,
+    )
+
+    record_simulated_player_interaction(
+        db_session,
+        campaign.id,
+        character.id,
+        liked_player.id,
+        trust_delta=60,
+        affinity_delta=60,
+    )
+
+    chooser = _ChooseMostFrequent()
+
+    selected = (
+        select_known_simulated_player_for_reencounter(
+            db_session,
+            campaign.id,
+            character.id,
+            location.id,
+            rng=chooser,
+        )
+    )
+
+    assert selected is not None
+    assert selected.id == liked_player.id
+
+    assert (
+        chooser.counts[liked_player.id]
+        > chooser.counts[disliked_player.id]
+    )
+
+    assert chooser.counts[disliked_player.id] > 0
+
+    assert (
+        disliked_player.location_id
+        == location.id
+    )
+    assert (
+        liked_player.location_id
+        == location.id
+    )
+
 
 def test_known_transportee_in_transit_cannot_be_reencountered(
     db_session,

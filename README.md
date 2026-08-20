@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9H concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A–9I concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -330,11 +330,15 @@ npm run build
   deslocamentos alteram uma faixa de distância por ação; e fugir usa `d20 + Agilidade` contra
   dificuldade 12, encerrando o encontro como fuga do protagonista ou vitória quando o último
   inimigo abandona o combate. Todas cobram Stamina, persistem custos, alcance e rolagens e são
-  idempotentes. Recuperação e decisões autônomas seguem reservadas.
+  idempotentes. A 9I centraliza o descanso em um resolvedor autoritativo: um descanso curto leva
+  60 minutos e recupera 25% do HP máximo, 25% da Mana máxima e 50% da Stamina máxima, sempre
+  limitado pelos máximos atuais. A recuperação é proibida durante combate ou após a morte, mantém
+  snapshots persistentes, registra o resultado no Event Log e não recupera recursos nem avança o
+  relógio novamente em retries da mesma ação. Decisões autônomas seguem reservadas.
 
 ## Fora do MVP
 
-- Combate completo com recuperação e decisões de inimigos (Fase 9 em andamento; 9A–9H prontas).
+- Combate completo com decisões de inimigos (Fase 9 em andamento; 9A–9I prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

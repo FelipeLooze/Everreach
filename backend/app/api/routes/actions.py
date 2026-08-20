@@ -6,6 +6,7 @@ from app.api.dependencies.llm import get_llm_service
 from app.api.serializers import to_game_state_response
 from app.db.database import get_db
 from app.game import engine
+from app.game.combat.recovery import CombatRecoveryError
 from app.game.game_state import build_game_state
 from app.schemas.action import ActionRequest, ActionResponse
 
@@ -33,6 +34,8 @@ def post_action(
     except engine.CharacterDeadError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except engine.WorldNotStartedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except CombatRecoveryError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

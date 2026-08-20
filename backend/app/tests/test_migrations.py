@@ -63,6 +63,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_conditions",
             "combat_technique_profiles",
             "combat_tactical_actions",
+            "character_recoveries",
         }.issubset(tables)
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -181,6 +182,36 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "ix_combat_condition_participant_active"
             in combat_condition_indexes
         )
+        recovery_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("character_recoveries")
+        }
+        recovery_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints(
+                "character_recoveries"
+            )
+        }
+        recovery_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes("character_recoveries")
+        }
+        assert {
+            "campaign_id",
+            "character_id",
+            "recovery_key",
+            "recovery_type",
+            "duration_minutes",
+            "started_world_minute",
+            "hp_before",
+            "hp_after",
+            "mana_before",
+            "mana_after",
+            "stamina_before",
+            "stamina_after",
+        }.issubset(recovery_columns)
+        assert "uq_character_recovery_key" in recovery_constraints
+        assert "ix_character_recovery_campaign_time" in recovery_indexes
         combat_technique_columns = {
             item["name"]
             for item in inspect(engine).get_columns("combat_technique_profiles")

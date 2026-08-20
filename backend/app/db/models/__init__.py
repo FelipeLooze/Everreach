@@ -41,6 +41,7 @@ from app.db.models.quest import (
     Quest,
     QuestObjective,
 )
+from app.db.models.recovery import CharacterRecovery
 from app.db.models.simulated_player_arrival import (
     SimulatedPlayerArrivalLocation,
     ScheduledSimulatedPlayerArrival,
@@ -119,6 +120,7 @@ __all__ = [
     "CharacterQuestObjective",
     "Quest",
     "QuestObjective",
+    "CharacterRecovery",
     "Region",
     "CharacterNPCRelationship",
     "CharacterSimulatedPlayerRelationship",

@@ -19,6 +19,7 @@ from app.db.models.location import CharacterLocationDiscovery, Location
 from app.db.models.quest import QuestObjective
 from app.game import game_state
 from app.game.combat import service as combat_service
+from app.game.combat.recovery import recover_character
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
 from app.game.quests import service as quests_service
@@ -146,6 +147,7 @@ def resolve_action(
             character,
             intent,
             state,
+            action_key=resolved_action_key,
         )
 
     # Capture who this action involved before advancing world time.
@@ -355,7 +357,15 @@ def _looks_like_dialogue(text: str) -> bool:
     )
 
 
-def _apply_intent(db: Session, campaign_id: str, character: Character, intent: Intent, state) -> tuple[str, int]:
+def _apply_intent(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    intent: Intent,
+    state,
+    *,
+    action_key: str | None = None,
+) -> tuple[str, int]:
     if intent.type == ActionIntentType.MOVE:
         return _handle_move(db, campaign_id, character, intent)
     if intent.type == ActionIntentType.TALK:
@@ -368,7 +378,12 @@ def _apply_intent(db: Session, campaign_id: str, character: Character, intent: I
             intent,
         )
     if intent.type == ActionIntentType.REST:
-        return _handle_rest(db, campaign_id, character)
+        return _handle_rest(
+            db,
+            campaign_id,
+            character,
+            action_key=action_key,
+        )
     if intent.type == ActionIntentType.WAIT:
         return f"{character.name} espera, deixando o tempo passar.", 15
     if intent.type == ActionIntentType.SKILL_CHECK:
@@ -583,11 +598,23 @@ def _active_quests_for(db: Session, character_id: str):
     return active
 
 
-def _handle_rest(db: Session, campaign_id: str, character: Character) -> tuple[str, int]:
-    character.stamina_current = min(character.stamina_max, character.stamina_current + 10)
-    character.hp_current = min(character.hp_max, character.hp_current + 5)
-    log_event(db, campaign_id, EventType.PLAYER_RESTED, actor_type="character", actor_id=character.id)
-    return f"{character.name} descansa, recuperando um pouco de stamina e vida.", 60
+def _handle_rest(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    *,
+    action_key: str | None = None,
+) -> tuple[str, int]:
+    result = recover_character(
+        db,
+        campaign_id,
+        character,
+        recovery_key=action_key or generate_id("action"),
+    )
+    return (
+        result.mechanical_summary,
+        0 if result.replayed else result.recovery.duration_minutes,
+    )
 
 
 def _handle_skill_check(db: Session, campaign_id: str, character: Character, intent: Intent) -> tuple[str, int]:

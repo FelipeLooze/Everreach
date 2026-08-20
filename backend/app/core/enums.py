@@ -142,6 +142,10 @@ class CombatTacticalActionType(StrEnum):
     FLEE = "FLEE"
 
 
+class RecoveryType(StrEnum):
+    SHORT_REST = "SHORT_REST"
+
+
 class ResourceGrowthSource(StrEnum):
     ATTRIBUTE_DEVELOPMENT = "ATTRIBUTE_DEVELOPMENT"
     PHYSICAL_CONDITIONING = "PHYSICAL_CONDITIONING"

@@ -30,6 +30,7 @@ from app.db.models.location import CharacterLocationDiscovery, Location, Locatio
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
+from app.db.models.recovery import CharacterRecovery
 from app.db.models.region import Region
 from app.db.models.relationship import (
     CharacterNPCRelationship,
@@ -146,6 +147,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     ).delete(synchronize_session=False)
     db.query(CharacterResourceGrowth).filter(
         CharacterResourceGrowth.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(CharacterRecovery).filter(
+        CharacterRecovery.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(InventoryItem).filter(InventoryItem.character_id.in_(character_ids)).delete(synchronize_session=False)
     db.query(CharacterAttribute).filter(CharacterAttribute.character_id.in_(character_ids)).delete(

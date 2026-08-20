@@ -1,7 +1,7 @@
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.attribute import AttributeDefinition, AttributeEvidenceRecord
 from app.db.models.character import Character, CharacterAttribute
-from app.db.models.combat import CombatEncounter, CombatParticipant
+from app.db.models.combat import CombatEncounter, CombatParticipant, CombatTurn
 from app.db.models.character_class import (
     CharacterClassOffer,
     ClassDefinition,
@@ -80,6 +80,7 @@ __all__ = [
     "CharacterAttribute",
     "CombatEncounter",
     "CombatParticipant",
+    "CombatTurn",
     "ClassDefinition",
     "ClassDefinitionDomain",
     "CharacterClassOffer",

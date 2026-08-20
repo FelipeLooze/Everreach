@@ -58,7 +58,21 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "technique_use_records",
             "combat_encounters",
             "combat_participants",
+            "combat_turns",
         }.issubset(tables)
+        combat_encounter_columns = {
+            item["name"] for item in inspect(engine).get_columns("combat_encounters")
+        }
+        combat_participant_columns = {
+            item["name"] for item in inspect(engine).get_columns("combat_participants")
+        }
+        assert "current_turn_order" in combat_encounter_columns
+        assert {
+            "initiative_roll",
+            "initiative_modifier",
+            "initiative_score",
+            "turn_order",
+        }.issubset(combat_participant_columns)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
         }

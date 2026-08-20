@@ -155,6 +155,14 @@ def add_participant(
         participant.joined_world_minute = world_minute
         participant.left_world_minute = None
         participant.left_reason = ""
+        participant.initiative_roll = None
+        participant.initiative_modifier = None
+        participant.initiative_score = None
+        participant.turn_order = None
+    if encounter.round_number > 0:
+        from app.game.combat.turns import enroll_late_participant
+
+        enroll_late_participant(db, encounter, participant)
     log_event(
         db,
         encounter.campaign_id,
@@ -192,6 +200,10 @@ def remove_participant(
         encounter.campaign_id,
     ).total_minutes()
     participant.left_reason = normalized_reason
+    if encounter.round_number > 0:
+        from app.game.combat.turns import skip_current_turn_if_inactive
+
+        skip_current_turn_if_inactive(db, encounter)
     log_event(
         db,
         encounter.campaign_id,
@@ -232,6 +244,10 @@ def end_encounter(
     encounter.status = status.value
     encounter.ended_world_minute = world_minute
     encounter.end_reason = normalized_reason
+    if encounter.round_number > 0:
+        from app.game.combat.turns import close_active_turn
+
+        close_active_turn(db, encounter)
     for participant in list_active_participants(db, encounter.id):
         participant.active = False
         participant.left_world_minute = world_minute

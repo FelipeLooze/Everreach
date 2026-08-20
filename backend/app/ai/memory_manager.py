@@ -69,6 +69,8 @@ def create_memory(
 
 def _event_subject(payload: dict, event: WorldEvent) -> str:
     for key, prefix in (
+        ("simulated_player_id", "simulated_player"),
+        ("group_id", "simulated_player_group"),
         ("npc_id", "npc"),
         ("connection_id", "connection"),
         ("to_location_id", "location"),
@@ -141,6 +143,17 @@ def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
         return f"{actor_name} alcançou o Level {payload.get('new_level', '?')}."
     if event_type == EventType.PLAYER_DIED.value:
         return f"{actor_name} morreu permanentemente."
+    if event_type == EventType.SIMULATED_PLAYER_DIED.value:
+        return (
+            f"{payload.get('name', 'Uma pessoa transportada')} morreu permanentemente. "
+            f"Causa: {payload.get('cause', 'desconhecida')}."
+        )
+    if event_type == EventType.SIMULATED_PLAYER_LEVELED_UP.value:
+        return f"Alcançou o Level {payload.get('new_level', '?')}."
+    if event_type == EventType.SIMULATED_PLAYER_GROUP_CREATED.value:
+        return "Formou um grupo temporário de pessoas transportadas."
+    if event_type == EventType.SIMULATED_PLAYER_GROUP_DISSOLVED.value:
+        return "Um grupo temporário de pessoas transportadas foi dissolvido."
     if event_type == EventType.BOSS_DISCOVERED.value:
         return f"{actor_name} descobriu uma ameaça importante."
     if event_type == EventType.BOSS_DEFEATED.value:

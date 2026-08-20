@@ -5,10 +5,12 @@ from app.simulation.results import WorldTickResult
 from app.simulation import (
     arrival_simulation,
     development_simulation,
+    group_simulation,
     knowledge_simulation,
     npc_simulation,
     player_simulation,
 )
+from app.simulation.scope import build_simulation_scope
 
 
 def tick(
@@ -28,17 +30,28 @@ def tick(
         minutes,
     )
 
+    # Arrivals may change abstract population, so scope is captured afterward.
+    scope = build_simulation_scope(db, campaign_id)
+
+    group_result = group_simulation.tick(
+        db,
+        campaign_id,
+        minutes,
+    )
+
     player_result = player_simulation.tick(
         db,
         campaign_id,
         minutes,
         rng=rng,
+        scope=scope,
     )
 
     npc_result = npc_simulation.tick(
         db,
         campaign_id,
         minutes,
+        scope=scope,
     )
 
     development_result = development_simulation.tick(
@@ -51,6 +64,7 @@ def tick(
         db,
         campaign_id,
         minutes,
+        scope=scope,
     )
 
     return WorldTickResult(
@@ -62,6 +76,7 @@ def tick(
         ),
         simulated_player_moves=player_result.moved,
         simulated_player_training=player_result.trained,
+        simulated_player_groups_formed=group_result.groups_formed,
         npc_changes=npc_result.changes,
         world_development_changes=development_result.changes,
         knowledge_social_opportunities=(
@@ -69,5 +84,12 @@ def tick(
         ),
         knowledge_propagations=(
             knowledge_result.propagations
+        ),
+        detailed_locations=len(scope.detailed_location_ids),
+        materialized_simulated_players=(
+            scope.materialized_simulated_players
+        ),
+        abstract_simulated_players=(
+            scope.abstract_simulated_players
         ),
     )

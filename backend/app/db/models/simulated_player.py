@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
@@ -16,14 +16,29 @@ class SimulatedPlayer(Base):
     it has its own goals and keeps existing/acting while the protagonist is elsewhere."""
 
     __tablename__ = "simulated_players"
+    __table_args__ = (
+        Index(
+            "ix_simulated_players_campaign_location_status",
+            "campaign_id",
+            "location_id",
+            "status",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("simp"))
     campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     level: Mapped[int] = mapped_column(Integer, default=0)
+    xp: Mapped[float] = mapped_column(Float, default=0)
     location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
 
     archetype: Mapped[str] = mapped_column(String, default=SimulatedPlayerArchetype.EXPLORER)
+    risk_tolerance: Mapped[str] = mapped_column(
+        String,
+        default="BALANCED",
+        server_default="BALANCED",
+        nullable=False,
+    )
     goal: Mapped[str] = mapped_column(String, default="")
 
     personality: Mapped[str | None] = mapped_column(
@@ -118,3 +133,26 @@ class SimulatedPlayerPopulation(Base):
         default=0,
         nullable=False,
     )
+
+
+class SimulatedPlayerSkill(Base):
+    __tablename__ = "simulated_player_skills"
+    __table_args__ = (
+        UniqueConstraint(
+            "simulated_player_id",
+            "name",
+            name="uq_simulated_player_skill_name",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String,
+        primary_key=True,
+        default=lambda: generate_id("spskill"),
+    )
+    simulated_player_id: Mapped[str] = mapped_column(
+        ForeignKey("simulated_players.id"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    mastery: Mapped[float] = mapped_column(Float, default=0, nullable=False)

@@ -6,6 +6,10 @@ class SimulatedPlayerArrivalSimulationResult:
     arrivals: int = 0
 
 @dataclass(frozen=True)
+class SimulatedPlayerGroupSimulationResult:
+    groups_formed: int = 0
+
+@dataclass(frozen=True)
 class PlayerSimulationResult:
     travel_started: int = 0
     moved: int = 0
@@ -40,10 +44,14 @@ class WorldTickResult:
     simulated_player_travel_started: int = 0
     simulated_player_moves: int = 0
     simulated_player_training: int = 0
+    simulated_player_groups_formed: int = 0
     npc_changes: int = 0
     world_development_changes: int = 0
     knowledge_social_opportunities: int = 0
     knowledge_propagations: int = 0
+    detailed_locations: int = 0
+    materialized_simulated_players: int = 0
+    abstract_simulated_players: int = 0
 
     @property
     def total_changes(self) -> int:
@@ -52,6 +60,7 @@ class WorldTickResult:
             + self.simulated_player_travel_started
             + self.simulated_player_moves
             + self.simulated_player_training
+            + self.simulated_player_groups_formed
             + self.npc_changes
             + self.world_development_changes
             + self.knowledge_propagations

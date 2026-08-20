@@ -31,6 +31,7 @@ from app.game.relationships.service import (
     get_character_simulated_player_relationship,
     simulated_player_relationship_behavior_guidance,
 )
+from app.game.players.groups import active_group_for_player
 
 
 logger = get_logger("context")
@@ -468,6 +469,11 @@ def build_context(
         if transported_relationship is not None
         else ()
     )
+    transported_group = (
+        active_group_for_player(db, active_transported.id)
+        if active_transported is not None
+        else None
+    )
 
     features = (
         db.query(LocationFeature)
@@ -717,6 +723,11 @@ def build_context(
                 (
                     "Current personal goal: "
                     f"{_clip(active_transported.goal or 'unknown', 500)}"
+                ),
+                (
+                    f"Mechanical profile: Level {active_transported.level}; "
+                    f"risk tolerance={active_transported.risk_tolerance}; "
+                    f"group_id={transported_group.id if transported_group else 'none'}"
                 ),
                 (
                     "Relationship with player: not registered"

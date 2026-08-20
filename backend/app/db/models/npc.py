@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import generate_id
@@ -10,6 +10,14 @@ class NPC(Base):
     They never know they are inside a game."""
 
     __tablename__ = "npcs"
+    __table_args__ = (
+        Index(
+            "ix_npcs_campaign_location_alive",
+            "campaign_id",
+            "location_id",
+            "alive",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("npc"))
     campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)

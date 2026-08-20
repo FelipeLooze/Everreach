@@ -31,12 +31,25 @@ from app.game.travel.service import calculate_travel_minutes
 from app.services.event_log import log_event
 from app.simulation.cadence import boundary_minutes_crossed
 from app.simulation.results import PlayerSimulationResult
+from app.simulation.scope import (
+    SimulationScope,
+    SimulationTier,
+    build_simulation_scope,
+)
+from app.game.players.goals import complete_goal
+from app.game.players.groups import (
+    active_group_for_player,
+    start_group_travel,
+    synchronize_group_location,
+)
+from app.game.players.knowledge import gather_local_knowledge
+from app.game.players.progression import apply_training
+from app.game.players.risk import acceptable_connections
 
 
 ACTION_CHANCE_PER_HOUR = 0.5
 ACTION_INTERVAL_MINUTES = 60
-ACTION_CHANCE_PER_HOUR = 0.5
-ACTION_INTERVAL_MINUTES = 60
+RELEVANT_ACTION_INTERVAL_MINUTES = 6 * 60
 MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR
 
 
@@ -71,6 +84,7 @@ def tick(
     campaign_id: str,
     minutes: int,
     rng: random.Random | None = None,
+    scope: SimulationScope | None = None,
 ) -> PlayerSimulationResult:
     """Advance autonomous transported people.
 
@@ -86,10 +100,16 @@ def tick(
         campaign_id,
     ).total_minutes()
 
-    opportunity_world_minutes = boundary_minutes_crossed(
+    detailed_opportunity_world_minutes = boundary_minutes_crossed(
         end_world_minute,
         minutes,
         ACTION_INTERVAL_MINUTES,
+    )
+
+    relevant_opportunity_world_minutes = boundary_minutes_crossed(
+        end_world_minute,
+        minutes,
+        RELEVANT_ACTION_INTERVAL_MINUTES,
     )
 
     r = rng or random.Random()
@@ -105,149 +125,59 @@ def tick(
         .all()
     )
 
+    active_scope = scope or build_simulation_scope(
+        db,
+        campaign_id,
+    )
+
+    detailed_players = [
+        player
+        for player in players
+        if active_scope.simulated_player_tier(player.location_id)
+        == SimulationTier.DETAILED
+    ]
+    relevant_players = [
+        player
+        for player in players
+        if active_scope.simulated_player_tier(player.location_id)
+        == SimulationTier.RELEVANT
+    ]
+
     travel_started = 0
     moved = 0
     trained = 0
 
-    for opportunity_world_minute in opportunity_world_minutes:
-        for player in players:
-            # Someone whose arrival happened before this opportunity
-            # is already physically at the destination.
+    schedules = (
+        (
+            detailed_players,
+            detailed_opportunity_world_minutes,
+            ACTION_CHANCE_PER_HOUR,
+        ),
+        (
+            relevant_players,
+            relevant_opportunity_world_minutes,
+            _aggregated_action_chance(
+                RELEVANT_ACTION_INTERVAL_MINUTES
+            ),
+        ),
+    )
 
-            if _complete_travel_if_due(
-                db,
-                campaign_id,
-                player,
-                opportunity_world_minute,
-            ):
-                moved += 1
-
-            _sync_temporary_activity(
-                player,
-                opportunity_world_minute,
-            )
-
-            _sync_established_routine(
-                db,
-                player,
-                opportunity_world_minute,
-            )
-
-            _sync_rest_activity(
-                player,
-                opportunity_world_minute,
-            )
-
-            # A person still in transit cannot perform a local activity.
-            if _is_traveling(player):
-                continue
-
-            # Resting people do not perform autonomous actions.
-            if (
-                player.activity
-                == SimulatedPlayerActivity.RESTING.value
-            ):
-                continue
-
-            # An ongoing temporary activity owns this opportunity.
-            # TRAINING produces its normal mechanical training effect.
-            # Other temporary activities are persistent state for now.
-            if _temporary_activity_is_active(
-                player,
-                opportunity_world_minute,
-            ):
-                if (
-                    player.activity
-                    == SimulatedPlayerActivity.TRAINING.value
-                ):
-                    _train(
-                        db,
-                        campaign_id,
-                        player,
-                        opportunity_world_minute,
-                    )
-                    trained += 1
-
-                continue
-
-            if r.random() > ACTION_CHANCE_PER_HOUR:
-                continue
-
-            if (
-                player.goal_type
-                == SimulatedPlayerGoalType.TRAIN_SELF
-            ):
-                player.activity = (
-                    SimulatedPlayerActivity.TRAINING.value
-                )
-
-                _train(
+    for tier_players, opportunity_minutes, action_chance in schedules:
+        for opportunity_world_minute in opportunity_minutes:
+            for player in tier_players:
+                result = _process_player_opportunity(
                     db,
                     campaign_id,
                     player,
                     opportunity_world_minute,
-                )
-
-                trained += 1
-                continue
-
-            if player.goal_type in (
-                SimulatedPlayerGoalType.EXPLORE_REGION,
-                SimulatedPlayerGoalType.SEEK_DANGER,
-            ):
-                if _try_start_travel(
-                    db,
-                    campaign_id,
-                    player,
                     r,
-                    opportunity_world_minute,
-                ):
-                    travel_started += 1
-
-                continue
-
-            if (
-                player.goal_type
-                == SimulatedPlayerGoalType.GATHER_KNOWLEDGE
-            ):
-                # There is no dedicated autonomous knowledge-gathering
-                # action yet. Do not invent one or fall back to an
-                # unrelated archetype action.
-                continue
-
-            if player.archetype in (
-                SimulatedPlayerArchetype.EXPLORER,
-                SimulatedPlayerArchetype.ADVENTURER,
-            ):
-                if _try_start_travel(
-                    db,
-                    campaign_id,
-                    player,
-                    r,
-                    opportunity_world_minute,
-                ):
-                    travel_started += 1
-
-            elif (
-                player.archetype
-                == SimulatedPlayerArchetype.TRAINER
-            ):
-                player.activity = (
-                    SimulatedPlayerActivity.TRAINING.value
+                    action_chance,
                 )
+                travel_started += result.travel_started
+                moved += result.moved
+                trained += result.trained
 
-                _train(
-                    db,
-                    campaign_id,
-                    player,
-                    opportunity_world_minute,
-                )
-                trained += 1
-
-            # SOCIAL does not choose an autonomous action in this MVP.
-
-    # Arrival is independent from hourly action opportunities.
-    # This matters for short ticks that cross no hour boundary.
+    # Arrival and local state expiry are independent from action cadence.
     for player in players:
         if _complete_travel_if_due(
             db,
@@ -257,22 +187,115 @@ def tick(
         ):
             moved += 1
 
-        _sync_temporary_activity(
-            player,
-            end_world_minute,
-        )
+        _sync_temporary_activity(player, end_world_minute)
+        _sync_established_routine(db, player, end_world_minute)
+        _sync_rest_activity(player, end_world_minute)
 
-        _sync_established_routine(
+    return PlayerSimulationResult(
+        travel_started=travel_started,
+        moved=moved,
+        trained=trained,
+    )
+
+
+def _aggregated_action_chance(interval_minutes: int) -> float:
+    """Equivalent chance of at least one action over an aggregate interval."""
+    intervals = interval_minutes / ACTION_INTERVAL_MINUTES
+    return 1 - (1 - ACTION_CHANCE_PER_HOUR) ** intervals
+
+
+def _process_player_opportunity(
+    db: Session,
+    campaign_id: str,
+    player: SimulatedPlayer,
+    opportunity_world_minute: int,
+    r: random.Random,
+    action_chance: float,
+) -> PlayerSimulationResult:
+    moved = 0
+    trained = 0
+    travel_started = 0
+
+    # Someone whose arrival happened before this opportunity is already
+    # physically at the destination.
+    if _complete_travel_if_due(
+        db,
+        campaign_id,
+        player,
+        opportunity_world_minute,
+    ):
+        moved = 1
+
+    _sync_temporary_activity(player, opportunity_world_minute)
+    _sync_established_routine(db, player, opportunity_world_minute)
+    _sync_rest_activity(player, opportunity_world_minute)
+
+    if _is_traveling(player):
+        return PlayerSimulationResult(moved=moved)
+
+    if player.activity == SimulatedPlayerActivity.RESTING.value:
+        return PlayerSimulationResult(moved=moved)
+
+    if _temporary_activity_is_active(player, opportunity_world_minute):
+        if player.activity == SimulatedPlayerActivity.TRAINING.value:
+            _train(db, campaign_id, player, opportunity_world_minute)
+            trained = 1
+
+        return PlayerSimulationResult(moved=moved, trained=trained)
+
+    if r.random() > action_chance:
+        return PlayerSimulationResult(moved=moved)
+
+    if player.goal_type == SimulatedPlayerGoalType.TRAIN_SELF:
+        player.activity = SimulatedPlayerActivity.TRAINING.value
+        _train(db, campaign_id, player, opportunity_world_minute)
+        return PlayerSimulationResult(moved=moved, trained=1)
+
+    if player.goal_type in (
+        SimulatedPlayerGoalType.EXPLORE_REGION,
+        SimulatedPlayerGoalType.SEEK_DANGER,
+    ):
+        if _try_start_travel(
             db,
+            campaign_id,
             player,
-            end_world_minute,
+            r,
+            opportunity_world_minute,
+        ):
+            travel_started = 1
+
+        return PlayerSimulationResult(
+            travel_started=travel_started,
+            moved=moved,
         )
 
-        _sync_rest_activity(
-            player,
-            end_world_minute,
-        )
+    if player.goal_type == SimulatedPlayerGoalType.GATHER_KNOWLEDGE:
+        if gather_local_knowledge(db, player):
+            complete_goal(
+                db,
+                player,
+                occurred_world_minute=opportunity_world_minute,
+            )
+        return PlayerSimulationResult(moved=moved)
 
+    if player.archetype in (
+        SimulatedPlayerArchetype.EXPLORER,
+        SimulatedPlayerArchetype.ADVENTURER,
+    ):
+        if _try_start_travel(
+            db,
+            campaign_id,
+            player,
+            r,
+            opportunity_world_minute,
+        ):
+            travel_started = 1
+    elif player.archetype == SimulatedPlayerArchetype.TRAINER:
+        player.activity = SimulatedPlayerActivity.TRAINING.value
+        _train(db, campaign_id, player, opportunity_world_minute)
+        trained = 1
+
+    # SOCIAL does not choose an autonomous action in this MVP.
     return PlayerSimulationResult(
         travel_started=travel_started,
         moved=moved,
@@ -632,26 +655,7 @@ def _complete_goal_if_satisfied(
     else:
         return False
 
-    completed_goal_type = player.goal_type
-    completed_goal_subject = player.goal_subject
-    completed_goal_description = player.goal
-
-    player.goal_type = SimulatedPlayerGoalType.NONE
-    player.goal_subject = None
-
-    log_event(
-        db,
-        campaign_id,
-        EventType.SIMULATED_PLAYER_GOAL_COMPLETED,
-        actor_type="simulated_player",
-        actor_id=player.id,
-        payload={
-            "goal_type": completed_goal_type,
-            "goal_subject": completed_goal_subject,
-            "goal": completed_goal_description,
-        },
-        occurred_world_minute=world_minute,
-    )
+    complete_goal(db, player, occurred_world_minute=world_minute)
 
     return True
 
@@ -835,8 +839,13 @@ def _try_start_travel(
         campaign_id,
         player,
     )
+    connections = acceptable_connections(player, connections)
 
     if not connections:
+        return False
+
+    group = active_group_for_player(db, player.id) if db is not None else None
+    if group is not None and group.leader_id != player.id:
         return False
 
     connection = _select_travel_connection(
@@ -846,6 +855,14 @@ def _try_start_travel(
         connections,
         r,
     )
+
+    if group is not None:
+        return start_group_travel(
+            db,
+            group,
+            connection,
+            occurred_world_minute=opportunity_world_minute,
+        )
 
     travel_minutes = calculate_travel_minutes(
         connection
@@ -927,6 +944,7 @@ def _complete_travel_if_due(
     connection_id = (
         player.travel_connection_id
     )
+    connection = db.get(LocationConnection, connection_id) if connection_id else None
 
     player.location_id = destination_id
 
@@ -958,6 +976,21 @@ def _complete_travel_if_due(
         arrival_world_minute,
     )
 
+    if (
+        player.goal_type == SimulatedPlayerGoalType.SEEK_DANGER.value
+        and connection is not None
+    ):
+        required_danger = 3
+        if player.goal_subject and player.goal_subject.startswith("danger:"):
+            try:
+                required_danger = int(player.goal_subject.removeprefix("danger:"))
+            except ValueError:
+                pass
+        if connection.danger >= required_danger:
+            complete_goal(db, player, occurred_world_minute=arrival_world_minute)
+
+    synchronize_group_location(db, player.id)
+
     return True
 
 
@@ -978,3 +1011,24 @@ def _train(
             opportunity_world_minute
         ),
     )
+    target_level = player.level + 1
+    if (
+        player.goal_type == SimulatedPlayerGoalType.TRAIN_SELF.value
+        and player.goal_subject
+        and player.goal_subject.startswith("level:")
+    ):
+        try:
+            target_level = int(player.goal_subject.removeprefix("level:"))
+        except ValueError:
+            pass
+    apply_training(
+        db,
+        campaign_id,
+        player,
+        occurred_world_minute=opportunity_world_minute,
+    )
+    if (
+        player.goal_type == SimulatedPlayerGoalType.TRAIN_SELF.value
+        and player.level >= target_level
+    ):
+        complete_goal(db, player, occurred_world_minute=opportunity_world_minute)

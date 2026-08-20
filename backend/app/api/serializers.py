@@ -14,6 +14,7 @@ from app.schemas.game_state import (
     RegionSummary,
     WorldTimeResponse,
 )
+from app.game.players.groups import active_group_for_player
 
 
 def to_game_state_response(
@@ -99,7 +100,15 @@ def to_game_state_response(
                 id=p.id,
                 name=p.name,
                 level=p.level,
+                xp=p.xp,
                 archetype=p.archetype,
+                risk_tolerance=p.risk_tolerance,
+                goal=p.goal,
+                group_id=(
+                    group.id
+                    if (group := active_group_for_player(db, p.id))
+                    else None
+                ),
             )
             for p in state.nearby_simulated_players
         ],

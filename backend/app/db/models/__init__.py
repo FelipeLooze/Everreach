@@ -27,10 +27,16 @@ from app.db.models.region import Region
 from app.db.models.relationship import (
     CharacterNPCRelationship,
     CharacterSimulatedPlayerRelationship,
+    SimulatedPlayerRelationship,
 )
 from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
+    SimulatedPlayerSkill,
+)
+from app.db.models.simulated_player_group import (
+    SimulatedPlayerGroup,
+    SimulatedPlayerGroupMember,
 )
 from app.db.models.simulated_player_routine import (
     SimulatedPlayerRoutine,
@@ -62,9 +68,13 @@ __all__ = [
     "Region",
     "CharacterNPCRelationship",
     "CharacterSimulatedPlayerRelationship",
+    "SimulatedPlayerRelationship",
     "ScheduledSimulatedPlayerArrival",
     "SimulatedPlayer",
     "SimulatedPlayerPopulation",
+    "SimulatedPlayerSkill",
+    "SimulatedPlayerGroup",
+    "SimulatedPlayerGroupMember",
     "SimulatedPlayerRoutine",
     "SimulatedPlayerArrivalPolicy",
     "SimulatedPlayerArrivalLocation",

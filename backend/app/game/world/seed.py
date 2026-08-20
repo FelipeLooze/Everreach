@@ -8,6 +8,7 @@ from app.core.enums import (
     KnowerType,
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
+    RiskTolerance,
 )
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
@@ -277,6 +278,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             goal="Mapear os limites do Vale Verdejante.",
             goal_type=SimulatedPlayerGoalType.EXPLORE_REGION,
             goal_subject=f"region:{region.id}",
+            risk_tolerance=RiskTolerance.BALANCED.value,
         ),
         SimulatedPlayer(
             campaign_id=campaign_id,
@@ -286,6 +288,8 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             archetype=SimulatedPlayerArchetype.TRAINER,
             goal="Aprender a sobreviver neste mundo desconhecido.",
             goal_type=SimulatedPlayerGoalType.TRAIN_SELF,
+            goal_subject="level:1",
+            risk_tolerance=RiskTolerance.CAUTIOUS.value,
         ),
         SimulatedPlayer(
             campaign_id=campaign_id,
@@ -295,6 +299,8 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             archetype=SimulatedPlayerArchetype.SOCIAL,
             goal="Conseguir informações com os habitantes locais e outros recém-chegados.",
             goal_type=SimulatedPlayerGoalType.GATHER_KNOWLEDGE,
+            goal_subject=f"location:{village.id}",
+            risk_tolerance=RiskTolerance.BOLD.value,
         ),
     ]
     db.add_all(simulated_players)

@@ -11,6 +11,7 @@ from app.core.enums import (
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
     SimulatedPlayerStatus,
+    RiskTolerance,
 )
 from app.db.models.location import Location
 from app.db.models.region import Region
@@ -256,6 +257,12 @@ def materialize_simulated_player(
         level=0,
         location_id=location.id,
         archetype=identity.archetype.value,
+        risk_tolerance={
+            SimulatedPlayerArchetype.EXPLORER: RiskTolerance.BALANCED.value,
+            SimulatedPlayerArchetype.TRAINER: RiskTolerance.CAUTIOUS.value,
+            SimulatedPlayerArchetype.SOCIAL: RiskTolerance.BALANCED.value,
+            SimulatedPlayerArchetype.ADVENTURER: RiskTolerance.BOLD.value,
+        }[identity.archetype],
         goal=identity.goal,
         goal_type=SimulatedPlayerGoalType.NONE.value,
         goal_subject=None,

@@ -7,7 +7,9 @@ from app.db.models.campaign import WorldTime
 from app.db.models.relationship import (
     CharacterNPCRelationship,
     CharacterSimulatedPlayerRelationship,
+    SimulatedPlayerRelationship,
 )
+from app.db.models.simulated_player import SimulatedPlayer
 from app.services.event_log import log_event
 
 
@@ -301,3 +303,97 @@ def simulated_player_reencounter_weight(
         weight += 1
 
     return max(1, weight)
+
+
+def _ordered_simulated_player_ids(first_id: str, second_id: str) -> tuple[str, str]:
+    if first_id == second_id:
+        raise ValueError("A person cannot have a relationship with itself.")
+    return tuple(sorted((first_id, second_id)))
+
+
+def get_simulated_player_relationship(
+    db: Session,
+    campaign_id: str,
+    first_id: str,
+    second_id: str,
+) -> SimulatedPlayerRelationship | None:
+    ordered_first, ordered_second = _ordered_simulated_player_ids(first_id, second_id)
+    return (
+        db.query(SimulatedPlayerRelationship)
+        .filter(
+            SimulatedPlayerRelationship.campaign_id == campaign_id,
+            SimulatedPlayerRelationship.first_player_id == ordered_first,
+            SimulatedPlayerRelationship.second_player_id == ordered_second,
+        )
+        .first()
+    )
+
+
+def record_simulated_players_interaction(
+    db: Session,
+    campaign_id: str,
+    first_id: str,
+    second_id: str,
+    *,
+    familiarity_delta: int = 1,
+    trust_delta: int = 0,
+    affinity_delta: int = 0,
+    occurred_world_minute: int | None = None,
+) -> SimulatedPlayerRelationship:
+    ordered_first, ordered_second = _ordered_simulated_player_ids(first_id, second_id)
+    people = (
+        db.query(SimulatedPlayer.id)
+        .filter(
+            SimulatedPlayer.campaign_id == campaign_id,
+            SimulatedPlayer.id.in_((ordered_first, ordered_second)),
+        )
+        .count()
+    )
+    if people != 2:
+        raise ValueError("Both simulated players must belong to the campaign.")
+
+    relationship = get_simulated_player_relationship(
+        db, campaign_id, ordered_first, ordered_second
+    )
+    if relationship is None:
+        relationship = SimulatedPlayerRelationship(
+            campaign_id=campaign_id,
+            first_player_id=ordered_first,
+            second_player_id=ordered_second,
+            familiarity=0,
+            trust=0,
+            affinity=0,
+            last_interaction_minute=0,
+        )
+        db.add(relationship)
+    relationship.familiarity = max(
+        0, min(100, relationship.familiarity + familiarity_delta)
+    )
+    relationship.trust = max(-100, min(100, relationship.trust + trust_delta))
+    relationship.affinity = max(
+        -100, min(100, relationship.affinity + affinity_delta)
+    )
+    world_time = db.query(WorldTime).filter(WorldTime.campaign_id == campaign_id).first()
+    relationship.last_interaction_minute = (
+        occurred_world_minute
+        if occurred_world_minute is not None
+        else (world_time.total_minutes() if world_time else 0)
+    )
+    relationship.updated_at = datetime.now(UTC).replace(tzinfo=None)
+    db.flush()
+    log_event(
+        db,
+        campaign_id,
+        EventType.RELATIONSHIP_CHANGED,
+        actor_type="simulated_player",
+        actor_id=ordered_first,
+        payload={
+            "other_simulated_player_id": ordered_second,
+            "familiarity": relationship.familiarity,
+            "trust": relationship.trust,
+            "affinity": relationship.affinity,
+        },
+        importance=2,
+        occurred_world_minute=relationship.last_interaction_minute,
+    )
+    return relationship

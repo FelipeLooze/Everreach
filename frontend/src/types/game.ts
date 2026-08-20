@@ -57,7 +57,11 @@ export interface NearbySimulatedPlayer {
   id: string;
   name: string;
   level: number;
+  xp: number;
   archetype: string;
+  risk_tolerance: "CAUTIOUS" | "BALANCED" | "BOLD";
+  goal: string;
+  group_id: string | null;
 }
 
 export interface ActiveQuestSummary {

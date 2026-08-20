@@ -35,6 +35,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "world_times",
             "world_events",
             "character_npc_relationships",
+            "simulated_player_relationships",
+            "simulated_player_groups",
+            "simulated_player_group_members",
+            "simulated_player_skills",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
@@ -59,6 +63,18 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
                 "world_developments"
             )
         }
+        npc_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes("npcs")
+        }
+        simulated_player_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes("simulated_players")
+        }
+        simulated_player_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("simulated_players")
+        }
         assert "uq_knowledge_fact_campaign_key" in fact_constraints
         assert "social_priority" in fact_columns
         assert "uq_knowledge_knower_fact_identity" in knower_constraints
@@ -73,6 +89,12 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "ix_world_developments_campaign_status_next_update"
             in development_indexes
         )
+        assert "ix_npcs_campaign_location_alive" in npc_indexes
+        assert (
+            "ix_simulated_players_campaign_location_status"
+            in simulated_player_indexes
+        )
+        assert {"xp", "risk_tolerance"}.issubset(simulated_player_columns)
 
         with Session(engine) as session:
             campaign = create_campaign(session, "Banco migrado")

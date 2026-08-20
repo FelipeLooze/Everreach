@@ -135,6 +135,35 @@ cd backend
 - O Diário retorna somente eventos e memórias do personagem selecionado, evitando vazamento
   de acontecimentos ou lembranças privadas de outras entidades.
 
+### World Tick e simulação em camadas
+
+- O avanço do relógio executa, em ordem determinística, chegadas, jogadores simulados, NPCs,
+  desenvolvimentos persistentes e circulação social de conhecimento.
+- Entidades na localização de um protagonista ativo usam simulação `DETAILED`. NPCs distantes
+  já conhecidos usam `RELEVANT`; NPCs distantes desconhecidos usam atualização agregada
+  `ABSTRACT` por função, diretamente no banco.
+- Pessoas transportadas com identidade persistente são no mínimo `RELEVANT`. Pessoas ainda
+  não encontradas permanecem em `SimulatedPlayerPopulation`, sem criar uma linha por pessoa.
+- Jogadores simulados detalhados têm oportunidades horárias; os relevantes distantes usam
+  uma oportunidade agregada a cada seis horas. Conclusão de viagem e expiração de atividades
+  continuam verificadas em todo avanço de tempo.
+- A circulação social considera apenas participantes detalhados ou relevantes e seleciona um
+  par sem construir a combinação quadrática de todos os pares possíveis.
+
+### Pessoas transportadas simuladas
+
+- Pessoas materializadas possuem identidade, XP, Level, tolerância a risco, objetivo, skills,
+  mastery, localização, atividade, rotina, relações, memórias e conhecimento próprios.
+- Tolerância `CAUTIOUS`, `BALANCED` ou `BOLD` limita quais rotas perigosas cada pessoa aceita.
+- Treino concede XP e mastery de forma autoritativa. Objetivos de treino, exploração, busca por
+  perigo e coleta de conhecimento podem terminar e são substituídos por um novo objetivo coerente.
+- Relações entre pessoas transportadas persistem familiaridade, confiança e afinidade. Contato
+  social e compartilhamento de fatos podem ocorrer sem participação do protagonista.
+- Grupos temporários possuem líder, membros, objetivo e localização. Seus membros podem viajar
+  juntos, entrar, sair e dissolver o grupo; guildas continuam reservadas para a Fase 13.
+- Morte exige uma causa mecânica explícita, é permanente, encerra atividades e participação em
+  grupos, cria um fato canônico e concede conhecimento e memória às testemunhas locais.
+
 ## Frontend local
 
 Em outro terminal:
@@ -179,7 +208,7 @@ npm run build
 | GET | `/api/campaigns/{campaign_id}/character?character_id=...` | Ficha do personagem |
 | GET | `/api/campaigns/{campaign_id}/inventory?character_id=...` | Inventário |
 | GET | `/api/campaigns/{campaign_id}/quests?character_id=...` | Missões |
-| GET | `/api/campaigns/{campaign_id}/map` | Mapa conhecido |
+| GET | `/api/campaigns/{campaign_id}/map?character_id=...` | Mapa conhecido pelo personagem |
 | GET | `/api/campaigns/{campaign_id}/journal?character_id=...` | Eventos e memórias do personagem |
 | GET | `/api/campaigns/{campaign_id}/story?character_id=...` | Histórico narrativo do personagem |
 
@@ -192,6 +221,7 @@ npm run build
 - Missão inicial e conclusão simples de objetivo por conversa.
 - Ações de movimento, conversa, descanso, espera, exame e checagem simples de perícia.
 - Relógio persistido e avanço do mundo conforme ações.
+- World Tick com simulação detalhada, relevante e abstrata.
 - Event Log estruturado e introdução narrativa persistida.
 - Última troca restaurada após atualizar a página e painel com o log narrativo completo.
 - Painel de configurações com saída para o menu inicial sem apagar a campanha. A exclusão
@@ -220,15 +250,26 @@ npm run build
   assunto e evento de origem, NPCs recordam conversas relevantes, relações são persistidas e
   eventadas, e fatos podem ser propagados explicitamente com isolamento e proveniência. A
   recuperação é estruturada e lexical; RAG e embeddings continuam corretamente adiados.
-- Fases posteriores continuam com seus próprios escopos; concluir essas fases não implica
-  que exploração avançada, World Tick, combate ou geração procedural estejam prontos.
+- **Fase 5 — Exploração e Viagem: COMPLETE.** Descoberta e mapa são individuais por personagem;
+  conexões conhecidas possuem distância, perigo e modificador de terreno. Viagem consome tempo
+  e stamina, respeita ritmo, pode produzir incidentes e registra descoberta e visita no Event Log.
+- **Fase 6 — World Tick: COMPLETE.** Tempo, chegadas, atividades, rotinas, desenvolvimentos e
+  conhecimento avançam por cadências explícitas. O escopo compartilhado separa simulação
+  `DETAILED`, `RELEVANT` e `ABSTRACT`, usando populações agregadas e atualizações em lote para
+  evitar materializar ou carregar todo o mundo em cada ação.
+- **Fase 7 — Outros Jogadores: COMPLETE.** Identidade, população abstrata, chegadas, objetivos,
+  tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
+  grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
+  e cobertos por testes de múltiplos dias.
+- **Fase 8 — Progressão: PARTIAL.** XP autoritativo, curva de nível, atributos, skills e mastery
+  possuem fundação. Treino do protagonista, descoberta de skills e progressão integrada por uso
+  ainda não estão completos.
 
 ## Fora do MVP
 
 - Combate completo com turnos, dano e inimigos.
 - Geração procedural complexa e novas regiões automáticas.
-- Descoberta dinâmica completa de locais; a estrutura de estados existe, mas o loop de exploração ainda é básico.
-- Simulação autônoma completa de NPCs.
+- Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.
 - Mapa gráfico.
 - RAG, embeddings e sumarização automática de memórias.

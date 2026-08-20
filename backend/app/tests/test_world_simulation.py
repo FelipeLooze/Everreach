@@ -6,6 +6,7 @@ from app.simulation.results import (
     NPCSimulationResult,
     PlayerSimulationResult,
     SimulatedPlayerArrivalSimulationResult,
+    SimulatedPlayerGroupSimulationResult,
     WorldDevelopmentSimulationResult,
 )
 
@@ -35,11 +36,16 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
 
     rng = random.Random(123)
 
+    def fake_group_tick(db, campaign_id, minutes):
+        calls.append(("groups", campaign_id, minutes))
+        return SimulatedPlayerGroupSimulationResult()
+
     def fake_player_tick(
         db,
         campaign_id,
         minutes,
         rng=None,
+        scope=None,
     ):
         calls.append(
             (
@@ -58,6 +64,7 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         db,
         campaign_id,
         minutes,
+        scope=None,
     ):
         calls.append(
             (
@@ -90,6 +97,7 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         db,
         campaign_id,
         minutes,
+        scope=None,
     ):
         calls.append(
             (
@@ -113,6 +121,11 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         world_simulation.player_simulation,
         "tick",
         fake_player_tick,
+    )
+    monkeypatch.setattr(
+        world_simulation.group_simulation,
+        "tick",
+        fake_group_tick,
     )
 
     monkeypatch.setattr(
@@ -146,6 +159,7 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
             "campaign_1",
             45,
         ),
+        ("groups", "campaign_1", 45),
         (
             "players",
             "campaign_1",
@@ -201,6 +215,11 @@ def test_knowledge_opportunity_does_not_count_as_world_change(
         world_simulation.player_simulation,
         "tick",
         lambda *args, **kwargs: PlayerSimulationResult(),
+    )
+    monkeypatch.setattr(
+        world_simulation.group_simulation,
+        "tick",
+        lambda *args, **kwargs: SimulatedPlayerGroupSimulationResult(),
     )
 
     monkeypatch.setattr(

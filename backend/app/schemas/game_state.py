@@ -43,7 +43,11 @@ class NearbySimulatedPlayer(BaseModel):
     id: str
     name: str
     level: int
+    xp: float
     archetype: str
+    risk_tolerance: str
+    goal: str
+    group_id: str | None
 
 
 class ActiveQuestSummary(BaseModel):

@@ -11,8 +11,26 @@ from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
 from app.db.models.region import Region
-from app.db.models.relationship import CharacterNPCRelationship
-from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.relationship import (
+    CharacterNPCRelationship,
+    CharacterSimulatedPlayerRelationship,
+    SimulatedPlayerRelationship,
+)
+from app.db.models.simulated_player import (
+    SimulatedPlayer,
+    SimulatedPlayerPopulation,
+    SimulatedPlayerSkill,
+)
+from app.db.models.simulated_player_group import (
+    SimulatedPlayerGroup,
+    SimulatedPlayerGroupMember,
+)
+from app.db.models.simulated_player_routine import SimulatedPlayerRoutine
+from app.db.models.simulated_player_arrival import (
+    ScheduledSimulatedPlayerArrival,
+    SimulatedPlayerArrivalLocation,
+    SimulatedPlayerArrivalPolicy,
+)
 from app.db.models.skill import CharacterSkill, CharacterTechnique
 from app.db.models.world_development import WorldDevelopment
 
@@ -56,6 +74,46 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(CharacterNPCRelationship).filter(
         CharacterNPCRelationship.campaign_id == campaign_id
     ).delete(synchronize_session=False)
+    db.query(CharacterSimulatedPlayerRelationship).filter(
+        CharacterSimulatedPlayerRelationship.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerGroupMember).filter(
+        SimulatedPlayerGroupMember.group_id.in_(
+            db.query(SimulatedPlayerGroup.id).filter(
+                SimulatedPlayerGroup.campaign_id == campaign_id
+            )
+        )
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerGroup).filter(
+        SimulatedPlayerGroup.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerRelationship).filter(
+        SimulatedPlayerRelationship.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    simulated_player_ids = [
+        row[0]
+        for row in db.query(SimulatedPlayer.id).filter(
+            SimulatedPlayer.campaign_id == campaign_id
+        ).all()
+    ]
+    db.query(SimulatedPlayerSkill).filter(
+        SimulatedPlayerSkill.simulated_player_id.in_(simulated_player_ids)
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerRoutine).filter(
+        SimulatedPlayerRoutine.simulated_player_id.in_(simulated_player_ids)
+    ).delete(synchronize_session=False)
+    db.query(ScheduledSimulatedPlayerArrival).filter(
+        ScheduledSimulatedPlayerArrival.location_id.in_(location_ids)
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerArrivalLocation).filter(
+        SimulatedPlayerArrivalLocation.location_id.in_(location_ids)
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerArrivalPolicy).filter(
+        SimulatedPlayerArrivalPolicy.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(SimulatedPlayerPopulation).filter(
+        SimulatedPlayerPopulation.location_id.in_(location_ids)
+    ).delete(synchronize_session=False)
     db.query(WorldDevelopment).filter(WorldDevelopment.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(WorldEvent).filter(WorldEvent.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(NPC).filter(NPC.campaign_id == campaign_id).delete(synchronize_session=False)
@@ -65,6 +123,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
             CharacterLocationDiscovery.character_id.in_(character_ids),
             CharacterLocationDiscovery.location_id.in_(location_ids),
         )
+    ).delete(synchronize_session=False)
+    db.query(CharacterConnectionDiscovery).filter(
+        CharacterConnectionDiscovery.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(Character).filter(Character.id.in_(character_ids)).delete(synchronize_session=False)
 
@@ -81,7 +142,6 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(Region).filter(Region.id.in_(region_ids)).delete(synchronize_session=False)
 
     db.query(WorldTime).filter(WorldTime.campaign_id == campaign_id).delete(synchronize_session=False)
-    db.query(CharacterConnectionDiscovery).filter(CharacterConnectionDiscovery.character_id.in_(character_ids)).delete(synchronize_session=False)
     db.delete(campaign)
     db.flush()
     return True

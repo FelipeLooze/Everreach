@@ -164,14 +164,9 @@ def test_explore_region_goal_completion_clears_goal_and_logs_event(
 
     assert completed is True
 
-    assert (
-        explorer.goal_type
-        == SimulatedPlayerGoalType.NONE
-    )
-    assert explorer.goal_subject is None
-
-    # Human-readable history is preserved.
-    assert explorer.goal == original_goal
+    assert explorer.goal_type == SimulatedPlayerGoalType.GATHER_KNOWLEDGE
+    assert explorer.goal_subject == f"location:{village.id}"
+    assert explorer.goal != original_goal
 
     event = (
         db_session.query(WorldEvent)

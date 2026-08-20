@@ -98,3 +98,42 @@ class CharacterSimulatedPlayerRelationship(Base):
             tzinfo=None
         ),
     )
+
+
+class SimulatedPlayerRelationship(Base):
+    """Ordered, persistent social state between two transported people."""
+
+    __tablename__ = "simulated_player_relationships"
+    __table_args__ = (
+        UniqueConstraint(
+            "first_player_id",
+            "second_player_id",
+            name="uq_simulated_player_relationship_pair",
+        ),
+        Index(
+            "ix_simulated_player_relationship_campaign",
+            "campaign_id",
+            "first_player_id",
+            "second_player_id",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: generate_id("rel")
+    )
+    campaign_id: Mapped[str] = mapped_column(
+        ForeignKey("campaigns.id"), nullable=False
+    )
+    first_player_id: Mapped[str] = mapped_column(
+        ForeignKey("simulated_players.id"), nullable=False
+    )
+    second_player_id: Mapped[str] = mapped_column(
+        ForeignKey("simulated_players.id"), nullable=False
+    )
+    familiarity: Mapped[int] = mapped_column(Integer, default=0)
+    trust: Mapped[int] = mapped_column(Integer, default=0)
+    affinity: Mapped[int] = mapped_column(Integer, default=0)
+    last_interaction_minute: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None)
+    )

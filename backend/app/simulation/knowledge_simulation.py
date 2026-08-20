@@ -1,4 +1,6 @@
 import hashlib
+from collections import defaultdict
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.game.time.clock import get_world_time
 from app.simulation.results import KnowledgeSimulationResult
@@ -28,6 +30,8 @@ from app.core.enums import (
 from app.game.players.service import (
     simulated_player_presence_filters,
 )
+from app.simulation.scope import SimulationScope, build_simulation_scope
+from app.game.relationships.service import record_simulated_players_interaction
 
 SOCIAL_INTERVAL_MINUTES = 24 * 60
 
@@ -53,6 +57,7 @@ def tick(
     db: Session,
     campaign_id: str,
     minutes: int,
+    scope: SimulationScope | None = None,
 ) -> KnowledgeSimulationResult:
     if minutes <= 0:
         return KnowledgeSimulationResult()
@@ -81,6 +86,7 @@ def tick(
             db,
             campaign_id,
             current_opportunity,
+            scope=scope,
         ):
             propagations += 1
 
@@ -119,19 +125,38 @@ def social_transfer_certainty(
 def eligible_social_participants(
     db: Session,
     campaign_id: str,
+    scope: SimulationScope | None = None,
 ) -> tuple[SocialParticipant, ...]:
     participants: list[SocialParticipant] = []
 
-    npcs = (
+    active_scope = scope or build_simulation_scope(db, campaign_id)
+
+    npc_query = (
         db.query(NPC)
         .filter(
             NPC.campaign_id == campaign_id,
             NPC.alive.is_(True),
             NPC.activity != NPCActivity.RESTING.value,
         )
-        .order_by(NPC.id)
-        .all()
     )
+
+    if not active_scope.unrestricted:
+        relevance_filters = []
+        if active_scope.detailed_location_ids:
+            relevance_filters.append(
+                NPC.location_id.in_(active_scope.detailed_location_ids)
+            )
+        if active_scope.relevant_npc_ids:
+            relevance_filters.append(
+                NPC.id.in_(active_scope.relevant_npc_ids)
+            )
+
+        if relevance_filters:
+            npc_query = npc_query.filter(or_(*relevance_filters))
+        else:
+            npc_query = npc_query.filter(NPC.id.is_(None))
+
+    npcs = npc_query.order_by(NPC.id).all()
 
     for npc in npcs:
         participants.append(
@@ -180,10 +205,12 @@ def eligible_social_participants(
 def eligible_social_pairs(
     db: Session,
     campaign_id: str,
+    scope: SimulationScope | None = None,
 ) -> tuple[SocialPair, ...]:
     participants = eligible_social_participants(
         db,
         campaign_id,
+        scope=scope,
     )
 
     pairs: list[SocialPair] = []
@@ -213,13 +240,29 @@ def select_social_pair(
     db: Session,
     campaign_id: str,
     opportunity_world_minute: int,
+    scope: SimulationScope | None = None,
 ) -> SocialPair | None:
-    pairs = eligible_social_pairs(
+    participants = eligible_social_participants(
         db,
         campaign_id,
+        scope=scope,
     )
 
-    if not pairs:
+    participants_by_location: dict[str, list[SocialParticipant]] = defaultdict(list)
+    for participant in participants:
+        participants_by_location[participant.location_id].append(participant)
+
+    groups = [
+        group
+        for _, group in sorted(participants_by_location.items())
+        if len(group) >= 2
+    ]
+    pair_count = sum(
+        len(group) * (len(group) - 1) // 2
+        for group in groups
+    )
+
+    if pair_count == 0:
         return None
 
     seed = (
@@ -231,13 +274,32 @@ def select_social_pair(
         seed
     ).digest()
 
-    index = int.from_bytes(
+    ticket = int.from_bytes(
         digest[:8],
         byteorder="big",
         signed=False,
-    ) % len(pairs)
+    ) % pair_count
 
-    return pairs[index]
+    # Locate one deterministic pair without constructing the global O(n^2)
+    # pair list. Memory remains linear in the number of relevant participants.
+    for group in groups:
+        group_pair_count = len(group) * (len(group) - 1) // 2
+        if ticket >= group_pair_count:
+            ticket -= group_pair_count
+            continue
+
+        for first_index, first in enumerate(group):
+            following = len(group) - first_index - 1
+            if ticket >= following:
+                ticket -= following
+                continue
+
+            return SocialPair(
+                first=first,
+                second=group[first_index + 1 + ticket],
+            )
+
+    raise RuntimeError("social pair selection failed")
 
 def _known_fact_certainties(
     db: Session,
@@ -462,6 +524,7 @@ def resolve_social_opportunity(
     db: Session,
     campaign_id: str,
     opportunity_world_minute: int,
+    scope: SimulationScope | None = None,
 ) -> bool:
     if social_opportunity_already_resolved(
         db,
@@ -474,12 +537,24 @@ def resolve_social_opportunity(
         db,
         campaign_id,
         opportunity_world_minute,
+        scope=scope,
     )
 
     candidate = None
     propagated = False
 
     if pair is not None:
+        if (
+            pair.first.knower_type == KnowerType.SIMULATED_PLAYER
+            and pair.second.knower_type == KnowerType.SIMULATED_PLAYER
+        ):
+            record_simulated_players_interaction(
+                db,
+                campaign_id,
+                pair.first.knower_id,
+                pair.second.knower_id,
+                occurred_world_minute=opportunity_world_minute,
+            )
         candidate = select_transfer_candidate(
             db,
             campaign_id,

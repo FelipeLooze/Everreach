@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import (
     CharacterAttributeKey,
+    CharacterResourceKey,
     CombatActionOutcome,
     CombatActionType,
     CombatActorType,
@@ -23,7 +24,7 @@ from app.game.attributes.service import attribute_check_modifier, get_character_
 from app.game.combat.turns import complete_current_turn, get_current_turn
 from app.game.combat.damage import apply_attack_damage
 from app.game.combat.encounters import end_encounter
-from app.game.combat.costs import apply_action_cost, validate_action_cost
+from app.game.combat.costs import apply_action_cost, validate_resource_cost
 from app.game.combat.conditions import has_condition
 from app.game.dice import d20
 from app.game.time.clock import get_world_time
@@ -47,6 +48,18 @@ class CombatActionResolution:
     replayed: bool = False
 
 
+@dataclass(frozen=True)
+class AttackMechanics:
+    action_type: CombatActionType
+    attack_attribute: CharacterAttributeKey
+    resource_key: CharacterResourceKey
+    resource_cost: float
+    base_damage_dice: int
+    damage_die_sides: int
+    damage_attribute: CharacterAttributeKey
+    technique_id: str | None = None
+
+
 def resolve_attack(
     db: Session,
     encounter: CombatEncounter,
@@ -58,6 +71,54 @@ def resolve_attack(
     rng: random.Random | None = None,
 ) -> CombatActionResolution:
     """Resolve one basic attack, apply its damage and consume its turn."""
+    if not isinstance(action_type, CombatActionType):
+        raise CombatActionError("Invalid combat action type.")
+    attribute = _attack_attribute(action_type)
+    return resolve_profiled_attack(
+        db,
+        encounter,
+        actor,
+        target,
+        mechanics=AttackMechanics(
+            action_type=action_type,
+            attack_attribute=attribute,
+            resource_key=CharacterResourceKey.STAMINA,
+            resource_cost=(
+                2.0 if action_type == CombatActionType.MELEE_ATTACK else 1.0
+            ),
+            base_damage_dice=1,
+            damage_die_sides=6,
+            damage_attribute=attribute,
+        ),
+        action_key=action_key,
+        rng=rng,
+    )
+
+
+def resolve_profiled_attack(
+    db: Session,
+    encounter: CombatEncounter,
+    actor: CombatParticipant,
+    target: CombatParticipant,
+    *,
+    mechanics: AttackMechanics,
+    action_key: str,
+    rng: random.Random | None = None,
+) -> CombatActionResolution:
+    """Resolve an already-authorized immutable attack profile."""
+    action_type = mechanics.action_type
+    if not isinstance(action_type, CombatActionType):
+        raise CombatActionError("Invalid combat action type.")
+    if not isinstance(mechanics.attack_attribute, CharacterAttributeKey):
+        raise CombatActionError("Invalid attack attribute.")
+    if not isinstance(mechanics.damage_attribute, CharacterAttributeKey):
+        raise CombatActionError("Invalid damage attribute.")
+    if mechanics.attack_attribute == CharacterAttributeKey.LUCK:
+        raise CombatActionError("Luck cannot resolve a combat attack.")
+    if mechanics.damage_attribute == CharacterAttributeKey.LUCK:
+        raise CombatActionError("Luck cannot determine combat damage.")
+    if mechanics.base_damage_dice < 1 or mechanics.damage_die_sides < 2:
+        raise CombatActionError("Invalid combat damage dice.")
     normalized_key = action_key.strip()
     if not _ACTION_KEY_PATTERN.fullmatch(normalized_key):
         raise CombatActionError("Invalid combat action key.")
@@ -77,6 +138,7 @@ def resolve_attack(
             existing.actor_participant_id != actor.id
             or existing.target_participant_id != target.id
             or existing.action_type != action_type.value
+            or existing.technique_id != mechanics.technique_id
         ):
             raise CombatActionError("Action key already belongs to another combat action.")
         return CombatActionResolution(existing, replayed=True)
@@ -94,9 +156,14 @@ def resolve_attack(
         is not None
     ):
         raise CombatActionError("Current turn already has a resolved combat action.")
-    resource_cost = validate_action_cost(db, actor, action_type)
+    resource_cost = validate_resource_cost(
+        db,
+        actor,
+        mechanics.resource_key,
+        mechanics.resource_cost,
+    )
 
-    attack_attribute = _attack_attribute(action_type)
+    attack_attribute = mechanics.attack_attribute
     attack_modifier = _attribute_modifier(db, actor, attack_attribute)
     if has_condition(db, actor.id, CombatConditionType.WEAKENED):
         attack_modifier += WEAKENED_ATTACK_PENALTY
@@ -123,6 +190,7 @@ def resolve_attack(
         target_participant_id=target.id,
         action_key=normalized_key,
         action_type=action_type.value,
+        technique_id=mechanics.technique_id,
         attack_attribute=attack_attribute.value,
         target_range_band=target.range_band,
         attack_roll=roll.raw,
@@ -132,6 +200,9 @@ def resolve_attack(
         defense_modifier=defense_modifier,
         defense_total=defense_total,
         outcome=outcome.value,
+        base_damage_dice=mechanics.base_damage_dice,
+        damage_die_sides=mechanics.damage_die_sides,
+        damage_attribute=mechanics.damage_attribute.value,
         created_world_minute=world_minute,
     )
     db.add(action)
@@ -149,6 +220,7 @@ def resolve_attack(
             "action_id": action.id,
             "action_key": normalized_key,
             "action_type": action_type.value,
+            "technique_id": mechanics.technique_id,
             "actor_participant_id": actor.id,
             "target_participant_id": target.id,
             "attack_attribute": attack_attribute.value,

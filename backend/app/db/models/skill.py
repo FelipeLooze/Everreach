@@ -10,6 +10,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.ids import generate_id
+from app.core.enums import (
+    CharacterAttributeKey,
+    CharacterResourceKey,
+    CombatActionType,
+)
 from app.db.base import Base
 
 
@@ -51,6 +56,10 @@ class Technique(Base):
         cascade="all, delete-orphan",
         order_by="TechniqueDomain.domain_key",
     )
+    combat_profile: Mapped["CombatTechniqueProfile | None"] = relationship(
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class TechniqueDomain(Base):
@@ -76,6 +85,41 @@ class CharacterTechnique(Base):
     technique_id: Mapped[str] = mapped_column(ForeignKey("techniques.id"), nullable=False)
 
     technique: Mapped["Technique"] = relationship()
+
+
+class CombatTechniqueProfile(Base):
+    """Immutable authoritative combat mechanics for an otherwise narrative technique."""
+
+    __tablename__ = "combat_technique_profiles"
+
+    technique_id: Mapped[str] = mapped_column(
+        ForeignKey("techniques.id"),
+        primary_key=True,
+    )
+    action_type: Mapped[str] = mapped_column(
+        String,
+        default=CombatActionType.MELEE_ATTACK.value,
+        nullable=False,
+    )
+    attack_attribute: Mapped[str] = mapped_column(
+        String,
+        default=CharacterAttributeKey.STRENGTH.value,
+        nullable=False,
+    )
+    resource_key: Mapped[str] = mapped_column(
+        String,
+        default=CharacterResourceKey.STAMINA.value,
+        nullable=False,
+    )
+    resource_cost: Mapped[float] = mapped_column(Float, nullable=False)
+    base_damage_dice: Mapped[int] = mapped_column(Integer, nullable=False)
+    damage_die_sides: Mapped[int] = mapped_column(Integer, nullable=False)
+    damage_attribute: Mapped[str] = mapped_column(String, nullable=False)
+    condition_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    condition_duration_turns: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
 
 
 class TechniqueUseRecord(Base):

@@ -228,6 +228,9 @@ class CombatAction(Base):
     )
     action_key: Mapped[str] = mapped_column(String, nullable=False)
     action_type: Mapped[str] = mapped_column(String, nullable=False)
+    technique_id: Mapped[str | None] = mapped_column(
+        ForeignKey("techniques.id"), nullable=True
+    )
     attack_attribute: Mapped[str] = mapped_column(String, nullable=False)
     target_range_band: Mapped[str] = mapped_column(String, nullable=False)
     attack_roll: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -248,6 +251,9 @@ class CombatAction(Base):
     target_hp_before: Mapped[float | None] = mapped_column(Float, nullable=True)
     target_hp_after: Mapped[float | None] = mapped_column(Float, nullable=True)
     lethal: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    base_damage_dice: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    damage_die_sides: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    damage_attribute: Mapped[str | None] = mapped_column(String, nullable=True)
     resource_key: Mapped[str | None] = mapped_column(String, nullable=True)
     resource_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
     resource_before: Mapped[float | None] = mapped_column(Float, nullable=True)

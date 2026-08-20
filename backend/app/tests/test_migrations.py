@@ -61,6 +61,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_turns",
             "combat_actions",
             "combat_conditions",
+            "combat_technique_profiles",
         }.issubset(tables)
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -101,6 +102,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "resource_cost",
             "resource_before",
             "resource_after",
+            "technique_id",
+            "base_damage_dice",
+            "damage_die_sides",
+            "damage_attribute",
         }.issubset(combat_action_columns)
         assert {
             "uq_combat_action_key",
@@ -132,6 +137,22 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "ix_combat_condition_participant_active"
             in combat_condition_indexes
         )
+        combat_technique_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("combat_technique_profiles")
+        }
+        assert {
+            "technique_id",
+            "action_type",
+            "attack_attribute",
+            "resource_key",
+            "resource_cost",
+            "base_damage_dice",
+            "damage_die_sides",
+            "damage_attribute",
+            "condition_type",
+            "condition_duration_turns",
+        } == combat_technique_columns
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
         }
@@ -215,6 +236,11 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             character_columns
         )
         assert "active_class_id" in character_columns
+        class_offer_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("character_class_offers")
+        }
+        assert "sequence_number" in class_offer_columns
         class_definition_columns = {
             item["name"]
             for item in inspect(engine).get_columns("class_definitions")

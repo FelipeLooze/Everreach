@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.enums import ClassOfferStatus, EventType
@@ -102,7 +103,11 @@ def make_pending_class_offers_available(
             CharacterClassOffer.character_id == character.id,
             CharacterClassOffer.status == ClassOfferStatus.PENDING.value,
         )
-        .order_by(CharacterClassOffer.created_at, CharacterClassOffer.id)
+        .order_by(
+            CharacterClassOffer.sequence_number,
+            CharacterClassOffer.created_at,
+            CharacterClassOffer.id,
+        )
         .all()
     )
     return [
@@ -139,10 +144,16 @@ def create_class_offer(
     if existing is not None:
         return existing
 
+    current_sequence = (
+        db.query(func.max(CharacterClassOffer.sequence_number))
+        .filter(CharacterClassOffer.character_id == character.id)
+        .scalar()
+    )
     offer = CharacterClassOffer(
         character_id=character.id,
         class_definition_id=class_definition.id,
         status=ClassOfferStatus.PENDING.value,
+        sequence_number=(current_sequence or 0) + 1,
     )
     db.add(offer)
     db.flush()
@@ -269,7 +280,11 @@ def list_visible_class_offers(
                 ]
             ),
         )
-        .order_by(CharacterClassOffer.created_at, CharacterClassOffer.id)
+        .order_by(
+            CharacterClassOffer.sequence_number,
+            CharacterClassOffer.created_at,
+            CharacterClassOffer.id,
+        )
         .all()
     )
 

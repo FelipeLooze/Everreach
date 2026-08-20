@@ -77,11 +77,22 @@ def apply_attack_damage(
         db.flush()
         return DamageResolution(0, hp_before, hp_before, False, False)
 
-    dice_count = (
+    base_dice = action.base_damage_dice or 1
+    die_sides = action.damage_die_sides or 6
+    dice_count = base_dice * (
         2 if action.outcome == CombatActionOutcome.CRITICAL_HIT.value else 1
     )
-    damage_roll = sum(roll(6, rng=rng).raw for _ in range(dice_count))
-    damage_modifier = _damage_modifier(db, actor, CombatActionType(action.action_type))
+    damage_roll = sum(roll(die_sides, rng=rng).raw for _ in range(dice_count))
+    damage_attribute = (
+        CharacterAttributeKey(action.damage_attribute)
+        if action.damage_attribute
+        else (
+            CharacterAttributeKey.STRENGTH
+            if action.action_type == CombatActionType.MELEE_ATTACK.value
+            else CharacterAttributeKey.AGILITY
+        )
+    )
+    damage_modifier = _damage_modifier(db, actor, damage_attribute)
     damage_total = max(1, damage_roll + damage_modifier)
     hp_after = max(0.0, hp_before - damage_total)
     lethal = hp_before > 0 and hp_after <= 0
@@ -106,6 +117,7 @@ def apply_attack_damage(
             "target_participant_id": target.id,
             "damage_roll": damage_roll,
             "damage_dice": dice_count,
+            "damage_die_sides": die_sides,
             "damage_modifier": damage_modifier,
             "damage_total": damage_total,
             "target_hp_before": hp_before,
@@ -145,16 +157,11 @@ def _target_actor(
 def _damage_modifier(
     db: Session,
     participant: CombatParticipant,
-    action_type: CombatActionType,
+    attribute_key: CharacterAttributeKey,
 ) -> int:
     if participant.actor_type != CombatActorType.CHARACTER.value:
         return 0
-    key = (
-        CharacterAttributeKey.STRENGTH
-        if action_type == CombatActionType.MELEE_ATTACK
-        else CharacterAttributeKey.AGILITY
-    )
-    attribute = get_character_attribute(db, participant.actor_id, key)
+    attribute = get_character_attribute(db, participant.actor_id, attribute_key)
     return attribute_check_modifier(attribute.value)
 
 

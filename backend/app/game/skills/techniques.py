@@ -223,7 +223,7 @@ def resolve_technique_use(
             technique=technique,
             domain_keys=domain_keys,
             record=existing,
-            progression_outcome=_progression_outcome(
+            progression_outcome=technique_progression_outcome(
                 character,
                 technique,
                 domain_keys,
@@ -281,7 +281,7 @@ def resolve_technique_use(
         technique=technique,
         domain_keys=domain_keys,
         record=record,
-        progression_outcome=_progression_outcome(
+        progression_outcome=technique_progression_outcome(
             character,
             technique,
             domain_keys,
@@ -291,7 +291,7 @@ def resolve_technique_use(
     )
 
 
-def _progression_outcome(
+def technique_progression_outcome(
     character: Character,
     technique: Technique,
     domain_keys: tuple[str, ...],

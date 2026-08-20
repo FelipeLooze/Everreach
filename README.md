@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9F concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A–9G concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -320,12 +320,15 @@ npm run build
   cobrança duplicada em retries. A 9F mantém condições temporárias por turnos do afetado:
   `STUNNED` pula o turno, `WEAKENED` reduz ataque em 2 e `EXPOSED` reduz defesa em 2. Aplicação,
   ativação, expiração e remoção são persistentes, idempotentes e registradas, inclusive em saída ou
-  encerramento do encontro. Técnicas mágicas, recuperação e aplicação de condições por técnicas
-  seguem reservadas.
+  encerramento do encontro. A 9G permite anexar a uma técnica descoberta um perfil mecânico
+  imutável com alcance, atributo de ataque e dano, custo de Mana/Stamina, dados de dano e condição.
+  Apenas personagens que conhecem a técnica podem usá-la; custo, rolagem, dano, condição e turno
+  passam pelos mesmos resolvedores idempotentes. O resultado também gera evidência real de domínio
+  e sinergia para a progressão de classes. Recuperação e decisões autônomas seguem reservadas.
 
 ## Fora do MVP
 
-- Combate completo com técnicas e decisões de inimigos (Fase 9 em andamento; 9A–9F prontas).
+- Combate completo com ações táticas e decisões de inimigos (Fase 9 em andamento; 9A–9G prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

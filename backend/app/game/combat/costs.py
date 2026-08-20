@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from math import isfinite
 
 from sqlalchemy.orm import Session
 
@@ -40,6 +41,22 @@ def validate_action_cost(
     if not isinstance(action_type, CombatActionType):
         raise CombatResourceError("Invalid combat action type for resource cost.")
     resource_key, amount = _ACTION_COSTS[action_type]
+    return validate_resource_cost(db, participant, resource_key, amount)
+
+
+def validate_resource_cost(
+    db: Session,
+    participant: CombatParticipant,
+    resource_key: CharacterResourceKey,
+    amount: float,
+) -> CombatResourceCost:
+    if resource_key not in {
+        CharacterResourceKey.MANA,
+        CharacterResourceKey.STAMINA,
+    }:
+        raise CombatResourceError("Combat actions may only spend mana or stamina.")
+    if not isfinite(amount) or amount <= 0:
+        raise CombatResourceError("Combat resource cost must be finite and positive.")
     actor = _actor(db, participant)
     before = float(getattr(actor, f"{resource_key.value.lower()}_current"))
     if before < amount:

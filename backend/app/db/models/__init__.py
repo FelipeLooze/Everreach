@@ -70,6 +70,7 @@ from app.db.models.simulated_player_routine import (
 from app.db.models.skill import (
     CharacterSkill,
     CharacterTechnique,
+    CombatTechniqueProfile,
     Skill,
     Technique,
     TechniqueDomain,
@@ -133,6 +134,7 @@ __all__ = [
     "SimulatedPlayerArrivalLocation",
     "CharacterSkill",
     "CharacterTechnique",
+    "CombatTechniqueProfile",
     "Skill",
     "Technique",
     "TechniqueDomain",

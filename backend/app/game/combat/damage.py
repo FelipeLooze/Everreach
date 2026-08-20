@@ -8,6 +8,7 @@ from app.core.enums import (
     CombatActionOutcome,
     CombatActionType,
     CombatActorType,
+    CombatDamageType,
     EventType,
 )
 from app.db.models.character import Character
@@ -17,6 +18,7 @@ from app.db.models.simulated_player import SimulatedPlayer
 from app.game.attributes.service import attribute_check_modifier, get_character_attribute
 from app.game.character.service import kill_character
 from app.game.combat.encounters import list_active_participants, remove_participant
+from app.game.combat.defense import resolve_damage_mitigation
 from app.game.dice import roll
 from app.game.players.death import kill_simulated_player
 from app.services.event_log import log_event
@@ -29,6 +31,9 @@ class DamageResolution:
     target_hp_after: float
     lethal: bool
     encounter_should_end: bool
+    damage_before_mitigation: int = 0
+    armor_mitigation: int = 0
+    resistance_mitigation: int = 0
 
 
 class CombatDamageError(ValueError):
@@ -59,6 +64,9 @@ def apply_attack_damage(
             target_hp_after=float(action.target_hp_after or 0),
             lethal=bool(action.lethal),
             encounter_should_end=_has_one_or_fewer_active_sides(db, encounter.id),
+            damage_before_mitigation=action.damage_before_mitigation or 0,
+            armor_mitigation=action.armor_mitigation or 0,
+            resistance_mitigation=action.resistance_mitigation or 0,
         )
 
     target_actor = _target_actor(db, target)
@@ -71,6 +79,9 @@ def apply_attack_damage(
         action.damage_dice = 0
         action.damage_modifier = 0
         action.damage_total = 0
+        action.damage_before_mitigation = 0
+        action.armor_mitigation = 0
+        action.resistance_mitigation = 0
         action.target_hp_before = hp_before
         action.target_hp_after = hp_before
         action.lethal = False
@@ -93,7 +104,13 @@ def apply_attack_damage(
         )
     )
     damage_modifier = _damage_modifier(db, actor, damage_attribute)
-    damage_total = max(1, damage_roll + damage_modifier)
+    damage_before_mitigation = max(1, damage_roll + damage_modifier)
+    mitigation = resolve_damage_mitigation(
+        db,
+        target,
+        CombatDamageType(action.damage_type),
+    )
+    damage_total = mitigation.apply(damage_before_mitigation)
     hp_after = max(0.0, hp_before - damage_total)
     lethal = hp_before > 0 and hp_after <= 0
     target_actor.hp_current = hp_after
@@ -101,6 +118,9 @@ def apply_attack_damage(
     action.damage_dice = dice_count
     action.damage_modifier = damage_modifier
     action.damage_total = damage_total
+    action.damage_before_mitigation = damage_before_mitigation
+    action.armor_mitigation = mitigation.armor
+    action.resistance_mitigation = mitigation.resistance
     action.target_hp_before = hp_before
     action.target_hp_after = hp_after
     action.lethal = lethal
@@ -120,6 +140,10 @@ def apply_attack_damage(
             "damage_die_sides": die_sides,
             "damage_modifier": damage_modifier,
             "damage_total": damage_total,
+            "damage_type": action.damage_type,
+            "damage_before_mitigation": damage_before_mitigation,
+            "armor_mitigation": mitigation.armor,
+            "resistance_mitigation": mitigation.resistance,
             "target_hp_before": hp_before,
             "target_hp_after": hp_after,
             "lethal": lethal,
@@ -136,6 +160,9 @@ def apply_attack_damage(
         hp_after,
         lethal,
         _has_one_or_fewer_active_sides(db, encounter.id),
+        damage_before_mitigation,
+        mitigation.armor,
+        mitigation.resistance,
     )
 
 

@@ -125,6 +125,24 @@ class CombatActionOutcome(StrEnum):
     CRITICAL_HIT = "CRITICAL_HIT"
 
 
+class CombatDamageType(StrEnum):
+    PHYSICAL = "PHYSICAL"
+    FIRE = "FIRE"
+    COLD = "COLD"
+    LIGHTNING = "LIGHTNING"
+    POISON = "POISON"
+    ARCANE = "ARCANE"
+
+
+class EquipmentSlot(StrEnum):
+    HEAD = "HEAD"
+    BODY = "BODY"
+    HANDS = "HANDS"
+    FEET = "FEET"
+    OFF_HAND = "OFF_HAND"
+    ACCESSORY = "ACCESSORY"
+
+
 class CombatConditionType(StrEnum):
     STUNNED = "STUNNED"
     WEAKENED = "WEAKENED"

@@ -11,6 +11,7 @@ from app.core.enums import (
     CombatActionType,
     CombatActorType,
     CombatConditionType,
+    CombatDamageType,
     CombatEncounterStatus,
     CombatRangeBand,
     EventType,
@@ -59,6 +60,7 @@ class AttackMechanics:
     base_damage_dice: int
     damage_die_sides: int
     damage_attribute: CharacterAttributeKey
+    damage_type: CombatDamageType = CombatDamageType.PHYSICAL
     technique_id: str | None = None
 
 
@@ -119,6 +121,8 @@ def resolve_profiled_attack(
         raise CombatActionError("Luck cannot resolve a combat attack.")
     if mechanics.damage_attribute == CharacterAttributeKey.LUCK:
         raise CombatActionError("Luck cannot determine combat damage.")
+    if not isinstance(mechanics.damage_type, CombatDamageType):
+        raise CombatActionError("Invalid combat damage type.")
     if mechanics.base_damage_dice < 1 or mechanics.damage_die_sides < 2:
         raise CombatActionError("Invalid combat damage dice.")
     normalized_key = action_key.strip()
@@ -216,6 +220,7 @@ def resolve_profiled_attack(
         base_damage_dice=mechanics.base_damage_dice,
         damage_die_sides=mechanics.damage_die_sides,
         damage_attribute=mechanics.damage_attribute.value,
+        damage_type=mechanics.damage_type.value,
         created_world_minute=world_minute,
     )
     db.add(action)

@@ -300,7 +300,7 @@ npm run build
   serviços autoritativos e avalia classes sem permitir escrita narrativa. O contexto público do
   System mostra XP arredondado, profissões existentes, classes visíveis, atributos e recursos, sem
   domain evidence, requisitos internos, afinidades privadas ou progresso fracionário oculto.
-- **Fase 9 — Combate: IN PROGRESS (9A–9J concluídas).** Encontros possuem fronteira persistente,
+- **Fase 9 — Combate: IN PROGRESS (9A–9K concluídas).** Encontros possuem fronteira persistente,
   campanha e localização concretas, estado ativo ou terminal, minuto de início/fim e participantes
   polimórficos validados (`CHARACTER`, `NPC` e `SIMULATED_PLAYER`). Cada participante pertence a
   um lado, possui faixa de distância e percepção inicial, precisa estar vivo e presente e não pode
@@ -343,12 +343,18 @@ npm run build
   tentar fugir respectivamente com 50%, 30% e 15% de HP. Cada decisão e seu motivo ficam ligados
   ao turno e à ação resolvida, com snapshots de risco e recursos, Event Log e retry idempotente.
   Um orquestrador resolve turnos autônomos consecutivos e para antes do turno do protagonista.
-  O Narrator continua sem qualquer autoridade sobre escolhas ou resultados mecânicos.
+  O Narrator continua sem qualquer autoridade sobre escolhas ou resultados mecânicos. A 9K
+  acrescenta dano `PHYSICAL`, `FIRE`, `COLD`, `LIGHTNING`, `POISON` e `ARCANE`. Ataques básicos
+  causam dano físico e técnicas mantêm um tipo autoritativo em seu perfil imutável. Armadura reduz
+  somente dano físico; resistências reduzem apenas o tipo correspondente; e mitigação total pode
+  produzir dano zero. Personagens recebem proteção de itens realmente equipados, com um item
+  mecânico por slot, enquanto NPCs e transportados podem possuir defesas intrínsecas persistentes.
+  Dano bruto, armadura, resistência e dano final ficam registrados separadamente e preservam a
+  idempotência do ataque.
 
 ## Fora do MVP
 
-- Armadura, resistências especializadas e incapacitação não letal no combate (Fase 9 continua em
-  andamento; 9A–9J prontas).
+- Incapacitação e estado crítico não letal no combate (Fase 9 continua em andamento; 9A–9K prontas).
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
 - Guildas, PvP, mercado e autenticação multiusuário.

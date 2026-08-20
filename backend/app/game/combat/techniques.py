@@ -11,6 +11,7 @@ from app.core.enums import (
     CombatActionType,
     CombatActorType,
     CombatConditionType,
+    CombatDamageType,
 )
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatCondition, CombatEncounter, CombatParticipant
@@ -57,6 +58,7 @@ def configure_combat_technique(
     damage_attribute: CharacterAttributeKey,
     condition_type: CombatConditionType | None = None,
     condition_duration_turns: int | None = None,
+    damage_type: CombatDamageType = CombatDamageType.PHYSICAL,
 ) -> CombatTechniqueProfile:
     """Attach immutable, structured combat mechanics to a discovered technique."""
     if db.get(Technique, technique.id) is None:
@@ -69,6 +71,8 @@ def configure_combat_technique(
         raise CombatTechniqueError("Invalid technique damage attribute.")
     if CharacterAttributeKey.LUCK in {attack_attribute, damage_attribute}:
         raise CombatTechniqueError("Luck cannot resolve technique attacks or damage.")
+    if not isinstance(damage_type, CombatDamageType):
+        raise CombatTechniqueError("Invalid technique damage type.")
     if resource_key not in {
         CharacterResourceKey.MANA,
         CharacterResourceKey.STAMINA,
@@ -96,6 +100,7 @@ def configure_combat_technique(
         "base_damage_dice": base_damage_dice,
         "damage_die_sides": damage_die_sides,
         "damage_attribute": damage_attribute.value,
+        "damage_type": damage_type.value,
         "condition_type": condition_type.value if condition_type else None,
         "condition_duration_turns": condition_duration_turns,
     }
@@ -151,6 +156,7 @@ def resolve_combat_technique(
         base_damage_dice=profile.base_damage_dice,
         damage_die_sides=profile.damage_die_sides,
         damage_attribute=CharacterAttributeKey(profile.damage_attribute),
+        damage_type=CombatDamageType(profile.damage_type),
         technique_id=technique.id,
     )
     attack: CombatActionResolution = resolve_profiled_attack(

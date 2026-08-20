@@ -7,6 +7,7 @@ from app.core.enums import (
     CombatActionType,
     CombatActorType,
     CombatConditionType,
+    CombatDamageType,
     CombatRangeBand,
 )
 from app.db.models.combat import CombatAction, CombatCondition, CombatParticipant
@@ -15,6 +16,7 @@ from app.db.models.npc import NPC
 from app.db.models.skill import CombatTechniqueProfile, TechniqueUseRecord
 from app.game.character.service import create_character
 from app.game.combat.encounters import CombatantSpec, start_encounter
+from app.game.combat.defense import configure_actor_combat_defense
 from app.game.combat.techniques import (
     CombatTechniqueError,
     configure_combat_technique,
@@ -38,7 +40,12 @@ class ExplodingRng:
         raise AssertionError("A replayed or rejected technique must not roll dice.")
 
 
-def _setup(db_session, *, grant: bool = True):
+def _setup(
+    db_session,
+    *,
+    grant: bool = True,
+    damage_type: CombatDamageType = CombatDamageType.PHYSICAL,
+):
     for key, family in (("SWORD", "WEAPON"), ("WIND", "MANIFESTATION")):
         if db_session.get(DomainDefinition, key) is None:
             db_session.add(DomainDefinition(key=key, family=family, description=""))
@@ -80,6 +87,7 @@ def _setup(db_session, *, grant: bool = True):
         base_damage_dice=2,
         damage_die_sides=8,
         damage_attribute=CharacterAttributeKey.INTELLIGENCE,
+        damage_type=damage_type,
         condition_type=CombatConditionType.STUNNED,
         condition_duration_turns=1,
     )
@@ -155,6 +163,7 @@ def test_known_combat_technique_uses_profile_cost_damage_condition_and_evidence(
     assert result.action.damage_dice == 2
     assert result.action.damage_roll == 9
     assert result.action.damage_modifier == 2
+    assert result.action.damage_type == CombatDamageType.PHYSICAL.value
     assert result.action.damage_total == 11
     assert enemy.hp_current == 29
     assert result.condition is not None
@@ -173,6 +182,44 @@ def test_known_combat_technique_uses_profile_cost_damage_condition_and_evidence(
     current = get_current_turn(db_session, encounter)
     assert current.participant_id == hero.id
     assert result.condition.active is False
+
+
+def test_combat_technique_uses_configured_damage_type_and_resistance(db_session):
+    (
+        _campaign,
+        _character,
+        enemy,
+        technique,
+        profile,
+        encounter,
+        hero,
+        guardian,
+    ) = _setup(db_session, damage_type=CombatDamageType.FIRE)
+    configure_actor_combat_defense(
+        db_session,
+        CombatActorType.NPC,
+        enemy.id,
+        armor_rating=10,
+        resistances={CombatDamageType.FIRE: 3},
+    )
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    result = resolve_combat_technique(
+        db_session,
+        encounter,
+        hero,
+        guardian,
+        technique_id=technique.id,
+        action_key="fire-technique",
+        rng=SequenceRng(10, 4, 5),
+    )
+
+    assert profile.damage_type == CombatDamageType.FIRE.value
+    assert result.action.damage_type == CombatDamageType.FIRE.value
+    assert result.action.damage_before_mitigation == 9
+    assert result.action.armor_mitigation == 0
+    assert result.action.resistance_mitigation == 3
+    assert result.action.damage_total == 6
 
 
 def test_combat_technique_retry_does_not_repeat_cost_damage_or_condition(db_session):

@@ -65,6 +65,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_tactical_actions",
             "combat_autonomous_decisions",
             "character_recoveries",
+            "item_combat_profiles",
+            "actor_combat_defenses",
         }.issubset(tables)
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -109,6 +111,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "base_damage_dice",
             "damage_die_sides",
             "damage_attribute",
+            "damage_type",
+            "damage_before_mitigation",
+            "armor_mitigation",
+            "resistance_mitigation",
         }.issubset(combat_action_columns)
         assert {
             "uq_combat_action_key",
@@ -225,6 +231,38 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "ix_combat_condition_participant_active"
             in combat_condition_indexes
         )
+        item_combat_profile_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("item_combat_profiles")
+        }
+        actor_defense_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("actor_combat_defenses")
+        }
+        actor_defense_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints(
+                "actor_combat_defenses"
+            )
+        }
+        actor_defense_indexes = {
+            item["name"]
+            for item in inspect(engine).get_indexes("actor_combat_defenses")
+        }
+        assert {
+            "item_id",
+            "slot",
+            "armor_rating",
+            "resistances_json",
+        } == item_combat_profile_columns
+        assert {
+            "actor_type",
+            "actor_id",
+            "armor_rating",
+            "resistances_json",
+        }.issubset(actor_defense_columns)
+        assert "uq_actor_combat_defense_identity" in actor_defense_constraints
+        assert "ix_actor_combat_defense_identity" in actor_defense_indexes
         recovery_columns = {
             item["name"]
             for item in inspect(engine).get_columns("character_recoveries")
@@ -270,6 +308,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "damage_attribute",
             "condition_type",
             "condition_duration_turns",
+            "damage_type",
         } == combat_technique_columns
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")

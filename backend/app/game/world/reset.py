@@ -1,4 +1,4 @@
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
@@ -19,6 +19,7 @@ from app.db.models.character_class import (
     ClassDefinitionDomain,
 )
 from app.db.models.event import WorldEvent
+from app.db.models.defense import ActorCombatDefense
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
@@ -83,6 +84,16 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
             CombatEncounter.campaign_id == campaign_id
         ).all()
     ]
+    npc_ids = [
+        row[0]
+        for row in db.query(NPC.id).filter(NPC.campaign_id == campaign_id).all()
+    ]
+    simulated_player_ids = [
+        row[0]
+        for row in db.query(SimulatedPlayer.id).filter(
+            SimulatedPlayer.campaign_id == campaign_id
+        ).all()
+    ]
 
     db.query(CombatCondition).filter(
         CombatCondition.encounter_id.in_(combat_ids)
@@ -104,6 +115,22 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     ).delete(synchronize_session=False)
     db.query(CombatEncounter).filter(
         CombatEncounter.id.in_(combat_ids)
+    ).delete(synchronize_session=False)
+    db.query(ActorCombatDefense).filter(
+        or_(
+            and_(
+                ActorCombatDefense.actor_type == "CHARACTER",
+                ActorCombatDefense.actor_id.in_(character_ids),
+            ),
+            and_(
+                ActorCombatDefense.actor_type == "NPC",
+                ActorCombatDefense.actor_id.in_(npc_ids),
+            ),
+            and_(
+                ActorCombatDefense.actor_type == "SIMULATED_PLAYER",
+                ActorCombatDefense.actor_id.in_(simulated_player_ids),
+            ),
+        )
     ).delete(synchronize_session=False)
 
     db.query(CharacterQuestObjective).filter(
@@ -186,12 +213,6 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(SimulatedPlayerRelationship).filter(
         SimulatedPlayerRelationship.campaign_id == campaign_id
     ).delete(synchronize_session=False)
-    simulated_player_ids = [
-        row[0]
-        for row in db.query(SimulatedPlayer.id).filter(
-            SimulatedPlayer.campaign_id == campaign_id
-        ).all()
-    ]
     db.query(SimulatedPlayerSkill).filter(
         SimulatedPlayerSkill.simulated_player_id.in_(simulated_player_ids)
     ).delete(synchronize_session=False)

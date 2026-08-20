@@ -115,6 +115,11 @@ class CombatTechniqueProfile(Base):
     base_damage_dice: Mapped[int] = mapped_column(Integer, nullable=False)
     damage_die_sides: Mapped[int] = mapped_column(Integer, nullable=False)
     damage_attribute: Mapped[str] = mapped_column(String, nullable=False)
+    damage_type: Mapped[str] = mapped_column(
+        String,
+        default="PHYSICAL",
+        nullable=False,
+    )
     condition_type: Mapped[str | None] = mapped_column(String, nullable=True)
     condition_duration_turns: Mapped[int | None] = mapped_column(
         Integer,

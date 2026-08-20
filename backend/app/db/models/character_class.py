@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import ClassOfferStatus
@@ -18,6 +18,12 @@ class ClassDefinition(Base):
             "name",
             name="uq_class_definition_campaign_name",
         ),
+        Index(
+            "uq_class_definition_campaign_generation_key",
+            "campaign_id",
+            "generation_key",
+            unique=True,
+        ),
     )
 
     id: Mapped[str] = mapped_column(
@@ -31,9 +37,32 @@ class ClassDefinition(Base):
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(Text, default="")
+    identity: Mapped[str] = mapped_column(Text, default="")
+    theme: Mapped[str] = mapped_column(String, default="")
+    generation_key: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(UTC).replace(tzinfo=None),
+    )
+
+    domains: Mapped[list["ClassDefinitionDomain"]] = relationship(
+        cascade="all, delete-orphan",
+        order_by="ClassDefinitionDomain.domain_key",
+    )
+
+
+class ClassDefinitionDomain(Base):
+    """A factual domain recognized by a generated class identity."""
+
+    __tablename__ = "class_definition_domains"
+
+    class_definition_id: Mapped[str] = mapped_column(
+        ForeignKey("class_definitions.id"),
+        primary_key=True,
+    )
+    domain_key: Mapped[str] = mapped_column(
+        ForeignKey("domain_definitions.key"),
+        primary_key=True,
     )
 
 

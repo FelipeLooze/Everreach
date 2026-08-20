@@ -48,6 +48,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "domain_evidence_records",
             "character_domain_synergies",
             "domain_synergy_records",
+            "class_definition_domains",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
@@ -112,6 +113,13 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             character_columns
         )
         assert "active_class_id" in character_columns
+        class_definition_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("class_definitions")
+        }
+        assert {"identity", "theme", "generation_key"}.issubset(
+            class_definition_columns
+        )
         with engine.connect() as connection:
             domain_count = connection.execute(
                 text("SELECT COUNT(*) FROM domain_definitions")

@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
-from app.db.models.character_class import CharacterClassOffer, ClassDefinition
+from app.db.models.character_class import (
+    CharacterClassOffer,
+    ClassDefinition,
+    ClassDefinitionDomain,
+)
 from app.db.models.event import WorldEvent
 from app.db.models.domain import (
     CharacterDomainEvidence,
@@ -154,6 +158,15 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         CharacterConnectionDiscovery.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(Character).filter(Character.id.in_(character_ids)).delete(synchronize_session=False)
+    class_definition_ids = [
+        row[0]
+        for row in db.query(ClassDefinition.id).filter(
+            ClassDefinition.campaign_id == campaign_id
+        ).all()
+    ]
+    db.query(ClassDefinitionDomain).filter(
+        ClassDefinitionDomain.class_definition_id.in_(class_definition_ids)
+    ).delete(synchronize_session=False)
     db.query(ClassDefinition).filter(
         ClassDefinition.campaign_id == campaign_id
     ).delete(synchronize_session=False)

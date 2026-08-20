@@ -1,6 +1,10 @@
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
-from app.db.models.character_class import CharacterClassOffer, ClassDefinition
+from app.db.models.character_class import (
+    CharacterClassOffer,
+    ClassDefinition,
+    ClassDefinitionDomain,
+)
 from app.db.models.event import WorldEvent
 from app.db.models.domain import (
     CharacterDomainEvidence,
@@ -59,6 +63,7 @@ __all__ = [
     "Character",
     "CharacterAttribute",
     "ClassDefinition",
+    "ClassDefinitionDomain",
     "CharacterClassOffer",
     "WorldEvent",
     "DomainDefinition",

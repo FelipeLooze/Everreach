@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 from app.core.enums import ClassOfferStatus, EventType
 from app.db.models.campaign import Campaign
 from app.db.models.character import Character
-from app.db.models.character_class import CharacterClassOffer, ClassDefinition
+from app.db.models.character_class import (
+    CharacterClassOffer,
+    ClassDefinition,
+    ClassDefinitionDomain,
+)
 from app.services.event_log import log_event
 
 
@@ -16,15 +20,34 @@ def create_class_definition(
     campaign_id: str,
     name: str,
     description: str,
+    *,
+    identity: str = "",
+    theme: str = "",
+    generation_key: str | None = None,
+    domain_keys: tuple[str, ...] = (),
 ) -> ClassDefinition:
     if db.get(Campaign, campaign_id) is None:
         raise ValueError("Campaign does not exist.")
     normalized_name = " ".join(name.split())
     normalized_description = " ".join(description.split())
+    normalized_identity = " ".join(identity.split())
+    normalized_theme = " ".join(theme.split())
     if not normalized_name:
         raise ValueError("Class name is required.")
     if not normalized_description:
         raise ValueError("Class description is required.")
+
+    if generation_key is not None:
+        existing_by_path = (
+            db.query(ClassDefinition)
+            .filter(
+                ClassDefinition.campaign_id == campaign_id,
+                ClassDefinition.generation_key == generation_key,
+            )
+            .first()
+        )
+        if existing_by_path is not None:
+            return existing_by_path
 
     existing = (
         db.query(ClassDefinition)
@@ -35,16 +58,63 @@ def create_class_definition(
         .first()
     )
     if existing is not None:
+        if (
+            generation_key is not None
+            and existing.generation_key != generation_key
+        ):
+            raise ValueError(
+                "Generated class name is already used by another class path."
+            )
         return existing
 
     class_definition = ClassDefinition(
         campaign_id=campaign_id,
         name=normalized_name,
         description=normalized_description,
+        identity=normalized_identity,
+        theme=normalized_theme,
+        generation_key=generation_key,
     )
     db.add(class_definition)
     db.flush()
+    for domain_key in sorted(set(domain_keys)):
+        db.add(
+            ClassDefinitionDomain(
+                class_definition_id=class_definition.id,
+                domain_key=domain_key,
+            )
+        )
+    db.flush()
     return class_definition
+
+
+def make_pending_class_offers_available(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    *,
+    safe_to_notify: bool,
+) -> list[CharacterClassOffer]:
+    """Reveal pending offers only when the authoritative caller marks a safe moment."""
+    pending = (
+        db.query(CharacterClassOffer)
+        .filter(
+            CharacterClassOffer.character_id == character.id,
+            CharacterClassOffer.status == ClassOfferStatus.PENDING.value,
+        )
+        .order_by(CharacterClassOffer.created_at, CharacterClassOffer.id)
+        .all()
+    )
+    return [
+        make_class_offer_available(
+            db,
+            campaign_id,
+            character,
+            offer,
+            safe_to_notify=safe_to_notify,
+        )
+        for offer in pending
+    ]
 
 
 def create_class_offer(

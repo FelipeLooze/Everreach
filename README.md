@@ -357,15 +357,22 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A concluída).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10B concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
   pilhas aceitam quantidade positiva. A migration preserva o catálogo e os perfis defensivos da
   Fase 9, reconhecendo itens com perfil de combate como únicos. O campo livre legado `stats_json`
-  não concede autoridade mecânica e não foi expandido. Localização física, posse, peso,
-  equipamento, armas, armaduras, ferramentas, qualidade, condição, materiais, recipientes,
-  transferências e contexto do System permanecem deliberadamente nas subfases 10B–10M.
+  não concede autoridade mecânica e não foi expandido. Cada instância agora pertence a uma
+  campanha e possui localização física independente de sua propriedade social: pode estar sem
+  posição, carregada/equipada por personagem, com NPC ou no chão de uma localização. Mudanças de
+  localização e propriedade são validadas contra entidades reais, não atravessam campanhas, são
+  idempotentes e geram eventos estruturados. O inventário legado foi migrado para instâncias e
+  removido como segunda fonte de verdade; API e proteção de combate consomem a nova localização.
+  A morte do portador não apaga nem desloca itens. Recipientes permanecem bloqueados até a 10K,
+  quando ciclos poderão ser impedidos corretamente. Peso, equipamento completo, armas, armaduras,
+  ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
+  do System permanecem deliberadamente nas subfases 10C–10M.
 
 ## Fora do MVP
 

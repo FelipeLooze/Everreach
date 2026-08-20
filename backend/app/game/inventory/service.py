@@ -1,8 +1,22 @@
 from sqlalchemy.orm import Session
 
-from app.core.enums import ItemInstanceMode, ItemType
-from app.db.models.item import InventoryItem, Item
-from app.game.items.service import create_item_definition, item_key_from_name
+from app.core.enums import (
+    EventType,
+    ItemInstanceMode,
+    ItemLocationType,
+    ItemOwnerType,
+    ItemType,
+)
+from app.db.models.character import Character
+from app.db.models.item import Item, ItemInstance
+from app.game.items.service import (
+    create_item_definition,
+    create_item_instance,
+    item_key_from_name,
+    move_item_instance,
+    set_item_owner,
+)
+from app.services.event_log import log_event
 
 
 def get_or_create_item(db: Session, name: str, item_type: str = "misc", description: str = "") -> Item:
@@ -35,21 +49,70 @@ def get_or_create_item(db: Session, name: str, item_type: str = "misc", descript
     )
 
 
-def add_item(db: Session, character_id: str, item_name: str, quantity: int = 1) -> InventoryItem:
+def add_item(db: Session, character_id: str, item_name: str, quantity: int = 1) -> ItemInstance:
+    if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
+        raise ValueError("Item quantity must be a positive integer.")
+    character = db.get(Character, character_id)
+    if character is None:
+        raise ValueError("Character does not exist.")
     item = get_or_create_item(db, item_name)
-    entry = (
-        db.query(InventoryItem)
-        .filter(InventoryItem.character_id == character_id, InventoryItem.item_id == item.id)
-        .first()
-    )
-    if entry:
-        entry.quantity += quantity
+    entry = None
+    if item.instance_mode == ItemInstanceMode.STACKABLE.value:
+        entry = (
+            db.query(ItemInstance)
+            .filter(
+                ItemInstance.definition_id == item.id,
+                ItemInstance.location_type == ItemLocationType.CHARACTER.value,
+                ItemInstance.location_ref == character_id,
+            )
+            .one_or_none()
+        )
+    if entry is None:
+        entry = create_item_instance(db, item, quantity=quantity)
+        move_item_instance(
+            db,
+            entry,
+            location_type=ItemLocationType.CHARACTER,
+            location_ref=character_id,
+        )
+        set_item_owner(
+            db,
+            entry,
+            owner_type=ItemOwnerType.CHARACTER,
+            owner_ref=character_id,
+        )
     else:
-        entry = InventoryItem(character_id=character_id, item_id=item.id, quantity=quantity)
-        db.add(entry)
-    db.flush()
+        entry.quantity += quantity
+        db.flush()
+    log_event(
+        db,
+        character.campaign_id,
+        EventType.PLAYER_GAINED_ITEM,
+        actor_type="character",
+        actor_id=character.id,
+        payload={
+            "item_instance_id": entry.id,
+            "definition_id": item.id,
+            "quantity": quantity,
+            "quantity_after": entry.quantity,
+        },
+    )
     return entry
 
 
-def list_inventory(db: Session, character_id: str) -> list[InventoryItem]:
-    return db.query(InventoryItem).filter(InventoryItem.character_id == character_id).all()
+def list_inventory(db: Session, character_id: str) -> list[ItemInstance]:
+    return (
+        db.query(ItemInstance)
+        .join(Item, Item.id == ItemInstance.definition_id)
+        .filter(
+            ItemInstance.location_type.in_(
+                (
+                    ItemLocationType.CHARACTER.value,
+                    ItemLocationType.CHARACTER_EQUIPPED.value,
+                )
+            ),
+            ItemInstance.location_ref == character_id,
+        )
+        .order_by(Item.name, ItemInstance.id)
+        .all()
+    )

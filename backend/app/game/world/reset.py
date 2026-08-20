@@ -28,7 +28,7 @@ from app.db.models.domain import (
     DomainEvidenceRecord,
     DomainSynergyRecord,
 )
-from app.db.models.item import InventoryItem
+from app.db.models.item import ItemInstance
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import CharacterLocationDiscovery, Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
 from app.db.models.memory import Memory
@@ -196,7 +196,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(CharacterRecovery).filter(
         CharacterRecovery.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
-    db.query(InventoryItem).filter(InventoryItem.character_id.in_(character_ids)).delete(synchronize_session=False)
+    db.query(ItemInstance).filter(
+        ItemInstance.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
     db.query(CharacterAttribute).filter(CharacterAttribute.character_id.in_(character_ids)).delete(
         synchronize_session=False
     )

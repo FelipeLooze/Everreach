@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Integer, String
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.ids import generate_id
@@ -38,7 +38,38 @@ class ItemInstance(Base):
             "quantity > 0",
             name="ck_item_instance_quantity_positive",
         ),
+        CheckConstraint(
+            "(location_type = 'UNPLACED' AND location_ref IS NULL) OR "
+            "(location_type <> 'UNPLACED' AND location_ref IS NOT NULL)",
+            name="ck_item_instance_location_ref",
+        ),
+        CheckConstraint(
+            "location_type IN ('UNPLACED', 'CHARACTER', 'CHARACTER_EQUIPPED', "
+            "'NPC', 'WORLD_LOCATION', 'CONTAINER')",
+            name="ck_item_instance_location_type",
+        ),
+        CheckConstraint(
+            "(owner_type = 'NONE' AND owner_ref IS NULL) OR "
+            "(owner_type <> 'NONE' AND owner_ref IS NOT NULL)",
+            name="ck_item_instance_owner_ref",
+        ),
+        CheckConstraint(
+            "owner_type IN ('NONE', 'CHARACTER', 'NPC')",
+            name="ck_item_instance_owner_type",
+        ),
         Index("ix_item_instance_definition", "definition_id"),
+        Index(
+            "ix_item_instance_campaign_location",
+            "campaign_id",
+            "location_type",
+            "location_ref",
+        ),
+        Index(
+            "ix_item_instance_campaign_owner",
+            "campaign_id",
+            "owner_type",
+            "owner_ref",
+        ),
     )
 
     id: Mapped[str] = mapped_column(
@@ -50,19 +81,40 @@ class ItemInstance(Base):
         ForeignKey("items.id"),
         nullable=False,
     )
+    campaign_id: Mapped[str | None] = mapped_column(
+        ForeignKey("campaigns.id"),
+        nullable=True,
+    )
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    location_type: Mapped[str] = mapped_column(
+        String,
+        default="UNPLACED",
+        nullable=False,
+    )
+    location_ref: Mapped[str | None] = mapped_column(String, nullable=True)
+    owner_type: Mapped[str] = mapped_column(
+        String,
+        default="NONE",
+        nullable=False,
+    )
+    owner_ref: Mapped[str | None] = mapped_column(String, nullable=True)
 
     definition: Mapped["ItemDefinition"] = relationship(back_populates="instances")
 
+    @property
+    def item_id(self) -> str:
+        """Compatibility accessor for Phase 9 callers."""
+        return self.definition_id
 
-class InventoryItem(Base):
-    __tablename__ = "inventory_items"
+    @property
+    def character_id(self) -> str | None:
+        if self.location_type in {"CHARACTER", "CHARACTER_EQUIPPED"}:
+            return self.location_ref
+        return None
 
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("inv"))
-    character_id: Mapped[str] = mapped_column(ForeignKey("characters.id"), nullable=False)
-    item_id: Mapped[str] = mapped_column(ForeignKey("items.id"), nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, default=1)
-    equipped: Mapped[bool] = mapped_column(Boolean, default=False)
+    @property
+    def equipped(self) -> bool:
+        return self.location_type == "CHARACTER_EQUIPPED"
 
 
 # Compatibility name for Phase 9 call sites. New Phase 10 code should say

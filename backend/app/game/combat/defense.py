@@ -3,13 +3,19 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import CombatActorType, CombatDamageType, EquipmentSlot
+from app.core.enums import (
+    CombatActorType,
+    CombatDamageType,
+    EquipmentSlot,
+    ItemLocationType,
+)
 from app.db.models.character import Character
 from app.db.models.combat import CombatParticipant
 from app.db.models.defense import ActorCombatDefense, ItemCombatProfile
-from app.db.models.item import InventoryItem, Item
+from app.db.models.item import Item, ItemInstance
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
+from app.game.items.service import move_item_instance
 
 
 MAX_SINGLE_ARMOR_RATING = 20
@@ -100,39 +106,52 @@ def configure_actor_combat_defense(
     return profile
 
 
-def equip_combat_item(db: Session, entry: InventoryItem) -> InventoryItem:
-    if db.get(InventoryItem, entry.id) is None or entry.quantity < 1:
+def equip_combat_item(db: Session, entry: ItemInstance) -> ItemInstance:
+    if db.get(ItemInstance, entry.id) is None or entry.quantity < 1:
         raise CombatDefenseError("Inventory item must exist with positive quantity.")
-    profile = db.get(ItemCombatProfile, entry.item_id)
+    if (
+        entry.location_type != ItemLocationType.CHARACTER.value
+        or not entry.location_ref
+    ):
+        raise CombatDefenseError("Item must be carried by a character before equipping.")
+    profile = db.get(ItemCombatProfile, entry.definition_id)
     if profile is None:
         raise CombatDefenseError("Item has no authoritative combat profile.")
     conflict = (
-        db.query(InventoryItem)
+        db.query(ItemInstance)
         .join(
             ItemCombatProfile,
-            ItemCombatProfile.item_id == InventoryItem.item_id,
+            ItemCombatProfile.item_id == ItemInstance.definition_id,
         )
         .filter(
-            InventoryItem.character_id == entry.character_id,
-            InventoryItem.id != entry.id,
-            InventoryItem.equipped.is_(True),
+            ItemInstance.location_ref == entry.location_ref,
+            ItemInstance.id != entry.id,
+            ItemInstance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value,
             ItemCombatProfile.slot == profile.slot,
         )
         .first()
     )
     if conflict is not None:
         raise CombatDefenseError(f"Equipment slot {profile.slot} is already occupied.")
-    entry.equipped = True
-    db.flush()
-    return entry
+    return move_item_instance(
+        db,
+        entry,
+        location_type=ItemLocationType.CHARACTER_EQUIPPED,
+        location_ref=entry.location_ref,
+    )
 
 
-def unequip_combat_item(db: Session, entry: InventoryItem) -> InventoryItem:
-    if db.get(InventoryItem, entry.id) is None:
+def unequip_combat_item(db: Session, entry: ItemInstance) -> ItemInstance:
+    if db.get(ItemInstance, entry.id) is None:
         raise CombatDefenseError("Inventory item does not exist.")
-    entry.equipped = False
-    db.flush()
-    return entry
+    if entry.location_type != ItemLocationType.CHARACTER_EQUIPPED.value:
+        raise CombatDefenseError("Item is not equipped by a character.")
+    return move_item_instance(
+        db,
+        entry,
+        location_type=ItemLocationType.CHARACTER,
+        location_ref=entry.location_ref,
+    )
 
 
 def resolve_damage_mitigation(
@@ -158,15 +177,15 @@ def resolve_damage_mitigation(
     )
     if participant.actor_type == CombatActorType.CHARACTER.value:
         equipped = (
-            db.query(InventoryItem, ItemCombatProfile)
+            db.query(ItemInstance, ItemCombatProfile)
             .join(
                 ItemCombatProfile,
-                ItemCombatProfile.item_id == InventoryItem.item_id,
+                ItemCombatProfile.item_id == ItemInstance.definition_id,
             )
             .filter(
-                InventoryItem.character_id == participant.actor_id,
-                InventoryItem.equipped.is_(True),
-                InventoryItem.quantity > 0,
+                ItemInstance.location_ref == participant.actor_id,
+                ItemInstance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value,
+                ItemInstance.quantity > 0,
             )
             .all()
         )

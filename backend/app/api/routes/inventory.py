@@ -19,7 +19,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
     entries = list_inventory(db, character_id)
     items = []
     for entry in entries:
-        item = db.get(Item, entry.item_id)
+        item = db.get(Item, entry.definition_id)
         if item is None:
             continue
         items.append(

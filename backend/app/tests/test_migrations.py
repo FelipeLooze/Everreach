@@ -87,9 +87,25 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         }
         assert {"key", "type", "instance_mode"}.issubset(item_definition_columns)
         assert "uq_item_definition_key" in item_definition_constraints
-        assert {"id", "definition_id", "quantity"} == item_instance_columns
+        assert {
+            "id",
+            "definition_id",
+            "quantity",
+            "campaign_id",
+            "location_type",
+            "location_ref",
+            "owner_type",
+            "owner_ref",
+        } == item_instance_columns
         assert "ck_item_instance_quantity_positive" in item_instance_checks
+        assert "ck_item_instance_location_ref" in item_instance_checks
+        assert "ck_item_instance_location_type" in item_instance_checks
+        assert "ck_item_instance_owner_ref" in item_instance_checks
+        assert "ck_item_instance_owner_type" in item_instance_checks
         assert "ix_item_instance_definition" in item_instance_indexes
+        assert "ix_item_instance_campaign_location" in item_instance_indexes
+        assert "ix_item_instance_campaign_owner" in item_instance_indexes
+        assert "inventory_items" not in tables
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
         }
@@ -554,6 +570,21 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
         with engine.begin() as connection:
             connection.execute(
                 text(
+                    "INSERT INTO campaigns (id, name, created_at) "
+                    "VALUES ('campaign_legacy', 'Legado', '2026-08-20 12:00:00')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO characters "
+                    "(id, campaign_id, name, level, xp, hp_current, hp_max, "
+                    "mana_current, mana_max, stamina_current, stamina_max, status, created_at) "
+                    "VALUES ('char_legacy', 'campaign_legacy', 'Hero', 0, 0, 20, 20, "
+                    "10, 10, 20, 20, 'ALIVE', '2026-08-20 12:00:00')"
+                )
+            )
+            connection.execute(
+                text(
                     "INSERT INTO items (id, name, type, description, stats_json) "
                     "VALUES ('item_legacy', 'Cota Antiga', 'armor', '', '{}')"
                 )
@@ -563,6 +594,13 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
                     "INSERT INTO item_combat_profiles "
                     "(item_id, slot, armor_rating, resistances_json) "
                     "VALUES ('item_legacy', 'BODY', 3, '{}')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO inventory_items "
+                    "(id, character_id, item_id, quantity, equipped) "
+                    "VALUES ('inv_legacy', 'char_legacy', 'item_legacy', 1, 1)"
                 )
             )
 
@@ -581,6 +619,13 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
                     "WHERE item_id = 'item_legacy'"
                 )
             ).scalar_one()
+            migrated_instance = connection.execute(
+                text(
+                    "SELECT definition_id, quantity, campaign_id, location_type, "
+                    "location_ref, owner_type, owner_ref FROM item_instances "
+                    "WHERE id = 'item_instance_inv_legacy'"
+                )
+            ).mappings().one()
         assert dict(definition) == {
             "key": "item_legacy",
             "name": "Cota Antiga",
@@ -588,6 +633,15 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
             "instance_mode": "UNIQUE",
         }
         assert profile_count == 1
+        assert dict(migrated_instance) == {
+            "definition_id": "item_legacy",
+            "quantity": 1,
+            "campaign_id": "campaign_legacy",
+            "location_type": "CHARACTER_EQUIPPED",
+            "location_ref": "char_legacy",
+            "owner_type": "CHARACTER",
+            "owner_ref": "char_legacy",
+        }
         engine.dispose()
     finally:
         get_settings.cache_clear()

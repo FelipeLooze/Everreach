@@ -6,6 +6,7 @@ from app.core.enums import (
     EquipmentSlot,
     ItemAccessibility,
     PhysicalDamageProfile,
+    ToolCapability,
     WeaponFamily,
     WeaponHandRequirement,
     WeaponReach,
@@ -24,6 +25,10 @@ class ArmorProfileResponse(BaseModel):
     physical_protections: dict[PhysicalDamageProfile, int]
 
 
+class ToolProfileResponse(BaseModel):
+    capabilities: list[ToolCapability]
+
+
 class InventoryItemResponse(BaseModel):
     item_instance_id: str
     item_id: str
@@ -38,6 +43,7 @@ class InventoryItemResponse(BaseModel):
     allowed_slots: list[EquipmentSlot]
     weapon: WeaponProfileResponse | None
     armor: ArmorProfileResponse | None
+    tool: ToolProfileResponse | None
 
 
 class InventoryResponse(BaseModel):

@@ -70,6 +70,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_equipment_profiles",
             "item_weapon_profiles",
             "item_armor_profiles",
+            "item_tool_profiles",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -104,12 +105,17 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             item["name"]
             for item in inspect(engine).get_columns("item_armor_profiles")
         }
+        item_tool_profile_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("item_tool_profiles")
+        }
         combat_action_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_actions")
         }
         assert item_armor_profile_columns == {
             "item_id", "coverage_json", "physical_protections_json"
         }
+        assert item_tool_profile_columns == {"item_id", "capabilities_json"}
         assert "target_body_area" in combat_action_columns
         assert {"key", "type", "instance_mode", "base_weight"}.issubset(
             item_definition_columns

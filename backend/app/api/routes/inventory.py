@@ -6,16 +6,19 @@ from app.db.models.character import Character
 from app.db.models.defense import ItemArmorProfile
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item
+from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 from app.game.inventory.service import list_inventory
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
-from app.game.items.weapons import get_weapon_damage_profiles
 from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
+from app.game.items.tools import get_tool_capabilities
+from app.game.items.weapons import get_weapon_damage_profiles
 from app.schemas.inventory import (
     ArmorProfileResponse,
     InventoryItemResponse,
     InventoryResponse,
+    ToolProfileResponse,
     WeaponProfileResponse,
 )
 
@@ -37,6 +40,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
         equipment_profile = db.get(ItemEquipmentProfile, item.id)
         weapon_profile = db.get(ItemWeaponProfile, item.id)
         armor_profile = db.get(ItemArmorProfile, item.id)
+        tool_profile = db.get(ItemToolProfile, item.id)
         items.append(
             InventoryItemResponse(
                 item_instance_id=entry.id,
@@ -78,6 +82,16 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                         physical_protections=get_armor_physical_protections(armor_profile),
                     )
                     if armor_profile is not None
+                    else None
+                ),
+                tool=(
+                    ToolProfileResponse(
+                        capabilities=sorted(
+                            get_tool_capabilities(tool_profile),
+                            key=lambda capability: capability.value,
+                        )
+                    )
+                    if tool_profile is not None
                     else None
                 ),
             )

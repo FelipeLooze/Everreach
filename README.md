@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10F concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10G concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -404,9 +404,16 @@ npm run build
   área atingida reduzem o dano, usando a proteção correspondente. Peso continua vindo da 10C;
   resistências elementais permanecem separadas; e a estrutura admite camadas futuras sem aplicar
   agora empilhamento profundo, materiais, qualidade ou durabilidade.
+  A 10G torna ferramentas itens de primeira classe por meio de capacidades práticas validadas:
+  martelar, cortar, minerar, serrar, cozinhar, pescar, costurar e abrir fechaduras. Uma atividade
+  profissional pode exigir uma capacidade e uma instância concreta fisicamente carregada pelo
+  personagem; o backend valida essa evidência e a registra no Event Log junto da acessibilidade.
+  A ferramenta não concede XP ou bônus genérico por existir ou estar equipada, não duplica as
+  fórmulas da Fase 8 e não precisa ocupar um slot para ter perfil — panelas e instrumentos grandes
+  continuam representáveis. API e inventário exibem somente suas capacidades compreensíveis.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
-  do System permanecem deliberadamente nas subfases 10G–10M.
+  Qualidade, condição, materiais, recipientes, transferências por intenção e contexto do System
+  permanecem deliberadamente nas subfases 10H–10M.
 
 ## Fora do MVP
 

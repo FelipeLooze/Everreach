@@ -159,6 +159,17 @@ class BodyArea(StrEnum):
     FEET = "FEET"
 
 
+class ToolCapability(StrEnum):
+    HAMMERING = "HAMMERING"
+    CUTTING = "CUTTING"
+    MINING = "MINING"
+    SAWING = "SAWING"
+    COOKING = "COOKING"
+    FISHING = "FISHING"
+    SEWING = "SEWING"
+    LOCKPICKING = "LOCKPICKING"
+
+
 class WeaponReach(StrEnum):
     NORMAL = "NORMAL"
     LONG = "LONG"

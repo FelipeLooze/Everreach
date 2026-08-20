@@ -1,0 +1,95 @@
+import json
+from dataclasses import dataclass
+
+from sqlalchemy.orm import Session
+
+from app.core.enums import ItemAccessibility, ItemLocationType, ItemType, ToolCapability
+from app.db.models.item import ItemDefinition, ItemInstance
+from app.db.models.tool import ItemToolProfile
+from app.game.items.equipment import item_accessibility
+
+
+class ToolError(ValueError):
+    pass
+
+
+@dataclass(frozen=True)
+class ToolUseContext:
+    instance_id: str
+    capability: ToolCapability
+    accessibility: ItemAccessibility
+
+
+def configure_item_tool_profile(
+    db: Session,
+    item: ItemDefinition,
+    *,
+    capabilities: set[ToolCapability],
+) -> ItemToolProfile:
+    if db.get(ItemDefinition, item.id) is None:
+        raise ToolError("Tool item must be persisted before configuration.")
+    if item.type != ItemType.TOOL.value:
+        raise ToolError("Only TOOL item definitions can have a tool profile.")
+    if not capabilities or any(
+        not isinstance(capability, ToolCapability) for capability in capabilities
+    ):
+        raise ToolError("At least one valid tool capability is required.")
+    encoded = _encode_capabilities(capabilities)
+    existing = db.get(ItemToolProfile, item.id)
+    if existing is not None:
+        if existing.capabilities_json != encoded:
+            raise ToolError("Item already has different canonical tool mechanics.")
+        return existing
+    profile = ItemToolProfile(item_id=item.id, capabilities_json=encoded)
+    db.add(profile)
+    db.flush()
+    return profile
+
+
+def get_tool_capabilities(profile: ItemToolProfile) -> frozenset[ToolCapability]:
+    try:
+        raw = json.loads(profile.capabilities_json)
+        if not isinstance(raw, list) or not raw:
+            raise ValueError
+        capabilities = frozenset(ToolCapability(value) for value in raw)
+        if len(capabilities) != len(raw):
+            raise ValueError
+        return capabilities
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise ToolError("Persisted tool capabilities are invalid.") from exc
+
+
+def validate_character_tool_use(
+    db: Session,
+    character_id: str,
+    tool_instance_id: str,
+    *,
+    required_capability: ToolCapability,
+) -> ToolUseContext:
+    if not isinstance(required_capability, ToolCapability):
+        raise ToolError("Invalid required tool capability.")
+    instance = db.get(ItemInstance, tool_instance_id)
+    if instance is None:
+        raise ToolError("Tool instance does not exist.")
+    if instance.location_ref != character_id or instance.location_type not in {
+        ItemLocationType.CHARACTER.value,
+        ItemLocationType.CHARACTER_EQUIPPED.value,
+    }:
+        raise ToolError("Tool must be physically carried by the acting character.")
+    profile = db.get(ItemToolProfile, instance.definition_id)
+    if profile is None:
+        raise ToolError("Item has no authoritative tool profile.")
+    if required_capability not in get_tool_capabilities(profile):
+        raise ToolError("Tool does not provide the required capability.")
+    return ToolUseContext(
+        instance_id=instance.id,
+        capability=required_capability,
+        accessibility=item_accessibility(instance),
+    )
+
+
+def _encode_capabilities(capabilities: set[ToolCapability]) -> str:
+    return json.dumps(
+        sorted(capability.value for capability in capabilities),
+        separators=(",", ":"),
+    )

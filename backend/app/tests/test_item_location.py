@@ -191,6 +191,7 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "allowed_slots": [],
                 "weapon": None,
                 "armor": None,
+                "tool": None,
             }
     ]
     assert response.json()["total_weight"] == 0.0

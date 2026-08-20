@@ -72,6 +72,17 @@ const handRequirementLabels = {
   TWO_HANDS: "duas mãos",
 };
 
+const toolCapabilityLabels = {
+  HAMMERING: "martelar",
+  CUTTING: "cortar",
+  MINING: "minerar",
+  SAWING: "serrar",
+  COOKING: "cozinhar",
+  FISHING: "pescar",
+  SEWING: "costurar",
+  LOCKPICKING: "abrir fechaduras",
+};
+
 export function InventoryPanel({ campaignId, characterId }: { campaignId: string; characterId: string }) {
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +125,11 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
               {item.armor && (
                 <small>
                   {` — cobre ${item.armor.coverage.map((area) => bodyAreaLabels[area]).join(", ")}; proteção ${Object.entries(item.armor.physical_protections).map(([profile, value]) => `${damageProfileLabels[profile as keyof typeof damageProfileLabels]} ${value}`).join(", ")}`}
+                </small>
+              )}
+              {item.tool && (
+                <small>
+                  {` — ferramenta para ${item.tool.capabilities.map((capability) => toolCapabilityLabels[capability]).join(", ")}`}
                 </small>
               )}
             </li>

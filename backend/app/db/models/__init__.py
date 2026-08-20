@@ -84,6 +84,7 @@ from app.db.models.skill import (
     TechniqueUseRecord,
 )
 from app.db.models.world_development import WorldDevelopment
+from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
@@ -159,4 +160,5 @@ __all__ = [
     "TechniqueUseRecord",
     "WorldDevelopment",
     "ItemWeaponProfile",
+    "ItemToolProfile",
 ]

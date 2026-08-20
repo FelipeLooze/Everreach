@@ -9,10 +9,12 @@ from app.core.enums import (
     EventType,
     ProfessionActivityOutcome,
     ProfessionXPSource,
+    ToolCapability,
 )
 from app.db.models.character import Character
 from app.db.models.event import WorldEvent
 from app.db.models.profession import CharacterProfession, Profession
+from app.game.items.tools import ToolUseContext, validate_character_tool_use
 from app.game.professions.service import award_profession_xp
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
@@ -37,6 +39,7 @@ class ProfessionActivityResult:
     level_relevance_multiplier: float
     profession_xp_before_affinity: float
     progress: CharacterProfession | None
+    tool: ToolUseContext | None = None
 
 
 def _current_profession_level(
@@ -111,6 +114,8 @@ def award_profession_activity_xp(
     task_complexity_level: int,
     outcome: ProfessionActivityOutcome = ProfessionActivityOutcome.SUCCESS,
     learning_quality: float = 1.0,
+    tool_instance_id: str | None = None,
+    required_tool_capability: ToolCapability | None = None,
 ) -> ProfessionActivityResult:
     """Resolve one real professional learning opportunity and record its factors."""
     if character.campaign_id != campaign_id:
@@ -125,6 +130,20 @@ def award_profession_activity_xp(
         raise ValueError("Learning quality must be between 0 and 1.")
     if task_complexity_level < 0:
         raise ValueError("Task complexity level cannot be negative.")
+    if (tool_instance_id is None) != (required_tool_capability is None):
+        raise ValueError(
+            "Tool instance and required capability must be provided together."
+        )
+    tool = (
+        validate_character_tool_use(
+            db,
+            character.id,
+            tool_instance_id,
+            required_capability=required_tool_capability,
+        )
+        if tool_instance_id is not None and required_tool_capability is not None
+        else None
+    )
 
     normalized_profession_key = profession_key.strip().upper()
     normalized_profession_name = profession_name.strip()
@@ -191,6 +210,9 @@ def award_profession_activity_xp(
             "repetition_multiplier": repetition_multiplier,
             "level_relevance_multiplier": level_relevance_multiplier,
             "profession_xp_before_affinity": profession_xp,
+            "tool_instance_id": tool.instance_id if tool else None,
+            "tool_capability": tool.capability.value if tool else None,
+            "tool_accessibility": tool.accessibility.value if tool else None,
         },
     )
     db.flush()
@@ -202,6 +224,7 @@ def award_profession_activity_xp(
         level_relevance_multiplier=level_relevance_multiplier,
         profession_xp_before_affinity=profession_xp,
         progress=progress,
+        tool=tool,
     )
 
 

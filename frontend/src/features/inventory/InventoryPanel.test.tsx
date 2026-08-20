@@ -32,6 +32,7 @@ describe("InventoryPanel", () => {
           allowed_slots: [],
           weapon: null,
           armor: null,
+          tool: null,
         },
       ],
       total_weight: 4.5,
@@ -86,6 +87,7 @@ describe("InventoryPanel", () => {
             hand_requirement: "ONE_HAND",
           },
           armor: null,
+          tool: null,
         },
       ],
       total_weight: 2,
@@ -115,6 +117,7 @@ describe("InventoryPanel", () => {
           coverage: ["TORSO", "ARMS"],
           physical_protections: { SLASH: 3, PIERCE: 2, BLUNT: 1 },
         },
+        tool: null,
       }],
       total_weight: 4, carrying_capacity: 25, load_ratio: 0.16, encumbrance: "NORMAL",
     });
@@ -122,5 +125,23 @@ describe("InventoryPanel", () => {
     render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
     expect(await screen.findByText(/Gibão/)).toHaveTextContent("cobre torso, braços");
     expect(screen.getByText(/Gibão/)).toHaveTextContent("corte 3");
+  });
+
+  it("mostra as capacidades práticas de uma ferramenta", async () => {
+    mocks.getInventory.mockResolvedValue({
+      items: [{
+        item_instance_id: "instance_4", item_id: "item_4", name: "Picareta",
+        type: "TOOL", quantity: 1, equipped: false, unit_weight: 3,
+        total_weight: 3, equipped_slot: null, accessibility: "STOWED",
+        allowed_slots: ["MAIN_HAND", "BACK"], weapon: null, armor: null,
+        tool: { capabilities: ["HAMMERING", "MINING"] },
+      }],
+      total_weight: 3, carrying_capacity: 25, load_ratio: 0.12, encumbrance: "NORMAL",
+    });
+
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+    expect(await screen.findByText(/Picareta/)).toHaveTextContent(
+      "ferramenta para martelar, minerar",
+    );
   });
 });

@@ -41,6 +41,10 @@ ATTRIBUTE_CATALOG: dict[CharacterAttributeKey, tuple[str, str]] = {
         "Resistência",
         "Capacidade de continuar funcionando sob esforço e adversidade.",
     ),
+    CharacterAttributeKey.LUCK: (
+        "Sorte",
+        "Influência excepcional do acaso em situações realmente incertas.",
+    ),
 }
 
 _ALLOWED_SOURCES: dict[CharacterAttributeKey, set[AttributeEvidenceSource]] = {
@@ -76,6 +80,8 @@ _ALLOWED_SOURCES: dict[CharacterAttributeKey, set[AttributeEvidenceSource]] = {
         AttributeEvidenceSource.RECOVERY_CHALLENGE,
         AttributeEvidenceSource.REAL_CHALLENGE,
     },
+    # Sorte é exclusiva do protagonista e não cresce por treino rotineiro.
+    CharacterAttributeKey.LUCK: set(),
 }
 
 
@@ -164,6 +170,8 @@ def award_attribute_development(
     if not isinstance(source, AttributeEvidenceSource):
         raise ValueError("Invalid attribute evidence source.")
     if source not in _ALLOWED_SOURCES[attribute_key]:
+        if attribute_key == CharacterAttributeKey.LUCK:
+            raise ValueError("Luck does not grow through ordinary training evidence.")
         raise ValueError("Evidence source is not relevant to this attribute.")
     if not isfinite(amount) or amount <= 0:
         raise ValueError("Attribute development amount must be finite and positive.")
@@ -228,6 +236,21 @@ def award_attribute_development(
                 "new_value": attribute.value,
             },
         )
+        if attribute_key in {
+            CharacterAttributeKey.VITALITY,
+            CharacterAttributeKey.ENDURANCE,
+        }:
+            from app.game.resources.service import (
+                apply_attribute_resource_growth,
+            )
+
+            apply_attribute_resource_growth(
+                db,
+                campaign_id,
+                character,
+                attribute_key=attribute_key,
+                attribute_value=attribute.value,
+            )
     db.flush()
     return AttributeDevelopmentAward(
         attribute=attribute,
@@ -235,3 +258,14 @@ def award_attribute_development(
         repetition_multiplier=repetition_multiplier,
         increases=increases,
     )
+
+
+def adjust_probability_for_luck(
+    base_probability: float,
+    luck_value: int,
+) -> float:
+    """Bound Luck's effect on explicitly chance-based player resolutions."""
+    if not 0.0 <= base_probability <= 1.0:
+        raise ValueError("Base probability must be between zero and one.")
+    adjustment = max(-0.15, min(0.15, (luck_value - 10) * 0.01))
+    return max(0.0, min(1.0, base_probability + adjustment))

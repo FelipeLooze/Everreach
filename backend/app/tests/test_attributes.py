@@ -39,7 +39,7 @@ def _character(db_session, name: str = "Hero"):
     return campaign, character
 
 
-def test_new_character_has_six_stable_attributes_in_portuguese(db_session):
+def test_new_character_has_player_attributes_in_portuguese(db_session):
     _campaign, character = _character(db_session)
 
     attributes = list_character_attributes(db_session, character.id)
@@ -54,6 +54,7 @@ def test_new_character_has_six_stable_attributes_in_portuguese(db_session):
         "Inteligência",
         "Sabedoria",
         "Resistência",
+        "Sorte",
     }
     assert {attribute.value for attribute in attributes} == {10}
     assert {attribute.development for attribute in attributes} == {0.0}

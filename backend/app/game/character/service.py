@@ -19,6 +19,7 @@ DEFAULT_ATTRIBUTES = {
     CharacterAttributeKey.INTELLIGENCE: 10,
     CharacterAttributeKey.WISDOM: 10,
     CharacterAttributeKey.ENDURANCE: 10,
+    CharacterAttributeKey.LUCK: 10,
 }
 
 

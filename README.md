@@ -261,7 +261,7 @@ npm run build
   tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
   grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
   e cobertos por testes de múltiplos dias.
-- **Fase 8 — Progressão: PARTIAL (8A–8H concluídas).** XP de personagem é autoritativo,
+- **Fase 8 — Progressão: PARTIAL (8A–8I concluídas).** XP de personagem é autoritativo,
   permanece fracionário e usa a curva `round(25 * (level + 1) ** 1.7)`, sem limite arbitrário.
   Somente experiências significativas, categorizadas pelo backend e identificadas de forma
   idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões
@@ -280,7 +280,12 @@ npm run build
   Agilidade, Vitalidade, Inteligência, Sabedoria e Resistência possuem chaves mecânicas estáveis,
   valores independentes de Level, profissão e classe, além de desenvolvimento autoritativo oculto
   com diminishing returns. Checagens podem selecionar explicitamente um atributo relevante com
-  influência moderada; fórmulas definitivas de combate permanecem corretamente adiadas à Fase 9.
+  influência moderada. Sorte é um atributo adicional exclusivo do protagonista, não existe nos
+  transportados simulados, não substitui competência e tem influência limitada apenas em resoluções
+  explicitamente baseadas em acaso. HP, Mana e Stamina possuem desenvolvimento independente e
+  protegido contra farming: Vitalidade relaciona-se diretamente ao HP, Resistência à Stamina e Mana
+  exige desenvolvimento mágico real, sem bônus automático de Inteligência ou Character Level.
+  Fórmulas definitivas de combate permanecem corretamente adiadas à Fase 9.
 
 ## Fora do MVP
 

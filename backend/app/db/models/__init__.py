@@ -43,6 +43,10 @@ from app.db.models.relationship import (
     CharacterSimulatedPlayerRelationship,
     SimulatedPlayerRelationship,
 )
+from app.db.models.resource import (
+    CharacterResourceGrowth,
+    ResourceGrowthEvidenceRecord,
+)
 from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
@@ -95,6 +99,8 @@ __all__ = [
     "CharacterNPCRelationship",
     "CharacterSimulatedPlayerRelationship",
     "SimulatedPlayerRelationship",
+    "CharacterResourceGrowth",
+    "ResourceGrowthEvidenceRecord",
     "ScheduledSimulatedPlayerArrival",
     "SimulatedPlayer",
     "SimulatedPlayerPopulation",

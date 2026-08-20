@@ -51,6 +51,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "class_definition_domains",
             "attribute_definitions",
             "attribute_evidence_records",
+            "character_resource_growth",
+            "resource_growth_evidence_records",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
@@ -164,6 +166,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "INTELLIGENCE",
             "WISDOM",
             "ENDURANCE",
+            "LUCK",
         }
         assert "profession_affinity_key" in simulated_player_columns
         profession_constraints = {

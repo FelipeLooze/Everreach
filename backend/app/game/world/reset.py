@@ -28,6 +28,10 @@ from app.db.models.relationship import (
     CharacterSimulatedPlayerRelationship,
     SimulatedPlayerRelationship,
 )
+from app.db.models.resource import (
+    CharacterResourceGrowth,
+    ResourceGrowthEvidenceRecord,
+)
 from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
@@ -92,6 +96,12 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     )
     db.query(AttributeEvidenceRecord).filter(
         AttributeEvidenceRecord.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(ResourceGrowthEvidenceRecord).filter(
+        ResourceGrowthEvidenceRecord.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
+    db.query(CharacterResourceGrowth).filter(
+        CharacterResourceGrowth.character_id.in_(character_ids)
     ).delete(synchronize_session=False)
     db.query(InventoryItem).filter(InventoryItem.character_id.in_(character_ids)).delete(synchronize_session=False)
     db.query(CharacterAttribute).filter(CharacterAttribute.character_id.in_(character_ids)).delete(

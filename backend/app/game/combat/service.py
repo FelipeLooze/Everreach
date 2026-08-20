@@ -36,6 +36,10 @@ def resolve_skill_check(
     (no HP/damage) — it only decides whether a single physical/skill-based attempt
     succeeds, so the narrator has a true mechanical fact to describe. Full combat
     simulation is out of scope for the MVP (see spec section 58)."""
+    if attribute_key == CharacterAttributeKey.LUCK:
+        raise ValueError(
+            "Luck cannot replace a capability attribute in a skill check."
+        )
     cskill = grant_skill(db, character_id, skill_name)
     mastery_modifier = int(cskill.mastery // 10)
     relevant_attribute_modifier = 0

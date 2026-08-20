@@ -66,8 +66,30 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "combat_autonomous_decisions",
             "character_recoveries",
             "item_combat_profiles",
+            "item_instances",
             "actor_combat_defenses",
         }.issubset(tables)
+        item_definition_columns = {
+            item["name"] for item in inspect(engine).get_columns("items")
+        }
+        item_definition_constraints = {
+            item["name"] for item in inspect(engine).get_unique_constraints("items")
+        }
+        item_instance_columns = {
+            item["name"] for item in inspect(engine).get_columns("item_instances")
+        }
+        item_instance_checks = {
+            item["name"]
+            for item in inspect(engine).get_check_constraints("item_instances")
+        }
+        item_instance_indexes = {
+            item["name"] for item in inspect(engine).get_indexes("item_instances")
+        }
+        assert {"key", "type", "instance_mode"}.issubset(item_definition_columns)
+        assert "uq_item_definition_key" in item_definition_constraints
+        assert {"id", "definition_id", "quantity"} == item_instance_columns
+        assert "ck_item_instance_quantity_positive" in item_instance_checks
+        assert "ix_item_instance_definition" in item_instance_indexes
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
         }
@@ -509,6 +531,63 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
 
         command.downgrade(config, "base")
         assert "campaigns" not in set(inspect(engine).get_table_names())
+        engine.dispose()
+    finally:
+        get_settings.cache_clear()
+
+
+def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
+    tmp_path, monkeypatch
+):
+    database_path = tmp_path / "phase-10a-upgrade.db"
+    database_url = f"sqlite:///{database_path.as_posix()}"
+    backend_root = Path(__file__).parents[2]
+
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    get_settings.cache_clear()
+    config = Config(str(backend_root / "alembic.ini"))
+    config.set_main_option("script_location", str(backend_root / "alembic"))
+
+    try:
+        command.upgrade(config, "s9l1m2n3o4p5")
+        engine = create_engine(database_url)
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO items (id, name, type, description, stats_json) "
+                    "VALUES ('item_legacy', 'Cota Antiga', 'armor', '', '{}')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO item_combat_profiles "
+                    "(item_id, slot, armor_rating, resistances_json) "
+                    "VALUES ('item_legacy', 'BODY', 3, '{}')"
+                )
+            )
+
+        command.upgrade(config, "head")
+
+        with engine.connect() as connection:
+            definition = connection.execute(
+                text(
+                    "SELECT key, name, type, instance_mode FROM items "
+                    "WHERE id = 'item_legacy'"
+                )
+            ).mappings().one()
+            profile_count = connection.execute(
+                text(
+                    "SELECT COUNT(*) FROM item_combat_profiles "
+                    "WHERE item_id = 'item_legacy'"
+                )
+            ).scalar_one()
+        assert dict(definition) == {
+            "key": "item_legacy",
+            "name": "Cota Antiga",
+            "type": "ARMOR",
+            "instance_mode": "UNIQUE",
+        }
+        assert profile_count == 1
         engine.dispose()
     finally:
         get_settings.cache_clear()

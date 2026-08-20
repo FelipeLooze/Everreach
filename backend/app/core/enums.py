@@ -81,6 +81,24 @@ class CharacterResourceKey(StrEnum):
     STAMINA = "STAMINA"
 
 
+class ItemType(StrEnum):
+    MISC = "MISC"
+    MATERIAL = "MATERIAL"
+    CURRENCY = "CURRENCY"
+    AMMUNITION = "AMMUNITION"
+    CONSUMABLE = "CONSUMABLE"
+    WEAPON = "WEAPON"
+    ARMOR = "ARMOR"
+    TOOL = "TOOL"
+    CONTAINER = "CONTAINER"
+    QUEST = "QUEST"
+
+
+class ItemInstanceMode(StrEnum):
+    STACKABLE = "STACKABLE"
+    UNIQUE = "UNIQUE"
+
+
 class CombatEncounterStatus(StrEnum):
     ACTIVE = "ACTIVE"
     VICTORY = "VICTORY"

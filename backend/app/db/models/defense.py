@@ -18,7 +18,7 @@ class ItemCombatProfile(Base):
     armor_rating: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     resistances_json: Mapped[str] = mapped_column(String, default="{}", nullable=False)
 
-    item: Mapped["Item"] = relationship()
+    item: Mapped["ItemDefinition"] = relationship()
 
 
 class ActorCombatDefense(Base):

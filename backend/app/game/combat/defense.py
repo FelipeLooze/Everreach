@@ -4,24 +4,29 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    BodyArea,
     CombatActorType,
     CombatDamageType,
     EquipmentSlot,
+    ItemAccessibility,
     ItemLocationType,
+    PhysicalDamageProfile,
 )
 from app.db.models.character import Character
 from app.db.models.combat import CombatParticipant
-from app.db.models.defense import ActorCombatDefense, ItemCombatProfile
+from app.db.models.defense import ActorCombatDefense, ItemArmorProfile, ItemCombatProfile
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item, ItemInstance
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
+from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
 from app.game.items.equipment import (
     EquipmentError,
     configure_item_equipment_profile,
     equipment_slots_conflict,
     equip_item,
     get_allowed_equipment_slots,
+    item_accessibility,
     unequip_item,
 )
 
@@ -148,6 +153,9 @@ def resolve_damage_mitigation(
     db: Session,
     participant: CombatParticipant,
     damage_type: CombatDamageType,
+    *,
+    physical_damage_profile: PhysicalDamageProfile | None = None,
+    target_body_area: BodyArea | None = None,
 ) -> DamageMitigation:
     if not isinstance(damage_type, CombatDamageType):
         raise CombatDefenseError("Invalid combat damage type.")
@@ -165,6 +173,12 @@ def resolve_damage_mitigation(
         if innate is not None
         else 0
     )
+    if damage_type == CombatDamageType.PHYSICAL and (
+        (physical_damage_profile is None) != (target_body_area is None)
+    ):
+        raise CombatDefenseError(
+            "Physical profile and target body area must be provided together."
+        )
     if participant.actor_type == CombatActorType.CHARACTER.value:
         equipped = (
             db.query(ItemInstance, ItemCombatProfile)
@@ -197,11 +211,50 @@ def resolve_damage_mitigation(
                     f"Character has conflicting equipment in {entry.equipped_slot}."
                 )
             occupied_slots.add(physical_slot)
-            armor += profile.armor_rating
+            armor_profile = db.get(ItemArmorProfile, entry.definition_id)
+            if physical_damage_profile is None:
+                # Compatibility for actions recorded before Phase 10F.
+                armor += profile.armor_rating
+            elif armor_profile is None:
+                armor += profile.armor_rating
+            elif (
+                item_accessibility(entry) == ItemAccessibility.WORN
+                and target_body_area in get_armor_coverage(armor_profile)
+            ):
+                armor += get_armor_physical_protections(armor_profile).get(
+                    physical_damage_profile, 0
+                )
             resistance += _decode_resistances(profile.resistances_json).get(
                 damage_type,
                 0,
             )
+        if physical_damage_profile is not None:
+            profiled_armor = (
+                db.query(ItemInstance, ItemArmorProfile)
+                .join(
+                    ItemArmorProfile,
+                    ItemArmorProfile.item_id == ItemInstance.definition_id,
+                )
+                .outerjoin(
+                    ItemCombatProfile,
+                    ItemCombatProfile.item_id == ItemArmorProfile.item_id,
+                )
+                .filter(
+                    ItemInstance.location_ref == participant.actor_id,
+                    ItemInstance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value,
+                    ItemInstance.quantity > 0,
+                    ItemCombatProfile.item_id.is_(None),
+                )
+                .all()
+            )
+            for entry, profile in profiled_armor:
+                if (
+                    item_accessibility(entry) == ItemAccessibility.WORN
+                    and target_body_area in get_armor_coverage(profile)
+                ):
+                    armor += get_armor_physical_protections(profile).get(
+                        physical_damage_profile, 0
+                    )
     return DamageMitigation(
         damage_type,
         armor if damage_type == CombatDamageType.PHYSICAL else 0,

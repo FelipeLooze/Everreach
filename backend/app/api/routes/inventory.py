@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models.character import Character
+from app.db.models.defense import ItemArmorProfile
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item
 from app.db.models.weapon import ItemWeaponProfile
@@ -10,7 +11,9 @@ from app.game.inventory.service import list_inventory
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
 from app.game.items.weapons import get_weapon_damage_profiles
+from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
 from app.schemas.inventory import (
+    ArmorProfileResponse,
     InventoryItemResponse,
     InventoryResponse,
     WeaponProfileResponse,
@@ -33,6 +36,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
             continue
         equipment_profile = db.get(ItemEquipmentProfile, item.id)
         weapon_profile = db.get(ItemWeaponProfile, item.id)
+        armor_profile = db.get(ItemArmorProfile, item.id)
         items.append(
             InventoryItemResponse(
                 item_instance_id=entry.id,
@@ -64,6 +68,16 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                         hand_requirement=weapon_profile.hand_requirement,
                     )
                     if weapon_profile is not None
+                    else None
+                ),
+                armor=(
+                    ArmorProfileResponse(
+                        coverage=sorted(
+                            get_armor_coverage(armor_profile), key=lambda area: area.value
+                        ),
+                        physical_protections=get_armor_physical_protections(armor_profile),
+                    )
+                    if armor_profile is not None
                     else None
                 ),
             )

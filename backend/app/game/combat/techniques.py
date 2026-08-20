@@ -5,6 +5,7 @@ from math import isfinite
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    BodyArea,
     CharacterAttributeKey,
     CharacterResourceKey,
     CombatActionOutcome,
@@ -12,6 +13,7 @@ from app.core.enums import (
     CombatActorType,
     CombatConditionType,
     CombatDamageType,
+    PhysicalDamageProfile,
 )
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatCondition, CombatEncounter, CombatParticipant
@@ -158,6 +160,16 @@ def resolve_combat_technique(
         damage_attribute=CharacterAttributeKey(profile.damage_attribute),
         damage_type=CombatDamageType(profile.damage_type),
         technique_id=technique.id,
+        physical_damage_profile=(
+            PhysicalDamageProfile.BLUNT
+            if profile.damage_type == CombatDamageType.PHYSICAL.value
+            else None
+        ),
+        target_body_area=(
+            BodyArea.TORSO
+            if profile.damage_type == CombatDamageType.PHYSICAL.value
+            else None
+        ),
     )
     attack: CombatActionResolution = resolve_profiled_attack(
         db,

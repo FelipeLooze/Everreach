@@ -5,6 +5,7 @@ from dataclasses import replace
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    BodyArea,
     CombatActionType,
     CombatActorType,
     CombatRangeBand,
@@ -113,6 +114,7 @@ def resolve_weapon_attack(
     action_type: CombatActionType,
     damage_profile: PhysicalDamageProfile,
     action_key: str,
+    target_body_area: BodyArea = BodyArea.TORSO,
     rng: random.Random | None = None,
 ) -> CombatActionResolution:
     if actor.actor_type != CombatActorType.CHARACTER.value:
@@ -121,6 +123,8 @@ def resolve_weapon_attack(
         raise WeaponError("Invalid weapon attack type.")
     if not isinstance(damage_profile, PhysicalDamageProfile):
         raise WeaponError("Invalid physical damage profile.")
+    if not isinstance(target_body_area, BodyArea):
+        raise WeaponError("Invalid target body area.")
     normalized_key = action_key.strip()
     existing = (
         db.query(CombatAction)
@@ -138,6 +142,7 @@ def resolve_weapon_attack(
             or existing.technique_id is not None
             or existing.weapon_instance_id != weapon_instance_id
             or existing.physical_damage_profile != damage_profile.value
+            or existing.target_body_area != target_body_area.value
         ):
             raise CombatActionError(
                 "Action key already belongs to another combat action."
@@ -167,6 +172,7 @@ def resolve_weapon_attack(
         basic_attack_mechanics(action_type),
         weapon_instance_id=instance.id,
         physical_damage_profile=damage_profile,
+        target_body_area=target_body_area,
         allowed_target_ranges=_allowed_target_ranges(reach),
     )
     return resolve_profiled_attack(

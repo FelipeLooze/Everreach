@@ -150,6 +150,15 @@ class PhysicalDamageProfile(StrEnum):
     BLUNT = "BLUNT"
 
 
+class BodyArea(StrEnum):
+    HEAD = "HEAD"
+    TORSO = "TORSO"
+    ARMS = "ARMS"
+    HANDS = "HANDS"
+    LEGS = "LEGS"
+    FEET = "FEET"
+
+
 class WeaponReach(StrEnum):
     NORMAL = "NORMAL"
     LONG = "LONG"

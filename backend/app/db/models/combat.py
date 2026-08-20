@@ -226,14 +226,25 @@ class CombatAction(Base):
             name="uq_combat_action_key",
         ),
         CheckConstraint(
-            "(weapon_instance_id IS NULL AND physical_damage_profile IS NULL) OR "
-            "(weapon_instance_id IS NOT NULL AND physical_damage_profile IS NOT NULL)",
+            "weapon_instance_id IS NULL OR physical_damage_profile IS NOT NULL",
             name="ck_combat_action_weapon_mechanics",
         ),
         CheckConstraint(
             "physical_damage_profile IS NULL OR "
             "physical_damage_profile IN ('SLASH', 'PIERCE', 'BLUNT')",
             name="ck_combat_action_physical_damage_profile",
+        ),
+        CheckConstraint(
+            "(damage_type = 'PHYSICAL' AND physical_damage_profile IS NOT NULL "
+            "AND target_body_area IS NOT NULL) OR "
+            "(damage_type <> 'PHYSICAL' AND physical_damage_profile IS NULL "
+            "AND target_body_area IS NULL)",
+            name="ck_combat_action_physical_semantics",
+        ),
+        CheckConstraint(
+            "target_body_area IS NULL OR target_body_area IN "
+            "('HEAD', 'TORSO', 'ARMS', 'HANDS', 'LEGS', 'FEET')",
+            name="ck_combat_action_target_body_area",
         ),
         Index("ix_combat_action_encounter_time", "encounter_id", "created_world_minute"),
     )
@@ -265,6 +276,7 @@ class CombatAction(Base):
         String,
         nullable=True,
     )
+    target_body_area: Mapped[str | None] = mapped_column(String, nullable=True)
     attack_attribute: Mapped[str] = mapped_column(String, nullable=False)
     target_range_band: Mapped[str] = mapped_column(String, nullable=False)
     attack_roll: Mapped[int] = mapped_column(Integer, nullable=False)

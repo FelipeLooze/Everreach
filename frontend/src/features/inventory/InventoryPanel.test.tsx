@@ -31,6 +31,7 @@ describe("InventoryPanel", () => {
           accessibility: "STOWED",
           allowed_slots: [],
           weapon: null,
+          armor: null,
         },
       ],
       total_weight: 4.5,
@@ -84,6 +85,7 @@ describe("InventoryPanel", () => {
             reach: "NORMAL",
             hand_requirement: "ONE_HAND",
           },
+          armor: null,
         },
       ],
       total_weight: 2,
@@ -100,5 +102,25 @@ describe("InventoryPanel", () => {
     expect(screen.getByText(/Espada/)).toHaveTextContent(
       "espada; perfuração/corte; alcance normal; uma mão",
     );
+  });
+
+  it("mostra cobertura e proteção física da armadura", async () => {
+    mocks.getInventory.mockResolvedValue({
+      items: [{
+        item_instance_id: "instance_3", item_id: "item_3", name: "Gibão",
+        type: "ARMOR", quantity: 1, equipped: true, unit_weight: 4,
+        total_weight: 4, equipped_slot: "TORSO", accessibility: "WORN",
+        allowed_slots: ["TORSO"], weapon: null,
+        armor: {
+          coverage: ["TORSO", "ARMS"],
+          physical_protections: { SLASH: 3, PIERCE: 2, BLUNT: 1 },
+        },
+      }],
+      total_weight: 4, carrying_capacity: 25, load_ratio: 0.16, encumbrance: "NORMAL",
+    });
+
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+    expect(await screen.findByText(/Gibão/)).toHaveTextContent("cobre torso, braços");
+    expect(screen.getByText(/Gibão/)).toHaveTextContent("corte 3");
   });
 });

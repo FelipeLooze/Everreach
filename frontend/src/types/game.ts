@@ -194,6 +194,7 @@ export interface InventoryItem {
   accessibility: ItemAccessibility;
   allowed_slots: EquipmentSlot[];
   weapon: WeaponProfile | null;
+  armor: ArmorProfile | null;
 }
 
 export interface WeaponProfile {
@@ -219,6 +220,11 @@ export type WeaponFamily =
   | "CLUB";
 
 export type PhysicalDamageProfile = "SLASH" | "PIERCE" | "BLUNT";
+export type BodyArea = "HEAD" | "TORSO" | "ARMS" | "HANDS" | "LEGS" | "FEET";
+export interface ArmorProfile {
+  coverage: BodyArea[];
+  physical_protections: Partial<Record<PhysicalDamageProfile, number>>;
+}
 export type WeaponReach = "NORMAL" | "LONG" | "RANGED";
 export type WeaponHandRequirement =
   | "ONE_HAND"

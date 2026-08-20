@@ -3,6 +3,7 @@ import json
 import pytest
 
 from app.core.enums import (
+    BodyArea,
     CharacterAttributeKey,
     CharacterResourceKey,
     CombatActionType,
@@ -11,14 +12,24 @@ from app.core.enums import (
     CombatRangeBand,
     EquipmentSlot,
     EventType,
+    ItemType,
+    PhysicalDamageProfile,
 )
 from app.db.models.combat import CombatParticipant
-from app.db.models.defense import ActorCombatDefense, ItemCombatProfile
+from app.db.models.defense import (
+    ActorCombatDefense,
+    ItemArmorProfile,
+    ItemCombatProfile,
+)
 from app.db.models.event import WorldEvent
 from app.db.models.item import Item
 from app.db.models.npc import NPC
 from app.game.character.service import create_character
-from app.game.combat.actions import AttackMechanics, resolve_attack, resolve_profiled_attack
+from app.game.combat.actions import (
+    AttackMechanics,
+    resolve_attack,
+    resolve_profiled_attack,
+)
 from app.game.combat.defense import (
     CombatDefenseError,
     configure_actor_combat_defense,
@@ -30,6 +41,13 @@ from app.game.combat.defense import (
 from app.game.combat.encounters import CombatantSpec, start_encounter
 from app.game.combat.turns import roll_initiative
 from app.game.inventory.service import add_item, get_or_create_item
+from app.game.items.armor import (
+    ArmorError,
+    configure_item_armor_profile,
+    get_armor_coverage,
+    get_armor_physical_protections,
+)
+from app.game.items.equipment import configure_item_equipment_profile, equip_item
 from app.game.world.reset import delete_campaign
 from app.game.world.seed import create_campaign, seed_initial_region
 
@@ -40,6 +58,63 @@ class SequenceRng:
 
     def randint(self, _minimum: int, _maximum: int) -> int:
         return next(self.values)
+
+
+def test_armor_profile_has_coverage_and_differentiated_physical_protection(db_session):
+    _campaign, character, _enemy, _encounter, hero, _guardian = _setup(db_session)
+    item = get_or_create_item(db_session, "Gibão reforçado", ItemType.ARMOR.value)
+    configure_item_equipment_profile(
+        db_session, item, allowed_slots={EquipmentSlot.TORSO}
+    )
+    profile = configure_item_armor_profile(
+        db_session,
+        item,
+        coverage={BodyArea.TORSO, BodyArea.ARMS},
+        physical_protections={
+            PhysicalDamageProfile.SLASH: 4,
+            PhysicalDamageProfile.PIERCE: 2,
+            PhysicalDamageProfile.BLUNT: 1,
+        },
+    )
+    entry = add_item(db_session, character.id, item.name)
+    equip_item(db_session, entry, slot=EquipmentSlot.TORSO)
+
+    assert db_session.get(ItemArmorProfile, item.id) is profile
+    assert get_armor_coverage(profile) == {BodyArea.TORSO, BodyArea.ARMS}
+    assert get_armor_physical_protections(profile)[PhysicalDamageProfile.SLASH] == 4
+    assert resolve_damage_mitigation(
+        db_session,
+        hero,
+        CombatDamageType.PHYSICAL,
+        physical_damage_profile=PhysicalDamageProfile.SLASH,
+        target_body_area=BodyArea.TORSO,
+    ).armor == 4
+    assert resolve_damage_mitigation(
+        db_session,
+        hero,
+        CombatDamageType.PHYSICAL,
+        physical_damage_profile=PhysicalDamageProfile.BLUNT,
+        target_body_area=BodyArea.TORSO,
+    ).armor == 1
+    assert resolve_damage_mitigation(
+        db_session,
+        hero,
+        CombatDamageType.PHYSICAL,
+        physical_damage_profile=PhysicalDamageProfile.SLASH,
+        target_body_area=BodyArea.HEAD,
+    ).armor == 0
+
+
+def test_armor_profile_rejects_non_armor_and_unwearable_coverage(db_session):
+    item = get_or_create_item(db_session, "Caixa", ItemType.CONTAINER.value)
+    configure_item_equipment_profile(db_session, item, allowed_slots={EquipmentSlot.BACK})
+    with pytest.raises(ArmorError, match="Only ARMOR"):
+        configure_item_armor_profile(
+            db_session,
+            item,
+            coverage={BodyArea.TORSO},
+            physical_protections={PhysicalDamageProfile.BLUNT: 1},
+        )
 
 
 def _setup(db_session):

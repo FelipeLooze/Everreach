@@ -21,6 +21,21 @@ class ItemCombatProfile(Base):
     item: Mapped["ItemDefinition"] = relationship()
 
 
+class ItemArmorProfile(Base):
+    """Immutable body coverage and physical protection for an armor item."""
+
+    __tablename__ = "item_armor_profiles"
+
+    item_id: Mapped[str] = mapped_column(
+        ForeignKey("items.id"),
+        primary_key=True,
+    )
+    coverage_json: Mapped[str] = mapped_column(String, nullable=False)
+    physical_protections_json: Mapped[str] = mapped_column(String, nullable=False)
+
+    item: Mapped["ItemDefinition"] = relationship()
+
+
 class ActorCombatDefense(Base):
     """Optional innate armor and resistance for one concrete combat actor."""
 

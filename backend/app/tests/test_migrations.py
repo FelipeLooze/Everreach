@@ -69,6 +69,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_instances",
             "item_equipment_profiles",
             "item_weapon_profiles",
+            "item_armor_profiles",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -99,6 +100,17 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             item["name"]
             for item in inspect(engine).get_check_constraints("item_weapon_profiles")
         }
+        item_armor_profile_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("item_armor_profiles")
+        }
+        combat_action_columns = {
+            item["name"] for item in inspect(engine).get_columns("combat_actions")
+        }
+        assert item_armor_profile_columns == {
+            "item_id", "coverage_json", "physical_protections_json"
+        }
+        assert "target_body_area" in combat_action_columns
         assert {"key", "type", "instance_mode", "base_weight"}.issubset(
             item_definition_columns
         )
@@ -684,6 +696,12 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
                     "WHERE item_id = 'item_legacy'"
                 )
             ).scalar_one()
+            armor_profile = connection.execute(
+                text(
+                    "SELECT coverage_json, physical_protections_json "
+                    "FROM item_armor_profiles WHERE item_id = 'item_legacy'"
+                )
+            ).mappings().one()
             migrated_instance = connection.execute(
                 text(
                     "SELECT definition_id, quantity, campaign_id, location_type, "
@@ -709,6 +727,10 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
         }
         assert profile_count == 1
         assert equipment_profile == '["TORSO"]'
+        assert dict(armor_profile) == {
+            "coverage_json": '["TORSO"]',
+            "physical_protections_json": '{"BLUNT":3,"PIERCE":3,"SLASH":3}',
+        }
         assert dict(migrated_instance) == {
             "definition_id": "item_legacy",
             "quantity": 1,

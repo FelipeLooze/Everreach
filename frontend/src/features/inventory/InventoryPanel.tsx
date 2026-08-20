@@ -51,6 +51,15 @@ const damageProfileLabels = {
   BLUNT: "impacto",
 };
 
+const bodyAreaLabels = {
+  HEAD: "cabeça",
+  TORSO: "torso",
+  ARMS: "braços",
+  HANDS: "mãos",
+  LEGS: "pernas",
+  FEET: "pés",
+};
+
 const weaponReachLabels = {
   NORMAL: "alcance normal",
   LONG: "alcance longo",
@@ -100,6 +109,11 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
               {item.weapon && (
                 <small>
                   {` — ${weaponFamilyLabels[item.weapon.family]}; ${item.weapon.damage_profiles.map((profile) => damageProfileLabels[profile]).join("/")}; ${weaponReachLabels[item.weapon.reach]}; ${handRequirementLabels[item.weapon.hand_requirement]}`}
+                </small>
+              )}
+              {item.armor && (
+                <small>
+                  {` — cobre ${item.armor.coverage.map((area) => bodyAreaLabels[area]).join(", ")}; proteção ${Object.entries(item.armor.physical_protections).map(([profile, value]) => `${damageProfileLabels[profile as keyof typeof damageProfileLabels]} ${value}`).join(", ")}`}
                 </small>
               )}
             </li>

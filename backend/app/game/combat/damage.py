@@ -4,12 +4,14 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    BodyArea,
     CharacterAttributeKey,
     CombatActionOutcome,
     CombatActionType,
     CombatActorType,
     CombatDamageType,
     EventType,
+    PhysicalDamageProfile,
 )
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatEncounter, CombatParticipant
@@ -111,6 +113,14 @@ def apply_attack_damage(
         db,
         target,
         CombatDamageType(action.damage_type),
+        physical_damage_profile=(
+            PhysicalDamageProfile(action.physical_damage_profile)
+            if action.physical_damage_profile
+            else None
+        ),
+        target_body_area=(
+            BodyArea(action.target_body_area) if action.target_body_area else None
+        ),
     )
     damage_total = mitigation.apply(damage_before_mitigation)
     hp_after = max(0.0, hp_before - damage_total)
@@ -148,6 +158,7 @@ def apply_attack_damage(
             "damage_type": action.damage_type,
             "weapon_instance_id": action.weapon_instance_id,
             "physical_damage_profile": action.physical_damage_profile,
+            "target_body_area": action.target_body_area,
             "damage_before_mitigation": damage_before_mitigation,
             "armor_mitigation": mitigation.armor,
             "resistance_mitigation": mitigation.resistance,

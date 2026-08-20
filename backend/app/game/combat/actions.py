@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    BodyArea,
     CharacterAttributeKey,
     CharacterResourceKey,
     CombatActionOutcome,
@@ -65,6 +66,7 @@ class AttackMechanics:
     technique_id: str | None = None
     weapon_instance_id: str | None = None
     physical_damage_profile: PhysicalDamageProfile | None = None
+    target_body_area: BodyArea | None = None
     allowed_target_ranges: frozenset[CombatRangeBand] | None = None
 
 
@@ -117,15 +119,33 @@ def resolve_profiled_attack(
         raise CombatActionError("Luck cannot determine combat damage.")
     if not isinstance(mechanics.damage_type, CombatDamageType):
         raise CombatActionError("Invalid combat damage type.")
-    if (mechanics.weapon_instance_id is None) != (
-        mechanics.physical_damage_profile is None
+    if (
+        mechanics.weapon_instance_id is not None
+        and mechanics.physical_damage_profile is None
     ):
-        raise CombatActionError("Weapon attacks require complete weapon mechanics.")
+        raise CombatActionError("Weapon attacks require a physical damage profile.")
     if (
         mechanics.physical_damage_profile is not None
         and not isinstance(mechanics.physical_damage_profile, PhysicalDamageProfile)
     ):
         raise CombatActionError("Invalid physical weapon damage profile.")
+    if mechanics.target_body_area is not None and not isinstance(
+        mechanics.target_body_area, BodyArea
+    ):
+        raise CombatActionError("Invalid target body area.")
+    if mechanics.damage_type == CombatDamageType.PHYSICAL:
+        if (
+            mechanics.physical_damage_profile is None
+            or mechanics.target_body_area is None
+        ):
+            raise CombatActionError(
+                "Physical attacks require damage profile and target body area."
+            )
+    elif (
+        mechanics.physical_damage_profile is not None
+        or mechanics.target_body_area is not None
+    ):
+        raise CombatActionError("Non-physical attacks cannot use physical armor mechanics.")
     if mechanics.base_damage_dice < 1 or mechanics.damage_die_sides < 2:
         raise CombatActionError("Invalid combat damage dice.")
     if mechanics.allowed_target_ranges is not None and any(
@@ -159,6 +179,12 @@ def resolve_profiled_attack(
             != (
                 mechanics.physical_damage_profile.value
                 if mechanics.physical_damage_profile
+                else None
+            )
+            or existing.target_body_area
+            != (
+                mechanics.target_body_area.value
+                if mechanics.target_body_area
                 else None
             )
         ):
@@ -230,6 +256,9 @@ def resolve_profiled_attack(
             if mechanics.physical_damage_profile
             else None
         ),
+        target_body_area=(
+            mechanics.target_body_area.value if mechanics.target_body_area else None
+        ),
         attack_attribute=attack_attribute.value,
         target_range_band=target.range_band,
         attack_roll=roll.raw,
@@ -266,6 +295,9 @@ def resolve_profiled_attack(
                 mechanics.physical_damage_profile.value
                 if mechanics.physical_damage_profile
                 else None
+            ),
+            "target_body_area": (
+                mechanics.target_body_area.value if mechanics.target_body_area else None
             ),
             "actor_participant_id": actor.id,
             "target_participant_id": target.id,
@@ -356,6 +388,8 @@ def basic_attack_mechanics(action_type: CombatActionType) -> AttackMechanics:
         base_damage_dice=1,
         damage_die_sides=6,
         damage_attribute=attribute,
+        physical_damage_profile=PhysicalDamageProfile.BLUNT,
+        target_body_area=BodyArea.TORSO,
     )
 
 

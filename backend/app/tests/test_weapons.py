@@ -208,6 +208,7 @@ def test_weapon_attack_persists_selected_instance_and_damage_profile(db_session)
 
     assert result.action.weapon_instance_id == sword.id
     assert result.action.physical_damage_profile == PhysicalDamageProfile.PIERCE.value
+    assert result.action.target_body_area == "TORSO"
     assert result.action.damage_type == CombatDamageType.PHYSICAL.value
     assert result.action.attack_modifier == 0
     payload = json.loads(
@@ -218,6 +219,7 @@ def test_weapon_attack_persists_selected_instance_and_damage_profile(db_session)
     )
     assert payload["weapon_instance_id"] == sword.id
     assert payload["physical_damage_profile"] == "PIERCE"
+    assert payload["target_body_area"] == "TORSO"
 
     unequip_item(db_session, sword)
     replay = resolve_weapon_attack(

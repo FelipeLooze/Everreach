@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10E concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10F concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -396,11 +396,17 @@ npm run build
   quando usadas em `ENGAGED`. O Combat Engine continua sendo a única autoridade para acerto, dano,
   mitigação, recursos e turnos. Nenhuma arma fornece `attack_bonus`, bônus de atributo, raridade ou
   estatísticas de equilíbrio; o dano básico permanece na curva já validada da Fase 9, enquanto a
-  proteção diferenciada contra corte, perfuração e impacto será consumida pela 10F.
+  proteção diferenciada contra corte, perfuração e impacto é consumida pela 10F.
+  A 10F adiciona perfis imutáveis de armadura com cobertura corporal explícita — cabeça, torso,
+  braços, mãos, pernas e pés — e valores independentes contra corte, perfuração e impacto.
+  O tipo físico e a área atingida ficam persistidos na ação e no Event Log. A armadura não altera
+  a chance de acerto: depois de um golpe acertar, somente peças realmente equipadas que cubram a
+  área atingida reduzem o dano, usando a proteção correspondente. Peso continua vindo da 10C;
+  resistências elementais permanecem separadas; e a estrutura admite camadas futuras sem aplicar
+  agora empilhamento profundo, materiais, qualidade ou durabilidade.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Armaduras,
-  ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
-  do System permanecem deliberadamente nas subfases 10F–10M.
+  Ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
+  do System permanecem deliberadamente nas subfases 10G–10M.
 
 ## Fora do MVP
 

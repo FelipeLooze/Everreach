@@ -19,6 +19,7 @@ describe("InventoryPanel", () => {
     mocks.getInventory.mockResolvedValue({
       items: [
         {
+          item_instance_id: "instance_1",
           item_id: "item_1",
           name: "Rações",
           type: "CONSUMABLE",
@@ -26,6 +27,9 @@ describe("InventoryPanel", () => {
           equipped: false,
           unit_weight: 1.5,
           total_weight: 4.5,
+          equipped_slot: null,
+          accessibility: "STOWED",
+          allowed_slots: [],
         },
       ],
       total_weight: 4.5,
@@ -56,5 +60,35 @@ describe("InventoryPanel", () => {
 
     expect(await screen.findByText(/Peso: 0,0 \/ 25,0/)).toBeInTheDocument();
     expect(screen.getByText("O inventário está vazio.")).toBeInTheDocument();
+  });
+
+  it("traduz a posição e a acessibilidade do equipamento", async () => {
+    mocks.getInventory.mockResolvedValue({
+      items: [
+        {
+          item_instance_id: "instance_2",
+          item_id: "item_2",
+          name: "Espada",
+          type: "WEAPON",
+          quantity: 1,
+          equipped: true,
+          unit_weight: 2,
+          total_weight: 2,
+          equipped_slot: "MAIN_HAND",
+          accessibility: "IMMEDIATE",
+          allowed_slots: ["MAIN_HAND", "WAIST"],
+        },
+      ],
+      total_weight: 2,
+      carrying_capacity: 25,
+      load_ratio: 0.08,
+      encumbrance: "NORMAL",
+    });
+
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+
+    expect(await screen.findByText(/Espada/)).toHaveTextContent(
+      "mão principal — uso imediato",
+    );
   });
 });

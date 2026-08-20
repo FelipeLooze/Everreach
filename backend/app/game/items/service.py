@@ -125,11 +125,42 @@ def move_item_instance(
     location_type: ItemLocationType,
     location_ref: str | None,
 ) -> ItemInstance:
+    if location_type == ItemLocationType.CHARACTER_EQUIPPED:
+        raise ItemFoundationError(
+            "Items must be equipped through the authoritative equipment service."
+        )
+    if instance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value:
+        raise ItemFoundationError(
+            "Equipped items must be unequipped before they can move."
+        )
+    return _set_item_location(
+        db,
+        instance,
+        location_type=location_type,
+        location_ref=location_ref,
+        equipped_slot=None,
+    )
+
+
+def _set_item_location(
+    db: Session,
+    instance: ItemInstance,
+    *,
+    location_type: ItemLocationType,
+    location_ref: str | None,
+    equipped_slot: str | None,
+) -> ItemInstance:
     if db.get(ItemInstance, instance.id) is None:
         raise ItemFoundationError("Item instance must be persisted first.")
     if not isinstance(location_type, ItemLocationType):
         raise ItemFoundationError("Invalid item location type.")
     normalized_ref = location_ref.strip() if location_ref else None
+    normalized_slot = equipped_slot.strip() if equipped_slot else None
+    if location_type == ItemLocationType.CHARACTER_EQUIPPED:
+        if normalized_slot is None:
+            raise ItemFoundationError("Equipped items require an equipment slot.")
+    elif normalized_slot is not None:
+        raise ItemFoundationError("Only equipped items may have an equipment slot.")
     target_campaign = _location_campaign(
         db,
         instance,
@@ -140,11 +171,17 @@ def move_item_instance(
     before = {
         "type": instance.location_type,
         "ref": instance.location_ref,
+        "slot": instance.equipped_slot,
     }
-    if before == {"type": location_type.value, "ref": normalized_ref}:
+    if before == {
+        "type": location_type.value,
+        "ref": normalized_ref,
+        "slot": normalized_slot,
+    }:
         return instance
     instance.location_type = location_type.value
     instance.location_ref = normalized_ref
+    instance.equipped_slot = normalized_slot
     db.flush()
     if instance.campaign_id is not None:
         log_event(
@@ -156,7 +193,11 @@ def move_item_instance(
             payload={
                 "definition_id": instance.definition_id,
                 "before": before,
-                "after": {"type": location_type.value, "ref": normalized_ref},
+                "after": {
+                    "type": location_type.value,
+                    "ref": normalized_ref,
+                    "slot": normalized_slot,
+                },
             },
         )
     return instance

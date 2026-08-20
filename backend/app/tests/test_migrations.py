@@ -67,6 +67,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "character_recoveries",
             "item_combat_profiles",
             "item_instances",
+            "item_equipment_profiles",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -85,6 +86,10 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         item_instance_indexes = {
             item["name"] for item in inspect(engine).get_indexes("item_instances")
         }
+        item_equipment_profile_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("item_equipment_profiles")
+        }
         assert {"key", "type", "instance_mode", "base_weight"}.issubset(
             item_definition_columns
         )
@@ -102,15 +107,20 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "location_ref",
             "owner_type",
             "owner_ref",
+            "equipped_slot",
         } == item_instance_columns
         assert "ck_item_instance_quantity_positive" in item_instance_checks
         assert "ck_item_instance_location_ref" in item_instance_checks
         assert "ck_item_instance_location_type" in item_instance_checks
         assert "ck_item_instance_owner_ref" in item_instance_checks
         assert "ck_item_instance_owner_type" in item_instance_checks
+        assert "ck_item_instance_equipped_slot" in item_instance_checks
+        assert "ck_item_instance_equipment_slot_value" in item_instance_checks
         assert "ix_item_instance_definition" in item_instance_indexes
         assert "ix_item_instance_campaign_location" in item_instance_indexes
         assert "ix_item_instance_campaign_owner" in item_instance_indexes
+        assert "uq_item_instance_character_equipment_slot" in item_instance_indexes
+        assert {"item_id", "allowed_slots_json"} == item_equipment_profile_columns
         assert "inventory_items" not in tables
         combat_encounter_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_encounters")
@@ -597,6 +607,12 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
             )
             connection.execute(
                 text(
+                    "INSERT INTO items (id, name, type, description, stats_json) "
+                    "VALUES ('item_legacy_free', 'Objeto Antigo', 'misc', '', '{}')"
+                )
+            )
+            connection.execute(
+                text(
                     "INSERT INTO item_combat_profiles "
                     "(item_id, slot, armor_rating, resistances_json) "
                     "VALUES ('item_legacy', 'BODY', 3, '{}')"
@@ -607,6 +623,14 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
                     "INSERT INTO inventory_items "
                     "(id, character_id, item_id, quantity, equipped) "
                     "VALUES ('inv_legacy', 'char_legacy', 'item_legacy', 1, 1)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO inventory_items "
+                    "(id, character_id, item_id, quantity, equipped) "
+                    "VALUES ('inv_legacy_free', 'char_legacy', "
+                    "'item_legacy_free', 1, 1)"
                 )
             )
 
@@ -625,11 +649,27 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
                     "WHERE item_id = 'item_legacy'"
                 )
             ).scalar_one()
+            equipment_profile = connection.execute(
+                text(
+                    "SELECT allowed_slots_json FROM item_equipment_profiles "
+                    "WHERE item_id = 'item_legacy'"
+                )
+            ).scalar_one()
             migrated_instance = connection.execute(
                 text(
                     "SELECT definition_id, quantity, campaign_id, location_type, "
-                    "location_ref, owner_type, owner_ref FROM item_instances "
+                    "location_ref, owner_type, owner_ref, equipped_slot "
+                    "FROM item_instances "
                     "WHERE id = 'item_instance_inv_legacy'"
+                )
+            ).mappings().one()
+            fallback_equipment = connection.execute(
+                text(
+                    "SELECT item_instances.equipped_slot, "
+                    "item_equipment_profiles.allowed_slots_json "
+                    "FROM item_instances JOIN item_equipment_profiles ON "
+                    "item_equipment_profiles.item_id = item_instances.definition_id "
+                    "WHERE item_instances.id = 'item_instance_inv_legacy_free'"
                 )
             ).mappings().one()
         assert dict(definition) == {
@@ -639,6 +679,7 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
             "instance_mode": "UNIQUE",
         }
         assert profile_count == 1
+        assert equipment_profile == '["TORSO"]'
         assert dict(migrated_instance) == {
             "definition_id": "item_legacy",
             "quantity": 1,
@@ -647,6 +688,11 @@ def test_phase_10a_preserves_legacy_items_and_existing_combat_profiles(
             "location_ref": "char_legacy",
             "owner_type": "CHARACTER",
             "owner_ref": "char_legacy",
+            "equipped_slot": "TORSO",
+        }
+        assert dict(fallback_equipment) == {
+            "equipped_slot": "BACK",
+            "allowed_slots_json": '["BACK"]',
         }
         engine.dispose()
     finally:

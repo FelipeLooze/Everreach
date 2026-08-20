@@ -182,6 +182,7 @@ export interface SystemProgression {
 }
 
 export interface InventoryItem {
+  item_instance_id: string;
   item_id: string;
   name: string;
   type: string;
@@ -189,7 +190,25 @@ export interface InventoryItem {
   equipped: boolean;
   unit_weight: number;
   total_weight: number;
+  equipped_slot: EquipmentSlot | null;
+  accessibility: ItemAccessibility;
+  allowed_slots: EquipmentSlot[];
 }
+
+export type EquipmentSlot =
+  | "HEAD"
+  | "TORSO"
+  | "LEGS"
+  | "FEET"
+  | "HANDS"
+  | "MAIN_HAND"
+  | "OFF_HAND"
+  | "BOTH_HANDS"
+  | "BACK"
+  | "WAIST"
+  | "ACCESSORY";
+
+export type ItemAccessibility = "IMMEDIATE" | "QUICK" | "WORN" | "STOWED";
 
 export type EncumbranceTier =
   | "NORMAL"

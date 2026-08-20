@@ -61,6 +61,17 @@ class ItemInstance(Base):
             "owner_type IN ('NONE', 'CHARACTER', 'NPC')",
             name="ck_item_instance_owner_type",
         ),
+        CheckConstraint(
+            "(location_type = 'CHARACTER_EQUIPPED' AND equipped_slot IS NOT NULL) OR "
+            "(location_type <> 'CHARACTER_EQUIPPED' AND equipped_slot IS NULL)",
+            name="ck_item_instance_equipped_slot",
+        ),
+        CheckConstraint(
+            "equipped_slot IS NULL OR equipped_slot IN "
+            "('HEAD', 'TORSO', 'LEGS', 'FEET', 'HANDS', 'MAIN_HAND', "
+            "'OFF_HAND', 'BOTH_HANDS', 'BACK', 'WAIST', 'ACCESSORY')",
+            name="ck_item_instance_equipment_slot_value",
+        ),
         Index("ix_item_instance_definition", "definition_id"),
         Index(
             "ix_item_instance_campaign_location",
@@ -73,6 +84,13 @@ class ItemInstance(Base):
             "campaign_id",
             "owner_type",
             "owner_ref",
+        ),
+        Index(
+            "uq_item_instance_character_equipment_slot",
+            "location_type",
+            "location_ref",
+            "equipped_slot",
+            unique=True,
         ),
     )
 
@@ -102,6 +120,7 @@ class ItemInstance(Base):
         nullable=False,
     )
     owner_ref: Mapped[str | None] = mapped_column(String, nullable=True)
+    equipped_slot: Mapped[str | None] = mapped_column(String, nullable=True)
 
     definition: Mapped["ItemDefinition"] = relationship(back_populates="instances")
 

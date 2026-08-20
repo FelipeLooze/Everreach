@@ -12,10 +12,18 @@ from app.core.enums import (
 from app.db.models.character import Character
 from app.db.models.combat import CombatParticipant
 from app.db.models.defense import ActorCombatDefense, ItemCombatProfile
+from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item, ItemInstance
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
-from app.game.items.service import move_item_instance
+from app.game.items.equipment import (
+    EquipmentError,
+    configure_item_equipment_profile,
+    equipment_slots_conflict,
+    equip_item,
+    get_allowed_equipment_slots,
+    unequip_item,
+)
 
 
 MAX_SINGLE_ARMOR_RATING = 20
@@ -58,8 +66,10 @@ def configure_item_combat_profile(
     if existing is not None:
         if any(getattr(existing, key) != value for key, value in values.items()):
             raise CombatDefenseError("Item already has different combat mechanics.")
+        _ensure_combat_equipment_position(db, item, slot)
         return existing
     profile = ItemCombatProfile(item_id=item.id, **values)
+    _ensure_combat_equipment_position(db, item, slot)
     db.add(profile)
     db.flush()
     return profile
@@ -117,28 +127,10 @@ def equip_combat_item(db: Session, entry: ItemInstance) -> ItemInstance:
     profile = db.get(ItemCombatProfile, entry.definition_id)
     if profile is None:
         raise CombatDefenseError("Item has no authoritative combat profile.")
-    conflict = (
-        db.query(ItemInstance)
-        .join(
-            ItemCombatProfile,
-            ItemCombatProfile.item_id == ItemInstance.definition_id,
-        )
-        .filter(
-            ItemInstance.location_ref == entry.location_ref,
-            ItemInstance.id != entry.id,
-            ItemInstance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value,
-            ItemCombatProfile.slot == profile.slot,
-        )
-        .first()
-    )
-    if conflict is not None:
-        raise CombatDefenseError(f"Equipment slot {profile.slot} is already occupied.")
-    return move_item_instance(
-        db,
-        entry,
-        location_type=ItemLocationType.CHARACTER_EQUIPPED,
-        location_ref=entry.location_ref,
-    )
+    try:
+        return equip_item(db, entry, slot=EquipmentSlot(profile.slot))
+    except (EquipmentError, ValueError) as exc:
+        raise CombatDefenseError(str(exc)) from exc
 
 
 def unequip_combat_item(db: Session, entry: ItemInstance) -> ItemInstance:
@@ -146,12 +138,10 @@ def unequip_combat_item(db: Session, entry: ItemInstance) -> ItemInstance:
         raise CombatDefenseError("Inventory item does not exist.")
     if entry.location_type != ItemLocationType.CHARACTER_EQUIPPED.value:
         raise CombatDefenseError("Item is not equipped by a character.")
-    return move_item_instance(
-        db,
-        entry,
-        location_type=ItemLocationType.CHARACTER,
-        location_ref=entry.location_ref,
-    )
+    try:
+        return unequip_item(db, entry)
+    except EquipmentError as exc:
+        raise CombatDefenseError(str(exc)) from exc
 
 
 def resolve_damage_mitigation(
@@ -189,13 +179,24 @@ def resolve_damage_mitigation(
             )
             .all()
         )
-        occupied_slots: set[str] = set()
-        for _entry, profile in equipped:
-            if profile.slot in occupied_slots:
+        occupied_slots: set[EquipmentSlot] = set()
+        for entry, profile in equipped:
+            if not entry.equipped_slot:
+                raise CombatDefenseError("Equipped combat item has no physical slot.")
+            try:
+                physical_slot = EquipmentSlot(entry.equipped_slot)
+            except ValueError as exc:
                 raise CombatDefenseError(
-                    f"Character has multiple combat items equipped in {profile.slot}."
+                    "Equipped combat item has an invalid physical slot."
+                ) from exc
+            if any(
+                equipment_slots_conflict(physical_slot, occupied)
+                for occupied in occupied_slots
+            ):
+                raise CombatDefenseError(
+                    f"Character has conflicting equipment in {entry.equipped_slot}."
                 )
-            occupied_slots.add(profile.slot)
+            occupied_slots.add(physical_slot)
             armor += profile.armor_rating
             resistance += _decode_resistances(profile.resistances_json).get(
                 damage_type,
@@ -206,6 +207,28 @@ def resolve_damage_mitigation(
         armor if damage_type == CombatDamageType.PHYSICAL else 0,
         resistance,
     )
+
+
+def _ensure_combat_equipment_position(
+    db: Session,
+    item: Item,
+    slot: EquipmentSlot,
+) -> None:
+    equipment_profile = db.get(ItemEquipmentProfile, item.id)
+    if equipment_profile is None:
+        try:
+            configure_item_equipment_profile(db, item, allowed_slots={slot})
+        except EquipmentError as exc:
+            raise CombatDefenseError(str(exc)) from exc
+        return
+    try:
+        allowed_slots = get_allowed_equipment_slots(equipment_profile)
+    except EquipmentError as exc:
+        raise CombatDefenseError(str(exc)) from exc
+    if slot not in allowed_slots:
+        raise CombatDefenseError(
+            "Combat profile slot is not an allowed physical equipment position."
+        )
 
 
 def _validate_profile(

@@ -121,6 +121,13 @@ class EncumbranceTier(StrEnum):
     OVERLOADED = "OVERLOADED"
 
 
+class ItemAccessibility(StrEnum):
+    IMMEDIATE = "IMMEDIATE"
+    QUICK = "QUICK"
+    WORN = "WORN"
+    STOWED = "STOWED"
+
+
 class CombatEncounterStatus(StrEnum):
     ACTIVE = "ACTIVE"
     VICTORY = "VICTORY"
@@ -184,10 +191,16 @@ class CombatIncapacitationStatus(StrEnum):
 
 class EquipmentSlot(StrEnum):
     HEAD = "HEAD"
-    BODY = "BODY"
+    TORSO = "TORSO"
+    BODY = "TORSO"  # compatibility alias for Phase 9 callers
+    LEGS = "LEGS"
     HANDS = "HANDS"
     FEET = "FEET"
+    MAIN_HAND = "MAIN_HAND"
     OFF_HAND = "OFF_HAND"
+    BOTH_HANDS = "BOTH_HANDS"
+    BACK = "BACK"
+    WAIST = "WAIST"
     ACCESSORY = "ACCESSORY"
 
 
@@ -332,6 +345,8 @@ class EventType(StrEnum):
     PLAYER_LOST_ITEM = "PLAYER_LOST_ITEM"
     ITEM_LOCATION_CHANGED = "ITEM_LOCATION_CHANGED"
     ITEM_OWNERSHIP_CHANGED = "ITEM_OWNERSHIP_CHANGED"
+    ITEM_EQUIPPED = "ITEM_EQUIPPED"
+    ITEM_UNEQUIPPED = "ITEM_UNEQUIPPED"
     PLAYER_RESTED = "PLAYER_RESTED"
     PLAYER_GAINED_XP = "PLAYER_GAINED_XP"
     PLAYER_LEVELED_UP = "PLAYER_LEVELED_UP"

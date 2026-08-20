@@ -26,6 +26,7 @@ from app.db.models.domain import (
     DomainSynergyRecord,
 )
 from app.db.models.defense import ActorCombatDefense, ItemCombatProfile
+from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item, ItemDefinition, ItemInstance
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import (
@@ -111,6 +112,7 @@ __all__ = [
     "DomainSynergyRecord",
     "ActorCombatDefense",
     "ItemCombatProfile",
+    "ItemEquipmentProfile",
     "Item",
     "ItemDefinition",
     "ItemInstance",

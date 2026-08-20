@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10C concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10D concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -377,10 +377,20 @@ npm run build
   Sobrecarga aumenta progressivamente os custos de Stamina de viagem e ações táticas e penaliza
   testes de Agilidade, sem apagar itens, impedir sua posse ou criar um limite binário de inventário.
   A API e o painel exibem peso por entrada, peso total, capacidade e estado de carga.
+  A 10D persiste a posição física de cada instância equipada e separa esse estado do perfil
+  canônico que define posições permitidas. Os slots são conceitos corporais úteis — cabeça,
+  torso, pernas, pés, mãos, mão principal, mão secundária, duas mãos, costas e cintura — sem uma
+  grade extensa de MMORPG. Regras por categoria impedem configurações incoerentes; `BOTH_HANDS`
+  reserva as duas mãos. Acessibilidade distingue uso imediato, acesso rápido, item vestido e item
+  guardado, sem antecipar fórmulas de tempo de combate. Equipar, reposicionar e desequipar passam
+  por serviço autoritativo, validam conflitos, são idempotentes e geram eventos. A estrutura da
+  9K foi migrada de `BODY` para `TORSO`, e o combate agora consome o mesmo estado físico da 10D.
+  API e painel expõem instância, posição, acessibilidade e posições permitidas. Operações por
+  intenção continuam reservadas para a 10L.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Equipamento completo, armas, armaduras,
+  Armas, armaduras,
   ferramentas, qualidade, condição, materiais, recipientes, transferências por intenção e contexto
-  do System permanecem deliberadamente nas subfases 10D–10M.
+  do System permanecem deliberadamente nas subfases 10E–10M.
 
 ## Fora do MVP
 

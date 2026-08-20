@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models.character import Character
+from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item
 from app.game.inventory.service import list_inventory
 from app.game.items.encumbrance import get_character_encumbrance
+from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
 from app.schemas.inventory import InventoryItemResponse, InventoryResponse
 
 router = APIRouter(prefix="/api/campaigns", tags=["inventory"])
@@ -23,12 +25,27 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
         item = db.get(Item, entry.definition_id)
         if item is None:
             continue
+        equipment_profile = db.get(ItemEquipmentProfile, item.id)
         items.append(
             InventoryItemResponse(
-                item_id=item.id, name=item.name, type=item.type,
-                quantity=entry.quantity, equipped=entry.equipped,
+                item_instance_id=entry.id,
+                item_id=item.id,
+                name=item.name,
+                type=item.type,
+                quantity=entry.quantity,
+                equipped=entry.equipped,
                 unit_weight=item.base_weight,
                 total_weight=round(item.base_weight * entry.quantity, 3),
+                equipped_slot=entry.equipped_slot,
+                accessibility=item_accessibility(entry),
+                allowed_slots=(
+                    sorted(
+                        get_allowed_equipment_slots(equipment_profile),
+                        key=lambda slot: slot.value,
+                    )
+                    if equipment_profile is not None
+                    else []
+                ),
             )
         )
     encumbrance = get_character_encumbrance(db, character_id)

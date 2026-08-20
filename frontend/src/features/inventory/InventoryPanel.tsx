@@ -8,6 +8,27 @@ const formatWeight = (value: number) =>
     maximumFractionDigits: 1,
   }).format(value);
 
+const equipmentSlotLabels = {
+  HEAD: "cabeça",
+  TORSO: "torso",
+  LEGS: "pernas",
+  FEET: "pés",
+  HANDS: "mãos",
+  MAIN_HAND: "mão principal",
+  OFF_HAND: "mão secundária",
+  BOTH_HANDS: "duas mãos",
+  BACK: "costas",
+  WAIST: "cintura",
+  ACCESSORY: "acessório",
+};
+
+const accessibilityLabels = {
+  IMMEDIATE: "uso imediato",
+  QUICK: "acesso rápido",
+  WORN: "vestido",
+  STOWED: "guardado",
+};
+
 export function InventoryPanel({ campaignId, characterId }: { campaignId: string; characterId: string }) {
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +59,10 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
       ) : (
         <ul>
           {inventory.items.map((item) => (
-            <li key={item.item_id}>
-              {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso {item.equipped && "— equipado"}
+            <li key={item.item_instance_id}>
+              {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso
+              {item.equipped_slot && ` — ${equipmentSlotLabels[item.equipped_slot]}`}
+              {` — ${accessibilityLabels[item.accessibility]}`}
             </li>
           ))}
         </ul>

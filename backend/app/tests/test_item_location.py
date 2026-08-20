@@ -97,6 +97,7 @@ def test_physical_location_and_social_ownership_are_independent(db_session):
     assert json.loads(location_events[-1].payload_json)["after"] == {
         "type": "CHARACTER",
         "ref": character.id,
+        "slot": None,
     }
     assert json.loads(ownership_event.payload_json)["after"]["ref"] == npc.id
 
@@ -177,6 +178,7 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
     assert response.status_code == 200
     assert response.json()["items"] == [
         {
+            "item_instance_id": instance.id,
             "item_id": instance.definition_id,
             "name": "Pão",
             "type": "MISC",
@@ -184,6 +186,9 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "equipped": False,
             "unit_weight": 0.0,
             "total_weight": 0.0,
+            "equipped_slot": None,
+            "accessibility": "STOWED",
+            "allowed_slots": [],
         }
     ]
     assert response.json()["total_weight"] == 0.0

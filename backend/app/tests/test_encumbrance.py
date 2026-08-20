@@ -6,6 +6,7 @@ from app.core.enums import (
     CombatActorType,
     CombatTacticalActionType,
     EncumbranceTier,
+    EquipmentSlot,
     ItemLocationType,
     TravelPace,
 )
@@ -19,6 +20,7 @@ from app.game.items.encumbrance import (
     calculate_encumbrance,
     get_character_encumbrance,
 )
+from app.game.items.equipment import configure_item_equipment_profile, equip_item
 from app.game.items.service import move_item_instance
 from app.game.travel.service import calculate_travel_stamina_cost, move_character
 from app.game.world.seed import create_campaign, seed_initial_region
@@ -67,12 +69,12 @@ def test_only_items_physically_carried_or_equipped_count_toward_load(db_session)
     )
     armor = add_item(db_session, character.id, "Armadura", base_weight=8.0)
     dropped = add_item(db_session, character.id, "Pedra", base_weight=20.0)
-    move_item_instance(
+    configure_item_equipment_profile(
         db_session,
-        armor,
-        location_type=ItemLocationType.CHARACTER_EQUIPPED,
-        location_ref=character.id,
+        armor.definition,
+        allowed_slots={EquipmentSlot.TORSO},
     )
+    equip_item(db_session, armor, slot=EquipmentSlot.TORSO)
     move_item_instance(
         db_session,
         dropped,
@@ -161,6 +163,7 @@ def test_inventory_api_exposes_weight_capacity_and_encumbrance(client, db_sessio
     payload = response.json()
     assert payload["items"][0]["unit_weight"] == 15.0
     assert payload["items"][0]["total_weight"] == 30.0
+    assert payload["items"][0]["allowed_slots"] == []
     assert payload["total_weight"] == 30.0
     assert payload["carrying_capacity"] == 25.0
     assert payload["encumbrance"] == "OVERLOADED"

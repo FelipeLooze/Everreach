@@ -559,20 +559,12 @@ def _handle_skill_check(db: Session, campaign_id: str, character: Character, int
     )
 
     if result.success:
-        levels_gained = progression_service.add_xp(character, 5)
-        log_event(
+        progression_service.award_character_xp(
             db,
             campaign_id,
-            EventType.PLAYER_GAINED_XP,
-            actor_type="character",
-            actor_id=character.id,
-            payload={"amount": 5, "current_xp": character.xp},
+            character,
+            5,
         )
-        if levels_gained:
-            log_event(
-                db, campaign_id, EventType.PLAYER_LEVELED_UP, actor_type="character",
-                actor_id=character.id, payload={"new_level": character.level},
-            )
 
     outcome = "tem sucesso" if result.success else "falha"
     critical = " (rolagem crítica)" if result.critical else ""

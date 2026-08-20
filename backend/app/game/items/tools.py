@@ -12,6 +12,7 @@ from app.core.enums import (
     ToolCapability,
 )
 from app.db.models.item import ItemDefinition, ItemInstance
+from app.db.models.material import MaterialDefinition
 from app.db.models.tool import ItemToolProfile
 from app.game.items.durability import get_item_condition, is_item_broken
 from app.game.items.equipment import item_accessibility
@@ -28,6 +29,7 @@ class ToolUseContext:
     accessibility: ItemAccessibility
     quality: ItemQuality
     condition: ItemCondition | None
+    material_key: str | None
 
 
 def configure_item_tool_profile(
@@ -99,6 +101,11 @@ def validate_character_tool_use(
         accessibility=item_accessibility(instance),
         quality=ItemQuality(instance.quality),
         condition=get_item_condition(instance),
+        material_key=(
+            db.get(MaterialDefinition, instance.material_id).key
+            if instance.material_id is not None
+            else None
+        ),
     )
 
 

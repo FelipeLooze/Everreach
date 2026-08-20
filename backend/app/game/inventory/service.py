@@ -10,6 +10,7 @@ from app.core.enums import (
 )
 from app.db.models.character import Character
 from app.db.models.item import Item, ItemInstance
+from app.game.items.materials import get_material_definition
 from app.game.items.service import (
     create_item_definition,
     create_item_instance,
@@ -67,6 +68,7 @@ def add_item(
     *,
     base_weight: float | None = None,
     quality: ItemQuality = ItemQuality.STANDARD,
+    material_key: str | None = None,
 ) -> ItemInstance:
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
         raise ValueError("Item quantity must be a positive integer.")
@@ -75,6 +77,9 @@ def add_item(
     character = db.get(Character, character_id)
     if character is None:
         raise ValueError("Character does not exist.")
+    material = get_material_definition(db, material_key) if material_key else None
+    if material_key and material is None:
+        raise ValueError("Material definition does not exist.")
     item = get_or_create_item(db, item_name, base_weight=base_weight)
     entry = None
     if item.instance_mode == ItemInstanceMode.STACKABLE.value:
@@ -85,11 +90,18 @@ def add_item(
                 ItemInstance.location_type == ItemLocationType.CHARACTER.value,
                 ItemInstance.location_ref == character_id,
                 ItemInstance.quality == quality.value,
+                ItemInstance.material_id == (material.id if material else None),
             )
             .one_or_none()
         )
     if entry is None:
-        entry = create_item_instance(db, item, quantity=quantity, quality=quality)
+        entry = create_item_instance(
+            db,
+            item,
+            quantity=quantity,
+            quality=quality,
+            material=material,
+        )
         move_item_instance(
             db,
             entry,
@@ -117,6 +129,7 @@ def add_item(
             "quantity": quantity,
             "quantity_after": entry.quantity,
             "quality": entry.quality,
+            "material_key": material.key if material else None,
         },
     )
     return entry

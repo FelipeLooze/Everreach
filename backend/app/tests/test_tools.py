@@ -139,6 +139,7 @@ def test_profession_activity_records_tool_evidence_without_extra_xp(db_session):
     assert payload["tool_accessibility"] == "STOWED"
     assert payload["tool_quality"] == "STANDARD"
     assert payload["tool_condition"] == "EXCELLENT"
+    assert payload["tool_material_key"] is None
 
 
 def test_profession_activity_rejects_incomplete_tool_requirement(db_session):

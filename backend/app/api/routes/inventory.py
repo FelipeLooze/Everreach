@@ -6,19 +6,22 @@ from app.db.models.character import Character
 from app.db.models.defense import ItemArmorProfile
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item
+from app.db.models.material import MaterialDefinition
 from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 from app.game.inventory.service import list_inventory
+from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.items.durability import get_item_condition
 from app.game.items.equipment import get_allowed_equipment_slots, item_accessibility
-from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
+from app.game.items.materials import material_weight_factor
 from app.game.items.tools import get_tool_capabilities
 from app.game.items.weapons import get_weapon_damage_profiles
 from app.schemas.inventory import (
     ArmorProfileResponse,
     InventoryItemResponse,
     InventoryResponse,
+    MaterialResponse,
     ToolProfileResponse,
     WeaponProfileResponse,
 )
@@ -42,6 +45,12 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
         weapon_profile = db.get(ItemWeaponProfile, item.id)
         armor_profile = db.get(ItemArmorProfile, item.id)
         tool_profile = db.get(ItemToolProfile, item.id)
+        material = (
+            db.get(MaterialDefinition, entry.material_id)
+            if entry.material_id is not None
+            else None
+        )
+        unit_weight = item.base_weight * material_weight_factor(material)
         items.append(
             InventoryItemResponse(
                 item_instance_id=entry.id,
@@ -51,9 +60,14 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                 quantity=entry.quantity,
                 quality=entry.quality,
                 condition=get_item_condition(entry),
+                material=(
+                    MaterialResponse(key=material.key, name=material.name)
+                    if material is not None
+                    else None
+                ),
                 equipped=entry.equipped,
-                unit_weight=item.base_weight,
-                total_weight=round(item.base_weight * entry.quantity, 3),
+                unit_weight=round(unit_weight, 3),
+                total_weight=round(unit_weight * entry.quantity, 3),
                 equipped_slot=entry.equipped_slot,
                 accessibility=item_accessibility(entry),
                 allowed_slots=(

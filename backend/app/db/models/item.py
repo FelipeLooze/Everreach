@@ -123,6 +123,9 @@ class ItemInstance(Base):
         ForeignKey("items.id"),
         nullable=False,
     )
+    material_id: Mapped[str | None] = mapped_column(
+        ForeignKey("material_definitions.id"), nullable=True
+    )
     campaign_id: Mapped[str | None] = mapped_column(
         ForeignKey("campaigns.id"),
         nullable=True,
@@ -146,6 +149,7 @@ class ItemInstance(Base):
     equipped_slot: Mapped[str | None] = mapped_column(String, nullable=True)
 
     definition: Mapped["ItemDefinition"] = relationship(back_populates="instances")
+    material: Mapped["MaterialDefinition | None"] = relationship()
 
     @property
     def item_id(self) -> str:

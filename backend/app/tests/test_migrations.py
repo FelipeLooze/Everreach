@@ -72,6 +72,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_armor_profiles",
             "item_tool_profiles",
             "item_wear_records",
+            "material_definitions",
             "actor_combat_defenses",
         }.issubset(tables)
         item_definition_columns = {
@@ -110,6 +111,14 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             item["name"]
             for item in inspect(engine).get_columns("item_tool_profiles")
         }
+        material_definition_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("material_definitions")
+        }
+        material_definition_checks = {
+            item["name"]
+            for item in inspect(engine).get_check_constraints("material_definitions")
+        }
         combat_action_columns = {
             item["name"] for item in inspect(engine).get_columns("combat_actions")
         }
@@ -117,6 +126,13 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "item_id", "coverage_json", "physical_protections_json"
         }
         assert item_tool_profile_columns == {"item_id", "capabilities_json"}
+        assert material_definition_columns == {
+            "id", "key", "name", "description", "weight_factor", "wear_resistance"
+        }
+        assert {
+            "ck_material_weight_factor_positive",
+            "ck_material_wear_resistance_positive",
+        } == material_definition_checks
         assert "target_body_area" in combat_action_columns
         assert {"key", "type", "instance_mode", "base_weight"}.issubset(
             item_definition_columns
@@ -129,6 +145,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert {
             "id",
             "definition_id",
+            "material_id",
             "quantity",
             "quality",
             "durability_current",
@@ -152,6 +169,13 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert "ix_item_instance_definition" in item_instance_indexes
         assert "ix_item_instance_campaign_location" in item_instance_indexes
         assert "ix_item_instance_campaign_owner" in item_instance_indexes
+        with engine.connect() as connection:
+            material_keys = set(
+                connection.execute(text("SELECT key FROM material_definitions")).scalars()
+            )
+        assert material_keys == {
+            "IRON", "STEEL", "BRONZE", "WOOD", "LEATHER", "WOOL", "LINEN"
+        }
         assert "uq_item_instance_character_equipment_slot" in item_instance_indexes
         assert {"item_id", "allowed_slots_json"} == item_equipment_profile_columns
         assert {

@@ -357,7 +357,7 @@ npm run build
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10I concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: IN PROGRESS (10A–10J concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -429,9 +429,19 @@ npm run build
   armaduras não mitigam dano. Mudanças de condição e quebra entram no Event Log, enquanto a API
   mostra apenas a faixa compreensível, não o número interno. Reparos e sua relação com profissões
   permanecem deliberadamente adiados, pois uma economia de reparo profunda não pertence à 10I.
+  A 10J cria um catálogo extensível de materiais com ferro, aço, bronze, madeira, couro, lã e
+  linho. Cada definição possui somente dois fatores amplos já consumidos: peso relativo, usado
+  pela carga/encumbrance, e resistência ao desgaste, usada pela durabilidade da 10I. Material é
+  propriedade da instância física; itens da mesma definição podem ser feitos de materiais
+  diferentes e pilhas só se fundem quando o material também coincide. Instâncias antigas ficam
+  sem material conhecido, sem inferências frágeis por nome. A API mostra nome e chave do material
+  e calcula o peso efetivo, mas não expõe multiplicadores internos. O serviço permite futuros
+  materiais fantásticos — por exemplo, uma liga mais leve e resistente — sem outra arquitetura.
+  Não foram adicionadas dureza, flexibilidade, condutividade mágica ou simulação metalúrgica sem
+  consumidores autoritativos atuais; proteção física continua pertencendo ao perfil da armadura.
   Recipientes permanecem bloqueados até a 10K, quando ciclos poderão ser impedidos corretamente.
-  Materiais, recipientes, transferências por intenção e contexto do System permanecem
-  deliberadamente nas subfases 10J–10M.
+  Recipientes, transferências por intenção e contexto do System permanecem deliberadamente nas
+  subfases 10K–10M.
 
 ## Fora do MVP
 

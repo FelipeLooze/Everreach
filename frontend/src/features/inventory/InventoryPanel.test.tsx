@@ -26,6 +26,7 @@ describe("InventoryPanel", () => {
           quantity: 3,
           quality: "STANDARD",
           condition: null,
+          material: null,
           equipped: false,
           unit_weight: 1.5,
           total_weight: 4.5,
@@ -78,6 +79,7 @@ describe("InventoryPanel", () => {
           quantity: 1,
           quality: "GOOD",
           condition: "EXCELLENT",
+          material: { key: "STEEL", name: "Aço" },
           equipped: true,
           unit_weight: 2,
           total_weight: 2,
@@ -117,6 +119,7 @@ describe("InventoryPanel", () => {
         type: "ARMOR", quantity: 1, equipped: true, unit_weight: 4,
         quality: "POOR",
         condition: "WORN",
+        material: { key: "LEATHER", name: "Couro" },
         total_weight: 4, equipped_slot: "TORSO", accessibility: "WORN",
         allowed_slots: ["TORSO"], weapon: null,
         armor: {
@@ -140,6 +143,7 @@ describe("InventoryPanel", () => {
         type: "TOOL", quantity: 1, equipped: false, unit_weight: 3,
         quality: "MASTERWORK",
         condition: "DAMAGED",
+        material: { key: "IRON", name: "Ferro" },
         total_weight: 3, equipped_slot: null, accessibility: "STOWED",
         allowed_slots: ["MAIN_HAND", "BACK"], weapon: null, armor: null,
         tool: { capabilities: ["HAMMERING", "MINING"] },
@@ -153,5 +157,6 @@ describe("InventoryPanel", () => {
     );
     expect(screen.getByText(/Picareta/)).toHaveTextContent("qualidade obra-prima");
     expect(screen.getByText(/Picareta/)).toHaveTextContent("condição danificada");
+    expect(screen.getByText(/Picareta/)).toHaveTextContent("material Ferro");
   });
 });

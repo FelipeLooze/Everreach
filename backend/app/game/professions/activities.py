@@ -215,6 +215,7 @@ def award_profession_activity_xp(
             "tool_accessibility": tool.accessibility.value if tool else None,
             "tool_quality": tool.quality.value if tool else None,
             "tool_condition": tool.condition.value if tool and tool.condition else None,
+            "tool_material_key": tool.material_key if tool else None,
         },
     )
     db.flush()

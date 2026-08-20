@@ -11,6 +11,8 @@ from app.core.enums import (
     ItemWearSeverity,
 )
 from app.db.models.item import ItemInstance, ItemWearRecord
+from app.db.models.material import MaterialDefinition
+from app.game.items.materials import material_wear_resistance
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -114,7 +116,16 @@ def apply_item_wear(
     if instance.campaign_id is None:
         raise ItemDurabilityError("Item must exist in a campaign before it can wear.")
     quality = ItemQuality(instance.quality)
-    requested_wear = WEAR_BY_SEVERITY[severity] * QUALITY_WEAR_MULTIPLIER[quality]
+    material = (
+        db.get(MaterialDefinition, instance.material_id)
+        if instance.material_id is not None
+        else None
+    )
+    requested_wear = (
+        WEAR_BY_SEVERITY[severity]
+        * QUALITY_WEAR_MULTIPLIER[quality]
+        / material_wear_resistance(material)
+    )
     before = float(instance.durability_current)
     after = max(0.0, before - requested_wear)
     actual_wear = before - after
@@ -141,6 +152,7 @@ def apply_item_wear(
         "severity": severity.value,
         "cause": normalized_cause,
         "quality": quality.value,
+        "material_key": material.key if material else None,
         "wear_amount": actual_wear,
         "condition_before": condition_before.value,
         "condition_after": condition_after.value,

@@ -205,6 +205,7 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "quantity": 3,
             "quality": "STANDARD",
             "condition": None,
+            "material": None,
             "equipped": False,
             "unit_weight": 0.0,
             "total_weight": 0.0,

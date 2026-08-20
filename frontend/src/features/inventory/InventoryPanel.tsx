@@ -135,6 +135,7 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
               {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso
               {` — qualidade ${qualityLabels[item.quality]}`}
               {item.condition && ` — condição ${conditionLabels[item.condition]}`}
+              {item.material && ` — material ${item.material.name}`}
               {item.equipped_slot && ` — ${equipmentSlotLabels[item.equipped_slot]}`}
               {` — ${accessibilityLabels[item.accessibility]}`}
               {item.weapon && (

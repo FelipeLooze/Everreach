@@ -31,6 +31,11 @@ class ToolProfileResponse(BaseModel):
     capabilities: list[ToolCapability]
 
 
+class MaterialResponse(BaseModel):
+    key: str
+    name: str
+
+
 class InventoryItemResponse(BaseModel):
     item_instance_id: str
     item_id: str
@@ -39,6 +44,7 @@ class InventoryItemResponse(BaseModel):
     quantity: int
     quality: ItemQuality
     condition: ItemCondition | None
+    material: MaterialResponse | None
     equipped: bool
     unit_weight: float
     total_weight: float

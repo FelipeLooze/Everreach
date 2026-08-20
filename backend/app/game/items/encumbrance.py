@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import CharacterAttributeKey, EncumbranceTier, ItemLocationType
 from app.db.models.item import ItemDefinition, ItemInstance
+from app.db.models.material import MaterialDefinition
 from app.game.attributes.service import get_character_attribute
 
 
@@ -91,11 +92,19 @@ def get_carried_weight(db: Session, character_id: str) -> float:
     value = (
         db.query(
             func.coalesce(
-                func.sum(ItemDefinition.base_weight * ItemInstance.quantity),
+                func.sum(
+                    ItemDefinition.base_weight
+                    * ItemInstance.quantity
+                    * func.coalesce(MaterialDefinition.weight_factor, 1.0)
+                ),
                 0.0,
             )
         )
         .join(ItemInstance, ItemInstance.definition_id == ItemDefinition.id)
+        .outerjoin(
+            MaterialDefinition,
+            MaterialDefinition.id == ItemInstance.material_id,
+        )
         .filter(
             ItemInstance.location_type.in_(
                 (

@@ -189,6 +189,7 @@ export interface InventoryItem {
   quantity: number;
   quality: ItemQuality;
   condition: ItemCondition | null;
+  material: ItemMaterial | null;
   equipped: boolean;
   unit_weight: number;
   total_weight: number;
@@ -214,6 +215,10 @@ export type ItemCondition =
   | "DAMAGED"
   | "CRITICAL"
   | "BROKEN";
+export interface ItemMaterial {
+  key: string;
+  name: string;
+}
 
 export interface WeaponProfile {
   family: WeaponFamily;

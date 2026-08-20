@@ -15,6 +15,7 @@ from app.core.enums import (
 from app.db.models.character import Character
 from app.db.models.item import ItemDefinition, ItemInstance
 from app.db.models.location import Location
+from app.db.models.material import MaterialDefinition
 from app.db.models.npc import NPC
 from app.db.models.region import Region
 from app.game.items.durability import initial_durability
@@ -95,6 +96,7 @@ def create_item_instance(
     *,
     quantity: int = 1,
     quality: ItemQuality = ItemQuality.STANDARD,
+    material: MaterialDefinition | None = None,
 ) -> ItemInstance:
     if db.get(ItemDefinition, definition.id) is None:
         raise ItemFoundationError("Item definition must be persisted first.")
@@ -102,6 +104,8 @@ def create_item_instance(
         raise ItemFoundationError("Item instance quantity must be a positive integer.")
     if not isinstance(quality, ItemQuality):
         raise ItemFoundationError("Invalid item quality.")
+    if material is not None and db.get(MaterialDefinition, material.id) is None:
+        raise ItemFoundationError("Material definition must be persisted first.")
     try:
         mode = ItemInstanceMode(definition.instance_mode)
     except ValueError as exc:
@@ -114,6 +118,7 @@ def create_item_instance(
         definition_id=definition.id,
         quantity=quantity,
         quality=quality.value,
+        material_id=material.id if material is not None else None,
         durability_current=durability,
         durability_max=durability,
     )

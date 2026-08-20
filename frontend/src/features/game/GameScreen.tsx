@@ -172,7 +172,7 @@ export function GameScreen() {
         </Panel>
       )}
       {activePanel === "character" && (
-        <Panel title="Personagem" onClose={() => setActivePanel(null)}>
+        <Panel title="Personagem" size="wide" onClose={() => setActivePanel(null)}>
           <CharacterSheetPanel campaignId={campaignId} characterId={characterId} />
         </Panel>
       )}

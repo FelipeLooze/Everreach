@@ -44,7 +44,7 @@ describe("JournalPanel", () => {
       expect(mocks.getJournal).toHaveBeenCalledWith("campaign_1", "character_1"),
     );
     expect(await screen.findByText(/Conversou com Osgar/)).toBeInTheDocument();
-    expect(screen.getByText(/importância 3/)).toBeInTheDocument();
+    expect(screen.getByText(/importância 3/i)).toBeInTheDocument();
     expect(screen.getByText("Uma relação mudou")).toBeInTheDocument();
   });
 });

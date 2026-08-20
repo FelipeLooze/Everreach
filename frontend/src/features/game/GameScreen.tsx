@@ -7,6 +7,7 @@ import { Panel } from "@/components/Panel";
 import { StatusBar } from "@/components/StatusBar";
 import { CharacterSheetPanel } from "@/features/character/CharacterSheetPanel";
 import { ActionInput } from "@/features/game/ActionInput";
+import { GameSidebar } from "@/features/game/GameSidebar";
 import { NarrativeLog, type NarrativeEntry } from "@/features/game/NarrativeLog";
 import { StoryLogPanel } from "@/features/game/StoryLogPanel";
 import { InventoryPanel } from "@/features/inventory/InventoryPanel";
@@ -124,37 +125,41 @@ export function GameScreen() {
   return (
     <div className="game-screen">
       {state && <StatusBar state={state} />}
-      {loading && !state && <p>Carregando o mundo…</p>}
-      {error && <p className="panel-error">{error}</p>}
+      <main className="game-content">
+        <section className="game-main">
+          {loading && !state && <p className="game-feedback">Carregando o mundo…</p>}
+          {error && <p className="panel-error game-feedback">{error}</p>}
+          <NarrativeLog entries={entries} />
+          {actionError && <p className="panel-error action-error">{actionError}</p>}
+          {state && !worldStarted && (
+            <div className="world-start">
+              <p>Seu personagem está pronto. Inicie o mundo para começar sua jornada.</p>
+              <button onClick={handleStartWorld} disabled={startingWorld}>
+                {startingWorld ? "Iniciando mundo…" : "Iniciar mundo"}
+              </button>
+            </div>
+          )}
+          {worldStarted && (
+            <ActionInput
+              onSubmit={handleAction}
+              disabled={submitting || state?.character.status !== "ALIVE"}
+              techniques={techniques}
+            />
+          )}
+        </section>
+        {state && <GameSidebar state={state} />}
+      </main>
 
-      <NarrativeLog entries={entries} />
-
-      {actionError && <p className="panel-error">{actionError}</p>}
-      {state && !worldStarted && (
-        <div className="world-start">
-          <p>Seu personagem está pronto. Inicie o mundo para começar sua jornada.</p>
-          <button onClick={handleStartWorld} disabled={startingWorld}>
-            {startingWorld ? "Iniciando mundo…" : "Iniciar mundo"}
-          </button>
-        </div>
-      )}
-      {worldStarted && (
-        <ActionInput
-          onSubmit={handleAction}
-          disabled={submitting || state?.character.status !== "ALIVE"}
-          techniques={techniques}
-        />
-      )}
-
-      <div className="action-bar">
-        <button onClick={() => setActivePanel("map")}>Mapa</button>
-        <button onClick={() => setActivePanel("inventory")}>Inventário</button>
-        <button onClick={() => setActivePanel("character")}>Personagem</button>
-        <button onClick={() => setActivePanel("quests")}>Missão</button>
-        <button onClick={() => setActivePanel("journal")}>Diário</button>
-        <button onClick={() => setActivePanel("log")}>Log</button>
-        <button onClick={() => setActivePanel("settings")}>Configurações</button>
-      </div>
+      <nav className="action-bar" aria-label="Menu do jogo">
+        <button onClick={() => setActivePanel("character")}><span>PERSONAGEM</span></button>
+        <button onClick={() => setActivePanel("inventory")}><span>INVENTÁRIO</span></button>
+        <button onClick={() => setActivePanel("character")}><span>SKILLS</span></button>
+        <button onClick={() => setActivePanel("map")}><span>MAPA</span></button>
+        <button onClick={() => setActivePanel("quests")}><span>QUESTS</span></button>
+        <button onClick={() => setActivePanel("journal")}><span>DIÁRIO</span></button>
+        <button onClick={() => setActivePanel("log")}><span>HISTÓRIA</span></button>
+        <button onClick={() => setActivePanel("settings")}><span>SISTEMA</span></button>
+      </nav>
 
       {activePanel === "map" && (
         <Panel title="Mapa" onClose={() => setActivePanel(null)}>

@@ -57,7 +57,7 @@ describe("StatusBar", () => {
     render(<StatusBar state={state} />);
 
     expect(
-      screen.getByText("Local desconhecido")
+      screen.getByText("Desconhecido")
     ).toBeInTheDocument();
 
     expect(screen.queryByText("Cardal")).not.toBeInTheDocument();

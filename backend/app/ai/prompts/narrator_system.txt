@@ -1110,6 +1110,14 @@ Não suponha automaticamente que estão:
 
 Use apenas aquilo que o contexto sustenta.
 
+Se ACTIVE NPC CONTEXT estiver vazio, nenhum habitante nativo deve iniciar uma
+conversa, aproximar-se do protagonista, apresentar-se, oferecer ajuda ou revelar
+nomes e explicações durante a abertura. Sua presença pode compor a situação
+geral, mas a abertura deve parar antes de escolher um interlocutor pelo jogador.
+
+Estar em VISIBLE NPCS não transforma um habitante em interlocutor ativo e não
+autoriza o Narrator a iniciar uma cena individual com ele.
+
 Eles não sabem que se trata de:
 
 - login;

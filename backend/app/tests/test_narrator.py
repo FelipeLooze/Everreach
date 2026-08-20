@@ -118,8 +118,7 @@ def test_opening_mode_permits_the_protagonist_as_subject_of_the_sync_event():
     exception it's supposed to enforce, or it silently strips out the very
     synchronization scene the prompt was told to write."""
     llm = CapturingLLM(
-        "Logan se encontra de pé na praça de Cardal, cercado por outros recém-chegados.\n\n"
-        "— Bem-vindo, jovem — diz Osgar Vell, erguendo-se de sua cadeira."
+        "Logan se encontra de pé em uma praça, cercado por outros recém-chegados."
     )
     context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)"
 
@@ -546,6 +545,132 @@ def test_narrator_uses_safe_npc_fallback_when_revisions_keep_inventing():
         "Nenhuma mudança mecânica.",
         context,
         "O que existe depois do rio?",
+        "NARRATOR: Osgar aguarda.",
+    )
+
+    assert result == "— Não sei dizer."
+    assert len(llm.calls) == 3
+
+
+def test_opening_does_not_force_a_native_interlocutor_or_reveal_hidden_names():
+    llm = StubbornLLM(
+        "Um ancião se aproxima de Logan.\n\n"
+        "— Bem-vindo a Cardal, no Vale Verdejante. Como posso ajudá-lo?"
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata)\n\n"
+        "PLAYER CURRENT LOCATION KNOWLEDGE\n"
+        "Current location canonical name known to player: NO\n"
+        "Current region canonical name known to player: NO\n\n"
+        "CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH\n"
+        "Name: Cardal\nType: VILLAGE\nRegion: Vale Verdejante\n\n"
+        "VISIBLE NPCS\n- Osgar Vell (ancião; activity=IDLE)\n\n"
+        "ACTIVE NPC CONTEXT\n- none"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Logan está fisicamente presente no ponto inicial após o transporte.",
+        context,
+        "(nenhuma ação do jogador; abertura da campanha)",
+        "(nenhum histórico)",
+        mode="OPENING",
+    )
+
+    assert result == "Nada acontece de imediato."
+    assert "Cardal" not in result
+    assert "Vale Verdejante" not in result
+    assert len(llm.calls) == 3
+
+
+def test_hidden_region_flag_does_not_block_an_already_known_location_name():
+    llm = CapturingLLM("A placa no centro da praça traz o nome Cardal.")
+    context = (
+        "PLAYER CURRENT LOCATION KNOWLEDGE\n"
+        "Current location canonical name known to player: YES\n"
+        "Known location name: Cardal\n"
+        "Current region canonical name known to player: NO\n\n"
+        "CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH\n"
+        "Name: Cardal\nType: VILLAGE\nRegion: Vale Verdejante\n\n"
+        "ACTIVE NPC CONTEXT\n- none"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Existe uma placa perceptível no centro da praça.",
+        context,
+        "Olhar a placa",
+        "(nenhum histórico)",
+    )
+
+    assert result == llm.response
+    assert len(llm.calls) == 1
+
+
+def test_active_npc_can_reveal_an_unknown_name_only_when_it_is_in_npc_knowledge():
+    llm = CapturingLLM("— Você está em Cardal.")
+    context = (
+        "PLAYER CURRENT LOCATION KNOWLEDGE\n"
+        "Current location canonical name known to player: NO\n"
+        "Current region canonical name known to player: NO\n\n"
+        "CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH\n"
+        "Name: Cardal\nType: VILLAGE\nRegion: Vale Verdejante\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar Vell\n\n"
+        "NPC KNOWLEDGE\n- Osgar knows that this settlement is named Cardal."
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Nenhuma mudança mecânica.",
+        context,
+        "Onde estou?",
+        "NARRATOR: Osgar aguarda.",
+    )
+
+    assert result == llm.response
+    assert len(llm.calls) == 1
+
+
+def test_look_action_never_grows_into_a_fabricated_player_question():
+    llm = StubbornLLM(
+        "Osgar observa Logan em silêncio.\n\n"
+        "— Agradeço sua ajuda, senhor. O que me aconselha?\n\n"
+        "Osgar inclina a cabeça.\n\n"
+        "— Conheça os moradores antes de partir."
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar Vell"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Logan observa o espaço ao redor; nenhuma conversa nova foi iniciada.",
+        context,
+        "Logan olha ao redor",
+        "NARRATOR: Osgar está próximo.",
+    )
+
+    assert result == "Osgar observa Logan em silêncio."
+    assert "Agradeço" not in result
+    assert "aconselha" not in result
+    assert "Conheça" not in result
+    assert len(llm.calls) == 3
+
+
+def test_npc_cannot_invent_local_economy_resources_or_route_safety():
+    llm = StubbornLLM(
+        "— Há muitos recursos naturais. Os moradores são fazendeiros, mineiros e "
+        "artesãos, e a trilha é segura de dia, mas perigosa à noite por causa dos "
+        "animais selvagens."
+    )
+    context = "ACTIVE NPC CONTEXT\nName: Osgar Vell"
+
+    result = narrator.narrate(
+        llm,
+        "Nenhuma mudança mecânica.",
+        context,
+        "Onde estou?",
         "NARRATOR: Osgar aguarda.",
     )
 

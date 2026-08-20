@@ -60,6 +60,16 @@ _REACTS_TO_DECISION_VERBS = (
 _DECISION_NOUNS = r"desejo|decis(?:ao|ão)|resposta|escolha|pedido|vontade"
 
 _PERSISTENT_CONCEPTS = {
+    "casa": r"\bcasas?\b",
+    "madeira": r"\bmadeira\b",
+    "sapé": r"\bsape\b",
+    "ferramenta": r"\bferramentas?\b",
+    "artesanato": r"\bartesanato\b",
+    "recursos naturais": r"\brecursos?\s+naturais\b",
+    "profissões locais": r"\b(fazendeir\w*|mineir\w*|artesaos?|artesa)\b",
+    "animais selvagens": r"\banimais?\s+selvagens?\b",
+    "segurança de rota": r"\b(segur[oa]s?|perigos[oa]s?)\b",
+    "trilha": r"\btrilhas?\b",
     "estrada": r"\bestradas?\b",
     "ponte": r"\bpontes?\b",
     "rio": r"\brios?\b",
@@ -95,6 +105,15 @@ _PERSISTENT_CONCEPTS = {
     "leste": r"\bleste\b",
     "oeste": r"\boeste\b",
 }
+
+_UNSOLICITED_OPENING_INTERACTION_MESSAGE = (
+    "a abertura iniciou diálogo ou aproximação de um habitante sem uma interação "
+    "ativa autorizada; apresente apenas a situação inicial e devolva o controle ao jogador"
+)
+_HIDDEN_NAME_MESSAGE = (
+    "a resposta revelou um nome canônico que o protagonista ainda não conhece e que "
+    "nenhum interlocutor ativo estava autorizado a comunicar"
+)
 
 
 _PROMPT_LEAK_MARKERS = (
@@ -348,6 +367,89 @@ def _extract_active_interlocutor_name(
     )
 
 
+def _private_location_fields(context: str) -> dict[str, str]:
+    section_match = re.search(
+        r"CANONICAL LOCATION CONTEXT[^\n]*\n(.*?)(?:\n\n|\Z)",
+        context,
+        re.DOTALL,
+    )
+    if not section_match:
+        return {}
+    fields = {}
+    for label in ("Name", "Region"):
+        match = re.search(rf"^{label}:\s*([^\n]+)", section_match.group(1), re.MULTILINE)
+        if match and match.group(1).strip().lower() != "unknown":
+            fields[label] = match.group(1).strip()
+    return fields
+
+
+def _npc_knowledge(context: str) -> str:
+    match = re.search(
+        r"(?:^|\n)NPC KNOWLEDGE\n(.*?)(?:\n\nPLAYER KNOWLEDGE|\Z)",
+        context,
+        re.DOTALL,
+    )
+    return match.group(1) if match else ""
+
+
+def _find_hidden_name_violations(
+    text: str, context: str, active_interlocutor_name: str
+) -> list[str]:
+    """Private canonical metadata is not automatically narrator-visible truth.
+
+    Without an active interlocutor capable of communicating it, a location or
+    region whose knowledge flag is NO must not appear in the prose merely
+    because its private database name was included in the context.
+    """
+    private_fields = _private_location_fields(context)
+    npc_knowledge = _npc_knowledge(context)
+    unknown_names = []
+    for kind, field in (("location", "Name"), ("region", "Region")):
+        flag = re.search(
+            rf"Current {kind} canonical name known to player:\s*NO",
+            context,
+            re.IGNORECASE,
+        )
+        name = private_fields.get(field)
+        if not flag or not name or not _mentions(text, name):
+            continue
+        npc_can_reveal = active_interlocutor_name and _mentions(npc_knowledge, name)
+        if not npc_can_reveal:
+            unknown_names.append(name)
+    if unknown_names:
+        return [_HIDDEN_NAME_MESSAGE]
+    return []
+
+
+def _find_unsolicited_opening_interaction_violations(
+    text: str,
+    mode: NarrationMode,
+    active_interlocutor_name: str,
+    simulated_player_names: list[str],
+) -> list[str]:
+    if mode != "OPENING" or active_interlocutor_name:
+        return []
+    paragraphs = _split_paragraphs(text)
+    native_dialogue = any(
+        _is_dialogue_paragraph(paragraph)
+        and not _paragraph_speaks_for_simulated_player(
+            paragraphs, index, simulated_player_names
+        )
+        for index, paragraph in enumerate(paragraphs)
+    )
+    native_approach = any(
+        re.search(
+            r"\b(?:se\s+aproxima|aproxima-se|vem\s+ate|dirige-se\s+a)\b",
+            _normalized(paragraph),
+        )
+        and not any(_mentions(paragraph, name) for name in simulated_player_names)
+        for paragraph in paragraphs
+    )
+    if native_dialogue or native_approach:
+        return [_UNSOLICITED_OPENING_INTERACTION_MESSAGE]
+    return []
+
+
 def _find_style_violations(text: str) -> list[str]:
     """Detect cosmetic prose/format issues for diagnostics only.
 
@@ -574,6 +676,28 @@ def _find_fabricated_turn_start(
         if index > 0 and not _is_dialogue_paragraph(paragraphs[index - 1]):
             prev_speaker = _paragraph_establishes_speaker(paragraphs[index - 1], character_name, npc_name)
 
+        # A line that addresses the active NPC and speaks in the first person
+        # cannot be that NPC's own continuation. Local models commonly insert
+        # exactly this shape after a LOOK action: "— Obrigado, senhor. O que me
+        # aconselha?", then continue by making the NPC answer it.
+        normalized_paragraph = _normalized(paragraph)
+        addresses_npc = re.search(
+            r"\b(?:senhor|senhora|seu|dona)\b",
+            normalized_paragraph,
+        ) or (
+            npc_name
+            and re.search(
+                rf"(?:^|[,;])\s*{re.escape(_normalized(npc_name.split()[0]))}\b",
+                normalized_paragraph,
+            )
+        )
+        first_person = re.search(
+            r"\b(?:eu|me|meu|minha|vou|posso|preciso|agradeco|aconselha)\b",
+            normalized_paragraph,
+        )
+        if addresses_npc and first_person:
+            return index
+
         if prev_speaker == "npc":
             continue  # legitimately attributed by the narration beat right before it
         if prev_speaker == "player":
@@ -692,6 +816,9 @@ def narrate(
             context
         )
     )
+    validation_context = (
+        f"{context}\n\nAUTHORITATIVE MECHANICAL FACTS\n{mechanical_summary}"
+    )
 
     draft = response
 
@@ -700,10 +827,25 @@ def narrate(
     # Style violations are NEVER included in the rewrite reasons.
     for attempt in range(1, 3):
         empty_violations = _empty_response_violations(draft)
-        canon_violations = [] if empty_violations else _find_canon_violations(draft, context, player_input)
+        canon_violations = [] if empty_violations else _find_canon_violations(
+            draft, validation_context, player_input
+        )
         meta_violations = [] if empty_violations else _find_meta_awareness_violations(draft, simulated_player_names)
         agency_violations = [] if empty_violations else _protagonist_agency_violations(draft, character_name, mode)
         turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+        hidden_name_violations = [] if empty_violations else _find_hidden_name_violations(
+            draft, context, active_interlocutor_name
+        )
+        opening_interaction_violations = (
+            []
+            if empty_violations
+            else _find_unsolicited_opening_interaction_violations(
+                draft,
+                mode,
+                active_interlocutor_name,
+                simulated_player_names,
+            )
+        )
         style_violations = [] if empty_violations else _find_style_violations(draft)
 
         hard_violations = (
@@ -712,11 +854,14 @@ def narrate(
             + meta_violations
             + agency_violations
             + turn_violations
+            + hidden_name_violations
+            + opening_interaction_violations
         )
 
         logger.debug(
             "REVIEW RESULT (attempt %s)\nEMPTY/LEAK VIOLATIONS: %s\nCANON VIOLATIONS: %s\n"
             "META-AWARENESS VIOLATIONS: %s\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
+            "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
             "STYLE VIOLATIONS: %s",
             attempt,
             empty_violations,
@@ -724,6 +869,8 @@ def narrate(
             meta_violations,
             agency_violations,
             turn_violations,
+            hidden_name_violations,
+            opening_interaction_violations,
             style_violations,
         )
 
@@ -781,12 +928,24 @@ def narrate(
     remaining_style = _find_style_violations(draft)
     remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
     remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+    remaining_hidden_names = _find_hidden_name_violations(
+        draft, context, active_interlocutor_name
+    )
+    remaining_opening_interaction = _find_unsolicited_opening_interaction_violations(
+        draft,
+        mode,
+        active_interlocutor_name,
+        simulated_player_names,
+    )
 
     logger.debug(
         "REVIEW RESULT (final)\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
+        "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
         "STYLE VIOLATIONS: %s",
         remaining_agency,
         remaining_turn,
+        remaining_hidden_names,
+        remaining_opening_interaction,
         remaining_style,
     )
 
@@ -820,8 +979,21 @@ def narrate(
             )
             return safe
 
+    # An opening is only the initial situation. If the model insists on
+    # revealing private names or forcing a native NPC encounter after both
+    # revisions, do not expose that generated branch to the player.
+    if remaining_hidden_names or remaining_opening_interaction:
+        safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        logger.error(
+            "FALLBACK REASON: opening still revealed hidden names or initiated an "
+            "unauthorized interaction after hard revisions: %s\nFALLBACK:\n%s",
+            remaining_hidden_names + remaining_opening_interaction,
+            safe,
+        )
+        return safe
+
     remaining_canon = (
-        _find_canon_violations(draft, context, player_input)
+        _find_canon_violations(draft, validation_context, player_input)
         + _find_meta_awareness_violations(draft, simulated_player_names)
     )
     logger.debug("REVIEW RESULT (post-agency-trim)\nCANON VIOLATIONS: %s", remaining_canon)
@@ -836,7 +1008,7 @@ def narrate(
     # dialogue/reaction and remove only the unsupported claim(s).
     filtered = _drop_unsupported_segments(
         draft,
-        context,
+        validation_context,
         player_input,
         simulated_player_names,
     )

@@ -653,7 +653,7 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
     )
 
     # O mundo começa às 08:00.
-    # Leva o relógio até 21:55 sem iniciar uma ação.
+    # Leva o relógio até 21:59:59 sem iniciar uma ação.
     clock.advance_world_time(
         db_session,
         campaign.id,
@@ -701,8 +701,8 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
 
     db_session.refresh(osgar)
 
-    # TALK custa 10 minutos:
-    # 21:55 -> 22:05.
+    # A fala curta custa 3 segundos:
+    # 21:59:59 -> 22:00:02.
     state = build_game_state(
         db_session,
         campaign.id,

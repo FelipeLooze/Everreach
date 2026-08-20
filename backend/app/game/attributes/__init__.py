@@ -1,0 +1,1 @@
+"""Authoritative character attribute services."""

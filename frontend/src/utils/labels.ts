@@ -8,6 +8,12 @@ const LOCATION_TYPE_LABELS: Record<string, string> = {
 };
 
 const CHARACTER_ATTRIBUTE_LABELS: Record<string, string> = {
+  STRENGTH: "Força",
+  AGILITY: "Agilidade",
+  VITALITY: "Vitalidade",
+  INTELLIGENCE: "Inteligência",
+  WISDOM: "Sabedoria",
+  ENDURANCE: "Resistência",
   Strength: "Força",
   Agility: "Agilidade",
   Vitality: "Vitalidade",
@@ -51,6 +57,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   PLAYER_CLASS_OFFERED: "Uma classe ficou disponível",
   PLAYER_CLASS_OFFER_DELAYED: "Você adiou uma classe",
   PLAYER_CLASS_ACCEPTED: "Você aceitou uma classe",
+  PLAYER_ATTRIBUTE_INCREASED: "Um atributo aumentou",
   SIMULATED_PLAYER_GAINED_XP: "Uma pessoa transportada ganhou experiência",
   SIMULATED_PLAYER_LEVELED_UP: "Uma pessoa transportada subiu de nível",
   SIMULATED_PLAYER_GOAL_COMPLETED: "Uma pessoa transportada concluiu um objetivo",
@@ -87,7 +94,7 @@ function translate(map: Record<string, string>, key: string): string {
 
 export const locationTypeLabel = (type: string) => translate(LOCATION_TYPE_LABELS, type);
 const CONNECTION_TYPE_LABELS: Record<string, string> = {PATH: "trilha",ROAD: "estrada",};
-export const characterAttributeLabel = (name: string) => translate(CHARACTER_ATTRIBUTE_LABELS, name);
+export const characterAttributeLabel = (key: string) => translate(CHARACTER_ATTRIBUTE_LABELS, key);
 export const discoveryStatusLabel = (status: string) => translate(DISCOVERY_STATUS_LABELS, status);
 export const questStatusLabel = (status: string) => translate(QUEST_STATUS_LABELS, status);
 export const eventTypeLabel = (type: string) => translate(EVENT_TYPE_LABELS, type);

@@ -113,8 +113,8 @@ export function CharacterSheetPanel({ campaignId, characterId }: { campaignId: s
       ) : (
         <ul>
           {sheet.attributes.map((a) => (
-            <li key={a.name}>
-              {characterAttributeLabel(a.name)}: {a.value}
+            <li key={a.key}>
+              {characterAttributeLabel(a.key)}: {a.value}
             </li>
           ))}
         </ul>

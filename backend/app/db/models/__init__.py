@@ -1,4 +1,5 @@
 from app.db.models.campaign import Campaign, WorldTime
+from app.db.models.attribute import AttributeDefinition, AttributeEvidenceRecord
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.character_class import (
     CharacterClassOffer,
@@ -59,6 +60,8 @@ from app.db.models.world_development import WorldDevelopment
 
 __all__ = [
     "Campaign",
+    "AttributeDefinition",
+    "AttributeEvidenceRecord",
     "WorldTime",
     "Character",
     "CharacterAttribute",

@@ -1,18 +1,24 @@
 from sqlalchemy.orm import Session
 
-from app.core.enums import CharacterStatus, EarthProfession, EventType
+from app.core.enums import (
+    CharacterAttributeKey,
+    CharacterStatus,
+    EarthProfession,
+    EventType,
+)
 from app.db.models.character import Character, CharacterAttribute
 from app.services.event_log import log_event
 from app.game.professions.backgrounds import affinity_for_earth_profession
 from app.game.professions.service import get_or_create_profession
+from app.game.attributes.service import ensure_attribute_catalog
 
 DEFAULT_ATTRIBUTES = {
-    "Força": 10,
-    "Agilidade": 10,
-    "Vitalidade": 10,
-    "Inteligência": 10,
-    "Sabedoria": 10,
-    "Resistência": 10,
+    CharacterAttributeKey.STRENGTH: 10,
+    CharacterAttributeKey.AGILITY: 10,
+    CharacterAttributeKey.VITALITY: 10,
+    CharacterAttributeKey.INTELLIGENCE: 10,
+    CharacterAttributeKey.WISDOM: 10,
+    CharacterAttributeKey.ENDURANCE: 10,
 }
 
 
@@ -25,6 +31,7 @@ def create_character(
     *,
     earth_profession: EarthProfession | None = None,
 ) -> Character:
+    ensure_attribute_catalog(db)
     affinity = affinity_for_earth_profession(earth_profession)
     if affinity is not None:
         get_or_create_profession(
@@ -54,8 +61,15 @@ def create_character(
     db.add(character)
     db.flush()
 
-    for attr_name, value in DEFAULT_ATTRIBUTES.items():
-        db.add(CharacterAttribute(character_id=character.id, name=attr_name, value=value))
+    for attr_key, value in DEFAULT_ATTRIBUTES.items():
+        db.add(
+            CharacterAttribute(
+                character_id=character.id,
+                key=attr_key.value,
+                value=value,
+                development=0.0,
+            )
+        )
 
     log_event(
         db,

@@ -112,6 +112,7 @@ export interface StoryLog {
 }
 
 export interface CharacterAttribute {
+  key: string;
   name: string;
   value: number;
 }

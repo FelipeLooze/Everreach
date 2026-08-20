@@ -261,7 +261,7 @@ npm run build
   tolerância a risco, treino e progressão, exploração, viagem, rotinas, relações entre pessoas,
   grupos temporários, morte permanente e informação compartilhada estão integrados ao World Tick
   e cobertos por testes de múltiplos dias.
-- **Fase 8 — Progressão: PARTIAL (8A–8G concluídas).** XP de personagem é autoritativo,
+- **Fase 8 — Progressão: PARTIAL (8A–8H concluídas).** XP de personagem é autoritativo,
   permanece fracionário e usa a curva `round(25 * (level + 1) ** 1.7)`, sem limite arbitrário.
   Somente experiências significativas, categorizadas pelo backend e identificadas de forma
   idempotente, podem concedê-lo; skill checks rotineiros não dão XP automaticamente. Profissões
@@ -276,7 +276,11 @@ npm run build
   caminhos maduros simples e integrados, envia à LLM somente os domínios e sinergias factuais,
   valida estritamente a identidade semântica proposta e persiste ofertas dinâmicas como `PENDING`.
   A proposta não pode criar poderes ou alterar mecânicas, chamadas repetidas são idempotentes e a
-  oferta somente fica visível quando um sistema autoritativo confirma um momento seguro.
+  oferta somente fica visível quando um sistema autoritativo confirma um momento seguro. Força,
+  Agilidade, Vitalidade, Inteligência, Sabedoria e Resistência possuem chaves mecânicas estáveis,
+  valores independentes de Level, profissão e classe, além de desenvolvimento autoritativo oculto
+  com diminishing returns. Checagens podem selecionar explicitamente um atributo relevante com
+  influência moderada; fórmulas definitivas de combate permanecem corretamente adiadas à Fase 9.
 
 ## Fora do MVP
 

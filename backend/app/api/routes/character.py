@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models.character import Character, CharacterAttribute
+from app.db.models.character import Character
 from app.db.models.character_class import CharacterClassOffer
 from app.db.models.skill import CharacterSkill, CharacterTechnique, Skill, Technique
 from app.schemas.character import (
@@ -16,6 +16,7 @@ from app.schemas.character import (
     TechniqueResponse,
 )
 from app.game.professions.service import list_character_professions
+from app.game.attributes.service import list_character_attributes
 from app.game.classes.service import (
     ClassChoiceError,
     accept_class_offer,
@@ -64,7 +65,7 @@ def get_character_sheet(campaign_id: str, character_id: str, db: Session = Depen
     if character is None or character.campaign_id != campaign_id:
         raise HTTPException(status_code=404, detail="Personagem não encontrado")
 
-    attributes = db.query(CharacterAttribute).filter(CharacterAttribute.character_id == character_id).all()
+    attributes = list_character_attributes(db, character_id)
 
     skill_links = db.query(CharacterSkill).filter(CharacterSkill.character_id == character_id).all()
     skills = []
@@ -94,7 +95,14 @@ def get_character_sheet(campaign_id: str, character_id: str, db: Session = Depen
 
     return CharacterSheetResponse(
         character=CharacterResponse.model_validate(character),
-        attributes=[AttributeResponse(name=a.name, value=a.value) for a in attributes],
+        attributes=[
+            AttributeResponse(
+                key=a.key,
+                name=a.definition.name,
+                value=a.value,
+            )
+            for a in attributes
+        ],
         professions=professions,
         active_class=(
             _class_response(active_class) if active_class is not None else None

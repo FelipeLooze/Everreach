@@ -1,6 +1,14 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.enums import CharacterStatus
@@ -53,14 +61,25 @@ class Character(Base):
 
 
 class CharacterAttribute(Base):
-    """Extensible primary attributes (Strength, Agility, ...). Not hardcoded as columns
-    so new attributes can be introduced later without a schema migration per-attribute."""
+    """One independently developing base capability for a character."""
 
     __tablename__ = "character_attributes"
+    __table_args__ = (
+        UniqueConstraint(
+            "character_id",
+            "key",
+            name="uq_character_attribute",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("attr"))
     character_id: Mapped[str] = mapped_column(ForeignKey("characters.id"), nullable=False)
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    key: Mapped[str] = mapped_column(
+        ForeignKey("attribute_definitions.key"),
+        nullable=False,
+    )
     value: Mapped[int] = mapped_column(Integer, default=10)
+    development: Mapped[float] = mapped_column(Float, default=0.0)
 
     character: Mapped["Character"] = relationship(back_populates="attributes")
+    definition: Mapped["AttributeDefinition"] = relationship()

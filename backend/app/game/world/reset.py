@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character, CharacterAttribute
+from app.db.models.attribute import AttributeEvidenceRecord
 from app.db.models.character_class import (
     CharacterClassOffer,
     ClassDefinition,
@@ -89,6 +90,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(CharacterTechnique).filter(CharacterTechnique.character_id.in_(character_ids)).delete(
         synchronize_session=False
     )
+    db.query(AttributeEvidenceRecord).filter(
+        AttributeEvidenceRecord.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
     db.query(InventoryItem).filter(InventoryItem.character_id.in_(character_ids)).delete(synchronize_session=False)
     db.query(CharacterAttribute).filter(CharacterAttribute.character_id.in_(character_ids)).delete(
         synchronize_session=False

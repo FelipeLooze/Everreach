@@ -32,6 +32,7 @@ class CharacterResponse(BaseModel):
 
 
 class AttributeResponse(BaseModel):
+    key: str
     name: str
     value: int
 

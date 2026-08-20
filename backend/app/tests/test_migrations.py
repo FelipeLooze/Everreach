@@ -49,6 +49,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "character_domain_synergies",
             "domain_synergy_records",
             "class_definition_domains",
+            "attribute_definitions",
+            "attribute_evidence_records",
         }.issubset(tables)
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")
@@ -120,6 +122,19 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         assert {"identity", "theme", "generation_key"}.issubset(
             class_definition_columns
         )
+        attribute_columns = {
+            item["name"]
+            for item in inspect(engine).get_columns("character_attributes")
+        }
+        assert {"key", "value", "development"}.issubset(attribute_columns)
+        assert "name" not in attribute_columns
+        attribute_constraints = {
+            item["name"]
+            for item in inspect(engine).get_unique_constraints(
+                "character_attributes"
+            )
+        }
+        assert "uq_character_attribute" in attribute_constraints
         with engine.connect() as connection:
             domain_count = connection.execute(
                 text("SELECT COUNT(*) FROM domain_definitions")
@@ -135,6 +150,21 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             }
         assert domain_count >= 100
         assert rare_domains == {"TIME", "VOID", "FATE"}
+        with engine.connect() as connection:
+            attribute_keys = {
+                row[0]
+                for row in connection.execute(
+                    text("SELECT key FROM attribute_definitions")
+                )
+            }
+        assert attribute_keys == {
+            "STRENGTH",
+            "AGILITY",
+            "VITALITY",
+            "INTELLIGENCE",
+            "WISDOM",
+            "ENDURANCE",
+        }
         assert "profession_affinity_key" in simulated_player_columns
         profession_constraints = {
             item["name"]

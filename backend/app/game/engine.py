@@ -34,6 +34,10 @@ from app.game.players import service as players_service
 from app.game.quests import service as quests_service
 from app.game.relationships import service as relationship_service
 from app.game.progression.outcomes import resolve_progression_outcome
+from app.game.skills.technique_experimentation import (
+    TECHNIQUE_EXPERIMENT_MINUTES,
+    resolve_technique_experiment,
+)
 from app.game.skills.techniques import (
     TECHNIQUE_ACTION_MINUTES,
     resolve_technique_use,
@@ -155,6 +159,28 @@ def resolve_action(
             campaign_id,
             character,
             technique_use.progression_outcome,
+        )
+        mechanical_warnings.extend(progression.warnings)
+    elif intent.type == ActionIntentType.EXPERIMENT:
+        resolved_action_key = resolved_action_key or generate_id("action")
+        experiment = resolve_technique_experiment(
+            db,
+            campaign_id,
+            character,
+            raw_text=text,
+            proposed_pattern_key=intent.pattern_key,
+            proposed_domains=intent.domains,
+            proposed_technique_type=intent.technique_type,
+            action_key=resolved_action_key,
+        )
+        mechanical_summary = experiment.mechanical_summary
+        minutes = 0 if experiment.replayed else TECHNIQUE_EXPERIMENT_MINUTES
+        progression = resolve_progression_outcome(
+            db,
+            llm_service,
+            campaign_id,
+            character,
+            experiment.progression_outcome,
         )
         mechanical_warnings.extend(progression.warnings)
     else:

@@ -335,6 +335,9 @@ def test_parser_extracts_item_destination_and_slot():
         None,
         None,
         None,
+        None,
+        None,
+        None,
     )
     assert equipped[0] == ActionIntentType.EQUIP
     assert equipped[4] == "MAIN_HAND"

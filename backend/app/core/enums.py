@@ -385,6 +385,7 @@ class ActionIntentType(StrEnum):
     WAIT = "WAIT"
     SKILL_CHECK = "SKILL_CHECK"
     TECHNIQUE = "TECHNIQUE"
+    EXPERIMENT = "EXPERIMENT"
     ATTACK = "ATTACK"
     DEFEND = "DEFEND"
     DODGE = "DODGE"

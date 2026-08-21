@@ -26,6 +26,9 @@ class Intent:
     attack_type: str | None = None
     damage_profile: str | None = None
     body_area: str | None = None
+    pattern_key: str | None = None
+    domains: str | None = None
+    technique_type: str | None = None
 
 
 def parse(llm_service: LLMService, text: str, context: str) -> Intent:
@@ -51,6 +54,9 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         attack_type,
         damage_profile,
         body_area,
+        pattern_key,
+        domains,
+        technique_type,
     ) = _decode_response(raw)
     return Intent(
         type=intent_type,
@@ -63,6 +69,9 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         attack_type=attack_type,
         damage_profile=damage_profile,
         body_area=body_area,
+        pattern_key=pattern_key,
+        domains=domains,
+        technique_type=technique_type,
     )
 
 
@@ -79,6 +88,9 @@ def _decode_response(
     ActionIntentType,
     str | None,
     TravelPace,
+    str | None,
+    str | None,
+    str | None,
     str | None,
     str | None,
     str | None,
@@ -105,6 +117,9 @@ def _decode_response(
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
 
     intent_str = str(
@@ -118,6 +133,9 @@ def _decode_response(
             ActionIntentType.FREEFORM,
             target,
             TravelPace.NORMAL,
+            None,
+            None,
+            None,
             None,
             None,
             None,
@@ -145,6 +163,9 @@ def _decode_response(
         _optional_text(data.get("attack_type")),
         _optional_text(data.get("damage_profile")),
         _optional_text(data.get("body_area")),
+        _optional_text(data.get("pattern_key")),
+        _optional_text(data.get("domains")),
+        _optional_text(data.get("technique_type")),
     )
 
 

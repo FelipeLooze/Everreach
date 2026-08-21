@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 from math import isfinite
 
@@ -13,6 +14,7 @@ from app.db.models.domain import (
     DomainEvidenceRecord,
     DomainSynergyRecord,
 )
+from app.game import dice
 from app.game.time.clock import get_world_time
 
 
@@ -281,6 +283,54 @@ def domain_maturity(
         ),
         synergy_depth=sum(synergy.depth for synergy in synergies),
         synergy_count=len(synergies),
+    )
+
+
+DOMAIN_CHECK_DEFAULT_DC = 12
+# How much accumulated depth is worth in the roll — kept separate from
+# CharacterSkill's own //10 divisor (a different, older progression axis);
+# domain depth is the authoritative source for freeform capability checks
+# (Phase 11I), not that legacy system.
+DOMAIN_CHECK_DEPTH_DIVISOR = 5
+
+
+@dataclass(frozen=True)
+class DomainCheckResult:
+    domain_keys: tuple[str, ...]
+    dc: int
+    roll: dice.RollResult
+    success: bool
+    critical: bool
+
+
+def resolve_domain_check(
+    db: Session,
+    character_id: str,
+    domain_keys: tuple[str, ...],
+    dc: int = DOMAIN_CHECK_DEFAULT_DC,
+    *,
+    bonus_modifier: int = 0,
+    rng: random.Random | None = None,
+) -> DomainCheckResult:
+    """Generic d20 + domain-depth check — how capable is this character at
+    manipulating these domains, based on real accumulated evidence, not a
+    generic skill or a class. The authoritative resolver for freeform
+    technique experimentation (11I): the LLM never decides whether an
+    attempt lands, only what the player described."""
+    if not domain_keys:
+        raise ValueError("At least one domain is required for a domain check.")
+    depths = [domain_maturity(db, character_id, key).depth for key in domain_keys]
+    average_depth = sum(depths) / len(depths)
+    modifier = int(average_depth // DOMAIN_CHECK_DEPTH_DIVISOR) + bonus_modifier
+    result = dice.d20(modifier=modifier, rng=rng)
+    critical = result.raw == 20
+    success = critical or (result.raw != 1 and result.total >= dc)
+    return DomainCheckResult(
+        domain_keys=domain_keys,
+        dc=dc,
+        roll=result,
+        success=success,
+        critical=critical,
     )
 
 

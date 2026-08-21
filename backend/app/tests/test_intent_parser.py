@@ -52,4 +52,17 @@ def test_parse_combat_details_without_granting_outcome_authority():
 
     assert decoded[0] == ActionIntentType.ATTACK
     assert decoded[1] == "bandido"
-    assert decoded[5:] == ("espada", "MELEE_ATTACK", "SLASH", "TORSO")
+    assert decoded[5:9] == ("espada", "MELEE_ATTACK", "SLASH", "TORSO")
+    assert decoded[9:] == (None, None, None)
+
+
+def test_parse_experiment_pattern_and_domains():
+    from app.ai.intent_parser import _decode_response
+
+    decoded = _decode_response(
+        '{"intent":"EXPERIMENT","pattern_key":"wind-palm-compress",'
+        '"domains":"WIND","technique_type":"MAGICAL","pace":"NORMAL"}'
+    )
+
+    assert decoded[0] == ActionIntentType.EXPERIMENT
+    assert decoded[9:] == ("wind-palm-compress", "WIND", "MAGICAL")

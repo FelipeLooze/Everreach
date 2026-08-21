@@ -78,6 +78,7 @@ from app.db.models.simulated_player_routine import (
 )
 from app.db.models.technique_evidence import (
     CharacterTechniquePatternEvidence,
+    TechniqueExperimentRecord,
     TechniquePatternEvidenceRecord,
 )
 from app.db.models.skill import (
@@ -161,6 +162,7 @@ __all__ = [
     "SimulatedPlayerArrivalPolicy",
     "SimulatedPlayerArrivalLocation",
     "CharacterTechniquePatternEvidence",
+    "TechniqueExperimentRecord",
     "TechniquePatternEvidenceRecord",
     "CharacterSkill",
     "CharacterTechnique",

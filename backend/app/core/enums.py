@@ -644,6 +644,11 @@ class EventType(StrEnum):
     GROUP_MEMBER_JOINED = "GROUP_MEMBER_JOINED"
     GROUP_MEMBER_LEFT = "GROUP_MEMBER_LEFT"
     GROUP_DISBANDED = "GROUP_DISBANDED"
+    GROUP_INVITE_SENT = "GROUP_INVITE_SENT"
+    GROUP_INVITE_ACCEPTED = "GROUP_INVITE_ACCEPTED"
+    GROUP_INVITE_DECLINED = "GROUP_INVITE_DECLINED"
+    GROUP_INVITE_WITHDRAWN = "GROUP_INVITE_WITHDRAWN"
+    GROUP_LEADERSHIP_CHANGED = "GROUP_LEADERSHIP_CHANGED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -727,3 +732,15 @@ class GroupStatus(StrEnum):
     DISBANDED = "DISBANDED"
     COMPLETED_PURPOSE = "COMPLETED_PURPOSE"
     ABANDONED = "ABANDONED"
+
+
+class GroupInviteStatus(StrEnum):
+    """Phase 13B — an invite is never assumed accepted. Someone proposing
+    to travel together does not create membership by itself; only
+    accept_invite (an explicit decision by the invited party) does."""
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    DECLINED = "DECLINED"
+    WITHDRAWN = "WITHDRAWN"
+    EXPIRED = "EXPIRED"

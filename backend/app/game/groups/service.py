@@ -16,8 +16,14 @@ from typing import Sequence
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import CombatActorType, EventType, GroupStatus, GroupType
-from app.db.models.group import Group, GroupMember
+from app.core.enums import (
+    CombatActorType,
+    EventType,
+    GroupInviteStatus,
+    GroupStatus,
+    GroupType,
+)
+from app.db.models.group import Group, GroupInvite, GroupMember
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -210,6 +216,161 @@ def disband_group(db: Session, group: Group) -> Group:
         actor_type="group",
         actor_id=group.id,
         payload={},
+        occurred_world_minute=world_minute,
+    )
+    return group
+
+
+# ---------------------------------------------------------------------------
+# Phase 13B — Group Membership & Temporary Groups.
+#
+# invite/accept/decline/withdraw are the agency-preserving layer: an
+# invite is never assumed accepted. Someone proposing to travel together
+# does not create membership by itself — only an explicit accept_invite
+# call (by the invited party's own decision) does. Who actually makes
+# that decision for an NPC (personality, relationship, current goals...)
+# is not decided here — this module only guarantees the state machine
+# itself can never be bypassed silently by narration.
+# ---------------------------------------------------------------------------
+
+
+def invite_to_group(
+    db: Session,
+    group: Group,
+    *,
+    inviter_type: CombatActorType,
+    inviter_id: str,
+    invited_type: CombatActorType,
+    invited_id: str,
+) -> GroupInvite:
+    if group.status != GroupStatus.ACTIVE:
+        raise GroupError(f"Não é possível convidar para um grupo com status {group.status}.")
+    already_member = (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == group.id,
+            GroupMember.member_type == invited_type,
+            GroupMember.member_id == invited_id,
+            GroupMember.active.is_(True),
+        )
+        .first()
+    )
+    if already_member is not None:
+        raise GroupError("Este personagem já faz parte do grupo.")
+    existing_pending = (
+        db.query(GroupInvite)
+        .filter(
+            GroupInvite.group_id == group.id,
+            GroupInvite.invited_type == invited_type,
+            GroupInvite.invited_id == invited_id,
+            GroupInvite.status == GroupInviteStatus.PENDING,
+        )
+        .first()
+    )
+    if existing_pending is not None:
+        return existing_pending
+
+    world_minute = get_world_time(db, group.campaign_id).total_minutes()
+    invite = GroupInvite(
+        group_id=group.id,
+        inviter_type=inviter_type,
+        inviter_id=inviter_id,
+        invited_type=invited_type,
+        invited_id=invited_id,
+        status=GroupInviteStatus.PENDING,
+        created_world_minute=world_minute,
+    )
+    db.add(invite)
+    db.flush()
+
+    log_event(
+        db,
+        group.campaign_id,
+        EventType.GROUP_INVITE_SENT,
+        actor_type=inviter_type.lower(),
+        actor_id=inviter_id,
+        payload={"group_id": group.id, "invited_type": invited_type, "invited_id": invited_id},
+        occurred_world_minute=world_minute,
+    )
+    return invite
+
+
+def _resolve_invite(
+    db: Session, invite: GroupInvite, *, new_status: GroupInviteStatus, event_type: EventType
+) -> GroupInvite:
+    if invite.status != GroupInviteStatus.PENDING:
+        raise GroupError(f"Este convite já não está mais pendente ({invite.status}).")
+    group = db.get(Group, invite.group_id)
+    world_minute = get_world_time(db, group.campaign_id).total_minutes()
+    invite.status = new_status
+    invite.resolved_world_minute = world_minute
+    db.flush()
+    log_event(
+        db,
+        group.campaign_id,
+        event_type,
+        actor_type=invite.invited_type.lower(),
+        actor_id=invite.invited_id,
+        payload={"group_id": group.id, "invite_id": invite.id},
+        occurred_world_minute=world_minute,
+    )
+    return invite
+
+
+def accept_invite(db: Session, invite: GroupInvite) -> GroupMember:
+    """The invited party's own explicit decision — the only way an invite
+    ever turns into real membership."""
+    _resolve_invite(
+        db, invite, new_status=GroupInviteStatus.ACCEPTED, event_type=EventType.GROUP_INVITE_ACCEPTED
+    )
+    group = db.get(Group, invite.group_id)
+    return add_member(db, group, invite.invited_type, invite.invited_id)
+
+
+def decline_invite(db: Session, invite: GroupInvite) -> GroupInvite:
+    return _resolve_invite(
+        db, invite, new_status=GroupInviteStatus.DECLINED, event_type=EventType.GROUP_INVITE_DECLINED
+    )
+
+
+def withdraw_invite(db: Session, invite: GroupInvite) -> GroupInvite:
+    """The inviter rescinds before it was answered."""
+    return _resolve_invite(
+        db, invite, new_status=GroupInviteStatus.WITHDRAWN, event_type=EventType.GROUP_INVITE_WITHDRAWN
+    )
+
+
+def change_leader(
+    db: Session, group: Group, *, new_leader_type: CombatActorType, new_leader_id: str
+) -> Group:
+    """Explicit leadership change — a Group may also have shared or no
+    formal leadership (Phase 13A); this is only for when a change is
+    itself a meaningful, deliberate act."""
+    is_active_member = (
+        db.query(GroupMember)
+        .filter(
+            GroupMember.group_id == group.id,
+            GroupMember.member_type == new_leader_type,
+            GroupMember.member_id == new_leader_id,
+            GroupMember.active.is_(True),
+        )
+        .first()
+        is not None
+    )
+    if not is_active_member:
+        raise GroupError("O novo líder precisa ser um membro ativo do grupo.")
+
+    world_minute = get_world_time(db, group.campaign_id).total_minutes()
+    group.leader_type = new_leader_type
+    group.leader_id = new_leader_id
+    db.flush()
+    log_event(
+        db,
+        group.campaign_id,
+        EventType.GROUP_LEADERSHIP_CHANGED,
+        actor_type="group",
+        actor_id=group.id,
+        payload={"new_leader_type": new_leader_type, "new_leader_id": new_leader_id},
         occurred_world_minute=world_minute,
     )
     return group

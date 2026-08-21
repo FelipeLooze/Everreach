@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import GroupStatus, GroupType
+from app.core.enums import GroupInviteStatus, GroupStatus, GroupType
 from app.core.ids import generate_id
 from app.db.base import Base
 
@@ -44,3 +44,20 @@ class GroupMember(Base):
     joined_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     left_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class GroupInvite(Base):
+    """Phase 13B — a pending social proposal, never assumed accepted. See
+    app.game.groups.service.accept_invite/decline_invite."""
+
+    __tablename__ = "group_invites"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("ginvite"))
+    group_id: Mapped[str] = mapped_column(ForeignKey("groups.id"), nullable=False)
+    inviter_type: Mapped[str] = mapped_column(String, nullable=False)
+    inviter_id: Mapped[str] = mapped_column(String, nullable=False)
+    invited_type: Mapped[str] = mapped_column(String, nullable=False)
+    invited_id: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, default=GroupInviteStatus.PENDING, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    resolved_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)

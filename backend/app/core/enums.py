@@ -660,6 +660,10 @@ class EventType(StrEnum):
     ORGANIZATION_REPUTATION_CHANGED = "ORGANIZATION_REPUTATION_CHANGED"
     ORGANIZATION_RELATION_ESTABLISHED = "ORGANIZATION_RELATION_ESTABLISHED"
     ORGANIZATION_RELATION_ENDED = "ORGANIZATION_RELATION_ENDED"
+    ORGANIZATION_GOAL_CREATED = "ORGANIZATION_GOAL_CREATED"
+    ORGANIZATION_GOAL_STATUS_CHANGED = "ORGANIZATION_GOAL_STATUS_CHANGED"
+    ORGANIZATION_NEED_CREATED = "ORGANIZATION_NEED_CREATED"
+    ORGANIZATION_NEED_STATUS_CHANGED = "ORGANIZATION_NEED_STATUS_CHANGED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -831,6 +835,38 @@ class OrganizationReputationCategory(StrEnum):
     NEUTRAL = "NEUTRAL"
     RELIABLE = "RELIABLE"
     TRUSTED = "TRUSTED"
+
+
+class OrganizationGoalStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    ACHIEVED = "ACHIEVED"
+    ABANDONED = "ABANDONED"
+
+
+class OrganizationNeedStatus(StrEnum):
+    OPEN = "OPEN"
+    FULFILLED = "FULFILLED"
+    ABANDONED = "ABANDONED"
+
+
+class OrganizationNeedCategory(StrEnum):
+    """Phase 13I — GOALS != NEEDS: a goal is qualitative and free text
+    (see OrganizationGoal.description); a need additionally carries a
+    structured category, since Phase 13M will need to route needs toward
+    notices/jobs/purchases by kind."""
+
+    MONEY = "MONEY"
+    LABOR = "LABOR"
+    FOOD = "FOOD"
+    MEDICINE = "MEDICINE"
+    WEAPONS = "WEAPONS"
+    MATERIALS = "MATERIALS"
+    INFORMATION = "INFORMATION"
+    SKILLED_MEMBERS = "SKILLED_MEMBERS"
+    GUARDS = "GUARDS"
+    TRANSPORT = "TRANSPORT"
+    POLITICAL_SUPPORT = "POLITICAL_SUPPORT"
+    OTHER = "OTHER"
 
 
 class OrganizationRelationType(StrEnum):

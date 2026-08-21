@@ -3,7 +3,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
     OrganizationFormality,
+    OrganizationGoalStatus,
     OrganizationMembershipStatus,
+    OrganizationNeedStatus,
     OrganizationOrigin,
     OrganizationRelationStatus,
     OrganizationStatus,
@@ -103,3 +105,37 @@ class OrganizationRelation(Base):
     )
     established_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
     ended_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class OrganizationGoal(Base):
+    """Phase 13I — GOAL != NEED. A goal is the qualitative "why"
+    (protect the trade route); a need (below) is the concrete "what it
+    takes" (more hunters, arrows). Free-text description — goals are too
+    varied for a fixed enum to capture meaningfully."""
+
+    __tablename__ = "organization_goals"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("ogoal"))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, default=OrganizationGoalStatus.ACTIVE, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class OrganizationNeed(Base):
+    """A concrete resource/capability gap, optionally in service of a
+    Goal. This is the source of real-world activity (Phase 13M routes
+    needs toward Notices/jobs) — not something the player triggers by
+    opening a board."""
+
+    __tablename__ = "organization_needs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("oneed"))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    goal_id: Mapped[str | None] = mapped_column(ForeignKey("organization_goals.id"), nullable=True)
+    category: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, default=OrganizationNeedStatus.OPEN, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)

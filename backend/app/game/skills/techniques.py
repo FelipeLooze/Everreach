@@ -26,14 +26,19 @@ from app.game.progression.outcomes import (
     DomainProgressGain,
     DomainSynergyProgressGain,
     ProgressionOutcome,
+    TechniqueMasteryProgressGain,
 )
 from app.game.skills.technique_evidence import technique_pattern_maturity
+from app.game.skills.technique_mastery import technique_mastery_reliability_bonus
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
 
 TECHNIQUE_USE_DOMAIN_EVIDENCE = 0.5
 TECHNIQUE_USE_SYNERGY_EVIDENCE = 0.5
+TECHNIQUE_MASTERY_GAIN = 0.5
+TECHNIQUE_MASTERY_CRITICAL_MULTIPLIER = 1.5
+TECHNIQUE_MASTERY_FAILURE_MULTIPLIER = 0.25
 MAX_TECHNIQUE_DOMAINS = 4
 TECHNIQUE_ACTION_MINUTES = 5
 _ACTION_KEY_PATTERN = re.compile(r"^[a-z0-9][a-z0-9:_-]{0,179}$")
@@ -427,6 +432,7 @@ def resolve_technique_use(
         character.id,
         skill.name,
         dc=DEFAULT_DC,
+        bonus_modifier=technique_mastery_reliability_bonus(ownership.mastery),
     )
     record = TechniqueUseRecord(
         campaign_id=campaign_id,
@@ -486,9 +492,9 @@ def technique_progression_outcome(
 ) -> ProgressionOutcome:
     domains: tuple[DomainProgressGain, ...] = ()
     synergies: tuple[DomainSynergyProgressGain, ...] = ()
+    evidence_key = f"technique:{technique.id}"
+    context_key = f"location:{character.location_id or 'unknown'}"
     if record.success:
-        evidence_key = f"technique:{technique.id}"
-        context_key = f"location:{character.location_id or 'unknown'}"
         domains = tuple(
             DomainProgressGain(
                 domain_key=domain_key,
@@ -510,9 +516,25 @@ def technique_progression_outcome(
             )
             for first, second in combinations(domain_keys, 2)
         )
+        mastery_amount = TECHNIQUE_MASTERY_GAIN * (
+            TECHNIQUE_MASTERY_CRITICAL_MULTIPLIER if record.critical else 1.0
+        )
+    else:
+        # A failed attempt is still real practice — worth little, but not
+        # nothing (same principle 11C applies to pattern evidence).
+        mastery_amount = TECHNIQUE_MASTERY_GAIN * TECHNIQUE_MASTERY_FAILURE_MULTIPLIER
+    technique_masteries = (
+        TechniqueMasteryProgressGain(
+            technique_id=technique.id,
+            evidence_key=evidence_key,
+            context_key=context_key,
+            amount=mastery_amount,
+        ),
+    )
     return ProgressionOutcome(
         outcome_key=f"technique:{record.action_key}",
         domains=domains,
         synergies=synergies,
+        technique_masteries=technique_masteries,
         safe_to_notify=True,
     )

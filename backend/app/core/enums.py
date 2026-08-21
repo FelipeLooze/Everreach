@@ -85,6 +85,17 @@ class TechniqueOrigin(StrEnum):
     DOCUMENTED = "DOCUMENTED"
 
 
+class TechniqueMasteryTier(StrEnum):
+    """How reliably a LEARNED technique can be executed — not a level, and
+    never a stand-in for damage. See app.game.skills.technique_mastery."""
+
+    UNSTABLE = "UNSTABLE"
+    BASIC = "BASIC"
+    PRACTICED = "PRACTICED"
+    REFINED = "REFINED"
+    MASTERED = "MASTERED"
+
+
 class CharacterAttributeKey(StrEnum):
     STRENGTH = "STRENGTH"
     AGILITY = "AGILITY"

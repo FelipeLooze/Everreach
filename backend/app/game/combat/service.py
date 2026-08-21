@@ -31,11 +31,16 @@ def resolve_skill_check(
     dc: int = DEFAULT_DC,
     *,
     attribute_key: CharacterAttributeKey | None = None,
+    bonus_modifier: int = 0,
 ) -> SkillCheckResult:
     """Generic d20 + mastery check. This intentionally does NOT resolve full combat
     (no HP/damage) — it only decides whether a single physical/skill-based attempt
     succeeds, so the narrator has a true mechanical fact to describe. Full combat
-    simulation is out of scope for the MVP (see spec section 58)."""
+    simulation is out of scope for the MVP (see spec section 58).
+
+    bonus_modifier is a caller-supplied flat addition — e.g. a specific
+    technique's own mastery-derived reliability bonus, which is a different
+    axis from this generic skill's mastery."""
     if attribute_key == CharacterAttributeKey.LUCK:
         raise ValueError(
             "Luck cannot replace a capability attribute in a skill check."
@@ -46,7 +51,7 @@ def resolve_skill_check(
     if attribute_key is not None:
         attribute = get_character_attribute(db, character_id, attribute_key)
         relevant_attribute_modifier = attribute_check_modifier(attribute.value)
-    modifier = mastery_modifier + relevant_attribute_modifier
+    modifier = mastery_modifier + relevant_attribute_modifier + bonus_modifier
 
     result = dice.d20(modifier=modifier)
     critical = result.raw == 20

@@ -69,6 +69,7 @@ class AttackMechanics:
     physical_damage_profile: PhysicalDamageProfile | None = None
     target_body_area: BodyArea | None = None
     allowed_target_ranges: frozenset[CombatRangeBand] | None = None
+    attack_bonus: int = 0
 
 
 def resolve_attack(
@@ -235,6 +236,7 @@ def resolve_profiled_attack(
         and target.range_band == CombatRangeBand.ENGAGED.value
     ):
         attack_modifier += ENGAGED_RANGED_PENALTY
+    attack_modifier += mechanics.attack_bonus
     defense_modifier = _attribute_modifier(
         db,
         target,

@@ -96,5 +96,6 @@ def test_character_sheet_exposes_the_technique_type(db_session, client):
             "name": "Lâmina do Vento",
             "description": "",
             "type": "HYBRID",
+            "mastery": "UNSTABLE",
         }
     ]

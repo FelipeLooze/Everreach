@@ -33,6 +33,7 @@ from app.game.professions.activities import award_profession_activity_xp
 from app.game.progression.service import award_character_xp
 from app.game.resources.service import award_resource_development
 from app.game.skills.technique_evidence import award_technique_pattern_evidence
+from app.game.skills.technique_mastery import award_technique_mastery
 from app.game.time.clock import get_world_time
 
 
@@ -94,6 +95,18 @@ class TechniquePatternProgressGain:
 
 
 @dataclass(frozen=True)
+class TechniqueMasteryProgressGain:
+    """Growth toward a LEARNED technique's mastery tier. See
+    app.game.skills.technique_mastery — mastery only ever affects execution
+    reliability here, never damage."""
+
+    technique_id: str
+    evidence_key: str
+    context_key: str
+    amount: float
+
+
+@dataclass(frozen=True)
 class AttributeProgressGain:
     attribute_key: CharacterAttributeKey
     source: AttributeEvidenceSource
@@ -122,6 +135,7 @@ class ProgressionOutcome:
     domains: tuple[DomainProgressGain, ...] = ()
     synergies: tuple[DomainSynergyProgressGain, ...] = ()
     technique_patterns: tuple[TechniquePatternProgressGain, ...] = ()
+    technique_masteries: tuple[TechniqueMasteryProgressGain, ...] = ()
     attributes: tuple[AttributeProgressGain, ...] = ()
     resources: tuple[ResourceProgressGain, ...] = ()
     safe_to_notify: bool = False
@@ -227,6 +241,13 @@ def resolve_progression_outcome(
             evidence_key=gain.evidence_key,
             context_key=gain.context_key,
             base_amount=gain.base_amount,
+        )
+    for gain in outcome.technique_masteries:
+        award_technique_mastery(
+            db,
+            character.id,
+            gain.technique_id,
+            amount=gain.amount,
         )
     for gain in outcome.attributes:
         award_attribute_development(

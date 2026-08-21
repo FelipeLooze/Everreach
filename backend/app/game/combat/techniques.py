@@ -31,6 +31,7 @@ from app.game.combat.actions import (
 )
 from app.game.combat.conditions import apply_condition
 from app.game.progression.outcomes import ProgressionOutcome
+from app.game.skills.technique_mastery import technique_mastery_reliability_bonus
 from app.game.skills.techniques import technique_progression_outcome
 
 
@@ -165,6 +166,7 @@ def resolve_combat_technique(
         damage_attribute=CharacterAttributeKey(profile.damage_attribute),
         damage_type=CombatDamageType(profile.damage_type),
         technique_id=technique.id,
+        attack_bonus=technique_mastery_reliability_bonus(ownership.mastery),
         physical_damage_profile=(
             PhysicalDamageProfile.BLUNT
             if profile.damage_type == CombatDamageType.PHYSICAL.value

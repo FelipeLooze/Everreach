@@ -66,6 +66,7 @@ class TechniqueResponse(BaseModel):
     name: str
     description: str
     type: str
+    mastery: str
 
 
 class CharacterSheetResponse(BaseModel):

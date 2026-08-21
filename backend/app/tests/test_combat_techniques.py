@@ -25,6 +25,7 @@ from app.game.combat.techniques import (
     resolve_combat_technique,
 )
 from app.game.combat.turns import get_current_turn, roll_initiative
+from app.game.skills.technique_mastery import award_technique_mastery
 from app.game.skills.techniques import create_technique, grant_technique
 from app.game.world.seed import create_campaign, seed_initial_region
 
@@ -191,6 +192,37 @@ def test_known_combat_technique_uses_profile_cost_damage_condition_and_evidence(
     current = get_current_turn(db_session, encounter)
     assert current.participant_id == hero.id
     assert result.condition.active is False
+
+
+def test_high_mastery_raises_the_combat_attack_modifier(db_session):
+    (
+        _campaign,
+        character,
+        enemy,
+        technique,
+        _profile,
+        encounter,
+        hero,
+        guardian,
+    ) = _setup(db_session)
+    intelligence = next(row for row in character.attributes if row.key == "INTELLIGENCE")
+    intelligence.value = 14
+    award_technique_mastery(db_session, character.id, technique.id, amount=30.0)
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    result = resolve_combat_technique(
+        db_session,
+        encounter,
+        hero,
+        guardian,
+        technique_id=technique.id,
+        action_key="mastered-combat-technique",
+        rng=SequenceRng(10, 4, 5),
+    )
+
+    # Same setup as the fresh-technique test above (attack_modifier == 2),
+    # plus the MASTERED tier's reliability bonus.
+    assert result.action.attack_modifier == 2 + 6
 
 
 def test_combat_technique_uses_configured_damage_type_and_resistance(db_session):

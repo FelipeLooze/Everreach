@@ -278,6 +278,7 @@ def test_action_api_accepts_selected_technique_and_sheet_exposes_domains(
                 "Integra a lâmina a uma corrente de vento já controlada."
             ),
             "type": "HYBRID",
+            "mastery": "UNSTABLE",
         }
     ]
     assert response.status_code == 200

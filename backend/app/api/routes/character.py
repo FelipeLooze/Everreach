@@ -25,6 +25,7 @@ from app.game.classes.service import (
     list_visible_class_offers,
 )
 from app.game.progression.context import build_system_progression_context
+from app.game.skills.technique_mastery import character_technique_mastery_tier
 from app.game.skills.techniques import list_character_techniques
 from app.schemas.progression import (
     CharacterXPProgressResponse,
@@ -159,6 +160,7 @@ def get_character_sheet(campaign_id: str, character_id: str, db: Session = Depen
             name=technique.name,
             description=technique.description,
             type=technique.technique_type,
+            mastery=character_technique_mastery_tier(db, character_id, technique.id).value,
         )
         for technique in list_character_techniques(db, character_id)
     ]

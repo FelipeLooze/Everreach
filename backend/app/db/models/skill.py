@@ -89,9 +89,11 @@ class CharacterTechnique(Base):
     """A character's relationship with a technique — not just whether they
     know it, but how far along: AWARE (knows it exists) → LEARNING (actively
     developing it) → LEARNED (can attempt it). Absence of a row means UNKNOWN.
-    See TechniqueLearningState/TechniqueOrigin for the state machine this
-    supports; mastery (how *well* a LEARNED technique is performed) is a
-    separate concern, added in a later phase."""
+    See TechniqueLearningState/TechniqueOrigin for that state machine.
+    `mastery` is a separate, continuous axis that only matters once LEARNED —
+    how reliably the technique is executed, not a level and not more damage.
+    See app.game.skills.technique_mastery for the player-facing tier this
+    maps to and the one mechanical effect it has."""
 
     __tablename__ = "character_techniques"
 
@@ -109,6 +111,7 @@ class CharacterTechnique(Base):
         nullable=False,
     )
     world_minute: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    mastery: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
     technique: Mapped["Technique"] = relationship()
 

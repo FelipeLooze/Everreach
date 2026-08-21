@@ -19,6 +19,14 @@ from app.game.time.clock import get_world_time
 DOMAIN_REPETITION_WINDOW_MINUTES = 24 * 60
 
 
+def repetition_multiplier(repetition_count: int) -> float:
+    """Diminishing returns for repeating the same identifiable evidence within
+    the repetition window — 1.0 on the first occurrence, halved on the
+    second, etc. Shared by any evidence engine that needs anti-farming
+    (domains here; technique pattern evidence reuses it too)."""
+    return 1.0 / (repetition_count + 1)
+
+
 @dataclass(frozen=True)
 class DomainEvidenceAward:
     evidence: CharacterDomainEvidence
@@ -83,8 +91,8 @@ def award_domain_evidence(
         )
         .count()
     )
-    repetition_multiplier = 1.0 / (repetition_count + 1)
-    awarded_amount = amount * repetition_multiplier
+    multiplier = repetition_multiplier(repetition_count)
+    awarded_amount = amount * multiplier
 
     evidence = (
         db.query(CharacterDomainEvidence)
@@ -119,7 +127,7 @@ def award_domain_evidence(
     )
     db.add(record)
     db.flush()
-    return DomainEvidenceAward(evidence, record, repetition_multiplier)
+    return DomainEvidenceAward(evidence, record, multiplier)
 
 
 def award_domain_synergy_evidence(
@@ -189,8 +197,8 @@ def award_domain_synergy_evidence(
         )
         .count()
     )
-    repetition_multiplier = 1.0 / (repetition_count + 1)
-    awarded_amount = amount * repetition_multiplier
+    multiplier = repetition_multiplier(repetition_count)
+    awarded_amount = amount * multiplier
 
     synergy = (
         db.query(CharacterDomainSynergy)
@@ -228,7 +236,7 @@ def award_domain_synergy_evidence(
     )
     db.add(record)
     db.flush()
-    return DomainSynergyAward(synergy, record, repetition_multiplier)
+    return DomainSynergyAward(synergy, record, multiplier)
 
 
 def domain_maturity(

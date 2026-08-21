@@ -13,6 +13,7 @@ from app.core.enums import (
     ProfessionActivityOutcome,
     ProfessionXPSource,
     ResourceGrowthSource,
+    TechniqueType,
 )
 from app.core.logging import get_logger
 from app.db.models.character import Character
@@ -31,6 +32,7 @@ from app.game.domains.service import (
 from app.game.professions.activities import award_profession_activity_xp
 from app.game.progression.service import award_character_xp
 from app.game.resources.service import award_resource_development
+from app.game.skills.technique_evidence import award_technique_pattern_evidence
 from app.game.time.clock import get_world_time
 
 
@@ -76,6 +78,22 @@ class DomainSynergyProgressGain:
 
 
 @dataclass(frozen=True)
+class TechniquePatternProgressGain:
+    """Evidence toward recognizing a not-yet-existing technique. See
+    app.game.skills.technique_evidence — pattern_key identifies the specific
+    attempted maneuver, distinct from the domains it draws on."""
+
+    pattern_key: str
+    domain_keys: tuple[str, ...]
+    technique_type: TechniqueType
+    source: DomainEvidenceSource
+    outcome: ProfessionActivityOutcome
+    evidence_key: str
+    context_key: str
+    base_amount: float
+
+
+@dataclass(frozen=True)
 class AttributeProgressGain:
     attribute_key: CharacterAttributeKey
     source: AttributeEvidenceSource
@@ -103,6 +121,7 @@ class ProgressionOutcome:
     professions: tuple[ProfessionProgressGain, ...] = ()
     domains: tuple[DomainProgressGain, ...] = ()
     synergies: tuple[DomainSynergyProgressGain, ...] = ()
+    technique_patterns: tuple[TechniquePatternProgressGain, ...] = ()
     attributes: tuple[AttributeProgressGain, ...] = ()
     resources: tuple[ResourceProgressGain, ...] = ()
     safe_to_notify: bool = False
@@ -194,6 +213,20 @@ def resolve_progression_outcome(
             evidence_key=gain.evidence_key,
             context_key=gain.context_key,
             amount=gain.amount,
+        )
+    for gain in outcome.technique_patterns:
+        award_technique_pattern_evidence(
+            db,
+            campaign_id,
+            character,
+            pattern_key=gain.pattern_key,
+            domain_keys=gain.domain_keys,
+            technique_type=gain.technique_type,
+            source=gain.source,
+            outcome=gain.outcome,
+            evidence_key=gain.evidence_key,
+            context_key=gain.context_key,
+            base_amount=gain.base_amount,
         )
     for gain in outcome.attributes:
         award_attribute_development(

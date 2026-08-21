@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
@@ -47,6 +47,7 @@ class Organization(Base):
         String, default=OrganizationFormality.INFORMAL, nullable=False
     )
     founding_group_id: Mapped[str | None] = mapped_column(ForeignKey("groups.id"), nullable=True)
+    treasury: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
 
 class OrganizationRole(Base):
@@ -139,3 +140,27 @@ class OrganizationNeed(Base):
     status: Mapped[str] = mapped_column(String, default=OrganizationNeedStatus.OPEN, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class OrganizationAsset(Base):
+    """Phase 13J — links an existing ItemInstance (Phase 10) to the
+    organization that beneficially owns it, WITHOUT touching
+    ItemInstance.owner_type/location_type — both are hard-constrained at
+    the database level to CHARACTER/NPC/NONE and cannot represent
+    organizational ownership; widening that constraint would be a
+    Phase-10-level schema change, out of scope here (flagged, not
+    silently worked around). The item's physical existence, quality,
+    durability, and current physical placement/container remain entirely
+    governed by the existing Item system; this only answers "which
+    organization is the beneficial owner" — a guildmaster personally
+    carrying a guild-owned sword is a completely different fact from the
+    guild owning it, and both can be true at once."""
+
+    __tablename__ = "organization_assets"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("oasset"))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    item_instance_id: Mapped[str] = mapped_column(
+        ForeignKey("item_instances.id"), nullable=False, unique=True
+    )
+    acquired_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)

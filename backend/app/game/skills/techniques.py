@@ -4,7 +4,7 @@ from itertools import combinations
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import ActionIntentType, DomainEvidenceSource, EventType
+from app.core.enums import ActionIntentType, DomainEvidenceSource, EventType, TechniqueType
 from app.db.models.character import Character
 from app.db.models.domain import DomainDefinition
 from app.db.models.skill import (
@@ -63,6 +63,7 @@ def create_technique(
     *,
     skill_name: str,
     name: str,
+    technique_type: TechniqueType,
     description: str = "",
     domain_keys: tuple[str, ...],
 ) -> Technique:
@@ -76,6 +77,8 @@ def create_technique(
         raise ValueError("Technique skill is required.")
     if not normalized_name:
         raise ValueError("Technique name is required.")
+    if not isinstance(technique_type, TechniqueType):
+        raise ValueError("Invalid technique type.")
     if not 1 <= len(normalized_domains) <= MAX_TECHNIQUE_DOMAINS:
         raise ValueError("Technique must have between one and four domains.")
     known_domains = {
@@ -104,11 +107,14 @@ def create_technique(
         existing_domains = tuple(row.domain_key for row in existing.domains)
         if existing_domains != normalized_domains:
             raise ValueError("Existing technique has different domain mechanics.")
+        if existing.technique_type != technique_type.value:
+            raise ValueError("Existing technique has a different type.")
         return existing
 
     technique = Technique(
         skill_id=skill.id,
         name=normalized_name,
+        technique_type=technique_type.value,
         description=" ".join(description.split()),
     )
     db.add(technique)

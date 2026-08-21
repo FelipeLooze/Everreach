@@ -56,6 +56,15 @@ class DomainEvidenceSource(StrEnum):
     ACHIEVEMENT = "ACHIEVEMENT"
 
 
+class TechniqueType(StrEnum):
+    """What powers a technique's execution — not which world system consumes
+    it (combat/crafting/exploration/...); that routing is a later concern."""
+
+    PHYSICAL = "PHYSICAL"
+    MAGICAL = "MAGICAL"
+    HYBRID = "HYBRID"
+
+
 class CharacterAttributeKey(StrEnum):
     STRENGTH = "STRENGTH"
     AGILITY = "AGILITY"

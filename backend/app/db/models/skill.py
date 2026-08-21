@@ -14,6 +14,7 @@ from app.core.enums import (
     CharacterAttributeKey,
     CharacterResourceKey,
     CombatActionType,
+    TechniqueType,
 )
 from app.db.base import Base
 
@@ -51,6 +52,11 @@ class Technique(Base):
     skill_id: Mapped[str] = mapped_column(ForeignKey("skills.id"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, default="")
+    technique_type: Mapped[str] = mapped_column(
+        String,
+        default=TechniqueType.PHYSICAL.value,
+        nullable=False,
+    )
 
     domains: Mapped[list["TechniqueDomain"]] = relationship(
         cascade="all, delete-orphan",

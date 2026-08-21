@@ -9,6 +9,7 @@ from app.core.enums import (
     CombatConditionType,
     CombatDamageType,
     CombatRangeBand,
+    TechniqueType,
 )
 from app.db.models.combat import CombatAction, CombatCondition, CombatParticipant
 from app.db.models.domain import DomainDefinition
@@ -72,6 +73,7 @@ def _setup(
         db_session,
         skill_name="Esgrima Arcana",
         name="Corte de Vento",
+        technique_type=TechniqueType.HYBRID,
         description="Uma lâmina de vento concentrado.",
         domain_keys=("SWORD", "WIND"),
     )
@@ -292,6 +294,7 @@ def test_unlearned_or_unconfigured_technique_cannot_be_used(db_session):
         db_session,
         skill_name="Esgrima Arcana",
         name="Corte Incompleto",
+        technique_type=TechniqueType.PHYSICAL,
         domain_keys=("SWORD",),
     )
     grant_technique(db_session, encounter.campaign_id, character, unconfigured)
@@ -352,6 +355,7 @@ def test_profile_is_immutable_and_rejects_luck_or_partial_condition(db_session):
         db_session,
         skill_name="Esgrima Arcana",
         name="Golpe da Fortuna",
+        technique_type=TechniqueType.PHYSICAL,
         domain_keys=("SWORD",),
     )
     with pytest.raises(CombatTechniqueError, match="Luck cannot"):

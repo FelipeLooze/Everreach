@@ -158,6 +158,7 @@ def get_character_sheet(campaign_id: str, character_id: str, db: Session = Depen
             id=technique.id,
             name=technique.name,
             description=technique.description,
+            type=technique.technique_type,
         )
         for technique in list_character_techniques(db, character_id)
     ]

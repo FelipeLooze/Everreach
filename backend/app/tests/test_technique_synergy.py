@@ -1,6 +1,6 @@
 from app.ai.llm_service import LLMService
 from app.ai.intent_parser import Intent
-from app.core.enums import ActionIntentType
+from app.core.enums import ActionIntentType, TechniqueType
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
@@ -43,6 +43,7 @@ def _setup(db_session):
         db_session,
         skill_name="Esgrima Arcana",
         name="Corte de Vento",
+        technique_type=TechniqueType.HYBRID,
         description="Integra a lâmina a uma corrente de vento já controlada.",
         domain_keys=("SWORD", "WIND"),
     )
@@ -275,6 +276,7 @@ def test_action_api_accepts_selected_technique_and_sheet_exposes_domains(
             "description": (
                 "Integra a lâmina a uma corrente de vento já controlada."
             ),
+            "type": "HYBRID",
         }
     ]
     assert response.status_code == 200

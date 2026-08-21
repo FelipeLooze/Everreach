@@ -20,6 +20,7 @@ from app.core.enums import EventType, NoticeCategory, NoticeStatus
 from app.db.models.character import Character
 from app.db.models.location import LocationFeature
 from app.db.models.notice import Notice
+from app.game.quests.discovery import learn_about_quest_from_notice
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -83,12 +84,19 @@ def read_notice_board(db: Session, character_id: str, board_feature_id: str) -> 
             f"{character.name} não está no mesmo local que esse quadro de avisos."
         )
 
-    return (
+    active_notices = (
         db.query(Notice)
         .filter(Notice.board_feature_id == board_feature_id, Notice.status == NoticeStatus.ACTIVE)
         .order_by(Notice.posted_world_minute.desc())
         .all()
     )
+    # Phase 12J: actually reading a posting is a real discovery moment for
+    # any quest it references — teach it, the same way any other
+    # perceived-fact discovery does.
+    for notice in active_notices:
+        if notice.quest_id is not None:
+            learn_about_quest_from_notice(db, character.campaign_id, character_id, notice.quest_id)
+    return active_notices
 
 
 def withdraw_notice(db: Session, campaign_id: str, notice_id: str, *, reason: str = "") -> Notice:

@@ -10,9 +10,18 @@ from app.db.models.quest import (
     QuestObjective,
 )
 from app.db.models.character import Character
+from app.db.models.knowledge import KnowledgeFact
+from app.db.models.region import Region
 from app.game.quests.consequences import QuestConsequences, apply_quest_consequences
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
+
+
+def quest_existence_fact_key(quest_id: str) -> str:
+    """The Knowledge fact_key (Phase 12J) registered for a Quest's mere
+    existence — separate from any objective/mechanical detail about it.
+    Shared with app.game.quests.discovery so the two never drift."""
+    return f"quest:{quest_id}:exists"
 
 
 class QuestLifecycleError(Exception):
@@ -35,7 +44,14 @@ def create_quest(
 
     deadline_world_minute (Phase 12D) is optional and about the
     opportunity itself expiring unclaimed (e.g. a caravan leaving) — not
-    every quest needs one; see check_deadlines."""
+    every quest needs one; see check_deadlines.
+
+    Also registers the Quest's mere existence as a Knowledge fact (Phase
+    12J) — a fact that is TRUE in the world the moment it happens, wholly
+    separate from whether any character has actually learned it yet (see
+    app.game.quests.discovery). The statement is exactly the same
+    player-facing name/description Phase 12G already locked down as safe
+    to expose — no hidden mechanical data leaks through this."""
     quest = Quest(
         region_id=region_id,
         name=name,
@@ -48,6 +64,18 @@ def create_quest(
     for index, objective_description in enumerate(objectives):
         db.add(QuestObjective(quest_id=quest.id, description=objective_description, order=index))
     if objectives:
+        db.flush()
+
+    region = db.get(Region, region_id)
+    if region is not None:
+        db.add(
+            KnowledgeFact(
+                campaign_id=region.campaign_id,
+                subject=f"quest:{quest.id}",
+                fact_key=quest_existence_fact_key(quest.id),
+                statement=f"{name}: {description}" if description else name,
+            )
+        )
         db.flush()
     return quest
 

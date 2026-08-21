@@ -465,6 +465,37 @@ class ObjectiveTriggerType(StrEnum):
     MANUAL = "MANUAL"
 
 
+class NoticeCategory(StrEnum):
+    """What kind of posting this is — not every category implies a Quest
+    (Phase 12I). QUEST_REQUEST is the only one that typically carries a
+    quest_id link; the rest are informational or point at other systems
+    that don't exist yet (jobs/trade → Phase 14)."""
+
+    QUEST_REQUEST = "QUEST_REQUEST"
+    JOB = "JOB"
+    TRADE = "TRADE"
+    WANTED = "WANTED"
+    ANNOUNCEMENT = "ANNOUNCEMENT"
+    WARNING = "WARNING"
+    RECRUITMENT = "RECRUITMENT"
+    TRAVEL = "TRAVEL"
+    LOST_PROPERTY = "LOST_PROPERTY"
+    MISSING_PERSON = "MISSING_PERSON"
+    SERVICE_OFFER = "SERVICE_OFFER"
+    RUMOR = "RUMOR"
+    COMMUNITY_NOTICE = "COMMUNITY_NOTICE"
+
+
+class NoticeStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    CLAIMED = "CLAIMED"
+    COMPLETED = "COMPLETED"
+    EXPIRED = "EXPIRED"
+    WITHDRAWN = "WITHDRAWN"
+    OUTDATED = "OUTDATED"
+    REMOVED = "REMOVED"
+
+
 class QuestSource(StrEnum):
     """Where a Quest originated. Phase 12A only defines the vocabulary —
     ORGANIZATION_REQUEST/NOTICE_BOARD/WORLD_EVENT sources are not yet wired
@@ -593,6 +624,10 @@ class EventType(StrEnum):
     QUEST_CANCELLED = "QUEST_CANCELLED"
     QUEST_EXPIRED = "QUEST_EXPIRED"
     QUEST_RESOLVED_EXTERNALLY = "QUEST_RESOLVED_EXTERNALLY"
+    NOTICE_POSTED = "NOTICE_POSTED"
+    NOTICE_WITHDRAWN = "NOTICE_WITHDRAWN"
+    NOTICE_EXPIRED = "NOTICE_EXPIRED"
+    NOTICE_UPDATED = "NOTICE_UPDATED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"

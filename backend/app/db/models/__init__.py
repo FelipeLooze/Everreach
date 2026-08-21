@@ -39,6 +39,7 @@ from app.db.models.location import (
 )
 from app.db.models.memory import Memory
 from app.db.models.material import MaterialDefinition
+from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.db.models.profession import CharacterProfession, Profession
 from app.db.models.progression_outcome import AppliedProgressionOutcome
@@ -137,6 +138,7 @@ __all__ = [
     "LocationFeature",
     "Memory",
     "MaterialDefinition",
+    "Notice",
     "NPC",
     "Profession",
     "CharacterProfession",

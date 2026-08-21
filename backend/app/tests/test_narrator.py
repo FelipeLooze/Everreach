@@ -1006,3 +1006,99 @@ def test_active_transported_person_is_used_as_safe_interlocutor():
         result
         == "Kaelen Voss permanece em silêncio."
     )
+
+
+def test_narrator_drops_unauthorized_combatant_but_keeps_valid_combat_narration():
+    llm = StubbornLLM(
+        "Um golpe certeiro de Filipe atinge Lobo Selvagem, que recua ferido.\n\n"
+        "Talven Brooks corre e ataca Lobo Selvagem para ajudar Filipe."
+    )
+    context = (
+        "CURRENT PLAYER\nName: Filipe (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Talven Brooks (estalajadeiro; activity=WORKING)\n\n"
+        "ACTIVE COMBAT PARTICIPANTS\n- Filipe (side=player)\n- Lobo Selvagem (side=hostile)\n\n"
+        "ACTIVE NPC CONTEXT\n- none"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Filipe acerta em Lobo Selvagem, causando 2 de dano (10 → 8 de HP).",
+        context,
+        "Eu ataco o lobo selvagem!",
+        "(sem histórico)",
+    )
+
+    assert result == "Um golpe certeiro de Filipe atinge Lobo Selvagem, que recua ferido."
+    assert "Talven" not in result
+    assert len(llm.calls) == 3
+
+
+def test_narrator_uses_safe_fallback_when_the_only_content_is_an_unauthorized_combatant():
+    llm = StubbornLLM("Talven Brooks salta na frente de Filipe e ataca Lobo Selvagem.")
+    context = (
+        "CURRENT PLAYER\nName: Filipe (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Talven Brooks (estalajadeiro; activity=WORKING)\n\n"
+        "ACTIVE COMBAT PARTICIPANTS\n- Filipe (side=player)\n- Lobo Selvagem (side=hostile)\n\n"
+        "ACTIVE NPC CONTEXT\n- none"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Filipe acerta em Lobo Selvagem, causando 2 de dano (10 → 8 de HP).",
+        context,
+        "Eu ataco o lobo selvagem!",
+        "(sem histórico)",
+    )
+
+    assert result == "Nada acontece de imediato."
+    assert len(llm.calls) == 3
+
+
+def test_narrator_drops_only_the_paragraph_that_leaks_a_hidden_name():
+    llm = StubbornLLM(
+        "Lobo Selvagem uiva e recua, ferido pelo golpe de Filipe.\n\n"
+        "Vocês estão em Cardal, e o lobo foge para os becos da vila."
+    )
+    context = (
+        "PLAYER CURRENT LOCATION KNOWLEDGE\n"
+        "Current location canonical name known to player: NO\n"
+        "Current region canonical name known to player: NO\n\n"
+        "CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH\n"
+        "Name: Cardal\nType: VILLAGE\nRegion: Vale Verdejante\n\n"
+        "ACTIVE NPC CONTEXT\n- none"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Filipe acerta em Lobo Selvagem, causando 4 de dano (7 → 3 de HP). "
+        "Lobo Selvagem tenta fugir, mas não consegue escapar.",
+        context,
+        "Eu ataco de novo!",
+        "(sem histórico)",
+    )
+
+    assert result == "Lobo Selvagem uiva e recua, ferido pelo golpe de Filipe."
+    assert "Cardal" not in result
+    assert len(llm.calls) == 3
+
+
+def test_narrator_catches_protagonist_agency_violation_after_a_comma_appositive():
+    llm = StubbornLLM(
+        "Lobo Selvagem foge, derrotado, pela viela estreita.\n\n"
+        "Filipe, ofegante, decide responder com um sorriso cansado."
+    )
+    context = (
+        "CURRENT PLAYER\nName: Filipe (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\n- none"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Lobo Selvagem tenta fugir e consegue escapar.",
+        context,
+        "Eu ataco de novo!",
+        "(sem histórico)",
+    )
+
+    assert result == "Lobo Selvagem foge, derrotado, pela viela estreita."
+    assert len(llm.calls) == 3

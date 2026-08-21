@@ -19,6 +19,7 @@ from app.db.models.location import (
     LocationConnection,
     LocationFeature,
 )
+from app.game.combat.context import build_active_encounter_snapshot
 from app.game.game_state import GameStateSnapshot
 from app.game.items.context import build_narrator_inventory_context
 from app.game.npcs.service import (
@@ -716,6 +717,15 @@ def build_context(
         ]
         or ["- none"]
     )
+    encounter_snapshot = build_active_encounter_snapshot(db, state.character.id)
+    combat_lines = []
+    if encounter_snapshot is not None:
+        combat_lines.append("ACTIVE COMBAT PARTICIPANTS")
+        combat_lines.extend(
+            f"- {_clip(participant.name, 100)} (side={participant.side_key})"
+            for participant in encounter_snapshot.participants
+        )
+
     active_npc_visible_now = (
         active_npc is not None
         and any(
@@ -909,6 +919,7 @@ def build_context(
         "\n".join(current_location_knowledge_lines),
         spatial_knowledge_section,
         "\n".join(visible_lines),
+        *([("\n".join(combat_lines))] if combat_lines else []),
         "\n".join(active_lines),
         "\n".join(active_transported_lines),
         npc_knowledge_section,

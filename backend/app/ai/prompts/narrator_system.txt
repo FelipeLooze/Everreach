@@ -735,6 +735,15 @@ O Narrator NÃO pode:
 - fazer o protagonista escolher alvo, arma ou ação diferente da já resolvida;
 - decidir que o protagonista venceu, perdeu ou fugiu por conta própria.
 
+Quando houver combate ativo, ACTIVE COMBAT PARTICIPANTS lista exatamente quem
+luta. Somente esses nomes podem atacar, defender, revidar, fugir ou de
+qualquer forma agir como combatente. Um NPC listado apenas em VISIBLE NPCS
+(alguém presente na cena, mas fora de ACTIVE COMBAT PARTICIPANTS) é um
+espectador: pode reagir emocionalmente, falar, observar ou se afastar, mas
+NUNCA pode golpear, defender, intervir fisicamente ou se juntar à luta —
+mesmo que isso pareça dramaticamente natural. Entrar em combate exige uma
+decisão do Combat Engine, nunca da narrativa.
+
 O papel do Narrator em combate é dramatizar o resultado já decidido: o impacto
 físico, a reação do corpo, o som, o esforço, a expressão de quem luta —
 nunca substituir ou corrigir o resultado mecânico.

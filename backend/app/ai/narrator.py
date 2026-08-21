@@ -265,6 +265,82 @@ def _find_canon_violations(text: str, context: str, player_input: str) -> list[s
     return violations
 
 
+_COMBAT_ACTION_VERBS = (
+    r"ataca(?:m|ndo)?|atacou|atacaram|golpeia(?:m|ndo)?|golpeou|golpearam|"
+    r"acerta(?:m|ndo)?|acertou|acertaram|erra(?:m|ndo)?|errou|erraram|"
+    r"fere(?:m)?|feriu|feriram|fere?indo|"
+    r"defende(?:m|ndo)?|defendeu|defenderam|"
+    r"interv[ée]m|intervindo|intervieram|"
+    r"luta(?:m|ndo)?|lutou|lutaram|"
+    r"saca(?:m|ndo)?|sacou|sacaram|"
+    r"empunha(?:m|ndo)?|empunhou|empunharam"
+)
+
+
+def _unauthorized_combatant_message(name: str) -> str:
+    return (
+        f"'{name}' age como combatente (ataca, defende ou intervém fisicamente na luta) "
+        "sem constar em ACTIVE COMBAT PARTICIPANTS; NPCs apenas visíveis na cena são "
+        "espectadores e nunca entram em combate por conta da narrativa"
+    )
+
+
+def _visible_npc_names(context: str) -> list[str]:
+    match = re.search(r"(?:^|\n)VISIBLE NPCS\n((?:-.*\n?)*)", context)
+    if not match:
+        return []
+    names = []
+    for line in match.group(1).splitlines():
+        entry = re.match(r"-\s*(.+?)\s*\(", line.strip())
+        if entry:
+            names.append(entry.group(1).strip())
+    return names
+
+
+def _combat_participant_names(context: str) -> set[str] | None:
+    """Names authorized to fight this turn, or None when no combat is active."""
+    match = re.search(r"(?:^|\n)ACTIVE COMBAT PARTICIPANTS\n((?:-.*\n?)*)", context)
+    if not match:
+        return None
+    names = set()
+    for line in match.group(1).splitlines():
+        entry = re.match(r"-\s*(.+?)\s*\(", line.strip())
+        if entry:
+            names.add(entry.group(1).strip())
+    return names
+
+
+def _find_unauthorized_combatant_violations(text: str, context: str) -> list[str]:
+    """Flag a bystander NPC (visible but not an ACTIVE COMBAT PARTICIPANT)
+    written as taking a combat action — e.g. a local jumping in to help.
+
+    Only checked while combat is actually active (participant list present);
+    outside combat any NPC may act freely."""
+    participants = _combat_participant_names(context)
+    if participants is None:
+        return []
+    normalized_text = _normalized(text)
+    for name in _visible_npc_names(context):
+        if name in participants:
+            continue
+        first = re.escape(_normalized(name.split()[0]))
+        if re.search(rf"\b{first}\b[^.\n]{{0,40}}?\b(?:{_COMBAT_ACTION_VERBS})\b", normalized_text):
+            return [_unauthorized_combatant_message(name)]
+    return []
+
+
+def _drop_unauthorized_combatant_segments(text: str, context: str) -> str:
+    """Granular fallback: remove only the paragraph(s) giving a bystander NPC
+    combat agency, preserving the rest of the (otherwise valid) narration."""
+    paragraphs = _split_paragraphs(text)
+    kept_paragraphs = [
+        paragraph
+        for paragraph in paragraphs
+        if not _find_unauthorized_combatant_violations(paragraph, context)
+    ]
+    return "\n\n".join(kept_paragraphs).strip()
+
+
 _AGENCY_VIOLATION_MESSAGE = (
     "a resposta usa o protagonista como personagem narrado; não escreva novas "
     "falas, gestos, ações ou reações para ele e mantenha mundo/NPCs como sujeitos"
@@ -308,8 +384,11 @@ def _protagonist_agency_violations(
     if reacts_pattern.search(text):
         return [_FABRICATED_TURN_MESSAGE]
 
+    # Tolerate a short comma-bounded appositive between the name and the verb
+    # ("Filipe, ofegante, tenta...") — otherwise it breaks the match entirely
+    # and lets a fabricated action/dialogue slip through right after it.
     subject_pattern = re.compile(
-        rf"(?:^|[.\n—]\s*){name}\s+(?:se\s+)?(\w+)",
+        rf"(?:^|[.\n—]\s*){name}\b(?:\s*,[^.\n]{{0,60}}?,)?\s+(?:se\s+)?(\w+)",
         re.IGNORECASE,
     )
 
@@ -419,6 +498,20 @@ def _find_hidden_name_violations(
     if unknown_names:
         return [_HIDDEN_NAME_MESSAGE]
     return []
+
+
+def _drop_hidden_name_segments(
+    text: str, context: str, active_interlocutor_name: str
+) -> str:
+    """Granular fallback: remove only the paragraph(s) that leak a canonical
+    name the player doesn't know, preserving the rest of the narration."""
+    paragraphs = _split_paragraphs(text)
+    kept_paragraphs = [
+        paragraph
+        for paragraph in paragraphs
+        if not _find_hidden_name_violations(paragraph, context, active_interlocutor_name)
+    ]
+    return "\n\n".join(kept_paragraphs).strip()
 
 
 def _find_unsolicited_opening_interaction_violations(
@@ -833,6 +926,9 @@ def narrate(
         meta_violations = [] if empty_violations else _find_meta_awareness_violations(draft, simulated_player_names)
         agency_violations = [] if empty_violations else _protagonist_agency_violations(draft, character_name, mode)
         turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+        unauthorized_combatant_violations = (
+            [] if empty_violations else _find_unauthorized_combatant_violations(draft, context)
+        )
         hidden_name_violations = [] if empty_violations else _find_hidden_name_violations(
             draft, context, active_interlocutor_name
         )
@@ -854,6 +950,7 @@ def narrate(
             + meta_violations
             + agency_violations
             + turn_violations
+            + unauthorized_combatant_violations
             + hidden_name_violations
             + opening_interaction_violations
         )
@@ -861,6 +958,7 @@ def narrate(
         logger.debug(
             "REVIEW RESULT (attempt %s)\nEMPTY/LEAK VIOLATIONS: %s\nCANON VIOLATIONS: %s\n"
             "META-AWARENESS VIOLATIONS: %s\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
+            "UNAUTHORIZED COMBATANT VIOLATIONS: %s\n"
             "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
             "STYLE VIOLATIONS: %s",
             attempt,
@@ -869,6 +967,7 @@ def narrate(
             meta_violations,
             agency_violations,
             turn_violations,
+            unauthorized_combatant_violations,
             hidden_name_violations,
             opening_interaction_violations,
             style_violations,
@@ -928,6 +1027,7 @@ def narrate(
     remaining_style = _find_style_violations(draft)
     remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
     remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+    remaining_unauthorized_combatant = _find_unauthorized_combatant_violations(draft, context)
     remaining_hidden_names = _find_hidden_name_violations(
         draft, context, active_interlocutor_name
     )
@@ -940,10 +1040,12 @@ def narrate(
 
     logger.debug(
         "REVIEW RESULT (final)\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
+        "UNAUTHORIZED COMBATANT VIOLATIONS: %s\n"
         "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
         "STYLE VIOLATIONS: %s",
         remaining_agency,
         remaining_turn,
+        remaining_unauthorized_combatant,
         remaining_hidden_names,
         remaining_opening_interaction,
         remaining_style,
@@ -979,15 +1081,62 @@ def narrate(
             )
             return safe
 
+    # A bystander NPC written as fighting is never acceptable, but the rest of
+    # an otherwise-valid combat turn usually is. Drop only the offending
+    # paragraph(s) instead of discarding real mechanical narration.
+    if remaining_unauthorized_combatant:
+        trimmed = _drop_unauthorized_combatant_segments(draft, context)
+        if trimmed:
+            logger.warning(
+                "FALLBACK REASON: draft gave a bystander NPC combat agency after hard "
+                "revisions; offending paragraph(s) dropped: %s\nKEPT:\n%s",
+                remaining_unauthorized_combatant,
+                trimmed,
+            )
+            draft = trimmed
+        else:
+            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+            logger.error(
+                "FALLBACK REASON: unauthorized combatant violation could not be removed "
+                "without emptying the response. Returning deterministic safe fallback "
+                "instead of the known-invalid draft: %s\nFALLBACK:\n%s",
+                remaining_unauthorized_combatant,
+                safe,
+            )
+            return safe
+
+    # A leaked canonical name taints only the paragraph(s) that mention it —
+    # keep the rest of an otherwise-valid turn instead of discarding it whole.
+    if remaining_hidden_names:
+        trimmed = _drop_hidden_name_segments(draft, context, active_interlocutor_name)
+        if trimmed:
+            logger.warning(
+                "FALLBACK REASON: draft still revealed hidden names after hard revisions; "
+                "offending paragraph(s) dropped: %s\nKEPT:\n%s",
+                remaining_hidden_names,
+                trimmed,
+            )
+            draft = trimmed
+        else:
+            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+            logger.error(
+                "FALLBACK REASON: hidden name violation could not be removed without "
+                "emptying the response. Returning deterministic safe fallback instead of "
+                "the known-invalid draft: %s\nFALLBACK:\n%s",
+                remaining_hidden_names,
+                safe,
+            )
+            return safe
+
     # An opening is only the initial situation. If the model insists on
-    # revealing private names or forcing a native NPC encounter after both
-    # revisions, do not expose that generated branch to the player.
-    if remaining_hidden_names or remaining_opening_interaction:
+    # forcing a native NPC encounter after both revisions, do not expose that
+    # generated branch to the player.
+    if remaining_opening_interaction:
         safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
         logger.error(
-            "FALLBACK REASON: opening still revealed hidden names or initiated an "
-            "unauthorized interaction after hard revisions: %s\nFALLBACK:\n%s",
-            remaining_hidden_names + remaining_opening_interaction,
+            "FALLBACK REASON: opening still initiated an unauthorized interaction after "
+            "hard revisions: %s\nFALLBACK:\n%s",
+            remaining_opening_interaction,
             safe,
         )
         return safe

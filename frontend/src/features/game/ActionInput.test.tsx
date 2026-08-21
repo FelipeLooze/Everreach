@@ -17,6 +17,8 @@ describe("ActionInput", () => {
             id: "tech_wind_cut",
             name: "Corte de Vento",
             description: "Integra espada e vento.",
+            type: "HYBRID",
+            mastery: "BASIC",
           },
         ]}
       />,

@@ -22,6 +22,7 @@ from app.db.models.location import (
 from app.game.combat.context import build_active_encounter_snapshot
 from app.game.game_state import GameStateSnapshot
 from app.game.items.context import build_narrator_inventory_context
+from app.game.skills.technique_mastery import character_technique_mastery_tier
 from app.game.npcs.service import (
     KnownFact,
     known_facts,
@@ -892,6 +893,20 @@ def build_context(
             "Memories describe remembered events or claims; they are not automatic world truth.",
         ]
     )
+    technique_lines = ["KNOWN TECHNIQUES"]
+    technique_lines.extend(
+        [
+            f"- {technique.name} [{technique.technique_type}, mastery: "
+            f"{character_technique_mastery_tier(db, state.character.id, technique.id).value}]"
+            for technique in state.techniques
+        ]
+        or ["- none learned yet"]
+    )
+    technique_lines.append(
+        "Mastery is a qualitative reliability tier only. Never invent damage, "
+        "cooldowns, success chances or other numeric effects from a technique "
+        "or its mastery."
+    )
     quest_lines = ["ACTIVE QUESTS"]
     quest_lines.extend(
         [
@@ -928,6 +943,7 @@ def build_context(
         player_memory_section,
         "\n".join(input_canon_lines),
         "\n".join(quest_lines),
+        "\n".join(technique_lines),
         (
             "CANON RULE\nOnly registered structured data and supplied knowledge are persistent facts. "
             "Missing information is not permission to create geography, buildings, history, "

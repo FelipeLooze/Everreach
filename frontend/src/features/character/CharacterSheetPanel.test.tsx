@@ -168,4 +168,50 @@ describe("CharacterSheetPanel", () => {
     expect(screen.queryByRole("button", { name: "ADIAR" })).not.toBeInTheDocument();
     expect(acceptClassOffer).not.toHaveBeenCalled();
   });
+
+  it("mostra o tipo e a maestria de cada técnica aprendida", async () => {
+    vi.mocked(getCharacterSheet).mockResolvedValue({
+      character: {
+        id: "char_1",
+        name: "Heroína",
+        background: null,
+        profession_affinity_key: null,
+        active_class_id: null,
+        level: 0,
+        xp: 0,
+        hp_current: 20,
+        hp_max: 20,
+        mana_current: 10,
+        mana_max: 10,
+        stamina_current: 20,
+        stamina_max: 20,
+        status: "ALIVE",
+        region_id: "region_1",
+        location_id: "location_1",
+      },
+      attributes: [],
+      professions: [],
+      active_class: null,
+      class_offers: [],
+      skills: [],
+      techniques: [
+        {
+          id: "technique_1",
+          name: "Rajada de Vento",
+          description: "Comprime vento na palma da mão e o solta de uma vez.",
+          type: "MAGICAL",
+          mastery: "PRACTICED",
+        },
+      ],
+    });
+
+    render(
+      <CharacterSheetPanel campaignId="campaign_1" characterId="char_1" />,
+    );
+
+    expect(await screen.findByText("Rajada de Vento")).toBeInTheDocument();
+    expect(
+      screen.getByText("mágica · maestria praticada"),
+    ).toBeInTheDocument();
+  });
 });

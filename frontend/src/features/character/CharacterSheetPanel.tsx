@@ -5,7 +5,11 @@ import {
   getCharacterSheet,
 } from "@/api/character";
 import type { CharacterSheet } from "@/types/game";
-import { characterAttributeLabel } from "@/utils/labels";
+import {
+  characterAttributeLabel,
+  techniqueMasteryLabel,
+  techniqueTypeLabel,
+} from "@/utils/labels";
 
 export function CharacterSheetPanel({ campaignId, characterId }: { campaignId: string; characterId: string }) {
   const [sheet, setSheet] = useState<CharacterSheet | null>(null);
@@ -156,6 +160,9 @@ export function CharacterSheetPanel({ campaignId, characterId }: { campaignId: s
             {sheet.techniques.map((technique) => (
               <article className="fantasy-content-card technique-card" key={technique.name}>
                 <strong>{technique.name}</strong>
+                <span className="technique-meta">
+                  {techniqueTypeLabel(technique.type)} · maestria {techniqueMasteryLabel(technique.mastery)}
+                </span>
                 <p>{technique.description}</p>
               </article>
             ))}

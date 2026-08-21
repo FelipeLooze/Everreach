@@ -37,6 +37,20 @@ const NPC_ACTIVITY_LABELS: Record<string, string> = {
   AVAILABLE: "disponível",
 };
 
+const TECHNIQUE_TYPE_LABELS: Record<string, string> = {
+  PHYSICAL: "física",
+  MAGICAL: "mágica",
+  HYBRID: "híbrida",
+};
+
+const TECHNIQUE_MASTERY_LABELS: Record<string, string> = {
+  UNSTABLE: "instável",
+  BASIC: "básica",
+  PRACTICED: "praticada",
+  REFINED: "refinada",
+  MASTERED: "dominada",
+};
+
 const QUEST_STATUS_LABELS: Record<string, string> = {
   NOT_STARTED: "não iniciada",
   ACTIVE: "ativa",
@@ -129,5 +143,7 @@ export const characterAttributeLabel = (key: string) => translate(CHARACTER_ATTR
 export const discoveryStatusLabel = (status: string) => translate(DISCOVERY_STATUS_LABELS, status);
 export const npcActivityLabel = (activity: string) => translate(NPC_ACTIVITY_LABELS, activity);
 export const questStatusLabel = (status: string) => translate(QUEST_STATUS_LABELS, status);
+export const techniqueTypeLabel = (type: string) => translate(TECHNIQUE_TYPE_LABELS, type);
+export const techniqueMasteryLabel = (tier: string) => translate(TECHNIQUE_MASTERY_LABELS, tier);
 export const eventTypeLabel = (type: string) => translate(EVENT_TYPE_LABELS, type);
 export const connectionTypeLabel = (type: string) => translate(CONNECTION_TYPE_LABELS, type.toUpperCase());

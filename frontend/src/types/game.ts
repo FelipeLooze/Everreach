@@ -167,6 +167,8 @@ export interface CharacterTechnique {
   id: string;
   name: string;
   description: string;
+  type: string;
+  mastery: string;
 }
 
 export interface CharacterSheet {

@@ -965,6 +965,7 @@ select {
 .attribute-card strong { color: #d4ccbe; font-family: "Cinzel", serif; font-size: 2rem; font-weight: 500; }
 .techniques-section { margin-top: 28px; }
 .technique-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.technique-meta { display: block; color: var(--text-dim); font-size: 0.8rem; text-transform: capitalize; margin-top: 2px; }
 
 /* Inventory */
 .inventory-panel { display: flex; flex-direction: column; gap: 24px; }

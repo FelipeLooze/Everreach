@@ -9,6 +9,7 @@ from app.db.models.npc import NPC
 from app.db.models.quest import CharacterQuest, Quest
 from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.skill import Technique
 from app.db.models.campaign import WorldTime
 from app.db.models.event import WorldEvent
 from app.core.enums import EventType
@@ -22,6 +23,7 @@ from app.game.combat.context import (
     CombatEncounterSnapshot,
     build_active_encounter_snapshot,
 )
+from app.game.skills.techniques import list_character_techniques
 
 
 @dataclass
@@ -37,6 +39,7 @@ class GameStateSnapshot:
     nearby_npcs: list[NPC]
     nearby_simulated_players: list[SimulatedPlayer]
     active_quests: list[tuple[CharacterQuest, Quest]]
+    techniques: list[Technique]
     inventory: SystemInventorySnapshot
     active_encounter: CombatEncounterSnapshot | None
     opening_narrative: str | None
@@ -87,6 +90,7 @@ def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameSt
         nearby_npcs=nearby_npcs,
         nearby_simulated_players=nearby_players,
         active_quests=active_quests,
+        techniques=list_character_techniques(db, character_id),
         inventory=build_system_inventory(db, character.id),
         active_encounter=build_active_encounter_snapshot(db, character.id),
         opening_narrative=opening_payload.get("narrative"),

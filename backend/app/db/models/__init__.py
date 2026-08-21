@@ -86,6 +86,7 @@ from app.db.models.simulated_player import (
     SimulatedPlayerPopulation,
     SimulatedPlayerSkill,
 )
+from app.db.models.shop import Shop, ShopListing
 from app.db.models.simulated_player_group import (
     SimulatedPlayerGroup,
     SimulatedPlayerGroupMember,
@@ -188,6 +189,8 @@ __all__ = [
     "CharacterResourceGrowth",
     "ResourceGrowthEvidenceRecord",
     "ScheduledSimulatedPlayerArrival",
+    "Shop",
+    "ShopListing",
     "SimulatedPlayer",
     "SimulatedPlayerPopulation",
     "SimulatedPlayerSkill",

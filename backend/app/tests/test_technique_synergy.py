@@ -1,6 +1,6 @@
 from app.ai.llm_service import LLMService
 from app.ai.intent_parser import Intent
-from app.core.enums import ActionIntentType, TechniqueType
+from app.core.enums import ActionIntentType, TechniqueOrigin, TechniqueType
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
@@ -52,6 +52,7 @@ def _setup(db_session):
         campaign.id,
         character,
         technique,
+        origin=TechniqueOrigin.SELF_DISCOVERED,
     )
     db_session.flush()
     return campaign, character, technique

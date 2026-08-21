@@ -14,6 +14,7 @@ from app.core.enums import (
     CombatConditionType,
     CombatDamageType,
     PhysicalDamageProfile,
+    TechniqueLearningState,
 )
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatCondition, CombatEncounter, CombatParticipant
@@ -145,6 +146,10 @@ def resolve_combat_technique(
     )
     if ownership is None:
         raise CombatTechniqueError("Character does not know this technique.")
+    if ownership.learning_state != TechniqueLearningState.LEARNED.value:
+        raise CombatTechniqueError(
+            "Character is aware of this technique but has not learned to perform it yet."
+        )
     profile = db.get(CombatTechniqueProfile, technique.id)
     if profile is None:
         raise CombatTechniqueError("Technique has no authoritative combat mechanics.")

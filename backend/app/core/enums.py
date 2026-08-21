@@ -65,6 +65,26 @@ class TechniqueType(StrEnum):
     HYBRID = "HYBRID"
 
 
+class TechniqueLearningState(StrEnum):
+    """A character's progress toward actually being able to perform a
+    technique. Absence of a CharacterTechnique row means UNKNOWN — there is
+    no explicit UNKNOWN member, matching how the rest of the project treats
+    missing knowledge as ignorance rather than a stored state."""
+
+    AWARE = "AWARE"
+    LEARNING = "LEARNING"
+    LEARNED = "LEARNED"
+
+
+class TechniqueOrigin(StrEnum):
+    """How a character came to know about / learn a technique."""
+
+    SELF_DISCOVERED = "SELF_DISCOVERED"
+    TAUGHT = "TAUGHT"
+    OBSERVED = "OBSERVED"
+    DOCUMENTED = "DOCUMENTED"
+
+
 class CharacterAttributeKey(StrEnum):
     STRENGTH = "STRENGTH"
     AGILITY = "AGILITY"
@@ -498,6 +518,9 @@ class EventType(StrEnum):
     BOSS_DISCOVERED = "BOSS_DISCOVERED"
     BOSS_DEFEATED = "BOSS_DEFEATED"
     NEW_TECHNIQUE_CREATED = "NEW_TECHNIQUE_CREATED"
+    TECHNIQUE_AWARENESS_GAINED = "TECHNIQUE_AWARENESS_GAINED"
+    TECHNIQUE_LEARNING_STARTED = "TECHNIQUE_LEARNING_STARTED"
+    TECHNIQUE_LEARNED = "TECHNIQUE_LEARNED"
     WORLD_TIME_ADVANCED = "WORLD_TIME_ADVANCED"
     WORLD_DEVELOPMENT_CREATED = "WORLD_DEVELOPMENT_CREATED"
     WORLD_DEVELOPMENT_UPDATED = "WORLD_DEVELOPMENT_UPDATED"

@@ -9,6 +9,7 @@ from app.core.enums import (
     CombatConditionType,
     CombatDamageType,
     CombatRangeBand,
+    TechniqueOrigin,
     TechniqueType,
 )
 from app.db.models.combat import CombatAction, CombatCondition, CombatParticipant
@@ -78,7 +79,13 @@ def _setup(
         domain_keys=("SWORD", "WIND"),
     )
     if grant:
-        grant_technique(db_session, campaign.id, character, technique)
+        grant_technique(
+            db_session,
+            campaign.id,
+            character,
+            technique,
+            origin=TechniqueOrigin.SELF_DISCOVERED,
+        )
     profile = configure_combat_technique(
         db_session,
         technique,
@@ -297,7 +304,13 @@ def test_unlearned_or_unconfigured_technique_cannot_be_used(db_session):
         technique_type=TechniqueType.PHYSICAL,
         domain_keys=("SWORD",),
     )
-    grant_technique(db_session, encounter.campaign_id, character, unconfigured)
+    grant_technique(
+        db_session,
+        encounter.campaign_id,
+        character,
+        unconfigured,
+        origin=TechniqueOrigin.SELF_DISCOVERED,
+    )
     with pytest.raises(CombatTechniqueError, match="no authoritative"):
         resolve_combat_technique(
             db_session,

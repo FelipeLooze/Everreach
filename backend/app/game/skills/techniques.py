@@ -4,7 +4,14 @@ from itertools import combinations
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import ActionIntentType, DomainEvidenceSource, EventType, TechniqueType
+from app.core.enums import (
+    ActionIntentType,
+    DomainEvidenceSource,
+    EventType,
+    TechniqueLearningState,
+    TechniqueOrigin,
+    TechniqueType,
+)
 from app.db.models.character import Character
 from app.db.models.domain import DomainDefinition
 from app.db.models.skill import (
@@ -32,6 +39,10 @@ _ACTION_KEY_PATTERN = re.compile(r"^[a-z0-9][a-z0-9:_-]{0,179}$")
 
 
 class TechniqueUseError(ValueError):
+    pass
+
+
+class TechniqueLearningError(ValueError):
     pass
 
 
@@ -130,15 +141,12 @@ def create_technique(
     return technique
 
 
-def grant_technique(
+def _find_character_technique(
     db: Session,
-    campaign_id: str,
     character: Character,
     technique: Technique,
-) -> CharacterTechnique:
-    if character.campaign_id != campaign_id:
-        raise ValueError("Character does not belong to campaign.")
-    existing = (
+) -> CharacterTechnique | None:
+    return (
         db.query(CharacterTechnique)
         .filter(
             CharacterTechnique.character_id == character.id,
@@ -146,36 +154,152 @@ def grant_technique(
         )
         .one_or_none()
     )
+
+
+def _validate_learning_call(
+    character: Character,
+    campaign_id: str,
+    origin: TechniqueOrigin,
+) -> None:
+    if character.campaign_id != campaign_id:
+        raise ValueError("Character does not belong to campaign.")
+    if not isinstance(origin, TechniqueOrigin):
+        raise ValueError("Invalid technique origin.")
+
+
+def mark_technique_aware(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    technique: Technique,
+    *,
+    origin: TechniqueOrigin,
+) -> CharacterTechnique:
+    """The character now knows this technique exists — not that they can
+    perform it. A no-op if they are already at least this far along."""
+    _validate_learning_call(character, campaign_id, origin)
+    existing = _find_character_technique(db, character, technique)
     if existing is not None:
         return existing
     link = CharacterTechnique(
         character_id=character.id,
         technique_id=technique.id,
+        learning_state=TechniqueLearningState.AWARE.value,
+        origin=origin.value,
+        world_minute=get_world_time(db, campaign_id).total_minutes(),
     )
     db.add(link)
     log_event(
         db,
         campaign_id,
-        EventType.NEW_TECHNIQUE_CREATED,
+        EventType.TECHNIQUE_AWARENESS_GAINED,
         actor_type="character",
         actor_id=character.id,
         payload={
             "technique_id": technique.id,
             "technique_name": technique.name,
+            "origin": origin.value,
         },
     )
     db.flush()
     return link
 
 
+def begin_learning_technique(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    technique: Technique,
+    *,
+    origin: TechniqueOrigin,
+) -> CharacterTechnique:
+    """Move from AWARE to actively practicing. Requires prior awareness — a
+    character cannot start learning something they don't know exists."""
+    _validate_learning_call(character, campaign_id, origin)
+    existing = _find_character_technique(db, character, technique)
+    if existing is None:
+        raise TechniqueLearningError(
+            "Character must be aware of a technique before starting to learn it."
+        )
+    if existing.learning_state in (
+        TechniqueLearningState.LEARNING.value,
+        TechniqueLearningState.LEARNED.value,
+    ):
+        return existing
+    existing.learning_state = TechniqueLearningState.LEARNING.value
+    existing.origin = origin.value
+    existing.world_minute = get_world_time(db, campaign_id).total_minutes()
+    log_event(
+        db,
+        campaign_id,
+        EventType.TECHNIQUE_LEARNING_STARTED,
+        actor_type="character",
+        actor_id=character.id,
+        payload={
+            "technique_id": technique.id,
+            "technique_name": technique.name,
+            "origin": origin.value,
+        },
+    )
+    db.flush()
+    return existing
+
+
+def grant_technique(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    technique: Technique,
+    *,
+    origin: TechniqueOrigin,
+) -> CharacterTechnique:
+    """Mark a technique as fully learned — the character can now attempt it.
+    Works from any prior state (including no prior row at all): a technique
+    recognized from mature evidence, or taught hands-on, does not have to
+    pass through AWARE/LEARNING as separate calls first."""
+    _validate_learning_call(character, campaign_id, origin)
+    existing = _find_character_technique(db, character, technique)
+    if existing is not None and existing.learning_state == TechniqueLearningState.LEARNED.value:
+        return existing
+    world_minute = get_world_time(db, campaign_id).total_minutes()
+    if existing is None:
+        existing = CharacterTechnique(
+            character_id=character.id,
+            technique_id=technique.id,
+        )
+        db.add(existing)
+    existing.learning_state = TechniqueLearningState.LEARNED.value
+    existing.origin = origin.value
+    existing.world_minute = world_minute
+    log_event(
+        db,
+        campaign_id,
+        EventType.TECHNIQUE_LEARNED,
+        actor_type="character",
+        actor_id=character.id,
+        payload={
+            "technique_id": technique.id,
+            "technique_name": technique.name,
+            "origin": origin.value,
+        },
+    )
+    db.flush()
+    return existing
+
+
 def list_character_techniques(
     db: Session,
     character_id: str,
 ) -> list[Technique]:
+    """Techniques the character can actually attempt. Being merely AWARE or
+    LEARNING a technique does not make it usable — see resolve_technique_use."""
     return (
         db.query(Technique)
         .join(CharacterTechnique)
-        .filter(CharacterTechnique.character_id == character_id)
+        .filter(
+            CharacterTechnique.character_id == character_id,
+            CharacterTechnique.learning_state == TechniqueLearningState.LEARNED.value,
+        )
         .order_by(Technique.name, Technique.id)
         .all()
     )
@@ -199,16 +323,13 @@ def resolve_technique_use(
     technique = db.get(Technique, technique_id)
     if technique is None:
         raise TechniqueUseError("Unknown technique.")
-    ownership = (
-        db.query(CharacterTechnique)
-        .filter(
-            CharacterTechnique.character_id == character.id,
-            CharacterTechnique.technique_id == technique.id,
-        )
-        .one_or_none()
-    )
+    ownership = _find_character_technique(db, character, technique)
     if ownership is None:
         raise TechniqueUseError("Character does not know this technique.")
+    if ownership.learning_state != TechniqueLearningState.LEARNED.value:
+        raise TechniqueUseError(
+            "Character is aware of this technique but has not learned to perform it yet."
+        )
     domain_keys = tuple(row.domain_key for row in technique.domains)
     if not 1 <= len(domain_keys) <= MAX_TECHNIQUE_DOMAINS:
         raise TechniqueUseError("Technique has invalid domain mechanics.")

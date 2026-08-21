@@ -1,6 +1,6 @@
 import pytest
 
-from app.core.enums import TechniqueType
+from app.core.enums import TechniqueOrigin, TechniqueType
 from app.db.models.domain import DomainDefinition
 from app.game.skills import techniques as technique_service
 from app.game.world.seed import create_campaign, seed_initial_region
@@ -79,7 +79,9 @@ def test_character_sheet_exposes_the_technique_type(db_session, client):
         technique_type=TechniqueType.HYBRID,
         domain_keys=("WIND", "SWORD"),
     )
-    technique_service.grant_technique(db_session, campaign.id, character, technique)
+    technique_service.grant_technique(
+        db_session, campaign.id, character, technique, origin=TechniqueOrigin.SELF_DISCOVERED
+    )
     db_session.commit()
 
     sheet = client.get(

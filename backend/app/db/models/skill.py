@@ -14,6 +14,8 @@ from app.core.enums import (
     CharacterAttributeKey,
     CharacterResourceKey,
     CombatActionType,
+    TechniqueLearningState,
+    TechniqueOrigin,
     TechniqueType,
 )
 from app.db.base import Base
@@ -84,11 +86,29 @@ class TechniqueDomain(Base):
 
 
 class CharacterTechnique(Base):
+    """A character's relationship with a technique — not just whether they
+    know it, but how far along: AWARE (knows it exists) → LEARNING (actively
+    developing it) → LEARNED (can attempt it). Absence of a row means UNKNOWN.
+    See TechniqueLearningState/TechniqueOrigin for the state machine this
+    supports; mastery (how *well* a LEARNED technique is performed) is a
+    separate concern, added in a later phase."""
+
     __tablename__ = "character_techniques"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("ctech"))
     character_id: Mapped[str] = mapped_column(ForeignKey("characters.id"), nullable=False)
     technique_id: Mapped[str] = mapped_column(ForeignKey("techniques.id"), nullable=False)
+    learning_state: Mapped[str] = mapped_column(
+        String,
+        default=TechniqueLearningState.LEARNED.value,
+        nullable=False,
+    )
+    origin: Mapped[str] = mapped_column(
+        String,
+        default=TechniqueOrigin.SELF_DISCOVERED.value,
+        nullable=False,
+    )
+    world_minute: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     technique: Mapped["Technique"] = relationship()
 

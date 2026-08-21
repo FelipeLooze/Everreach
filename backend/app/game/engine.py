@@ -18,6 +18,7 @@ from app.db.models.character import Character
 from app.db.models.location import CharacterLocationDiscovery, Location
 from app.db.models.quest import QuestObjective
 from app.game import game_state
+from app.game.combat import bridge as combat_bridge
 from app.game.combat import service as combat_service
 from app.game.combat.recovery import recover_character
 from app.game.items.interactions import (
@@ -406,6 +407,24 @@ def _apply_intent(
             campaign_id,
             character,
             intent,
+            action_key=action_key,
+        )
+    if intent.type == ActionIntentType.ATTACK:
+        return combat_bridge.handle_attack_intent(
+            db,
+            campaign_id,
+            character,
+            intent,
+            state,
+            action_key=action_key,
+        )
+    if intent.type in combat_bridge.TACTICAL_INTENT_MAP:
+        return combat_bridge.handle_combat_tactic_intent(
+            db,
+            campaign_id,
+            character,
+            intent,
+            state,
             action_key=action_key,
         )
 

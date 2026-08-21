@@ -166,7 +166,7 @@ def resolve_weapon_attack(
     if damage_profile not in get_weapon_damage_profiles(profile):
         raise WeaponError("Weapon does not support the selected damage profile.")
     reach = WeaponReach(profile.reach)
-    _validate_attack_type(reach, action_type)
+    validate_attack_type_matches_reach(reach, action_type)
     _validate_active_hand(
         WeaponHandRequirement(profile.hand_requirement),
         EquipmentSlot(instance.equipped_slot),
@@ -176,7 +176,7 @@ def resolve_weapon_attack(
         weapon_instance_id=instance.id,
         physical_damage_profile=damage_profile,
         target_body_area=target_body_area,
-        allowed_target_ranges=_allowed_target_ranges(reach),
+        allowed_target_ranges=allowed_target_ranges_for_reach(reach),
     )
     return resolve_profiled_attack(
         db,
@@ -227,7 +227,7 @@ def _validate_active_hand(
         raise WeaponError("Weapon is not held according to its hand requirement.")
 
 
-def _validate_attack_type(
+def validate_attack_type_matches_reach(
     reach: WeaponReach,
     action_type: CombatActionType,
 ) -> None:
@@ -240,7 +240,7 @@ def _validate_attack_type(
         raise WeaponError("Weapon reach does not support this attack type.")
 
 
-def _allowed_target_ranges(reach: WeaponReach) -> frozenset[CombatRangeBand]:
+def allowed_target_ranges_for_reach(reach: WeaponReach) -> frozenset[CombatRangeBand]:
     if reach == WeaponReach.RANGED:
         return frozenset(
             {
@@ -252,6 +252,59 @@ def _allowed_target_ranges(reach: WeaponReach) -> frozenset[CombatRangeBand]:
     if reach == WeaponReach.LONG:
         return frozenset({CombatRangeBand.ENGAGED, CombatRangeBand.NEAR})
     return frozenset({CombatRangeBand.ENGAGED})
+
+
+def find_equipped_weapon(
+    db: Session,
+    character_id: str,
+    *,
+    weapon_family: WeaponFamily,
+) -> tuple[ItemInstance, ItemWeaponProfile] | None:
+    """The character's currently equipped, immediately-usable weapon of this
+    family, if any. Read-only counterpart to resolve_weapon_attack's own
+    equipped-weapon validation — reused by technique resolution (11E) so a
+    technique that requires a weapon checks the same real equipment state,
+    not a separate notion of "having" it."""
+    candidates = (
+        db.query(ItemInstance)
+        .filter(
+            ItemInstance.location_type == ItemLocationType.CHARACTER_EQUIPPED.value,
+            ItemInstance.location_ref == character_id,
+        )
+        .all()
+    )
+    for instance in candidates:
+        if item_accessibility(instance) != ItemAccessibility.IMMEDIATE:
+            continue
+        if is_item_broken(instance):
+            continue
+        profile = db.get(ItemWeaponProfile, instance.definition_id)
+        if profile is None or profile.weapon_family != weapon_family.value:
+            continue
+        return instance, profile
+    return None
+
+
+def resolve_technique_weapon_requirement(
+    db: Session,
+    character_id: str,
+    *,
+    required_weapon_family: WeaponFamily,
+    action_type: CombatActionType,
+) -> tuple[str, frozenset[CombatRangeBand]]:
+    """Find and validate the weapon a technique requires, returning
+    (weapon_instance_id, allowed_target_ranges) for its AttackMechanics.
+    Raises WeaponError if no matching weapon is equipped and usable, or if
+    the weapon's reach doesn't support the technique's attack type."""
+    found = find_equipped_weapon(db, character_id, weapon_family=required_weapon_family)
+    if found is None:
+        raise WeaponError(
+            f"No {required_weapon_family.value.title()} is equipped and ready to use."
+        )
+    instance, profile = found
+    reach = WeaponReach(profile.reach)
+    validate_attack_type_matches_reach(reach, action_type)
+    return instance.id, allowed_target_ranges_for_reach(reach)
 
 
 def _encode_damage_profiles(profiles: set[PhysicalDamageProfile]) -> str:

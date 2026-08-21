@@ -486,6 +486,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "condition_type",
             "condition_duration_turns",
             "damage_type",
+            "required_weapon_family",
         } == combat_technique_columns
         fact_constraints = {
             item["name"] for item in inspect(engine).get_unique_constraints("knowledge_facts")

@@ -15,6 +15,7 @@ from app.core.enums import (
     CombatDamageType,
     PhysicalDamageProfile,
     TechniqueLearningState,
+    WeaponFamily,
 )
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatCondition, CombatEncounter, CombatParticipant
@@ -30,6 +31,7 @@ from app.game.combat.actions import (
     resolve_profiled_attack,
 )
 from app.game.combat.conditions import apply_condition
+from app.game.items.weapons import WeaponError, resolve_technique_weapon_requirement
 from app.game.progression.outcomes import ProgressionOutcome
 from app.game.skills.technique_mastery import technique_mastery_reliability_bonus
 from app.game.skills.techniques import technique_progression_outcome
@@ -63,6 +65,7 @@ def configure_combat_technique(
     condition_type: CombatConditionType | None = None,
     condition_duration_turns: int | None = None,
     damage_type: CombatDamageType = CombatDamageType.PHYSICAL,
+    required_weapon_family: WeaponFamily | None = None,
 ) -> CombatTechniqueProfile:
     """Attach immutable, structured combat mechanics to a discovered technique."""
     if db.get(Technique, technique.id) is None:
@@ -95,6 +98,8 @@ def configure_combat_technique(
             raise CombatTechniqueError("Invalid technique condition type.")
         if not 1 <= condition_duration_turns <= 10:
             raise CombatTechniqueError("Technique condition must last between 1 and 10 turns.")
+    if required_weapon_family is not None and not isinstance(required_weapon_family, WeaponFamily):
+        raise CombatTechniqueError("Invalid required weapon family.")
 
     values = {
         "action_type": action_type.value,
@@ -107,6 +112,9 @@ def configure_combat_technique(
         "damage_type": damage_type.value,
         "condition_type": condition_type.value if condition_type else None,
         "condition_duration_turns": condition_duration_turns,
+        "required_weapon_family": (
+            required_weapon_family.value if required_weapon_family else None
+        ),
     }
     existing = db.get(CombatTechniqueProfile, technique.id)
     if existing is not None:
@@ -155,6 +163,19 @@ def resolve_combat_technique(
     if profile is None:
         raise CombatTechniqueError("Technique has no authoritative combat mechanics.")
 
+    weapon_instance_id = None
+    allowed_target_ranges = None
+    if profile.required_weapon_family is not None:
+        try:
+            weapon_instance_id, allowed_target_ranges = resolve_technique_weapon_requirement(
+                db,
+                character.id,
+                required_weapon_family=WeaponFamily(profile.required_weapon_family),
+                action_type=CombatActionType(profile.action_type),
+            )
+        except WeaponError as exc:
+            raise CombatTechniqueError(str(exc)) from exc
+
     normalized_key = action_key.strip().lower()
     mechanics = AttackMechanics(
         action_type=CombatActionType(profile.action_type),
@@ -166,6 +187,8 @@ def resolve_combat_technique(
         damage_attribute=CharacterAttributeKey(profile.damage_attribute),
         damage_type=CombatDamageType(profile.damage_type),
         technique_id=technique.id,
+        weapon_instance_id=weapon_instance_id,
+        allowed_target_ranges=allowed_target_ranges,
         attack_bonus=technique_mastery_reliability_bonus(ownership.mastery),
         physical_damage_profile=(
             PhysicalDamageProfile.BLUNT

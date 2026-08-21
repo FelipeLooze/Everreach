@@ -154,6 +154,7 @@ class CombatTechniqueProfile(Base):
         Integer,
         nullable=True,
     )
+    required_weapon_family: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class TechniqueUseRecord(Base):

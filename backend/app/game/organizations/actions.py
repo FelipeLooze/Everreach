@@ -110,7 +110,7 @@ def _proposal_summary_text(db: Session, organization: Organization) -> str:
         "Necessidades em aberto: "
         + ("; ".join(f"{n.description} ({n.category})" for n in needs) if needs else "nenhuma")
     )
-    lines.append(f"Tesouro: {organization.treasury:g}")
+    lines.append(f"Tesouro: {organization.treasury} bronze")
     return "\n".join(lines)
 
 

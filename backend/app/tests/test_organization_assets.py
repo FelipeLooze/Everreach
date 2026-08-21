@@ -83,28 +83,28 @@ def test_unassigning_removes_it_from_the_organizations_assets(db_session):
 def test_treasury_starts_at_zero(db_session):
     campaign, region, village, character, org = _setup(db_session)
 
-    assert org.treasury == 0.0
+    assert org.treasury == 0
 
 
 def test_deposit_and_withdraw_funds(db_session):
     campaign, region, village, character, org = _setup(db_session)
 
-    deposit_funds(db_session, org, 50.0, reason="Doação de um membro.")
-    withdraw_funds(db_session, org, 20.0, reason="Compra de flechas.")
+    deposit_funds(db_session, org, 50, reason="Doação de um membro.")
+    withdraw_funds(db_session, org, 20, reason="Compra de flechas.")
 
-    assert org.treasury == 30.0
+    assert org.treasury == 30
 
 
 def test_cannot_withdraw_more_than_the_treasury_holds(db_session):
     campaign, region, village, character, org = _setup(db_session)
-    deposit_funds(db_session, org, 10.0, reason="Doação.")
+    deposit_funds(db_session, org, 10, reason="Doação.")
 
     with pytest.raises(OrganizationError):
-        withdraw_funds(db_session, org, 50.0, reason="Compra cara demais.")
+        withdraw_funds(db_session, org, 50, reason="Compra cara demais.")
 
 
 def test_funds_change_requires_a_reason(db_session):
     campaign, region, village, character, org = _setup(db_session)
 
     with pytest.raises(OrganizationError):
-        deposit_funds(db_session, org, 10.0, reason="  ")
+        deposit_funds(db_session, org, 10, reason="  ")

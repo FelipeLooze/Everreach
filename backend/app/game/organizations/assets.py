@@ -83,25 +83,27 @@ def organization_assets(db: Session, organization_id: str) -> list[ItemInstance]
     )
 
 
-def deposit_funds(db: Session, organization: Organization, amount: float, *, reason: str) -> Organization:
+def deposit_funds(db: Session, organization: Organization, amount: int, *, reason: str) -> Organization:
+    """amount is in Bronze (Phase 14A's canonical smallest unit) — always
+    an integer; there is no fractional Bronze."""
     if amount <= 0:
         raise OrganizationError("O valor depositado precisa ser positivo.")
     return _change_funds(db, organization, amount, reason=reason)
 
 
-def withdraw_funds(db: Session, organization: Organization, amount: float, *, reason: str) -> Organization:
+def withdraw_funds(db: Session, organization: Organization, amount: int, *, reason: str) -> Organization:
     if amount <= 0:
         raise OrganizationError("O valor retirado precisa ser positivo.")
     if amount > organization.treasury:
         raise OrganizationError(
             f"'{organization.name}' não tem fundos suficientes "
-            f"({organization.treasury:g} disponíveis, {amount:g} solicitados)."
+            f"({organization.treasury} bronze disponíveis, {amount} solicitados)."
         )
     return _change_funds(db, organization, -amount, reason=reason)
 
 
 def _change_funds(
-    db: Session, organization: Organization, delta: float, *, reason: str
+    db: Session, organization: Organization, delta: int, *, reason: str
 ) -> Organization:
     if not reason.strip():
         raise OrganizationError("Uma mudança no tesouro precisa de um motivo explicável.")

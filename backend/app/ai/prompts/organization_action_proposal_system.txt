@@ -31,7 +31,7 @@ Exemplo de resumo recebido:
 Organização: Guilda dos Caçadores de Cardal
 Objetivos ativos: Manter a estrada do norte segura.
 Necessidades em aberto: Mais caçadores disponíveis (SKILLED_MEMBERS).
-Tesouro: 40.0
+Tesouro: 4000 bronze
 
 Resposta válida:
 {"action_type": "PUBLISH_NOTICE", "description": "Publicar um aviso no quadro

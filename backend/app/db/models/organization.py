@@ -1,4 +1,4 @@
-from sqlalchemy import Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
@@ -48,7 +48,9 @@ class Organization(Base):
         String, default=OrganizationFormality.INFORMAL, nullable=False
     )
     founding_group_id: Mapped[str | None] = mapped_column(ForeignKey("groups.id"), nullable=True)
-    treasury: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    # In Bronze (Phase 14A's canonical smallest unit) — was a Float (Phase
+    # 13J) until Phase 14A established money is always integer.
+    treasury: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
 class OrganizationRole(Base):

@@ -18,6 +18,7 @@ from app.db.models.character_class import (
     ClassDefinition,
     ClassDefinitionDomain,
 )
+from app.db.models.currency import CurrencyHolding
 from app.db.models.event import WorldEvent
 from app.db.models.group import Group, GroupInvite, GroupMember
 from app.db.models.domain import (
@@ -128,6 +129,7 @@ __all__ = [
     "ClassDefinition",
     "ClassDefinitionDomain",
     "CharacterClassOffer",
+    "CurrencyHolding",
     "WorldEvent",
     "Group",
     "GroupMember",

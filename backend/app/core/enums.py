@@ -907,6 +907,19 @@ class OrganizationActionType(StrEnum):
     OTHER = "OTHER"
 
 
+class SettlementWealthBand(StrEnum):
+    """Phase 14I — broad economic character, NOT a price multiplier (the
+    spec is explicit: don't make this an arbitrary universal multiplier).
+    Consumed as a descriptive/liquidity signal — see
+    app.game.economy.local_economy.typical_merchant_liquidity_bronze and
+    gold_circulates_normally."""
+
+    POOR = "POOR"
+    MODEST = "MODEST"
+    PROSPEROUS = "PROSPEROUS"
+    WEALTHY = "WEALTHY"
+
+
 class ShopStatus(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"

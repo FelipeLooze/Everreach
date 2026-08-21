@@ -33,6 +33,7 @@ from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item, ItemDefinition, ItemInstance, ItemWearRecord
 from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.db.models.local_economy import LocationEconomy
 from app.db.models.location import (
     CharacterConnectionDiscovery,
     CharacterLocationDiscovery,
@@ -158,6 +159,7 @@ __all__ = [
     "CharacterConnectionDiscovery",
     "CharacterLocationDiscovery",
     "LocalSupplyLevel",
+    "LocationEconomy",
     "Location",
     "LocationConnection",
     "LocationFeature",

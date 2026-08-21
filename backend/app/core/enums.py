@@ -640,6 +640,10 @@ class EventType(StrEnum):
     NOTICE_WITHDRAWN = "NOTICE_WITHDRAWN"
     NOTICE_EXPIRED = "NOTICE_EXPIRED"
     NOTICE_UPDATED = "NOTICE_UPDATED"
+    GROUP_CREATED = "GROUP_CREATED"
+    GROUP_MEMBER_JOINED = "GROUP_MEMBER_JOINED"
+    GROUP_MEMBER_LEFT = "GROUP_MEMBER_LEFT"
+    GROUP_DISBANDED = "GROUP_DISBANDED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -699,3 +703,27 @@ class WorldDevelopmentStatus(StrEnum):
 class TravelIncidentKind(StrEnum):
     DELAY = "DELAY"
     FATIGUE = "FATIGUE"
+
+
+class GroupType(StrEnum):
+    """Phase 13A — a Group is smaller and often temporary, unlike an
+    Organization (Phase 13C+). member_type on GroupMember reuses
+    CombatActorType (CHARACTER/NPC/SIMULATED_PLAYER) — the same "what kind
+    of living actor" vocabulary CombatParticipant already established,
+    rather than a third near-duplicate enum."""
+
+    TRAVEL = "TRAVEL"
+    EXPEDITION = "EXPEDITION"
+    ESCORT = "ESCORT"
+    WORK_CREW = "WORK_CREW"
+    HUNTING_PARTY = "HUNTING_PARTY"
+    TEMPORARY_ALLIANCE = "TEMPORARY_ALLIANCE"
+    SEARCH_PARTY = "SEARCH_PARTY"
+    OTHER = "OTHER"
+
+
+class GroupStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    DISBANDED = "DISBANDED"
+    COMPLETED_PURPOSE = "COMPLETED_PURPOSE"
+    ABANDONED = "ABANDONED"

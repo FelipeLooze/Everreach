@@ -19,6 +19,7 @@ from app.db.models.character_class import (
     ClassDefinitionDomain,
 )
 from app.db.models.event import WorldEvent
+from app.db.models.group import Group, GroupMember
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
@@ -115,6 +116,8 @@ __all__ = [
     "ClassDefinitionDomain",
     "CharacterClassOffer",
     "WorldEvent",
+    "Group",
+    "GroupMember",
     "DomainDefinition",
     "CharacterDomainEvidence",
     "DomainEvidenceRecord",

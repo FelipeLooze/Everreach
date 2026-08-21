@@ -31,6 +31,7 @@ from app.game.combat.encounters import end_encounter
 from app.game.combat.costs import apply_action_cost, validate_resource_cost
 from app.game.combat.conditions import has_condition
 from app.game.dice import d20
+from app.game.items.encumbrance import get_character_encumbrance
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -211,15 +212,22 @@ def resolve_profiled_attack(
         is not None
     ):
         raise CombatActionError("Current turn already has a resolved tactical action.")
+    resource_amount = mechanics.resource_cost
+    if mechanics.resource_key == CharacterResourceKey.STAMINA:
+        resource_amount = round(
+            resource_amount * _encumbrance_stamina_multiplier(db, actor), 1
+        )
     resource_cost = validate_resource_cost(
         db,
         actor,
         mechanics.resource_key,
-        mechanics.resource_cost,
+        resource_amount,
     )
 
     attack_attribute = mechanics.attack_attribute
     attack_modifier = _attribute_modifier(db, actor, attack_attribute)
+    if attack_attribute == CharacterAttributeKey.AGILITY:
+        attack_modifier -= _encumbrance_agility_penalty(db, actor)
     if has_condition(db, actor.id, CombatConditionType.WEAKENED):
         attack_modifier += WEAKENED_ATTACK_PENALTY
     if (
@@ -232,6 +240,7 @@ def resolve_profiled_attack(
         target,
         CharacterAttributeKey.AGILITY,
     )
+    defense_modifier -= _encumbrance_agility_penalty(db, target)
     if has_condition(db, target.id, CombatConditionType.EXPOSED):
         defense_modifier += EXPOSED_DEFENSE_PENALTY
     if has_condition(
@@ -408,6 +417,18 @@ def _attribute_modifier(
         return 0
     attribute = get_character_attribute(db, participant.actor_id, key)
     return attribute_check_modifier(attribute.value)
+
+
+def _encumbrance_agility_penalty(db: Session, participant: CombatParticipant) -> int:
+    if participant.actor_type != CombatActorType.CHARACTER.value:
+        return 0
+    return get_character_encumbrance(db, participant.actor_id).agility_penalty
+
+
+def _encumbrance_stamina_multiplier(db: Session, participant: CombatParticipant) -> float:
+    if participant.actor_type != CombatActorType.CHARACTER.value:
+        return 1.0
+    return get_character_encumbrance(db, participant.actor_id).stamina_multiplier
 
 
 def _resolve_outcome(

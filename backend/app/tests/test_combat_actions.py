@@ -24,6 +24,7 @@ from app.game.combat.actions import CombatActionError, resolve_attack
 from app.game.combat.costs import CombatResourceError
 from app.game.combat.encounters import CombatantSpec, start_encounter
 from app.game.combat.turns import get_current_turn, roll_initiative
+from app.game.inventory.service import add_item
 from app.game.world.reset import delete_campaign
 from app.game.world.seed import create_campaign, seed_initial_region
 
@@ -178,6 +179,105 @@ def test_ranged_attack_uses_agility_and_engaged_penalty(db_session):
     assert action.attack_modifier == 0
     assert action.attack_total == 9
     assert action.outcome == CombatActionOutcome.MISS.value
+
+
+def test_encumbrance_penalty_reduces_ranged_attack_modifier(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    get_character_attribute(
+        db_session,
+        character.id,
+        CharacterAttributeKey.AGILITY,
+    ).value = 14
+    add_item(db_session, character.id, "Pedras Pesadas", quantity=1, base_weight=10_000.0)
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.RANGED_ATTACK,
+        action_key="overloaded-shot",
+        rng=FixedRng(9),
+    ).action
+
+    # AGILITY 14 gives +2, the engaged-ranged penalty is -2, and OVERLOADED
+    # carries the maximum agility penalty (-4).
+    assert action.attack_modifier == -4
+    assert action.attack_total == 5
+
+
+def test_encumbrance_penalty_reduces_character_defense(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    get_character_attribute(
+        db_session,
+        character.id,
+        CharacterAttributeKey.AGILITY,
+    ).value = 10
+    add_item(db_session, character.id, "Pedras Pesadas", quantity=1, base_weight=10_000.0)
+    hero.range_band = CombatRangeBand.ENGAGED.value
+    roll_initiative(db_session, encounter, rng=SequenceRng(1, 20))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        bandit,
+        hero,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="bandit-strike",
+        rng=FixedRng(9),
+    ).action
+
+    # AGILITY 10 gives +0 defense; OVERLOADED subtracts the maximum penalty (-4).
+    assert action.defense_modifier == -4
+    assert action.defense_total == 6
+
+
+def test_encumbrance_increases_stamina_cost_of_a_melee_attack(db_session):
+    (
+        _campaign,
+        _region,
+        _location,
+        character,
+        _enemy,
+        encounter,
+        hero,
+        bandit,
+    ) = _setup(db_session)
+    add_item(db_session, character.id, "Pedras Pesadas", quantity=1, base_weight=10_000.0)
+    roll_initiative(db_session, encounter, rng=SequenceRng(20, 1))
+
+    action = resolve_attack(
+        db_session,
+        encounter,
+        hero,
+        bandit,
+        action_type=CombatActionType.MELEE_ATTACK,
+        action_key="overloaded-melee",
+        rng=FixedRng(1),
+    ).action
+
+    # Base melee cost is 2.0 stamina; OVERLOADED applies the 1.75x multiplier.
+    assert action.resource_key == CharacterResourceKey.STAMINA.value
+    assert action.resource_cost == 3.5
 
 
 @pytest.mark.parametrize(

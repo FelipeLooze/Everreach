@@ -8,7 +8,14 @@ from app.core.enums import (
     WeaponHandRequirement,
     WeaponReach,
 )
-from app.db.models.combat import CombatAction, CombatEncounter, CombatParticipant, CombatTacticalAction
+from app.db.models.combat import (
+    CombatAction,
+    CombatEncounter,
+    CombatParticipant,
+    CombatTacticalAction,
+    CombatTurn,
+)
+from app.db.models.item import ItemInstance
 from app.db.models.npc import NPC
 from app.game import engine
 from app.game.character.service import create_character
@@ -265,3 +272,80 @@ def test_attack_intent_uses_named_equipped_weapon(db_session):
     )
     assert action.physical_damage_profile == "SLASH"
     assert action.target_body_area == "TORSO"
+
+
+def test_equip_intent_during_combat_consumes_the_current_turn(db_session):
+    campaign, _region, _village, character, (_bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    character.hp_current = 1000
+    character.hp_max = 1000
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    attack_intent = Intent(type=ActionIntentType.ATTACK, target="Bandido", raw_text="Ataco")
+    engine._apply_intent(
+        db_session, campaign.id, character, attack_intent, state, action_key="equip-setup",
+    )
+
+    definition = get_or_create_item(db_session, "Adaga", "weapon")
+    configure_item_equipment_profile(
+        db_session, definition, allowed_slots={EquipmentSlot.MAIN_HAND},
+    )
+    configure_item_weapon_profile(
+        db_session,
+        definition,
+        weapon_family=WeaponFamily.DAGGER,
+        damage_profiles={PhysicalDamageProfile.PIERCE},
+        reach=WeaponReach.NORMAL,
+        hand_requirement=WeaponHandRequirement.ONE_HAND,
+    )
+    instance = add_item(db_session, character.id, "Adaga")
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    equip_intent = Intent(type=ActionIntentType.EQUIP, target="Adaga", raw_text="Equipo a adaga")
+    summary, minutes = engine._apply_intent(
+        db_session, campaign.id, character, equip_intent, state, action_key="equip-1",
+    )
+
+    assert minutes == 0
+    assert "Adaga" in summary
+    db_session.refresh(instance)
+    assert instance.location_type == "CHARACTER_EQUIPPED"
+    assert instance.equipped_slot == EquipmentSlot.MAIN_HAND.value
+    assert (
+        db_session.query(CombatTurn)
+        .filter(CombatTurn.completion_key.like("item_turn:%"))
+        .count()
+        == 1
+    )
+
+
+def test_equip_intent_outside_combat_still_works_without_a_combat_turn(db_session):
+    campaign, _region, _village, character, _npcs = _setup(db_session)
+
+    definition = get_or_create_item(db_session, "Adaga", "weapon")
+    configure_item_equipment_profile(
+        db_session, definition, allowed_slots={EquipmentSlot.MAIN_HAND},
+    )
+    configure_item_weapon_profile(
+        db_session,
+        definition,
+        weapon_family=WeaponFamily.DAGGER,
+        damage_profiles={PhysicalDamageProfile.PIERCE},
+        reach=WeaponReach.NORMAL,
+        hand_requirement=WeaponHandRequirement.ONE_HAND,
+    )
+    add_item(db_session, character.id, "Adaga")
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    equip_intent = Intent(type=ActionIntentType.EQUIP, target="Adaga", raw_text="Equipo a adaga")
+    summary, minutes = engine._apply_intent(
+        db_session, campaign.id, character, equip_intent, state, action_key="equip-2",
+    )
+
+    assert minutes == 1
+    assert "Adaga" in summary
+    assert db_session.query(CombatTurn).count() == 0

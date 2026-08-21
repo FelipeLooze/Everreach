@@ -8,6 +8,7 @@ from app.ai.llm_service import LLMService, LLMServiceError
 from app.core.enums import (
     ActionIntentType,
     CharacterStatus,
+    CombatActorType,
     DiscoveryStatus,
     EventType,
     TravelIncidentKind,
@@ -439,6 +440,16 @@ def _handle_item_interaction(
     *,
     action_key: str | None,
 ) -> tuple[str, int]:
+    if combat_bridge.get_active_encounter_for_actor(
+        db, CombatActorType.CHARACTER, character.id
+    ) is not None:
+        return combat_bridge.handle_item_interaction_intent(
+            db,
+            campaign_id,
+            character,
+            intent,
+            action_key=action_key,
+        )
     try:
         result = resolve_item_interaction(
             db,

@@ -42,9 +42,10 @@ from app.game.combat.encounters import (
     start_encounter,
 )
 from app.game.combat.tactics import resolve_tactical_action
-from app.game.combat.turns import get_current_turn, roll_initiative
+from app.game.combat.turns import complete_current_turn, get_current_turn, roll_initiative
 from app.game.inventory.service import list_inventory
 from app.game.items.equipment import item_accessibility
+from app.game.items.interactions import resolve_item_interaction
 from app.game.items.weapons import get_weapon_damage_profiles, resolve_weapon_attack
 
 
@@ -202,6 +203,63 @@ def handle_combat_tactic_intent(
 
     target_name = _participant_name(db, target_participant) if target_participant else None
     lines.append(_describe_tactical_outcome(character.name, target_name, result.action))
+
+    if encounter.status == CombatEncounterStatus.ACTIVE.value:
+        lines.extend(_advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after"))
+    else:
+        lines.append(_encounter_end_summary(encounter))
+
+    return " ".join(lines), 0
+
+
+def handle_item_interaction_intent(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    intent: Intent,
+    *,
+    action_key: str | None,
+) -> tuple[str, int]:
+    """Resolve an EQUIP/UNEQUIP/STORE/RETRIEVE/... intent as one combat turn.
+
+    Manipulating equipment mid-fight (drawing, sheathing, stowing, swapping)
+    is not free: it consumes the protagonist's current turn just like an
+    attack or a tactical action, then hands control to the autonomy loop.
+    """
+    resolved_key = action_key or generate_id("action")
+    encounter = get_active_encounter_for_actor(db, CombatActorType.CHARACTER, character.id)
+    character_participant = _find_character_participant(db, encounter, character.id)
+
+    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}")
+    if encounter.status != CombatEncounterStatus.ACTIVE.value:
+        return " ".join(lines) or _encounter_end_summary(encounter), 0
+
+    current_turn = get_current_turn(db, encounter)
+    if current_turn is None or current_turn.participant_id != character_participant.id:
+        return " ".join(lines) or f"{character.name} aguarda sua vez no combate.", 0
+
+    try:
+        result = resolve_item_interaction(
+            db,
+            campaign_id,
+            character,
+            interaction=intent.type,
+            target=intent.target,
+            secondary_target=intent.secondary_target,
+            slot=intent.slot,
+            interaction_key=f"item:{resolved_key}",
+        )
+    except ValueError as exc:
+        lines.append(f"A interação com o item não pôde ser realizada: {exc}")
+        return " ".join(lines), 0
+
+    complete_current_turn(
+        db,
+        encounter,
+        character_participant,
+        completion_key=f"item_turn:{resolved_key}",
+    )
+    lines.append(result.summary)
 
     if encounter.status == CombatEncounterStatus.ACTIVE.value:
         lines.extend(_advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after"))

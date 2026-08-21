@@ -59,6 +59,15 @@ class Technique(Base):
         default=TechniqueType.PHYSICAL.value,
         nullable=False,
     )
+    # Provenance only — an emerged variant relationship (e.g. Focused Wind
+    # Push refining Wind Push), never a mechanical gate. Learning, using or
+    # recognizing a technique never depends on its parent. See
+    # app.game.skills.techniques.technique_lineage for the "family" this
+    # forms (the parent's full descendant tree, not a fixed skill tree).
+    parent_technique_id: Mapped[str | None] = mapped_column(
+        ForeignKey("techniques.id"),
+        nullable=True,
+    )
 
     domains: Mapped[list["TechniqueDomain"]] = relationship(
         cascade="all, delete-orphan",

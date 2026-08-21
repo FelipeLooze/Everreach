@@ -87,8 +87,17 @@ def create_technique(
     technique_type: TechniqueType,
     description: str = "",
     domain_keys: tuple[str, ...],
+    parent_technique_id: str | None = None,
 ) -> Technique:
-    """Create immutable technique mechanics from catalog-backed domains."""
+    """Create immutable technique mechanics from catalog-backed domains.
+
+    parent_technique_id is pure provenance (Phase 11H) — an existing
+    technique this one emerged as a variant of practicing (e.g. Focused
+    Wind Push refining Wind Push). It must share at least one domain with
+    the parent, so lineage reflects a real continuity rather than an
+    arbitrary label; it never gates learning, using, or recognizing either
+    technique.
+    """
     normalized_skill = " ".join(skill_name.split())
     normalized_name = " ".join(name.split())
     normalized_domains = tuple(
@@ -110,6 +119,16 @@ def create_technique(
     }
     if known_domains != set(normalized_domains):
         raise ValueError("Technique contains an unknown domain.")
+    parent_technique: Technique | None = None
+    if parent_technique_id is not None:
+        parent_technique = db.get(Technique, parent_technique_id)
+        if parent_technique is None:
+            raise ValueError("Parent technique does not exist.")
+        parent_domains = {row.domain_key for row in parent_technique.domains}
+        if parent_domains.isdisjoint(normalized_domains):
+            raise ValueError(
+                "A technique can only be a variant of a parent it shares a domain with."
+            )
 
     skill = db.query(Skill).filter(Skill.name == normalized_skill).one_or_none()
     if skill is None:
@@ -130,6 +149,8 @@ def create_technique(
             raise ValueError("Existing technique has different domain mechanics.")
         if existing.technique_type != technique_type.value:
             raise ValueError("Existing technique has a different type.")
+        if existing.parent_technique_id != parent_technique_id:
+            raise ValueError("Existing technique has a different parent technique.")
         return existing
 
     technique = Technique(
@@ -137,6 +158,7 @@ def create_technique(
         name=normalized_name,
         technique_type=technique_type.value,
         description=" ".join(description.split()),
+        parent_technique_id=parent_technique_id,
     )
     db.add(technique)
     db.flush()
@@ -149,6 +171,64 @@ def create_technique(
         )
     db.flush()
     return technique
+
+
+def technique_lineage(db: Session, technique_id: str) -> list[Technique]:
+    """The technique's "family" (Phase 11H): the root ancestor reached by
+    following parent_technique_id up, plus every technique (at any depth)
+    descending from that root — an emerged tree, not a predetermined one,
+    since every edge only exists because create_technique validated it at
+    the moment a variant was actually recognized."""
+    technique = db.get(Technique, technique_id)
+    if technique is None:
+        raise ValueError("Unknown technique.")
+    root = technique
+    while root.parent_technique_id is not None:
+        root = db.get(Technique, root.parent_technique_id)
+
+    family = [root]
+    frontier = [root.id]
+    while frontier:
+        children = (
+            db.query(Technique)
+            .filter(Technique.parent_technique_id.in_(frontier))
+            .order_by(Technique.name, Technique.id)
+            .all()
+        )
+        family.extend(children)
+        frontier = [child.id for child in children]
+    return family
+
+
+def find_similar_techniques(
+    db: Session,
+    *,
+    domain_keys: tuple[str, ...],
+    technique_type: TechniqueType,
+    exclude_technique_id: str | None = None,
+) -> list[Technique]:
+    """Other existing techniques sharing the exact same domain set and type
+    — a deliberately conservative first cut at similarity (Phase 11H:
+    "design for future similarity detection without overengineering it
+    now"). Advisory only: nothing calls this to merge or block technique
+    creation; it exists for a future caller (11J) to show what already
+    exists for inspiration/consistency without forcing a merge — different
+    characters may still independently end up with distinct techniques."""
+    normalized_domains = ",".join(
+        sorted({domain_key.strip().upper() for domain_key in domain_keys})
+    )
+    candidates = (
+        db.query(Technique)
+        .filter(Technique.technique_type == technique_type.value)
+        .order_by(Technique.name, Technique.id)
+        .all()
+    )
+    return [
+        candidate
+        for candidate in candidates
+        if candidate.id != exclude_technique_id
+        and ",".join(sorted(row.domain_key for row in candidate.domains)) == normalized_domains
+    ]
 
 
 def _find_character_technique(
@@ -305,6 +385,7 @@ def recognize_technique_from_pattern(
     pattern_key: str,
     name: str,
     description: str = "",
+    parent_technique_id: str | None = None,
 ) -> Technique:
     """Turn a mature, reproducible pattern into a real, usable Technique.
 
@@ -319,7 +400,9 @@ def recognize_technique_from_pattern(
     a technique's identity on its own (Phase 11J — an LLM proposes name and
     description from the same authoritative evidence this function checks;
     the backend only validates and persists). `name`/`description` are
-    supplied by the caller.
+    supplied by the caller, and so is `parent_technique_id` (Phase 11H) when
+    this pattern is recognized as a variant of something the character
+    already knows — never inferred automatically.
     """
     maturity = technique_pattern_maturity(db, character.id, pattern_key)
     if not maturity.reproducible:
@@ -341,6 +424,7 @@ def recognize_technique_from_pattern(
         technique_type=TechniqueType(maturity.technique_type),
         description=description,
         domain_keys=maturity.domain_keys,
+        parent_technique_id=parent_technique_id,
     )
     log_event(
         db,

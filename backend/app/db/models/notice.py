@@ -22,6 +22,9 @@ class Notice(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     author_npc_id: Mapped[str | None] = mapped_column(ForeignKey("npcs.id"), nullable=True)
+    author_organization_id: Mapped[str | None] = mapped_column(
+        ForeignKey("organizations.id"), nullable=True
+    )
     quest_id: Mapped[str | None] = mapped_column(ForeignKey("quests.id"), nullable=True)
     status: Mapped[str] = mapped_column(String, default=NoticeStatus.ACTIVE, nullable=False)
     posted_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)

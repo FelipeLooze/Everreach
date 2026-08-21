@@ -657,6 +657,7 @@ class EventType(StrEnum):
     ORGANIZATION_MEMBER_JOINED = "ORGANIZATION_MEMBER_JOINED"
     ORGANIZATION_MEMBER_STATUS_CHANGED = "ORGANIZATION_MEMBER_STATUS_CHANGED"
     ORGANIZATION_MEMBER_ROLE_CHANGED = "ORGANIZATION_MEMBER_ROLE_CHANGED"
+    ORGANIZATION_REPUTATION_CHANGED = "ORGANIZATION_REPUTATION_CHANGED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -814,6 +815,20 @@ class OrganizationVisibility(StrEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
     SECRET = "SECRET"
+
+
+class OrganizationReputationCategory(StrEnum):
+    """Phase 13G — derived from accumulated, explainable reputation
+    records (see app.game.organizations.reputation), never a bare
+    -100..100 number treated as the only source of truth. A raw score
+    exists internally for convenience, but this category plus the full
+    reason history is what's actually authoritative."""
+
+    HOSTILE = "HOSTILE"
+    DISTRUSTED = "DISTRUSTED"
+    NEUTRAL = "NEUTRAL"
+    RELIABLE = "RELIABLE"
+    TRUSTED = "TRUSTED"
 
 
 class OrganizationMembershipStatus(StrEnum):

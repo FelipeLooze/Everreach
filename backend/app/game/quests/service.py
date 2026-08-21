@@ -2,7 +2,13 @@ from typing import Sequence
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import EventType, ObjectiveTriggerType, QuestSource, QuestStatus
+from app.core.enums import (
+    EventType,
+    ObjectiveTriggerType,
+    QuestParticipationType,
+    QuestSource,
+    QuestStatus,
+)
 from app.db.models.quest import (
     CharacterQuest,
     CharacterQuestObjective,
@@ -37,6 +43,8 @@ def create_quest(
     source: QuestSource,
     objectives: Sequence[str] = (),
     deadline_world_minute: int | None = None,
+    participation_type: QuestParticipationType = QuestParticipationType.OPEN,
+    capacity: int | None = None,
 ) -> Quest:
     """The one authoritative way a Quest situation comes to exist in the
     world. Existence here is independent of any character's awareness or
@@ -46,18 +54,28 @@ def create_quest(
     opportunity itself expiring unclaimed (e.g. a caravan leaving) — not
     every quest needs one; see check_deadlines.
 
+    participation_type (Phase 12K) defaults to OPEN — unlimited
+    simultaneous participants, the behavior every quest already had
+    before this field existed. capacity is only meaningful for LIMITED
+    (and required there — a limited quest must state its limit); see
+    start_quest for how it's enforced.
+
     Also registers the Quest's mere existence as a Knowledge fact (Phase
     12J) — a fact that is TRUE in the world the moment it happens, wholly
     separate from whether any character has actually learned it yet (see
     app.game.quests.discovery). The statement is exactly the same
     player-facing name/description Phase 12G already locked down as safe
     to expose — no hidden mechanical data leaks through this."""
+    if participation_type == QuestParticipationType.LIMITED and not capacity:
+        raise QuestLifecycleError("Uma missão LIMITED precisa declarar sua capacidade.")
     quest = Quest(
         region_id=region_id,
         name=name,
         description=description,
         source=source,
         deadline_world_minute=deadline_world_minute,
+        participation_type=participation_type,
+        capacity=capacity,
     )
     db.add(quest)
     db.flush()
@@ -98,6 +116,25 @@ def start_quest(
         raise QuestLifecycleError(
             f"'{quest.name}' não está mais disponível ({quest.status})."
         )
+
+    # Phase 12K: OPEN/OFFICIAL_BOUNTY have no participant limit — the
+    # behavior every quest already had. CLAIMABLE (capacity 1) and
+    # LIMITED (explicit capacity) reject a new participant once already
+    # at capacity — someone else got there, or there simply isn't room.
+    if quest.participation_type in (
+        QuestParticipationType.CLAIMABLE,
+        QuestParticipationType.LIMITED,
+    ):
+        capacity = 1 if quest.participation_type == QuestParticipationType.CLAIMABLE else quest.capacity
+        active_count = (
+            db.query(CharacterQuest)
+            .filter(CharacterQuest.quest_id == quest_id, CharacterQuest.status == QuestStatus.ACTIVE)
+            .count()
+        )
+        if active_count >= capacity:
+            raise QuestLifecycleError(
+                f"'{quest.name}' já atingiu sua capacidade de participantes ({capacity})."
+            )
 
     cq = CharacterQuest(
         character_id=character_id,

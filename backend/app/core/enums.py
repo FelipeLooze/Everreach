@@ -496,6 +496,18 @@ class NoticeStatus(StrEnum):
     REMOVED = "REMOVED"
 
 
+class QuestParticipationType(StrEnum):
+    """How many characters may actively pursue a Quest at once (Phase
+    12K). Does not by itself decide reward ownership/credit — see the
+    spec's CREDIT/CONTRIBUTION section, deliberately not modeled as an
+    arbitrary universal percentage."""
+
+    OPEN = "OPEN"
+    CLAIMABLE = "CLAIMABLE"
+    LIMITED = "LIMITED"
+    OFFICIAL_BOUNTY = "OFFICIAL_BOUNTY"
+
+
 class QuestSource(StrEnum):
     """Where a Quest originated. Phase 12A only defines the vocabulary —
     ORGANIZATION_REQUEST/NOTICE_BOARD/WORLD_EVENT sources are not yet wired

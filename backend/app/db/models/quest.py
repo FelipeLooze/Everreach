@@ -1,7 +1,13 @@
 from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import ObjectiveTriggerType, ObjectiveType, QuestSource, QuestStatus
+from app.core.enums import (
+    ObjectiveTriggerType,
+    ObjectiveType,
+    QuestParticipationType,
+    QuestSource,
+    QuestStatus,
+)
 from app.core.ids import generate_id
 from app.db.base import Base
 
@@ -22,6 +28,10 @@ class Quest(Base):
     source_event_id: Mapped[str | None] = mapped_column(
         ForeignKey("world_events.id"), nullable=True
     )
+    participation_type: Mapped[str] = mapped_column(
+        String, default=QuestParticipationType.OPEN, nullable=False
+    )
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class QuestObjective(Base):

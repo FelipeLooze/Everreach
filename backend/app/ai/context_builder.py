@@ -284,28 +284,16 @@ def _location_discovery_lines(
     return lines[:MAX_VISIBLE_ENTITIES]
 
 
-def build_context(
+def _resolve_active_npc(
     db: Session,
     state: GameStateSnapshot,
-    active_interlocutor: str | None = None,
-    player_input: str = "",
-    active_simulated_player: str | None = None,
-) -> str:
-    """Build minimum scene context while separating truth, perception and knowledge."""
+    active_interlocutor: str | None,
+) -> NPC | None:
     active_npc = next(
         (
             npc
             for npc in state.nearby_npcs
             if npc.id == active_interlocutor or npc.name == active_interlocutor
-        ),
-        None,
-    )
-    active_transported = next(
-        (
-            player
-            for player in state.nearby_simulated_players
-            if player.id == active_simulated_player
-            or player.name == active_simulated_player
         ),
         None,
     )
@@ -325,6 +313,115 @@ def build_context(
         ):
             active_npc = candidate
 
+    return active_npc
+
+
+def _scene_subjects(
+    db: Session,
+    state: GameStateSnapshot,
+    active_npc: NPC | None,
+) -> list[str]:
+    outgoing_connections = (
+        db.query(LocationConnection)
+        .filter(
+            LocationConnection.from_location_id == state.location.id,
+            LocationConnection.active.is_(True),
+        )
+        .all()
+        if state.location is not None
+        else []
+    )
+    return [
+        *([f"region:{state.region.id}"] if state.region is not None else []),
+        *([f"location:{state.location.id}"] if state.location is not None else []),
+        *([f"npc:{active_npc.id}"] if active_npc is not None else []),
+        *(f"connection:{connection.id}" for connection in outgoing_connections),
+        *(f"quest:{quest.id}" for _link, quest in state.active_quests),
+    ]
+
+
+def active_npc_relevant_facts(
+    db: Session,
+    state: GameStateSnapshot,
+    active_interlocutor: str | None,
+    player_input: str = "",
+) -> list[KnownFact]:
+    """Recompute exactly the NPC KNOWLEDGE facts shown to the narrator this turn.
+
+    Lets the engine check, after narration, whether the produced text actually
+    voiced one of these facts — without granting the narrator itself any new
+    authority. Reuses the same resolution build_context() uses internally so
+    the two never drift apart.
+    """
+    active_npc = _resolve_active_npc(db, state, active_interlocutor)
+    if active_npc is None:
+        return []
+    scene_subjects = _scene_subjects(db, state, active_npc)
+    return relevant_known_facts(
+        db,
+        state.campaign_id,
+        KnowerType.NPC,
+        active_npc.id,
+        scene_subjects=scene_subjects,
+        player_input=player_input,
+        limit=MAX_CONTEXT_FACTS_PER_KNOWER,
+    )
+
+
+def _proper_nouns(statement: str) -> set[str]:
+    """Capitalized words in a fact's statement, i.e. its named entities.
+
+    Skips the sentence's own first word, since it is capitalized purely by
+    sentence position ("Uma trilha...", "A Estrada...") regardless of
+    whether it is actually a proper noun.
+    """
+    tokens = list(re.finditer(r"\S+", statement))
+    scan_from = tokens[1].start() if len(tokens) > 1 else len(statement)
+    return {
+        word
+        for word in re.findall(r"[A-ZÀ-Ý][\wÀ-ÿ'-]*", statement[scan_from:])
+        if len(word) >= 3
+    }
+
+
+def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
+    """Conservative check: every named entity (proper noun) in the fact's
+    statement must appear in the narrated text for the fact to count as
+    revealed. Paraphrasing of ordinary words ("da região" vs "do") is fine;
+    the names themselves are what actually constitute the reveal.
+
+    Deliberately strict (an "all named entities" match) — missing a real
+    reveal only means the player can ask again; teaching a fact that was
+    not really said would be worse.
+    """
+    names = _proper_nouns(fact.statement)
+    if not names:
+        return False
+    normalized_text = _normalized(narrated_text)
+    return all(
+        re.search(rf"\b{re.escape(_normalized(name))}\b", normalized_text)
+        for name in names
+    )
+
+
+def build_context(
+    db: Session,
+    state: GameStateSnapshot,
+    active_interlocutor: str | None = None,
+    player_input: str = "",
+    active_simulated_player: str | None = None,
+) -> str:
+    """Build minimum scene context while separating truth, perception and knowledge."""
+    active_npc = _resolve_active_npc(db, state, active_interlocutor)
+    active_transported = next(
+        (
+            player
+            for player in state.nearby_simulated_players
+            if player.id == active_simulated_player
+            or player.name == active_simulated_player
+        ),
+        None,
+    )
     if (
         active_transported is None
         and active_simulated_player
@@ -346,23 +443,7 @@ def build_context(
         ):
             active_transported = candidate
 
-    outgoing_connections = (
-        db.query(LocationConnection)
-        .filter(
-            LocationConnection.from_location_id == state.location.id,
-            LocationConnection.active.is_(True),
-        )
-        .all()
-        if state.location is not None
-        else []
-    )
-    scene_subjects = [
-        *([f"region:{state.region.id}"] if state.region is not None else []),
-        *([f"location:{state.location.id}"] if state.location is not None else []),
-        *([f"npc:{active_npc.id}"] if active_npc is not None else []),
-        *(f"connection:{connection.id}" for connection in outgoing_connections),
-        *(f"quest:{quest.id}" for _link, quest in state.active_quests),
-    ]
+    scene_subjects = _scene_subjects(db, state, active_npc)
     player_facts = relevant_known_facts(
         db,
         state.campaign_id,

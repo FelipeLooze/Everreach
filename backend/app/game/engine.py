@@ -11,6 +11,8 @@ from app.core.enums import (
     CombatActorType,
     DiscoveryStatus,
     EventType,
+    KnowerType,
+    KnowledgeCertainty,
     TravelIncidentKind,
 )
 from app.core.logging import get_logger
@@ -259,6 +261,17 @@ def resolve_action(
 
     validation = narrative_validator.validate(narrative_text, canonical_facts)
 
+    if context_npc is not None:
+        _teach_facts_revealed_in_narration(
+            db,
+            campaign_id,
+            character,
+            fresh_state,
+            context_npc,
+            player_input=text,
+            narrated_text=validation.text,
+        )
+
     action_has_interlocutor = (
         action_npc is not None
         or action_simulated_player is not None
@@ -340,6 +353,40 @@ def resolve_action(
         intent_type=intent.type.value,
         warnings=[*mechanical_warnings, *validation.warnings],
     )
+
+
+def _teach_facts_revealed_in_narration(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    fresh_state,
+    context_npc,
+    *,
+    player_input: str,
+    narrated_text: str,
+) -> None:
+    """If the narrator actually voiced one of the active NPC's known facts,
+    mechanically teach that same fact to the player. The narrator itself
+    never gains authority to grant knowledge — this only promotes a fact
+    the backend already trusts (it's in the NPC's own NPC KNOWLEDGE) once
+    the produced text shows it was genuinely said, not merely available."""
+    revealed_facts = context_builder.active_npc_relevant_facts(
+        db,
+        fresh_state,
+        context_npc.id,
+        player_input=player_input,
+    )
+    for fact in revealed_facts:
+        if context_builder.fact_is_revealed_in_text(fact, narrated_text):
+            npcs_service.teach_fact(
+                db,
+                campaign_id,
+                fact.fact_key,
+                KnowerType.PLAYER,
+                character.id,
+                source=f"revelado por {context_npc.name}",
+                certainty=KnowledgeCertainty.CONFIRMED,
+            )
 
 
 def _estimate_talk_seconds(text: str) -> int:

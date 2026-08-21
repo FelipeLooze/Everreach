@@ -34,6 +34,7 @@ class QuestObjective(Base):
         String, default=ObjectiveTriggerType.MANUAL, nullable=False
     )
     trigger_subject_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    optional: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class CharacterQuest(Base):

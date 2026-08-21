@@ -219,9 +219,14 @@ def complete_objective(db: Session, campaign_id: str, character_id: str, objecti
 
     objective = db.get(QuestObjective, objective_id)
     if objective:
+        # Optional objectives (Phase 12C) never block quest completion —
+        # only the required ones need to be in completed_ids below.
         remaining = (
             db.query(QuestObjective)
-            .filter(QuestObjective.quest_id == objective.quest_id)
+            .filter(
+                QuestObjective.quest_id == objective.quest_id,
+                QuestObjective.optional.is_(False),
+            )
             .all()
         )
         completed_ids = {

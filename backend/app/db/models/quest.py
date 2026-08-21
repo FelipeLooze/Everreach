@@ -19,6 +19,9 @@ class Quest(Base):
     status: Mapped[str] = mapped_column(String, default=QuestStatus.AVAILABLE, nullable=False)
     source: Mapped[str] = mapped_column(String, default=QuestSource.SELF_DISCOVERED, nullable=False)
     deadline_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source_event_id: Mapped[str | None] = mapped_column(
+        ForeignKey("world_events.id"), nullable=True
+    )
 
 
 class QuestObjective(Base):

@@ -667,6 +667,7 @@ class EventType(StrEnum):
     ORGANIZATION_ASSET_ASSIGNED = "ORGANIZATION_ASSET_ASSIGNED"
     ORGANIZATION_ASSET_UNASSIGNED = "ORGANIZATION_ASSET_UNASSIGNED"
     ORGANIZATION_FUNDS_CHANGED = "ORGANIZATION_FUNDS_CHANGED"
+    ORGANIZATION_ACTION_RESOLVED = "ORGANIZATION_ACTION_RESOLVED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -869,6 +870,24 @@ class OrganizationNeedCategory(StrEnum):
     GUARDS = "GUARDS"
     TRANSPORT = "TRANSPORT"
     POLITICAL_SUPPORT = "POLITICAL_SUPPORT"
+    OTHER = "OTHER"
+
+
+class OrganizationActionType(StrEnum):
+    """Phase 13K — the spec lists 17 possible organization actions but
+    explicitly says not to implement every one immediately. These are
+    the ones with a real backend mechanism today (RECRUIT/EXPEL/PROMOTE
+    reuse Phase 13F directly; PUBLISH_NOTICE will reuse Phase 12 once
+    13M wires it); OTHER covers any validated-but-not-yet-mechanized
+    proposal, keeping the architecture extensible without needing a
+    migration for every new verb."""
+
+    RECRUIT_MEMBER = "RECRUIT_MEMBER"
+    EXPEL_MEMBER = "EXPEL_MEMBER"
+    PROMOTE_MEMBER = "PROMOTE_MEMBER"
+    PUBLISH_NOTICE = "PUBLISH_NOTICE"
+    FORM_ALLIANCE = "FORM_ALLIANCE"
+    DECLARE_HOSTILITY = "DECLARE_HOSTILITY"
     OTHER = "OTHER"
 
 

@@ -43,6 +43,7 @@ from app.db.models.material import MaterialDefinition
 from app.db.models.notice import Notice
 from app.db.models.organization import (
     Organization,
+    OrganizationAction,
     OrganizationAsset,
     OrganizationGoal,
     OrganizationMember,
@@ -156,6 +157,7 @@ __all__ = [
     "Organization",
     "OrganizationRole",
     "OrganizationMember",
+    "OrganizationAction",
     "OrganizationAsset",
     "OrganizationGoal",
     "OrganizationNeed",

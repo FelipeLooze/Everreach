@@ -164,3 +164,24 @@ class OrganizationAsset(Base):
         ForeignKey("item_instances.id"), nullable=False, unique=True
     )
     acquired_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class OrganizationAction(Base):
+    """Phase 13K — an append-only record that the organization, as an
+    entity, did something. This is the "clean hook" the spec asks for
+    instead of a giant hardcoded per-action condition chain: any
+    authoritative function may write one; action_type draws from
+    OrganizationActionType's small, extensible vocabulary (OTHER covers
+    anything validated but not yet mechanized). Authority always comes
+    from the backend — see app.game.organizations.actions; the Narrator
+    only ever describes a row that already exists here."""
+
+    __tablename__ = "organization_actions"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("oaction"))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    action_type: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    actor_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    actor_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    world_minute: Mapped[int] = mapped_column(Integer, nullable=False)

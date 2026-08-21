@@ -649,6 +649,8 @@ class EventType(StrEnum):
     GROUP_INVITE_DECLINED = "GROUP_INVITE_DECLINED"
     GROUP_INVITE_WITHDRAWN = "GROUP_INVITE_WITHDRAWN"
     GROUP_LEADERSHIP_CHANGED = "GROUP_LEADERSHIP_CHANGED"
+    ORGANIZATION_CREATED = "ORGANIZATION_CREATED"
+    ORGANIZATION_STATUS_CHANGED = "ORGANIZATION_STATUS_CHANGED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -732,6 +734,43 @@ class GroupStatus(StrEnum):
     DISBANDED = "DISBANDED"
     COMPLETED_PURPOSE = "COMPLETED_PURPOSE"
     ABANDONED = "ABANDONED"
+
+
+class OrganizationType(StrEnum):
+    """Phase 13C — one general model for every kind of persistent social
+    entity, per the spec's explicit instruction not to build separate
+    tables (GuildTable, ChurchTable, ...) per type."""
+
+    GUILD = "GUILD"
+    COMMERCIAL = "COMMERCIAL"
+    RELIGIOUS = "RELIGIOUS"
+    MILITARY = "MILITARY"
+    POLITICAL = "POLITICAL"
+    CRIMINAL = "CRIMINAL"
+    ACADEMIC = "ACADEMIC"
+    COMMUNITY = "COMMUNITY"
+    MERCENARY = "MERCENARY"
+    ARTISAN = "ARTISAN"
+    OTHER = "OTHER"
+
+
+class OrganizationStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    DISBANDED = "DISBANDED"
+    DESTROYED = "DESTROYED"
+    DORMANT = "DORMANT"
+    ILLEGAL = "ILLEGAL"
+    UNDERGROUND = "UNDERGROUND"
+
+
+class OrganizationVisibility(StrEnum):
+    """Whether the organization's existence itself is publicly known —
+    not the same axis as legal recognition (Phase 13E's INFORMAL /
+    FORMALLY_RECOGNIZED, deliberately not built yet)."""
+
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
+    SECRET = "SECRET"
 
 
 class GroupInviteStatus(StrEnum):

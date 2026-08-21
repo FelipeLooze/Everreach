@@ -87,6 +87,7 @@ from app.db.models.simulated_player import (
     SimulatedPlayerSkill,
 )
 from app.db.models.shop import Shop, ShopListing
+from app.db.models.supply import LocalSupplyLevel
 from app.db.models.simulated_player_group import (
     SimulatedPlayerGroup,
     SimulatedPlayerGroupMember,
@@ -156,6 +157,7 @@ __all__ = [
     "KnowledgeKnower",
     "CharacterConnectionDiscovery",
     "CharacterLocationDiscovery",
+    "LocalSupplyLevel",
     "Location",
     "LocationConnection",
     "LocationFeature",

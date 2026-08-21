@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, ForeignKey, Index, String
+from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import generate_id
@@ -37,6 +37,10 @@ class NPC(Base):
 
     alive: Mapped[bool] = mapped_column(Boolean, default=True)
     incapacitated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # 0-100. Persistent, never decays on its own. Attacking an NPC sets this
+    # to the maximum; some NPCs may also start hostile by design (bandits,
+    # dangerous creatures). See app/game/combat/hostility.py.
+    hostility: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     hp_current: Mapped[float] = mapped_column(Float, default=10, nullable=False)
     hp_max: Mapped[float] = mapped_column(Float, default=10, nullable=False)
     mana_current: Mapped[float] = mapped_column(Float, default=0, nullable=False)

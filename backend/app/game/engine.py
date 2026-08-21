@@ -22,6 +22,7 @@ from app.db.models.location import CharacterLocationDiscovery, Location
 from app.db.models.quest import QuestObjective
 from app.game import game_state
 from app.game.combat import bridge as combat_bridge
+from app.game.combat import hostility as combat_hostility
 from app.game.combat import service as combat_service
 from app.game.combat.recovery import recover_character
 from app.game.items.interactions import (
@@ -197,6 +198,22 @@ def resolve_action(
             campaign_id,
             minutes,
         )
+
+        ambush = combat_hostility.resolve_ambush_for_character(
+            db,
+            campaign_id,
+            character,
+        )
+        if ambush is not None:
+            ambush_lines = [
+                f"Enquanto isso, {ambush.npc_name} avança e inicia um combate "
+                f"contra {character.name}."
+            ]
+            ambush_lines.extend(
+                combat_bridge.describe_autonomous_resolution(db, resolution)
+                for resolution in ambush.resolutions
+            )
+            mechanical_summary = f"{mechanical_summary} " + " ".join(ambush_lines)
 
     db.flush()
 

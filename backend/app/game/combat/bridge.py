@@ -43,6 +43,7 @@ from app.game.combat.encounters import (
     list_active_participants,
     start_encounter,
 )
+from app.game.combat.hostility import mark_hostile_from_attack
 from app.game.combat.tactics import resolve_tactical_action
 from app.game.combat.turns import complete_current_turn, get_current_turn, roll_initiative
 from app.game.inventory.service import list_inventory
@@ -316,6 +317,9 @@ def _start_new_encounter(
     except ValueError as exc:
         raise CombatBridgeError(f"O combate não pôde começar: {exc}") from exc
 
+    if target_kind == CombatActorType.NPC:
+        mark_hostile_from_attack(target_actor)
+
     character_participant = _find_character_participant(db, encounter, character.id)
     target_participant = next(
         participant
@@ -411,6 +415,14 @@ def _advance_autonomy(
     except ValueError:
         return []
     return [_describe_autonomous(db, resolution) for resolution in resolutions]
+
+
+def describe_autonomous_resolution(
+    db: Session, resolution: AutonomousCombatResolution
+) -> str:
+    """Public re-export of _describe_autonomous for callers outside the
+    intent-driven flow (e.g. hostility.py's ambush turns)."""
+    return _describe_autonomous(db, resolution)
 
 
 def _describe_autonomous(db: Session, resolution: AutonomousCombatResolution) -> str:

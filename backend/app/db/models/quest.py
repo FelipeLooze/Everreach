@@ -1,18 +1,23 @@
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import QuestStatus
+from app.core.enums import QuestSource, QuestStatus
 from app.core.ids import generate_id
 from app.db.base import Base
 
 
 class Quest(Base):
+    """A situation existing in the world, independent of any character's
+    awareness or participation — see app.game.quests.service.create_quest."""
+
     __tablename__ = "quests"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("quest"))
     region_id: Mapped[str] = mapped_column(ForeignKey("regions.id"), nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, default="")
+    status: Mapped[str] = mapped_column(String, default=QuestStatus.AVAILABLE, nullable=False)
+    source: Mapped[str] = mapped_column(String, default=QuestSource.SELF_DISCOVERED, nullable=False)
 
 
 class QuestObjective(Base):

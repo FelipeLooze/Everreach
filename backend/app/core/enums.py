@@ -407,10 +407,41 @@ class ActionIntentType(StrEnum):
 
 
 class QuestStatus(StrEnum):
+    """Shared across two distinct levels — see app.game.quests.service.
+
+    World-level (Quest.status): whether the situation is still an open,
+    unclaimed opportunity. AVAILABLE is the only non-terminal value; EXPIRED/
+    CANCELLED/RESOLVED_EXTERNALLY mean the world moved on, independent of
+    any one character.
+
+    Character-level (CharacterQuest.status): one character's participation.
+    NOT_STARTED is reserved for Phase 12J (quest awareness via the Knowledge
+    system, distinct from participation) and unused until then.
+    """
+
+    AVAILABLE = "AVAILABLE"
     NOT_STARTED = "NOT_STARTED"
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+    RESOLVED_EXTERNALLY = "RESOLVED_EXTERNALLY"
+
+
+class QuestSource(StrEnum):
+    """Where a Quest originated. Phase 12A only defines the vocabulary —
+    ORGANIZATION_REQUEST/NOTICE_BOARD/WORLD_EVENT sources are not yet wired
+    to any producer (that's Phase 12H/12I/13); SELF_DISCOVERED is the
+    default for quests without a more specific origin."""
+
+    NPC_REQUEST = "NPC_REQUEST"
+    ORGANIZATION_REQUEST = "ORGANIZATION_REQUEST"
+    NOTICE_BOARD = "NOTICE_BOARD"
+    WORLD_EVENT = "WORLD_EVENT"
+    SELF_DISCOVERED = "SELF_DISCOVERED"
+    OFFICIAL_CONTRACT = "OFFICIAL_CONTRACT"
+    EMERGENT_SITUATION = "EMERGENT_SITUATION"
 
 
 class KnowerType(StrEnum):
@@ -522,6 +553,10 @@ class EventType(StrEnum):
     QUEST_STARTED = "QUEST_STARTED"
     QUEST_OBJECTIVE_COMPLETED = "QUEST_OBJECTIVE_COMPLETED"
     QUEST_COMPLETED = "QUEST_COMPLETED"
+    QUEST_FAILED = "QUEST_FAILED"
+    QUEST_CANCELLED = "QUEST_CANCELLED"
+    QUEST_EXPIRED = "QUEST_EXPIRED"
+    QUEST_RESOLVED_EXTERNALLY = "QUEST_RESOLVED_EXTERNALLY"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"

@@ -41,7 +41,12 @@ from app.db.models.location import (
 from app.db.models.memory import Memory
 from app.db.models.material import MaterialDefinition
 from app.db.models.notice import Notice
-from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
+from app.db.models.organization import (
+    Organization,
+    OrganizationMember,
+    OrganizationRelation,
+    OrganizationRole,
+)
 from app.db.models.organization_reputation import OrganizationReputationRecord
 from app.db.models.npc import NPC
 from app.db.models.profession import CharacterProfession, Profession
@@ -148,6 +153,7 @@ __all__ = [
     "Organization",
     "OrganizationRole",
     "OrganizationMember",
+    "OrganizationRelation",
     "OrganizationReputationRecord",
     "NPC",
     "Profession",

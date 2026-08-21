@@ -658,6 +658,8 @@ class EventType(StrEnum):
     ORGANIZATION_MEMBER_STATUS_CHANGED = "ORGANIZATION_MEMBER_STATUS_CHANGED"
     ORGANIZATION_MEMBER_ROLE_CHANGED = "ORGANIZATION_MEMBER_ROLE_CHANGED"
     ORGANIZATION_REPUTATION_CHANGED = "ORGANIZATION_REPUTATION_CHANGED"
+    ORGANIZATION_RELATION_ESTABLISHED = "ORGANIZATION_RELATION_ESTABLISHED"
+    ORGANIZATION_RELATION_ENDED = "ORGANIZATION_RELATION_ENDED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -829,6 +831,29 @@ class OrganizationReputationCategory(StrEnum):
     NEUTRAL = "NEUTRAL"
     RELIABLE = "RELIABLE"
     TRUSTED = "TRUSTED"
+
+
+class OrganizationRelationType(StrEnum):
+    """Phase 13H — deliberately not one exclusive enum per organization
+    pair: multiple OrganizationRelation rows of different types may
+    coexist between the same two organizations (e.g. TRADE_PARTNER and
+    COMPETITOR at once) — see app.game.organizations.relations."""
+
+    ALLIED = "ALLIED"
+    FRIENDLY = "FRIENDLY"
+    NEUTRAL = "NEUTRAL"
+    RIVAL = "RIVAL"
+    HOSTILE = "HOSTILE"
+    AT_WAR = "AT_WAR"
+    TRADE_PARTNER = "TRADE_PARTNER"
+    SUBORDINATE = "SUBORDINATE"
+    PROTECTOR = "PROTECTOR"
+    COMPETITOR = "COMPETITOR"
+
+
+class OrganizationRelationStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    ENDED = "ENDED"
 
 
 class OrganizationMembershipStatus(StrEnum):

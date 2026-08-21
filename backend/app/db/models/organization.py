@@ -5,6 +5,7 @@ from app.core.enums import (
     OrganizationFormality,
     OrganizationMembershipStatus,
     OrganizationOrigin,
+    OrganizationRelationStatus,
     OrganizationStatus,
     OrganizationType,
     OrganizationVisibility,
@@ -80,3 +81,25 @@ class OrganizationMember(Base):
     )
     joined_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
     left_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class OrganizationRelation(Base):
+    """Phase 13H — one row per relationship FACT, not per organization
+    pair. Multiple rows of different relation_type may coexist and be
+    ACTIVE at once between the same two organizations (e.g.
+    TRADE_PARTNER and COMPETITOR simultaneously) — nothing here collapses
+    diplomacy into a single exclusive value or a bare number. Ended
+    relations are never deleted, preserving history."""
+
+    __tablename__ = "organization_relations"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("orel"))
+    organization_a_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    organization_b_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    relation_type: Mapped[str] = mapped_column(String, nullable=False)
+    reason: Mapped[str] = mapped_column(String, default="", nullable=False)
+    status: Mapped[str] = mapped_column(
+        String, default=OrganizationRelationStatus.ACTIVE, nullable=False
+    )
+    established_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    ended_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)

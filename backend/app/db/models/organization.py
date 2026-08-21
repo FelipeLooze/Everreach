@@ -1,7 +1,8 @@
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
+    OrganizationConflictStatus,
     OrganizationFormality,
     OrganizationGoalStatus,
     OrganizationMembershipStatus,
@@ -185,3 +186,35 @@ class OrganizationAction(Base):
     actor_type: Mapped[str | None] = mapped_column(String, nullable=True)
     actor_id: Mapped[str | None] = mapped_column(String, nullable=True)
     world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class OrganizationConflict(Base):
+    """Phase 13L — a real, named situation with a cause, never a bare
+    relation=-80. Deliberately not tied to exactly two organizations:
+    INTERNAL_SCHISM may involve just one, other conflict types may later
+    involve several (see OrganizationConflictParticipant)."""
+
+    __tablename__ = "organization_conflicts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("oconflict"))
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    conflict_type: Mapped[str] = mapped_column(String, nullable=False)
+    reasons: Mapped[str] = mapped_column(String, default="", nullable=False)
+    status: Mapped[str] = mapped_column(
+        String, default=OrganizationConflictStatus.ACTIVE, nullable=False
+    )
+    started_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    resolved_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class OrganizationConflictParticipant(Base):
+    __tablename__ = "organization_conflict_participants"
+    __table_args__ = (
+        UniqueConstraint("conflict_id", "organization_id", name="uq_conflict_participant"),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("ocpart"))
+    conflict_id: Mapped[str] = mapped_column(ForeignKey("organization_conflicts.id"), nullable=False)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    side: Mapped[str | None] = mapped_column(String, nullable=True)

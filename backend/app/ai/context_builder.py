@@ -3,13 +3,19 @@ from typing import Protocol, Sequence
 import unicodedata
 
 from sqlalchemy.orm import Session
+from app.db.models.notice import Notice
 from app.db.models.npc import NPC
+from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
 from app.db.models.quest import CharacterQuestObjective, QuestObjective
 from app.db.models.simulated_player import SimulatedPlayer
 from app.core.enums import (
+    CombatActorType,
     DiscoveryStatus,
     KnowerType,
     MemoryOwnerType,
+    NoticeStatus,
+    OrganizationMembershipStatus,
+    OrganizationVisibility,
     SimulatedPlayerStatus,
 )
 from app.core.logging import get_logger
@@ -36,6 +42,7 @@ from app.game.relationships.service import (
     simulated_player_relationship_behavior_guidance,
 )
 from app.game.players.groups import active_group_for_player
+from app.game.organizations.reputation import organization_reputation_category, organization_reputation_score
 
 
 logger = get_logger("context")
@@ -92,6 +99,101 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
         + (" (optional)" if objective.optional else "")
         for objective in objectives
     ]
+
+
+def _organization_leader_title(db: Session, organization_id: str) -> str | None:
+    row = (
+        db.query(OrganizationMember, OrganizationRole)
+        .join(OrganizationRole, OrganizationMember.role_id == OrganizationRole.id)
+        .filter(
+            OrganizationMember.organization_id == organization_id,
+            OrganizationMember.status == OrganizationMembershipStatus.ACTIVE,
+        )
+        .order_by(OrganizationRole.rank_order)
+        .first()
+    )
+    return row[1].title if row else None
+
+
+def _known_organizations_lines(db: Session, character) -> list[str]:
+    """Phase 13N — visibility-gated the same way Phase 11L gated known
+    techniques: only organizations the character is actually a member of,
+    or PUBLIC ones headquartered right where the character currently is
+    (a visible local presence — "visible symbols", per the spec's
+    NARRATOR RULES), are shown at all. PRIVATE/SECRET organizations never
+    appear here just because they exist in the campaign."""
+    member_org_ids = {
+        member.organization_id
+        for member in db.query(OrganizationMember).filter(
+            OrganizationMember.member_type == CombatActorType.CHARACTER,
+            OrganizationMember.member_id == character.id,
+            OrganizationMember.status == OrganizationMembershipStatus.ACTIVE,
+        )
+    }
+    local_public = (
+        db.query(Organization)
+        .filter(
+            Organization.visibility == OrganizationVisibility.PUBLIC,
+            Organization.headquarters_location_id == character.location_id,
+        )
+        .all()
+        if character.location_id
+        else []
+    )
+    organizations = {
+        organization.id: organization
+        for organization in (
+            [db.get(Organization, org_id) for org_id in member_org_ids] + local_public
+        )
+        if organization is not None
+    }
+
+    lines = ["KNOWN ORGANIZATIONS"]
+    for organization in organizations.values():
+        member_row = (
+            db.query(OrganizationMember)
+            .filter(
+                OrganizationMember.organization_id == organization.id,
+                OrganizationMember.member_type == CombatActorType.CHARACTER,
+                OrganizationMember.member_id == character.id,
+                OrganizationMember.status == OrganizationMembershipStatus.ACTIVE,
+            )
+            .first()
+        )
+        membership_text = "Not a member"
+        if member_row is not None:
+            role = db.get(OrganizationRole, member_row.role_id) if member_row.role_id else None
+            membership_text = f"Member ({role.title})" if role else "Member"
+
+        leader_title = _organization_leader_title(db, organization.id)
+        score = organization_reputation_score(
+            db, organization.id, CombatActorType.CHARACTER, character.id
+        )
+        reputation = organization_reputation_category(score)
+        notice_count = (
+            db.query(Notice)
+            .filter(
+                Notice.author_organization_id == organization.id,
+                Notice.status == NoticeStatus.ACTIVE,
+            )
+            .count()
+        )
+
+        lines.append(
+            f"- {organization.name} [{organization.organization_type}] — "
+            f"headquarters: {'known' if organization.headquarters_location_id else 'unknown'}; "
+            f"leader: {leader_title or 'unknown'}; "
+            f"reputation with this character: {reputation}; "
+            f"membership: {membership_text}; known notices: {notice_count}"
+        )
+    if len(lines) == 1:
+        lines.append("- none")
+    lines.append(
+        "Only state organization facts explicitly listed above. Never invent secret "
+        "goals, hidden treasury, hidden membership, alliances, wars, or reputation "
+        "changes the character has no way of knowing."
+    )
+    return lines
 
 
 def _format_memory(memory) -> str:
@@ -943,6 +1045,7 @@ def build_context(
         "Objective text is exactly what the character currently knows. Never state a "
         "location, identity, or detail beyond it — no magic waypoints or hidden facts."
     )
+    organization_lines = _known_organizations_lines(db, state.character)
     input_canon_lines = [
         "PLAYER INPUT CANON CHECK",
         *_build_input_canon_check(db, state, player_input, npc_facts, player_facts),
@@ -966,6 +1069,7 @@ def build_context(
         *([("\n".join(combat_lines))] if combat_lines else []),
         "\n".join(active_lines),
         "\n".join(active_transported_lines),
+        "\n".join(organization_lines),
         npc_knowledge_section,
         player_knowledge_section,
         npc_memory_section,

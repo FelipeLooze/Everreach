@@ -1,11 +1,12 @@
 import re
 from dataclasses import dataclass
+from itertools import combinations
 
 from sqlalchemy.orm import Session
 
 from app.core.enums import DomainEvidenceSource, ProfessionActivityOutcome, TechniqueType
 from app.db.models.character import Character
-from app.db.models.domain import DomainDefinition
+from app.db.models.domain import CharacterDomainSynergy, DomainDefinition
 from app.db.models.technique_evidence import (
     CharacterTechniquePatternEvidence,
     TechniquePatternEvidenceRecord,
@@ -55,6 +56,8 @@ class TechniquePatternMaturity:
     technique_type: str
     depth: float
     evidence_count: int
+    reproducible: bool
+    has_required_synergy: bool
     mature: bool
 
 
@@ -187,6 +190,35 @@ def award_technique_pattern_evidence(
     return TechniquePatternEvidenceAward(evidence, record, multiplier)
 
 
+def _has_domain_synergy_for_all_pairs(
+    db: Session,
+    character_id: str,
+    domain_keys: tuple[str, ...],
+) -> bool:
+    """Possessing two domains is not enough (Phase 11G): a multi-domain
+    pattern only counts as integrated once the character has REAL Domain
+    Synergy (Phase 8) between every pair it draws on — depth there only
+    grows from genuinely combined use, never from developing the domains
+    separately. Single-domain patterns have nothing to synergize."""
+    if len(domain_keys) < 2:
+        return True
+    for first, second in combinations(domain_keys, 2):
+        first, second = sorted((first, second))
+        synergy = (
+            db.query(CharacterDomainSynergy)
+            .filter(
+                CharacterDomainSynergy.character_id == character_id,
+                CharacterDomainSynergy.first_domain_key == first,
+                CharacterDomainSynergy.second_domain_key == second,
+                CharacterDomainSynergy.depth > 0,
+            )
+            .first()
+        )
+        if synergy is None:
+            return False
+    return True
+
+
 def technique_pattern_maturity(
     db: Session,
     character_id: str,
@@ -208,18 +240,23 @@ def technique_pattern_maturity(
             technique_type="",
             depth=0.0,
             evidence_count=0,
+            reproducible=False,
+            has_required_synergy=False,
             mature=False,
         )
     domain_keys = tuple(evidence.domain_keys.split(","))
-    mature = (
+    reproducible = (
         evidence.depth >= TECHNIQUE_RECOGNITION_DEPTH_THRESHOLD
         and evidence.evidence_count >= TECHNIQUE_RECOGNITION_MIN_EVIDENCE_COUNT
     )
+    has_required_synergy = _has_domain_synergy_for_all_pairs(db, character_id, domain_keys)
     return TechniquePatternMaturity(
         pattern_key=normalized_pattern,
         domain_keys=domain_keys,
         technique_type=evidence.technique_type,
         depth=evidence.depth,
         evidence_count=evidence.evidence_count,
-        mature=mature,
+        reproducible=reproducible,
+        has_required_synergy=has_required_synergy,
+        mature=reproducible and has_required_synergy,
     )

@@ -322,9 +322,16 @@ def recognize_technique_from_pattern(
     supplied by the caller.
     """
     maturity = technique_pattern_maturity(db, character.id, pattern_key)
-    if not maturity.mature:
+    if not maturity.reproducible:
         raise TechniqueRecognitionError(
             "This pattern is not yet reproducible enough to be recognized as a technique."
+        )
+    if not maturity.has_required_synergy:
+        raise TechniqueRecognitionError(
+            "Possessing multiple domains is not enough — this pattern combines domains "
+            "that have not been genuinely integrated yet (no real Domain Synergy between "
+            "them). Practice them together, not just separately, before this can be "
+            "recognized as a hybrid technique."
         )
     skill_name = " + ".join(key.title() for key in maturity.domain_keys)
     technique = create_technique(

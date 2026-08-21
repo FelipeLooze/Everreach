@@ -33,6 +33,7 @@ from app.db.models.combat import CombatEncounter, CombatParticipant
 from app.db.models.item import ItemInstance
 from app.db.models.npc import NPC
 from app.db.models.simulated_player import SimulatedPlayer
+from app.db.models.skill import Technique
 from app.db.models.weapon import ItemWeaponProfile
 from app.game.combat.actions import resolve_attack
 from app.game.combat.autonomy import (
@@ -47,6 +48,11 @@ from app.game.combat.encounters import (
 )
 from app.game.combat.hostility import mark_hostile_from_attack
 from app.game.combat.tactics import resolve_tactical_action
+from app.game.combat.techniques import (
+    CombatTechniqueError,
+    CombatTechniqueResolution,
+    resolve_combat_technique,
+)
 from app.game.combat.turns import complete_current_turn, get_current_turn, roll_initiative
 from app.game.inventory.service import list_inventory
 from app.game.items.equipment import equip_item, item_accessibility
@@ -280,6 +286,87 @@ def handle_item_interaction_intent(
         lines.append(_encounter_end_summary(encounter))
 
     return " ".join(lines), 0
+
+
+def handle_technique_intent(
+    db: Session,
+    character: Character,
+    technique: Technique,
+    target_name: str | None,
+    *,
+    action_key: str | None,
+    rng: random.Random | None = None,
+) -> tuple[str, CombatTechniqueResolution | None]:
+    """Use an already-LEARNED technique against an active combat opponent.
+
+    Mirrors handle_attack_intent's shape (autonomy advance, turn check,
+    opponent resolution) but resolves through the Combat Engine's technique
+    path (resolve_combat_technique) instead of an ordinary attack, so
+    weapon requirements, mastery, and any condition the technique applies
+    are all authoritative. Also returns the CombatTechniqueResolution
+    itself (unlike every other handler here) because its progression
+    outcome — domain evidence, mastery growth — still needs to be applied
+    by the caller; this module has never needed an LLMService to do that
+    (ordinary attacks never touch progression), so applying it stays the
+    caller's job rather than growing this module's dependencies.
+    """
+    resolved_key = action_key or generate_id("action")
+    encounter = get_active_encounter_for_actor(db, CombatActorType.CHARACTER, character.id)
+    if encounter is None:
+        return f"{character.name} não está em combate no momento.", None
+
+    character_participant = _find_character_participant(db, encounter, character.id)
+
+    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}", rng=rng)
+    if encounter.status != CombatEncounterStatus.ACTIVE.value:
+        return " ".join(lines) or _encounter_end_summary(encounter), None
+
+    current_turn = get_current_turn(db, encounter)
+    if current_turn is None or current_turn.participant_id != character_participant.id:
+        return " ".join(lines) or f"{character.name} aguarda sua vez no combate.", None
+
+    try:
+        target_participant = _resolve_opposing_target(
+            db, encounter, character_participant, target_name,
+        )
+    except CombatBridgeError as exc:
+        lines.append(str(exc))
+        return " ".join(lines), None
+
+    try:
+        resolution = resolve_combat_technique(
+            db,
+            encounter,
+            character_participant,
+            target_participant,
+            technique_id=technique.id,
+            action_key=f"technique:{resolved_key}",
+            rng=rng,
+        )
+    except CombatTechniqueError as exc:
+        lines.append(str(exc))
+        return " ".join(lines), None
+
+    target_display_name = _participant_name(db, target_participant)
+    lines.append(
+        _describe_attack_outcome(
+            character.name,
+            target_display_name,
+            resolution.action,
+            weapon_name=technique.name,
+        )
+    )
+    if resolution.condition is not None and resolution.condition.active:
+        lines.append(f"{target_display_name} sofre os efeitos de {technique.name}.")
+
+    if encounter.status == CombatEncounterStatus.ACTIVE.value:
+        lines.extend(
+            _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after", rng=rng)
+        )
+    else:
+        lines.append(_encounter_end_summary(encounter))
+
+    return " ".join(lines), resolution
 
 
 def _start_new_encounter(

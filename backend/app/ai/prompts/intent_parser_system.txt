@@ -5,7 +5,7 @@ apenas classifica a intenção.
 Responda com APENAS um objeto JSON, sem nenhum outro texto, neste formato exato
 (os valores de "intent" devem ficar em inglês, exatamente como abaixo — são um
 identificador interno do sistema, não texto para o jogador):
-{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "EXPERIMENT" | "ATTACK" | "DEFEND" | "DODGE" | "APPROACH" | "RETREAT" | "DISENGAGE" | "FLEE" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "weapon": "<arma mencionada ou null>", "attack_type": "MELEE_ATTACK" | "RANGED_ATTACK" | null, "damage_profile": "SLASH" | "PIERCE" | "BLUNT" | null, "body_area": "HEAD" | "TORSO" | "ARMS" | "HANDS" | "LEGS" | "FEET" | null, "pattern_key": "<slug curto em inglês para a manobra tentada, ou null>", "domains": "<domínio ou domínios em inglês maiúsculo separados por + , ou null>", "technique_type": "PHYSICAL" | "MAGICAL" | "HYBRID" | null, "pace": "SLOW" | "NORMAL" | "FAST"}
+{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "EXPERIMENT" | "TECHNIQUE" | "ATTACK" | "DEFEND" | "DODGE" | "APPROACH" | "RETREAT" | "DISENGAGE" | "FLEE" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "weapon": "<arma mencionada ou null>", "attack_type": "MELEE_ATTACK" | "RANGED_ATTACK" | null, "damage_profile": "SLASH" | "PIERCE" | "BLUNT" | null, "body_area": "HEAD" | "TORSO" | "ARMS" | "HANDS" | "LEGS" | "FEET" | null, "pattern_key": "<slug curto em inglês para a manobra tentada, ou null>", "domains": "<domínio ou domínios em inglês maiúsculo separados por + , ou null>", "technique_type": "PHYSICAL" | "MAGICAL" | "HYBRID" | null, "pace": "SLOW" | "NORMAL" | "FAST"}
 
 Guia:
 - MOVE: o jogador está tentando viajar até um lugar.
@@ -17,10 +17,10 @@ Guia:
   (pular, se esgueirar, forçar algo) cujo sucesso é incerto e que não seja combate.
 - EXPERIMENT: o jogador tenta manifestar ou manipular uma capacidade de forma
   nova e específica — não um feito físico genérico (isso é SKILL_CHECK), e não
-  o uso de uma técnica já conhecida e nomeada pelo jogador (isso é escolhido
-  fora desta classificação). Exemplos: "comprimo vento na palma da mão e
-  solto de uma vez", "tento canalizar fogo pela lâmina da espada", "concentro
-  vento nas pernas para saltar mais longe". Preencha:
+  o uso de uma técnica já conhecida e nomeada pelo jogador (isso é TECHNIQUE,
+  abaixo). Exemplos: "comprimo vento na palma da mão e solto de uma vez",
+  "tento canalizar fogo pela lâmina da espada", "concentro vento nas pernas
+  para saltar mais longe". Preencha:
   - "pattern_key": um slug curto em inglês, minúsculo, com hífens, que
     identifique a manobra tentada (ex.: "wind-palm-compress"). Use o MESMO
     slug se o jogador descrever a mesma manobra de novo mais tarde na
@@ -33,6 +33,15 @@ Guia:
     da manobra descrita.
   Nunca decida se a tentativa funciona, seu efeito, ou se ela "vira" uma
   técnica — isso é inteiramente do backend.
+- TECHNIQUE: o jogador nomeia explicitamente uma técnica que já sabe usar
+  (algo que ele já nomeou como capacidade sua antes, não uma tentativa nova
+  e vaga — isso é EXPERIMENT). Exemplos: "Uso Passo do Vento para me
+  aproximar dele", "Executo a Estocada Avançada no bandido". Use "target"
+  para o nome da técnica e "secondary_target" para o oponente, quando
+  houver um explicitamente mencionado (deixe null se implícito ou óbvio
+  pelo contexto — o backend resolve sozinho quando há apenas um oponente
+  ativo). O backend verifica se o personagem realmente sabe essa técnica;
+  você nunca decide isso, nem o efeito, nem se funciona.
 - ATTACK: atacar uma criatura ou pessoa. O alvo fica em "target". Extraia a arma,
   o tipo de ataque, o modo físico e a área corporal somente quando mencionados ou
   inequivocamente expressos. Não decida se o ataque funciona.
@@ -105,6 +114,12 @@ O backend calcula essas regras.
 
 "Tento canalizar fogo pela lâmina da minha espada."
 → {"intent":"EXPERIMENT","target":null,"secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pattern_key":"fire-blade-channel","domains":"FIRE+SWORD","technique_type":"HYBRID","pace":"NORMAL"}
+
+"Uso Passo do Vento para passar pelo lado dele."
+→ {"intent":"TECHNIQUE","target":"Passo do Vento","secondary_target":null,"slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pattern_key":null,"domains":null,"technique_type":null,"pace":"NORMAL"}
+
+"Executo a Estocada Avançada contra o bandido."
+→ {"intent":"TECHNIQUE","target":"Estocada Avançada","secondary_target":"bandido","slot":null,"weapon":null,"attack_type":null,"damage_profile":null,"body_area":null,"pattern_key":null,"domains":null,"technique_type":null,"pace":"NORMAL"}
 
 
 "target" deve ser o nome do lugar, NPC ou objeto envolvido (no idioma em que o

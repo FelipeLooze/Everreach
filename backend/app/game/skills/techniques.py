@@ -461,6 +461,29 @@ def list_character_techniques(
     )
 
 
+def resolve_named_technique(
+    db: Session,
+    character_id: str,
+    name: str | None,
+) -> Technique | None:
+    """Which of the character's LEARNED techniques the player meant by name
+    (Phase 11K) — a case-insensitive substring match, same shape as how
+    combat_bridge resolves a named weapon/opponent. Returns None on no match
+    or an ambiguous one; the caller decides how to report that, since a
+    "no such technique" message differs from "which one do you mean"."""
+    if not name:
+        return None
+    needle = name.casefold()
+    candidates = [
+        technique
+        for technique in list_character_techniques(db, character_id)
+        if needle in technique.name.casefold()
+    ]
+    if len(candidates) == 1:
+        return candidates[0]
+    return None
+
+
 def resolve_technique_use(
     db: Session,
     campaign_id: str,

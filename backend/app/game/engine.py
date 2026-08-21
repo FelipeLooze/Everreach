@@ -40,6 +40,7 @@ from app.game.skills.technique_experimentation import (
 )
 from app.game.skills.techniques import (
     TECHNIQUE_ACTION_MINUTES,
+    resolve_named_technique,
     resolve_technique_use,
 )
 from app.game.time import clock
@@ -183,6 +184,54 @@ def resolve_action(
             experiment.progression_outcome,
         )
         mechanical_warnings.extend(progression.warnings)
+    elif intent.type == ActionIntentType.TECHNIQUE:
+        resolved_action_key = resolved_action_key or generate_id("action")
+        named_technique = resolve_named_technique(db, character.id, intent.target)
+        if named_technique is None:
+            mechanical_summary = (
+                f"{character.name} não conhece nenhuma técnica correspondente a "
+                f"'{intent.target}'." if intent.target
+                else f"{character.name} precisa dizer qual técnica está usando."
+            )
+            minutes = 0
+        elif combat_bridge.get_active_encounter_for_actor(
+            db, CombatActorType.CHARACTER, character.id
+        ) is not None:
+            mechanical_summary, technique_resolution = combat_bridge.handle_technique_intent(
+                db,
+                character,
+                named_technique,
+                intent.secondary_target,
+                action_key=resolved_action_key,
+            )
+            minutes = 0
+            if technique_resolution is not None:
+                progression = resolve_progression_outcome(
+                    db,
+                    llm_service,
+                    campaign_id,
+                    character,
+                    technique_resolution.progression_outcome,
+                )
+                mechanical_warnings.extend(progression.warnings)
+        else:
+            named_use = resolve_technique_use(
+                db,
+                campaign_id,
+                character,
+                technique_id=named_technique.id,
+                action_key=resolved_action_key,
+            )
+            mechanical_summary = named_use.mechanical_summary
+            minutes = 0 if named_use.replayed else TECHNIQUE_ACTION_MINUTES
+            progression = resolve_progression_outcome(
+                db,
+                llm_service,
+                campaign_id,
+                character,
+                named_use.progression_outcome,
+            )
+            mechanical_warnings.extend(progression.warnings)
     else:
         mechanical_summary, minutes = _apply_intent(
             db,

@@ -27,6 +27,7 @@ from app.game.progression.outcomes import (
     DomainSynergyProgressGain,
     ProgressionOutcome,
 )
+from app.game.skills.technique_evidence import technique_pattern_maturity
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -43,6 +44,10 @@ class TechniqueUseError(ValueError):
 
 
 class TechniqueLearningError(ValueError):
+    pass
+
+
+class TechniqueRecognitionError(ValueError):
     pass
 
 
@@ -285,6 +290,61 @@ def grant_technique(
     )
     db.flush()
     return existing
+
+
+def recognize_technique_from_pattern(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    *,
+    pattern_key: str,
+    name: str,
+    description: str = "",
+) -> Technique:
+    """Turn a mature, reproducible pattern into a real, usable Technique.
+
+    This is the mechanical half of recognition: it verifies the pattern has
+    actually crossed the reproducibility threshold
+    (technique_evidence.technique_pattern_maturity) and, if so, persists the
+    Technique and grants it to the character as LEARNED with
+    origin=SELF_DISCOVERED — the character earned this through their own
+    practice, not a gift.
+
+    Naming is deliberately NOT this function's job: the backend never invents
+    a technique's identity on its own (Phase 11J — an LLM proposes name and
+    description from the same authoritative evidence this function checks;
+    the backend only validates and persists). `name`/`description` are
+    supplied by the caller.
+    """
+    maturity = technique_pattern_maturity(db, character.id, pattern_key)
+    if not maturity.mature:
+        raise TechniqueRecognitionError(
+            "This pattern is not yet reproducible enough to be recognized as a technique."
+        )
+    skill_name = " + ".join(key.title() for key in maturity.domain_keys)
+    technique = create_technique(
+        db,
+        skill_name=skill_name,
+        name=name,
+        technique_type=TechniqueType(maturity.technique_type),
+        description=description,
+        domain_keys=maturity.domain_keys,
+    )
+    log_event(
+        db,
+        campaign_id,
+        EventType.TECHNIQUE_RECOGNIZED,
+        actor_type="character",
+        actor_id=character.id,
+        payload={
+            "technique_id": technique.id,
+            "technique_name": technique.name,
+            "pattern_key": maturity.pattern_key,
+            "domain_keys": list(maturity.domain_keys),
+        },
+    )
+    grant_technique(db, campaign_id, character, technique, origin=TechniqueOrigin.SELF_DISCOVERED)
+    return technique
 
 
 def list_character_techniques(

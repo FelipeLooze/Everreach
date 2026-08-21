@@ -111,6 +111,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   TECHNIQUE_AWARENESS_GAINED: "Você tomou conhecimento de uma técnica",
   TECHNIQUE_LEARNING_STARTED: "Você começou a treinar uma técnica",
   TECHNIQUE_LEARNED: "Você aprendeu uma técnica",
+  TECHNIQUE_RECOGNIZED: "Nova técnica reconhecida",
   WORLD_TIME_ADVANCED: "O tempo avançou",
   SIMULATED_PLAYER_MOVED: "Um viajante se moveu",
   SIMULATED_PLAYER_TRAINED: "Um viajante treinou",

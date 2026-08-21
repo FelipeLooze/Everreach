@@ -24,7 +24,7 @@ from app.game.combat.encounters import (
 from app.game.combat.turns import roll_initiative
 
 ATTACKED_HOSTILITY = 100
-HOSTILE_THRESHOLD = 50
+HOSTILE_THRESHOLD = 75
 AMBUSH_CHANCE = 0.35
 
 

@@ -32,6 +32,11 @@ class ItemDefinition(Base):
     )
     description: Mapped[str] = mapped_column(String, default="")
     base_weight: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    # Phase 14B — a reference value in Bronze, not a fixed universal price;
+    # see app.game.economy.pricing.resolve_market_price for how quality/
+    # condition actually adjust it. Nullable: not every item has an
+    # established economic value yet.
+    base_value_bronze: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Legacy extension field. Phase 10 does not treat arbitrary values stored
     # here as mechanical authority; category services must use validated data.
     stats_json: Mapped[str] = mapped_column(String, default="{}")

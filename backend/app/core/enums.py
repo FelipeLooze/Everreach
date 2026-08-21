@@ -674,6 +674,10 @@ class EventType(StrEnum):
     CURRENCY_WITHDRAWN = "CURRENCY_WITHDRAWN"
     CURRENCY_TRANSFERRED = "CURRENCY_TRANSFERRED"
     TRANSACTION_COMPLETED = "TRANSACTION_COMPLETED"
+    JOB_CREATED = "JOB_CREATED"
+    JOB_APPLICATION_SUBMITTED = "JOB_APPLICATION_SUBMITTED"
+    JOB_APPLICATION_RESOLVED = "JOB_APPLICATION_RESOLVED"
+    JOB_EMPLOYMENT_ENDED = "JOB_EMPLOYMENT_ENDED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -895,6 +899,44 @@ class OrganizationActionType(StrEnum):
     FORM_ALLIANCE = "FORM_ALLIANCE"
     DECLARE_HOSTILITY = "DECLARE_HOSTILITY"
     OTHER = "OTHER"
+
+
+class EconomicActorType(StrEnum):
+    """Phase 14 — who can participate economically. A superset of
+    CombatActorType (CHARACTER/NPC/SIMULATED_PLAYER): Organizations
+    (Phase 13) are real economic actors too (employers, business owners
+    — Phase 14L) but are not a CombatActorType. Used for Job employers
+    and Business owners; workers/applicants stay CombatActorType since
+    only living actors work a job."""
+
+    CHARACTER = "CHARACTER"
+    NPC = "NPC"
+    SIMULATED_PLAYER = "SIMULATED_PLAYER"
+    ORGANIZATION = "ORGANIZATION"
+
+
+class JobStatus(StrEnum):
+    OPEN = "OPEN"
+    FILLED = "FILLED"
+    CLOSED = "CLOSED"
+
+
+class JobPaymentFrequency(StrEnum):
+    PER_TASK = "PER_TASK"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    PER_UNIT = "PER_UNIT"
+    COMMISSION = "COMMISSION"
+    CONTRACT = "CONTRACT"
+    SHARE = "SHARE"
+
+
+class JobApplicationStatus(StrEnum):
+    PENDING = "PENDING"
+    ACTIVE = "ACTIVE"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
+    ENDED = "ENDED"
 
 
 class OrganizationConflictType(StrEnum):

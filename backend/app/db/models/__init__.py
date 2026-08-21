@@ -31,6 +31,7 @@ from app.db.models.domain import (
 from app.db.models.defense import ActorCombatDefense, ItemArmorProfile, ItemCombatProfile
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.item import Item, ItemDefinition, ItemInstance, ItemWearRecord
+from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import (
     CharacterConnectionDiscovery,
@@ -148,6 +149,8 @@ __all__ = [
     "ItemDefinition",
     "ItemInstance",
     "ItemWearRecord",
+    "Job",
+    "JobApplication",
     "KnowledgeFact",
     "KnowledgeKnower",
     "CharacterConnectionDiscovery",

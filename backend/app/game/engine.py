@@ -274,6 +274,8 @@ def resolve_action(
             minutes,
         )
 
+        quests_service.check_deadlines(db, campaign_id, character_id)
+
         ambush = combat_hostility.resolve_ambush_for_character(
             db,
             campaign_id,

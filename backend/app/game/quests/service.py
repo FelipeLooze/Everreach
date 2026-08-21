@@ -10,6 +10,7 @@ from app.db.models.quest import (
     QuestObjective,
 )
 from app.db.models.character import Character
+from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
 
@@ -25,11 +26,22 @@ def create_quest(
     *,
     source: QuestSource,
     objectives: Sequence[str] = (),
+    deadline_world_minute: int | None = None,
 ) -> Quest:
     """The one authoritative way a Quest situation comes to exist in the
     world. Existence here is independent of any character's awareness or
-    participation — nothing here creates a CharacterQuest row."""
-    quest = Quest(region_id=region_id, name=name, description=description, source=source)
+    participation — nothing here creates a CharacterQuest row.
+
+    deadline_world_minute (Phase 12D) is optional and about the
+    opportunity itself expiring unclaimed (e.g. a caravan leaving) — not
+    every quest needs one; see check_deadlines."""
+    quest = Quest(
+        region_id=region_id,
+        name=name,
+        description=description,
+        source=source,
+        deadline_world_minute=deadline_world_minute,
+    )
     db.add(quest)
     db.flush()
     for index, objective_description in enumerate(objectives):
@@ -39,7 +51,9 @@ def create_quest(
     return quest
 
 
-def start_quest(db: Session, character_id: str, quest_id: str) -> CharacterQuest:
+def start_quest(
+    db: Session, character_id: str, quest_id: str, *, deadline_world_minute: int | None = None
+) -> CharacterQuest:
     existing = (
         db.query(CharacterQuest)
         .filter(CharacterQuest.character_id == character_id, CharacterQuest.quest_id == quest_id)
@@ -56,7 +70,12 @@ def start_quest(db: Session, character_id: str, quest_id: str) -> CharacterQuest
             f"'{quest.name}' não está mais disponível ({quest.status})."
         )
 
-    cq = CharacterQuest(character_id=character_id, quest_id=quest_id, status=QuestStatus.ACTIVE)
+    cq = CharacterQuest(
+        character_id=character_id,
+        quest_id=quest_id,
+        status=QuestStatus.ACTIVE,
+        deadline_world_minute=deadline_world_minute,
+    )
     db.add(cq)
     db.flush()
     character = db.get(Character, character_id)
@@ -257,6 +276,56 @@ def complete_objective(db: Session, campaign_id: str, character_id: str, objecti
 
 def list_character_quests(db: Session, character_id: str) -> list[CharacterQuest]:
     return db.query(CharacterQuest).filter(CharacterQuest.character_id == character_id).all()
+
+
+def check_deadlines(db: Session, campaign_id: str, character_id: str | None = None) -> None:
+    """Phase 12D: failure must be real — a quest does not stay frozen just
+    because nobody is interacting with it. Call this whenever world time
+    actually advances (see engine.py). Expires any AVAILABLE Quest whose
+    opportunity window passed, and — if character_id is given — fails that
+    character's ACTIVE participations whose own deadline passed. Most
+    quests have no deadline at all and are untouched by this."""
+    now = get_world_time(db, campaign_id).total_minutes()
+
+    expiring = (
+        db.query(Quest)
+        .filter(
+            Quest.status == QuestStatus.AVAILABLE,
+            Quest.deadline_world_minute.isnot(None),
+            Quest.deadline_world_minute <= now,
+        )
+        .all()
+    )
+    for quest in expiring:
+        # The opportunity-window deadline is about nobody having claimed it
+        # in time — once a character is actively on it, catching the
+        # window is moot; their own CharacterQuest.deadline_world_minute
+        # (if any) governs their participation from here instead.
+        already_claimed = (
+            db.query(CharacterQuest)
+            .filter(CharacterQuest.quest_id == quest.id, CharacterQuest.status == QuestStatus.ACTIVE)
+            .first()
+            is not None
+        )
+        if already_claimed:
+            continue
+        expire_quest(db, campaign_id, quest.id)
+
+    if character_id is None:
+        return
+
+    failing = (
+        db.query(CharacterQuest)
+        .filter(
+            CharacterQuest.character_id == character_id,
+            CharacterQuest.status == QuestStatus.ACTIVE,
+            CharacterQuest.deadline_world_minute.isnot(None),
+            CharacterQuest.deadline_world_minute <= now,
+        )
+        .all()
+    )
+    for cq in failing:
+        fail_quest(db, campaign_id, character_id, cq.quest_id, reason="O prazo da missão expirou.")
 
 
 def active_character_quests(db: Session, character_id: str) -> list[tuple[CharacterQuest, Quest]]:

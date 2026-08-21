@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import ObjectiveTriggerType, ObjectiveType, QuestSource, QuestStatus
@@ -18,6 +18,7 @@ class Quest(Base):
     description: Mapped[str] = mapped_column(String, default="")
     status: Mapped[str] = mapped_column(String, default=QuestStatus.AVAILABLE, nullable=False)
     source: Mapped[str] = mapped_column(String, default=QuestSource.SELF_DISCOVERED, nullable=False)
+    deadline_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class QuestObjective(Base):
@@ -46,6 +47,7 @@ class CharacterQuest(Base):
     character_id: Mapped[str] = mapped_column(ForeignKey("characters.id"), nullable=False)
     quest_id: Mapped[str] = mapped_column(ForeignKey("quests.id"), nullable=False)
     status: Mapped[str] = mapped_column(String, default=QuestStatus.NOT_STARTED)
+    deadline_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class CharacterQuestObjective(Base):

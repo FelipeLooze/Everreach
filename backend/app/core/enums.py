@@ -651,6 +651,8 @@ class EventType(StrEnum):
     GROUP_LEADERSHIP_CHANGED = "GROUP_LEADERSHIP_CHANGED"
     ORGANIZATION_CREATED = "ORGANIZATION_CREATED"
     ORGANIZATION_STATUS_CHANGED = "ORGANIZATION_STATUS_CHANGED"
+    ORGANIZATION_FOUNDED_FROM_GROUP = "ORGANIZATION_FOUNDED_FROM_GROUP"
+    ORGANIZATION_FORMALLY_RECOGNIZED = "ORGANIZATION_FORMALLY_RECOGNIZED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -786,6 +788,18 @@ class TransportedPeopleStance(StrEnum):
     INDIFFERENT = "INDIFFERENT"
     OPPOSED = "OPPOSED"
     STUDYING = "STUDYING"
+
+
+class OrganizationFormality(StrEnum):
+    """Phase 13E — an organization may exist informally, before (or
+    without ever) being legally recognized; existence itself never
+    requires formal registration. Deliberately only these two values —
+    the spec's other two candidates (ILLEGAL, SECRET) already exist as
+    orthogonal fields (OrganizationStatus.ILLEGAL, OrganizationVisibility
+    .SECRET, both Phase 13C) and are not duplicated here."""
+
+    INFORMAL = "INFORMAL"
+    FORMALLY_RECOGNIZED = "FORMALLY_RECOGNIZED"
 
 
 class OrganizationVisibility(StrEnum):

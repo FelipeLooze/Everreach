@@ -2,6 +2,7 @@ from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
+    OrganizationFormality,
     OrganizationOrigin,
     OrganizationStatus,
     OrganizationType,
@@ -38,3 +39,7 @@ class Organization(Base):
     founded_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
     origin: Mapped[str] = mapped_column(String, default=OrganizationOrigin.NATIVE, nullable=False)
     transported_people_stance: Mapped[str | None] = mapped_column(String, nullable=True)
+    formality: Mapped[str] = mapped_column(
+        String, default=OrganizationFormality.INFORMAL, nullable=False
+    )
+    founding_group_id: Mapped[str | None] = mapped_column(ForeignKey("groups.id"), nullable=True)

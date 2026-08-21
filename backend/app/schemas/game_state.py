@@ -83,6 +83,25 @@ class SystemInventorySummary(BaseModel):
     encumbrance: EncumbranceTier
 
 
+class CombatParticipantSummary(BaseModel):
+    participant_id: str
+    actor_type: str
+    actor_id: str
+    name: str
+    side_key: str
+    range_band: str
+    hp_current: float
+    hp_max: float
+    is_current_turn: bool
+
+
+class CombatEncounterSummary(BaseModel):
+    encounter_id: str
+    status: str
+    round_number: int
+    participants: list[CombatParticipantSummary]
+
+
 class GameStateResponse(BaseModel):
     character: CharacterResponse
     region: RegionSummary | None
@@ -92,5 +111,6 @@ class GameStateResponse(BaseModel):
     nearby_simulated_players: list[NearbySimulatedPlayer]
     active_quests: list[ActiveQuestSummary]
     inventory: SystemInventorySummary
+    active_encounter: CombatEncounterSummary | None
     opening_narrative: str | None
     opening_narrator_unavailable: bool

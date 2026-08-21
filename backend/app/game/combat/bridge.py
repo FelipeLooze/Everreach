@@ -8,6 +8,8 @@ intent; every mechanical result comes from the existing Combat Engine
 (app/game/combat/*), which stays the sole authority.
 """
 
+import random
+
 from sqlalchemy.orm import Session
 
 from app.ai.intent_parser import Intent
@@ -97,6 +99,7 @@ def handle_attack_intent(
     state,
     *,
     action_key: str | None,
+    rng: random.Random | None = None,
 ) -> tuple[str, int]:
     resolved_key = action_key or generate_id("action")
     existing = get_active_encounter_for_actor(db, CombatActorType.CHARACTER, character.id)
@@ -105,7 +108,7 @@ def handle_attack_intent(
     if existing is None:
         try:
             encounter, character_participant, target_participant = _start_new_encounter(
-                db, campaign_id, character, intent.target, state,
+                db, campaign_id, character, intent.target, state, rng=rng,
             )
         except CombatBridgeError as exc:
             return str(exc), 0
@@ -113,7 +116,7 @@ def handle_attack_intent(
         encounter = existing
         character_participant = _find_character_participant(db, encounter, character.id)
 
-    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}")
+    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}", rng=rng)
     if encounter.status != CombatEncounterStatus.ACTIVE.value:
         return " ".join(lines) or _encounter_end_summary(encounter), 0
 
@@ -139,6 +142,7 @@ def handle_attack_intent(
             target_participant,
             intent,
             action_key=f"attack:{resolved_key}",
+            rng=rng,
         )
     except CombatBridgeError as exc:
         lines.append(str(exc))
@@ -146,7 +150,9 @@ def handle_attack_intent(
     lines.append(attack_summary)
 
     if encounter.status == CombatEncounterStatus.ACTIVE.value:
-        lines.extend(_advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after"))
+        lines.extend(
+            _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after", rng=rng)
+        )
     else:
         lines.append(_encounter_end_summary(encounter))
 
@@ -161,6 +167,7 @@ def handle_combat_tactic_intent(
     state,
     *,
     action_key: str | None,
+    rng: random.Random | None = None,
 ) -> tuple[str, int]:
     tactic = TACTICAL_INTENT_MAP[intent.type]
     resolved_key = action_key or generate_id("action")
@@ -170,7 +177,7 @@ def handle_combat_tactic_intent(
 
     character_participant = _find_character_participant(db, encounter, character.id)
 
-    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}")
+    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}", rng=rng)
     if encounter.status != CombatEncounterStatus.ACTIVE.value:
         return " ".join(lines) or _encounter_end_summary(encounter), 0
 
@@ -196,6 +203,7 @@ def handle_combat_tactic_intent(
             action_type=tactic,
             target=target_participant,
             action_key=f"tactical:{resolved_key}",
+            rng=rng,
         )
     except ValueError as exc:
         lines.append(f"A ação não pôde ser realizada: {exc}")
@@ -205,7 +213,9 @@ def handle_combat_tactic_intent(
     lines.append(_describe_tactical_outcome(character.name, target_name, result.action))
 
     if encounter.status == CombatEncounterStatus.ACTIVE.value:
-        lines.extend(_advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after"))
+        lines.extend(
+            _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after", rng=rng)
+        )
     else:
         lines.append(_encounter_end_summary(encounter))
 
@@ -275,6 +285,8 @@ def _start_new_encounter(
     character: Character,
     target_name: str | None,
     state,
+    *,
+    rng: random.Random | None = None,
 ) -> tuple[CombatEncounter, CombatParticipant, CombatParticipant]:
     target_kind, target_actor = _find_nearby_target(state, target_name)
     if target_actor is None:
@@ -300,7 +312,7 @@ def _start_new_encounter(
     )
     try:
         encounter = start_encounter(db, campaign_id, character.location_id, combatants)
-        roll_initiative(db, encounter)
+        roll_initiative(db, encounter, rng=rng)
     except ValueError as exc:
         raise CombatBridgeError(f"O combate não pôde começar: {exc}") from exc
 
@@ -385,9 +397,17 @@ def _participant_name(db: Session, participant: CombatParticipant) -> str:
     return actor.name if actor is not None else "alguém"
 
 
-def _advance_autonomy(db: Session, encounter: CombatEncounter, *, prefix: str) -> list[str]:
+def _advance_autonomy(
+    db: Session,
+    encounter: CombatEncounter,
+    *,
+    prefix: str,
+    rng: random.Random | None = None,
+) -> list[str]:
     try:
-        resolutions = resolve_until_player_turn(db, encounter, decision_key_prefix=prefix)
+        resolutions = resolve_until_player_turn(
+            db, encounter, decision_key_prefix=prefix, rng=rng
+        )
     except ValueError:
         return []
     return [_describe_autonomous(db, resolution) for resolution in resolutions]
@@ -464,6 +484,7 @@ def _resolve_player_attack(
     intent: Intent,
     *,
     action_key: str,
+    rng: random.Random | None = None,
 ) -> str:
     action_type = _parse_action_type(intent.attack_type)
     body_area = _parse_body_area(intent.body_area)
@@ -497,6 +518,7 @@ def _resolve_player_attack(
                 damage_profile=damage_profile,
                 action_key=action_key,
                 target_body_area=body_area or BodyArea.TORSO,
+                rng=rng,
             )
         except ValueError as exc:
             raise CombatBridgeError(
@@ -518,6 +540,7 @@ def _resolve_player_attack(
             target,
             action_type=resolved_action_type,
             action_key=action_key,
+            rng=rng,
         )
     except ValueError as exc:
         raise CombatBridgeError(f"O ataque falhou: {exc}") from exc

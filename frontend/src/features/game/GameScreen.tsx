@@ -6,6 +6,7 @@ import { getStoryLog } from "@/api/story";
 import { Panel } from "@/components/Panel";
 import { StatusBar } from "@/components/StatusBar";
 import { CharacterSheetPanel } from "@/features/character/CharacterSheetPanel";
+import { CombatPanel } from "@/features/combat/CombatPanel";
 import { ActionInput } from "@/features/game/ActionInput";
 import { GameSidebar } from "@/features/game/GameSidebar";
 import { NarrativeLog, type NarrativeEntry } from "@/features/game/NarrativeLog";
@@ -19,7 +20,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { useGameStore } from "@/stores/useGameStore";
 import type { CharacterTechnique, StoryEntry } from "@/types/game";
 
-type PanelKind = "map" | "inventory" | "character" | "quests" | "journal" | "log" | "settings" | null;
+type PanelKind = "map" | "inventory" | "character" | "quests" | "journal" | "log" | "settings" | "combat" | null;
 
 let entryCounter = 0;
 const nextId = () => `entry_${entryCounter++}`;
@@ -159,6 +160,11 @@ export function GameScreen() {
         <button onClick={() => setActivePanel("journal")}><span>DIÁRIO</span></button>
         <button onClick={() => setActivePanel("log")}><span>HISTÓRIA</span></button>
         <button onClick={() => setActivePanel("settings")}><span>SISTEMA</span></button>
+        {state?.active_encounter && (
+          <button className="action-bar-alert" onClick={() => setActivePanel("combat")}>
+            <span>COMBATE</span>
+          </button>
+        )}
       </nav>
 
       {activePanel === "map" && (
@@ -194,6 +200,11 @@ export function GameScreen() {
       {activePanel === "settings" && (
         <Panel title="Configurações" onClose={() => setActivePanel(null)}>
           <SettingsPanel onExit={clearSession} />
+        </Panel>
+      )}
+      {activePanel === "combat" && (
+        <Panel title="Combate" onClose={() => setActivePanel(null)}>
+          <CombatPanel encounter={state?.active_encounter ?? null} />
         </Panel>
       )}
     </div>

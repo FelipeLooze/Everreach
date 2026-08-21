@@ -8,11 +8,26 @@ function formatTime(state: GameState) {
 }
 
 export function GameSidebar({ state }: { state: GameState }) {
-  const { location, nearby_npcs, nearby_simulated_players } = state;
+  const { location, nearby_npcs, nearby_simulated_players, active_encounter } = state;
   const activeQuest = state.active_quests[0] ?? null;
+  const currentTurnParticipant = active_encounter?.participants.find(
+    (participant) => participant.is_current_turn,
+  );
 
   return (
     <aside className="game-sidebar">
+      {active_encounter && (
+        <section className="sidebar-section sidebar-combat">
+          <div className="sidebar-heading">
+            <span className="sidebar-heading-line" />
+            <span>EM COMBATE</span>
+          </div>
+
+          <p>Rodada {active_encounter.round_number}</p>
+          {currentTurnParticipant && <p>Vez de: {currentTurnParticipant.name}</p>}
+        </section>
+      )}
+
       <section className="sidebar-section sidebar-location">
         <div className="sidebar-heading">
           <span className="sidebar-heading-line" />

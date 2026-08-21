@@ -73,6 +73,25 @@ export interface ActiveQuestSummary {
   status: string;
 }
 
+export interface CombatParticipantSummary {
+  participant_id: string;
+  actor_type: "CHARACTER" | "NPC" | "SIMULATED_PLAYER";
+  actor_id: string;
+  name: string;
+  side_key: string;
+  range_band: "ENGAGED" | "NEAR" | "FAR" | "OUT_OF_REACH";
+  hp_current: number;
+  hp_max: number;
+  is_current_turn: boolean;
+}
+
+export interface CombatEncounterSummary {
+  encounter_id: string;
+  status: "ACTIVE" | "VICTORY" | "DEFEAT" | "FLED" | "CANCELLED";
+  round_number: number;
+  participants: CombatParticipantSummary[];
+}
+
 export interface GameState {
   character: Character;
   region: RegionSummary | null;
@@ -82,6 +101,7 @@ export interface GameState {
   nearby_simulated_players: NearbySimulatedPlayer[];
   active_quests: ActiveQuestSummary[];
   inventory: SystemInventory;
+  active_encounter: CombatEncounterSummary | null;
   opening_narrative: string | null;
   opening_narrator_unavailable: boolean;
 }

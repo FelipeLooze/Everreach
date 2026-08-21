@@ -24,6 +24,7 @@ const state: GameState = {
   }],
   active_quests: [{ quest_id: "quest_1", name: "A estrada perdida", status: "ACTIVE" }],
   inventory: { items: [], total_weight: 0, carrying_capacity: 25, encumbrance: "NORMAL" },
+  active_encounter: null,
   opening_narrative: null,
   opening_narrator_unavailable: false,
 };

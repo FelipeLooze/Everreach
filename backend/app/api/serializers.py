@@ -7,6 +7,8 @@ from app.game.knowledge.service import explicitly_knows_name
 from app.schemas.character import CharacterResponse
 from app.schemas.game_state import (
     ActiveQuestSummary,
+    CombatEncounterSummary,
+    CombatParticipantSummary,
     GameStateResponse,
     LocationSummary,
     NearbyNPC,
@@ -141,6 +143,29 @@ def to_game_state_response(
             total_weight=state.inventory.total_weight,
             carrying_capacity=state.inventory.carrying_capacity,
             encumbrance=state.inventory.encumbrance,
+        ),
+        active_encounter=(
+            CombatEncounterSummary(
+                encounter_id=state.active_encounter.encounter_id,
+                status=state.active_encounter.status,
+                round_number=state.active_encounter.round_number,
+                participants=[
+                    CombatParticipantSummary(
+                        participant_id=participant.participant_id,
+                        actor_type=participant.actor_type,
+                        actor_id=participant.actor_id,
+                        name=participant.name,
+                        side_key=participant.side_key,
+                        range_band=participant.range_band,
+                        hp_current=participant.hp_current,
+                        hp_max=participant.hp_max,
+                        is_current_turn=participant.is_current_turn,
+                    )
+                    for participant in state.active_encounter.participants
+                ],
+            )
+            if state.active_encounter is not None
+            else None
         ),
         opening_narrative=state.opening_narrative,
         opening_narrator_unavailable=state.opening_narrator_unavailable,

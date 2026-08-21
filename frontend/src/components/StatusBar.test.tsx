@@ -47,6 +47,7 @@ const state: GameState = {
   nearby_simulated_players: [],
   active_quests: [],
   inventory: { items: [], total_weight: 0, carrying_capacity: 25, encumbrance: "NORMAL" },
+  active_encounter: null,
   opening_narrative: null,
   opening_narrator_unavailable: false,
 };

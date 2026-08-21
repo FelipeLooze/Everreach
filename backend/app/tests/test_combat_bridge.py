@@ -1,6 +1,8 @@
 from app.ai.intent_parser import Intent
+from app.api.serializers import to_game_state_response
 from app.core.enums import (
     ActionIntentType,
+    CharacterAttributeKey,
     CombatActorType,
     EquipmentSlot,
     PhysicalDamageProfile,
@@ -18,13 +20,23 @@ from app.db.models.combat import (
 from app.db.models.item import ItemInstance
 from app.db.models.npc import NPC
 from app.game import engine
+from app.game.attributes.service import get_character_attribute
 from app.game.character.service import create_character
+from app.game.combat import bridge as combat_bridge
 from app.game.combat.encounters import get_active_encounter_for_actor
 from app.game.game_state import build_game_state
 from app.game.inventory.service import add_item, get_or_create_item
 from app.game.items.equipment import configure_item_equipment_profile, equip_item
 from app.game.items.weapons import configure_item_weapon_profile
 from app.game.world.seed import create_campaign, seed_initial_region
+
+
+class SequenceRng:
+    def __init__(self, *values: int):
+        self.values = iter(values)
+
+    def randint(self, _minimum: int, _maximum: int) -> int:
+        return next(self.values)
 
 
 def _setup(db_session, *, npc_names=("Bandido",), npc_hp=None):
@@ -349,3 +361,136 @@ def test_equip_intent_outside_combat_still_works_without_a_combat_turn(db_sessio
     assert minutes == 1
     assert "Adaga" in summary
     assert db_session.query(CombatTurn).count() == 0
+
+
+def test_game_state_exposes_active_encounter_after_attack(db_session):
+    campaign, _region, _village, character, (bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    character.hp_current = 1000
+    character.hp_max = 1000
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    assert state.active_encounter is None
+
+    intent = Intent(type=ActionIntentType.ATTACK, target="Bandido", raw_text="Ataco o bandido")
+    engine._apply_intent(
+        db_session, campaign.id, character, intent, state, action_key="state-1",
+    )
+
+    fresh_state = build_game_state(db_session, campaign.id, character.id)
+    assert fresh_state.active_encounter is not None
+    assert fresh_state.active_encounter.status == "ACTIVE"
+    assert fresh_state.active_encounter.round_number >= 1
+
+    actor_ids = {p.actor_id for p in fresh_state.active_encounter.participants}
+    assert character.id in actor_ids
+    assert bandido.id in actor_ids
+
+    current_turn_participants = [
+        p for p in fresh_state.active_encounter.participants if p.is_current_turn
+    ]
+    assert len(current_turn_participants) == 1
+
+
+def test_game_state_response_serializes_active_encounter(db_session):
+    campaign, _region, _village, character, (bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    character.hp_current = 1000
+    character.hp_max = 1000
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    intent = Intent(type=ActionIntentType.ATTACK, target="Bandido", raw_text="Ataco o bandido")
+    engine._apply_intent(
+        db_session, campaign.id, character, intent, state, action_key="state-2",
+    )
+
+    fresh_state = build_game_state(db_session, campaign.id, character.id)
+    response = to_game_state_response(db_session, fresh_state)
+
+    assert response.active_encounter is not None
+    assert response.active_encounter.status == "ACTIVE"
+    names = {p.name for p in response.active_encounter.participants}
+    assert character.name in names
+    assert bandido.name in names
+
+
+def test_full_combat_flow_reaches_victory_deterministically(db_session):
+    campaign, _region, _village, character, (_bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1,
+    )
+    get_character_attribute(
+        db_session, character.id, CharacterAttributeKey.STRENGTH,
+    ).value = 20
+    get_character_attribute(
+        db_session, character.id, CharacterAttributeKey.AGILITY,
+    ).value = 10
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    intent = Intent(type=ActionIntentType.ATTACK, target="Bandido", raw_text="Ataco o bandido")
+
+    # Sequence: character initiative (15), NPC initiative (5), attack roll
+    # (10, +5 STR modifier = HIT against defense 10), damage roll (3, +5 STR
+    # modifier = 8 damage — enough to end a 1 HP target).
+    summary, minutes = combat_bridge.handle_attack_intent(
+        db_session,
+        campaign.id,
+        character,
+        intent,
+        state,
+        action_key="victory-flow",
+        rng=SequenceRng(15, 5, 10, 3),
+    )
+
+    assert minutes == 0
+    assert "vitória" in summary.lower()
+
+    encounter = (
+        db_session.query(CombatEncounter)
+        .filter(CombatEncounter.campaign_id == campaign.id)
+        .one()
+    )
+    assert encounter.status == "VICTORY"
+
+
+def test_flee_intent_can_deterministically_end_the_encounter(db_session):
+    campaign, _region, _village, character, (_bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    character.hp_current = 1000
+    character.hp_max = 1000
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    attack_intent = Intent(type=ActionIntentType.ATTACK, target="Bandido", raw_text="Ataco")
+    engine._apply_intent(
+        db_session, campaign.id, character, attack_intent, state, action_key="flee-setup",
+    )
+
+    encounter = get_active_encounter_for_actor(db_session, CombatActorType.CHARACTER, character.id)
+    assert encounter is not None
+    assert encounter.status == "ACTIVE"
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    flee_intent = Intent(type=ActionIntentType.FLEE, target=None, raw_text="Eu fujo!")
+
+    # A natural 20 always succeeds a flee check, regardless of modifier or DC.
+    summary, minutes = combat_bridge.handle_combat_tactic_intent(
+        db_session,
+        campaign.id,
+        character,
+        flee_intent,
+        state,
+        action_key="flee-1",
+        rng=SequenceRng(20),
+    )
+
+    assert minutes == 0
+    assert "escapar" in summary
+
+    db_session.refresh(encounter)
+    assert encounter.status == "FLED"

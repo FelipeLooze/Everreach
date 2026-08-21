@@ -21,8 +21,10 @@ from app.core.enums import (
     CombatEncounterStatus,
     CombatRangeBand,
     CombatTacticalActionType,
+    EquipmentSlot,
     ItemAccessibility,
     PhysicalDamageProfile,
+    WeaponHandRequirement,
     WeaponReach,
 )
 from app.core.ids import generate_id
@@ -47,7 +49,7 @@ from app.game.combat.hostility import mark_hostile_from_attack
 from app.game.combat.tactics import resolve_tactical_action
 from app.game.combat.turns import complete_current_turn, get_current_turn, roll_initiative
 from app.game.inventory.service import list_inventory
-from app.game.items.equipment import item_accessibility
+from app.game.items.equipment import equip_item, item_accessibility
 from app.game.items.interactions import resolve_item_interaction
 from app.game.items.weapons import get_weapon_damage_profiles, resolve_weapon_attack
 
@@ -449,13 +451,19 @@ def _describe_attack_outcome(
     action,
     *,
     weapon_name: str | None = None,
+    drew_weapon: bool = False,
 ) -> str:
     label = _OUTCOME_LABELS.get(action.outcome, "ataca")
-    weapon_phrase = f" com {weapon_name}" if weapon_name else ""
+    if drew_weapon and weapon_name:
+        actor_phrase = f"{attacker_name} saca {weapon_name} e"
+        weapon_phrase = ""
+    else:
+        actor_phrase = attacker_name
+        weapon_phrase = f" com {weapon_name}" if weapon_name else ""
     if action.outcome in {"MISS", "CRITICAL_MISS"}:
-        return f"{attacker_name} {label}{weapon_phrase} contra {target_name}."
+        return f"{actor_phrase} {label}{weapon_phrase} contra {target_name}."
     text = (
-        f"{attacker_name} {label}{weapon_phrase} em {target_name}, causando "
+        f"{actor_phrase} {label}{weapon_phrase} em {target_name}, causando "
         f"{action.damage_total} de dano ({int(action.target_hp_before)} → "
         f"{int(action.target_hp_after)} de HP)."
     )
@@ -504,12 +512,20 @@ def _resolve_player_attack(
 
     if intent.weapon and weapon_instance is None:
         raise CombatBridgeError(
-            f"'{intent.weapon}' não está equipado e imediatamente acessível para atacar."
+            f"'{intent.weapon}' não está equipado nem acessível na cintura para atacar."
         )
 
     target_name = _participant_name(db, target)
 
     if weapon_instance is not None:
+        drew_weapon = item_accessibility(weapon_instance) == ItemAccessibility.QUICK
+        if drew_weapon:
+            try:
+                _quick_draw(db, weapon_instance, weapon_profile)
+            except ValueError as exc:
+                raise CombatBridgeError(
+                    f"Não foi possível sacar {weapon_instance.definition.name}: {exc}"
+                ) from exc
         supported = get_weapon_damage_profiles(weapon_profile)
         damage_profile = _parse_damage_profile(intent.damage_profile)
         if damage_profile is None or damage_profile not in supported:
@@ -541,6 +557,7 @@ def _resolve_player_attack(
             target_name,
             resolution.action,
             weapon_name=weapon_instance.definition.name,
+            drew_weapon=drew_weapon,
         )
 
     resolved_action_type = action_type or CombatActionType.MELEE_ATTACK
@@ -559,6 +576,26 @@ def _resolve_player_attack(
     return _describe_attack_outcome(character.name, target_name, resolution.action)
 
 
+def _quick_draw(
+    db: Session,
+    instance: ItemInstance,
+    profile: ItemWeaponProfile,
+) -> None:
+    """Move a weapon from the waist (QUICK access) into hand, for free.
+
+    Not a turn cost, not a separate action — a weapon riding at the waist is
+    assumed ready to draw in the same motion as the attack. Anything deeper
+    (STOWED, e.g. in a backpack) still requires a real EQUIP turn first.
+    """
+    hand_requirement = WeaponHandRequirement(profile.hand_requirement)
+    slot = (
+        EquipmentSlot.BOTH_HANDS
+        if hand_requirement == WeaponHandRequirement.TWO_HANDS
+        else EquipmentSlot.MAIN_HAND
+    )
+    equip_item(db, instance, slot=slot)
+
+
 def _resolve_named_weapon(
     db: Session,
     character: Character,
@@ -571,7 +608,7 @@ def _resolve_named_weapon(
         entry
         for entry in list_inventory(db, character.id)
         if needle in entry.definition.name.casefold()
-        and item_accessibility(entry) == ItemAccessibility.IMMEDIATE
+        and item_accessibility(entry) in {ItemAccessibility.IMMEDIATE, ItemAccessibility.QUICK}
     ]
     usable = [
         entry for entry in candidates if db.get(ItemWeaponProfile, entry.definition_id) is not None

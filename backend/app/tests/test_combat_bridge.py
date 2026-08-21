@@ -286,6 +286,135 @@ def test_attack_intent_uses_named_equipped_weapon(db_session):
     assert action.target_body_area == "TORSO"
 
 
+def test_attacking_with_a_weapon_at_the_waist_draws_it_for_free(db_session):
+    campaign, _region, _village, character, (_bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    definition = get_or_create_item(db_session, "Adaga de Cinto", "weapon")
+    configure_item_equipment_profile(
+        db_session,
+        definition,
+        allowed_slots={
+            EquipmentSlot.MAIN_HAND,
+            EquipmentSlot.WAIST,
+        },
+    )
+    configure_item_weapon_profile(
+        db_session,
+        definition,
+        weapon_family=WeaponFamily.DAGGER,
+        damage_profiles={PhysicalDamageProfile.PIERCE},
+        reach=WeaponReach.NORMAL,
+        hand_requirement=WeaponHandRequirement.ONE_HAND,
+    )
+    instance = add_item(db_session, character.id, "Adaga de Cinto")
+    equip_item(db_session, instance, slot=EquipmentSlot.WAIST)
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    intent = Intent(
+        type=ActionIntentType.ATTACK,
+        target="Bandido",
+        raw_text="Saco a adaga de cinto e ataco o bandido",
+        weapon="Adaga de Cinto",
+    )
+
+    summary, minutes = engine._apply_intent(
+        db_session, campaign.id, character, intent, state, action_key="attack-quickdraw",
+    )
+
+    assert minutes == 0
+    assert "saca Adaga de Cinto" in summary
+
+    db_session.refresh(instance)
+    assert instance.equipped_slot == EquipmentSlot.MAIN_HAND.value
+
+    action = (
+        db_session.query(CombatAction)
+        .filter(CombatAction.weapon_instance_id == instance.id)
+        .one()
+    )
+    assert action.encounter_id is not None
+
+
+def test_attacking_with_an_already_drawn_weapon_does_not_mention_drawing(db_session):
+    campaign, _region, _village, character, (_bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    definition = get_or_create_item(db_session, "Espada em Mãos", "weapon")
+    configure_item_equipment_profile(
+        db_session, definition, allowed_slots={EquipmentSlot.MAIN_HAND},
+    )
+    configure_item_weapon_profile(
+        db_session,
+        definition,
+        weapon_family=WeaponFamily.SWORD,
+        damage_profiles={PhysicalDamageProfile.SLASH},
+        reach=WeaponReach.NORMAL,
+        hand_requirement=WeaponHandRequirement.ONE_HAND,
+    )
+    instance = add_item(db_session, character.id, "Espada em Mãos")
+    equip_item(db_session, instance, slot=EquipmentSlot.MAIN_HAND)
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    intent = Intent(
+        type=ActionIntentType.ATTACK,
+        target="Bandido",
+        raw_text="Ataco o bandido",
+        weapon="Espada em Mãos",
+    )
+
+    summary, _minutes = engine._apply_intent(
+        db_session, campaign.id, character, intent, state, action_key="attack-already-drawn",
+    )
+
+    assert "saca" not in summary
+
+
+def test_attacking_with_a_stowed_weapon_is_rejected_not_auto_drawn(db_session):
+    campaign, _region, _village, character, (_bandido,) = _setup(
+        db_session, npc_names=("Bandido",), npc_hp=1000,
+    )
+    definition = get_or_create_item(db_session, "Machado na Mochila", "weapon")
+    configure_item_equipment_profile(
+        db_session,
+        definition,
+        allowed_slots={EquipmentSlot.MAIN_HAND, EquipmentSlot.BACK},
+    )
+    configure_item_weapon_profile(
+        db_session,
+        definition,
+        weapon_family=WeaponFamily.AXE,
+        damage_profiles={PhysicalDamageProfile.SLASH},
+        reach=WeaponReach.NORMAL,
+        hand_requirement=WeaponHandRequirement.ONE_HAND,
+    )
+    instance = add_item(db_session, character.id, "Machado na Mochila")
+    equip_item(db_session, instance, slot=EquipmentSlot.BACK)
+    db_session.commit()
+
+    state = build_game_state(db_session, campaign.id, character.id)
+    intent = Intent(
+        type=ActionIntentType.ATTACK,
+        target="Bandido",
+        raw_text="Ataco o bandido com o machado",
+        weapon="Machado na Mochila",
+    )
+
+    summary, minutes = engine._apply_intent(
+        db_session, campaign.id, character, intent, state, action_key="attack-stowed",
+    )
+
+    assert minutes == 0
+    assert "não está equipado nem acessível na cintura" in summary
+    assert db_session.query(CombatAction).filter(
+        CombatAction.weapon_instance_id == instance.id
+    ).count() == 0
+    db_session.refresh(instance)
+    assert instance.equipped_slot == EquipmentSlot.BACK.value
+
+
 def test_equip_intent_during_combat_consumes_the_current_turn(db_session):
     campaign, _region, _village, character, (_bandido,) = _setup(
         db_session, npc_names=("Bandido",), npc_hp=1000,

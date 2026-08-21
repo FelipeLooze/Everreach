@@ -47,10 +47,19 @@ describe("CombatPanel", () => {
     render(<CombatPanel encounter={encounter} />);
 
     expect(screen.getByText("Rodada 2 — Em andamento")).toBeInTheDocument();
-    expect(screen.getByText("Hero")).toBeInTheDocument();
-    expect(screen.getByText("Bandido")).toBeInTheDocument();
-    expect(screen.getByText("18/20 HP — corpo a corpo")).toBeInTheDocument();
-    expect(screen.getByText("5/12 HP — corpo a corpo")).toBeInTheDocument();
-    expect(screen.getByText("— turno atual")).toBeInTheDocument();
+    expect(screen.getByText("Seu grupo")).toBeInTheDocument();
+    expect(screen.getByText("Oponentes")).toBeInTheDocument();
+
+    const heroCard = screen.getByText("Hero").closest(".combat-participant-card");
+    expect(heroCard).toHaveTextContent("18/20");
+    expect(heroCard).toHaveTextContent("corpo a corpo");
+    expect(heroCard).toHaveTextContent("turno atual");
+    expect(heroCard).toHaveClass("combat-participant-active");
+
+    const banditCard = screen.getByText("Bandido").closest(".combat-participant-card");
+    expect(banditCard).toHaveTextContent("5/12");
+    expect(banditCard).toHaveTextContent("corpo a corpo");
+    expect(banditCard).not.toHaveTextContent("turno atual");
+    expect(banditCard).not.toHaveClass("combat-participant-active");
   });
 });

@@ -50,7 +50,8 @@ describe("InventoryPanel", () => {
 
     expect(await screen.findByText(/Peso: 4,5 \/ 25,0/)).toBeInTheDocument();
     expect(screen.getByText(/Carga normal/)).toBeInTheDocument();
-    expect(screen.getByText(/Rações/)).toHaveTextContent("4,5 de peso");
+    const card = (await screen.findByText("Rações")).closest(".inventory-item-card");
+    expect(card).toHaveTextContent("4,5 de peso");
   });
 
   it("continua mostrando a capacidade quando o inventário está vazio", async () => {
@@ -65,7 +66,8 @@ describe("InventoryPanel", () => {
     render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
 
     expect(await screen.findByText(/Peso: 0,0 \/ 25,0/)).toBeInTheDocument();
-    expect(screen.getByText("O inventário está vazio.")).toBeInTheDocument();
+    expect(screen.getByText("Nada equipado.")).toBeInTheDocument();
+    expect(screen.getByText("A mochila está vazia.")).toBeInTheDocument();
   });
 
   it("traduz a posição e a acessibilidade do equipamento", async () => {
@@ -104,12 +106,10 @@ describe("InventoryPanel", () => {
 
     render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
 
-    expect(await screen.findByText(/Espada/)).toHaveTextContent(
-      "mão principal — uso imediato",
-    );
-    expect(screen.getByText(/Espada/)).toHaveTextContent(
-      "espada; perfuração/corte; alcance normal; uma mão",
-    );
+    const card = (await screen.findByText("Espada")).closest(".inventory-item-card");
+    expect(card).toHaveTextContent("mão principal");
+    expect(card).toHaveTextContent("uso imediato");
+    expect(card).toHaveTextContent("espada · perfuração/corte · alcance normal · uma mão");
   });
 
   it("mostra cobertura e proteção física da armadura", async () => {
@@ -132,8 +132,9 @@ describe("InventoryPanel", () => {
     });
 
     render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
-    expect(await screen.findByText(/Gibão/)).toHaveTextContent("cobre torso, braços");
-    expect(screen.getByText(/Gibão/)).toHaveTextContent("corte 3");
+    const card = (await screen.findByText("Gibão")).closest(".inventory-item-card");
+    expect(card).toHaveTextContent("cobre torso, braços");
+    expect(card).toHaveTextContent("corte 3");
   });
 
   it("mostra as capacidades práticas de uma ferramenta", async () => {
@@ -152,11 +153,10 @@ describe("InventoryPanel", () => {
     });
 
     render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
-    expect(await screen.findByText(/Picareta/)).toHaveTextContent(
-      "ferramenta para martelar, minerar",
-    );
-    expect(screen.getByText(/Picareta/)).toHaveTextContent("qualidade obra-prima");
-    expect(screen.getByText(/Picareta/)).toHaveTextContent("condição danificada");
-    expect(screen.getByText(/Picareta/)).toHaveTextContent("material Ferro");
+    const card = (await screen.findByText("Picareta")).closest(".inventory-item-card");
+    expect(card).toHaveTextContent("ferramenta para martelar, minerar");
+    expect(card).toHaveTextContent("qualidade obra-prima");
+    expect(card).toHaveTextContent("condição danificada");
+    expect(card).toHaveTextContent("material Ferro");
   });
 });

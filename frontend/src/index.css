@@ -966,6 +966,39 @@ select {
 .techniques-section { margin-top: 28px; }
 .technique-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 
+/* Inventory */
+.inventory-panel { display: flex; flex-direction: column; gap: 24px; }
+.inventory-load-summary { margin: 0; color: #b4955d; font-family: "Cinzel", serif; font-size: 0.78rem; letter-spacing: 0.04em; }
+.inventory-item-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.inventory-item-card { display: flex; flex-direction: column; gap: 8px; }
+.inventory-item-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.inventory-item-heading strong { font-family: "Cinzel", serif; }
+.inventory-item-qty { flex: 0 0 auto; color: #938a7c; font-size: 0.8rem; }
+.inventory-item-meta { margin: 0; color: #aaa092; font-size: 0.85rem; line-height: 1.5; }
+.inventory-item-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.inventory-tag {
+  padding: 2px 9px;
+  border: 1px solid rgba(180, 145, 80, 0.35);
+  color: #b4955d;
+  font-family: "Cinzel", serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.inventory-tag-slot { border-color: rgba(180, 145, 80, 0.6); color: #d0b477; }
+.inventory-item-detail { margin: 0; color: #8d8271; font-size: 0.78rem; font-style: italic; }
+
+/* Combat */
+.combat-participant-card { display: flex; flex-direction: column; gap: 10px; }
+.combat-participant-active { border-color: rgba(208, 180, 119, 0.75); box-shadow: 0 0 14px rgba(180, 145, 80, 0.22); }
+.combat-participant-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.combat-participant-heading strong { font-family: "Cinzel", serif; }
+.combat-turn-tag { border-color: rgba(208, 180, 119, 0.8); color: #e8d9b0; }
+.combat-hp-row { display: flex; align-items: center; gap: 10px; }
+.combat-hp-track { flex: 1; height: 7px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.65); }
+.combat-hp-fill { height: 100%; background: var(--hp); box-shadow: 0 0 10px var(--hp); }
+.combat-hp-value { flex: 0 0 auto; color: #d6cec0; font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+
 /* Journal */
 .journal-grimoire { display: flex; flex-direction: column; }
 .memory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1003,6 +1036,7 @@ select {
   .character-sheet-layout { grid-template-columns: 1fr; }
   .attribute-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .memory-grid { grid-template-columns: 1fr; }
+  .inventory-item-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
@@ -1018,7 +1052,7 @@ select {
   .character-level-badge strong { font-size: 1.5rem; }
   .character-summary-copy h3 { font-size: 1.25rem; }
   .character-summary-copy p { font-size: 0.9rem; }
-  .attribute-grid, .technique-grid { grid-template-columns: 1fr; }
+  .attribute-grid, .technique-grid, .inventory-item-grid { grid-template-columns: 1fr; }
   .settings-action-card { align-items: stretch; flex-direction: column; }
   .exit-campaign-button { width: 100%; }
   .timeline-event-copy { align-items: flex-start; flex-direction: column; gap: 4px; }

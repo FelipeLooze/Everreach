@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getInventory } from "@/api/inventory";
-import type { Inventory } from "@/types/game";
+import type { Inventory, InventoryItem } from "@/types/game";
 
 const formatWeight = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -101,6 +101,63 @@ const toolCapabilityLabels = {
   LOCKPICKING: "abrir fechaduras",
 };
 
+const encumbranceLabels = {
+  NORMAL: "Carga normal",
+  LIGHTLY_ENCUMBERED: "Levemente sobrecarregado",
+  HEAVILY_ENCUMBERED: "Muito sobrecarregado",
+  OVERLOADED: "Carga excessiva",
+};
+
+function ItemCard({ item }: { item: InventoryItem }) {
+  return (
+    <article className="fantasy-content-card inventory-item-card">
+      <div className="inventory-item-heading">
+        <strong>{item.name}</strong>
+        {item.quantity > 1 && <span className="inventory-item-qty">× {item.quantity}</span>}
+      </div>
+
+      <p className="inventory-item-meta">
+        {formatWeight(item.total_weight)} de peso — qualidade {qualityLabels[item.quality]}
+        {item.condition && ` — condição ${conditionLabels[item.condition]}`}
+        {item.material && ` — material ${item.material.name}`}
+        {item.contained_in_name && ` — dentro de ${item.contained_in_name}`}
+        {item.container &&
+          ` — recipiente ${formatWeight(item.container.content_weight)} / ${formatWeight(item.container.weight_capacity)} de peso`}
+      </p>
+
+      <div className="inventory-item-tags">
+        {item.equipped_slot && (
+          <span className="inventory-tag inventory-tag-slot">{equipmentSlotLabels[item.equipped_slot]}</span>
+        )}
+        <span className="inventory-tag">{accessibilityLabels[item.accessibility]}</span>
+      </div>
+
+      {item.weapon && (
+        <p className="inventory-item-detail">
+          {weaponFamilyLabels[item.weapon.family]} ·{" "}
+          {item.weapon.damage_profiles.map((profile) => damageProfileLabels[profile]).join("/")} ·{" "}
+          {weaponReachLabels[item.weapon.reach]} · {handRequirementLabels[item.weapon.hand_requirement]}
+        </p>
+      )}
+
+      {item.armor && (
+        <p className="inventory-item-detail">
+          cobre {item.armor.coverage.map((area) => bodyAreaLabels[area]).join(", ")} · proteção{" "}
+          {Object.entries(item.armor.physical_protections)
+            .map(([profile, value]) => `${damageProfileLabels[profile as keyof typeof damageProfileLabels]} ${value}`)
+            .join(", ")}
+        </p>
+      )}
+
+      {item.tool && (
+        <p className="inventory-item-detail">
+          ferramenta para {item.tool.capabilities.map((capability) => toolCapabilityLabels[capability]).join(", ")}
+        </p>
+      )}
+    </article>
+  );
+}
+
 export function InventoryPanel({ campaignId, characterId }: { campaignId: string; characterId: string }) {
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -114,51 +171,41 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
   if (error) return <p className="panel-error">{error}</p>;
   if (!inventory) return <p>Carregando…</p>;
 
-  const encumbranceLabels = {
-    NORMAL: "Carga normal",
-    LIGHTLY_ENCUMBERED: "Levemente sobrecarregado",
-    HEAVILY_ENCUMBERED: "Muito sobrecarregado",
-    OVERLOADED: "Carga excessiva",
-  };
+  const equipped = inventory.items.filter((item) => item.equipped);
+  const bag = inventory.items.filter((item) => !item.equipped);
 
   return (
-    <>
-      <p>
-        Peso: {formatWeight(inventory.total_weight)} / {formatWeight(inventory.carrying_capacity)} — {encumbranceLabels[inventory.encumbrance]}
+    <div className="inventory-panel">
+      <p className="inventory-load-summary">
+        Peso: {formatWeight(inventory.total_weight)} / {formatWeight(inventory.carrying_capacity)} —{" "}
+        {encumbranceLabels[inventory.encumbrance]}
       </p>
-      {inventory.items.length === 0 ? (
-        <p className="panel-empty">O inventário está vazio.</p>
-      ) : (
-        <ul>
-          {inventory.items.map((item) => (
-            <li key={item.item_instance_id}>
-              {item.name} ({item.type}) × {item.quantity} — {formatWeight(item.total_weight)} de peso
-              {` — qualidade ${qualityLabels[item.quality]}`}
-              {item.condition && ` — condição ${conditionLabels[item.condition]}`}
-              {item.material && ` — material ${item.material.name}`}
-              {item.contained_in_name && ` — dentro de ${item.contained_in_name}`}
-              {item.container && ` — recipiente ${formatWeight(item.container.content_weight)} / ${formatWeight(item.container.weight_capacity)} de peso`}
-              {item.equipped_slot && ` — ${equipmentSlotLabels[item.equipped_slot]}`}
-              {` — ${accessibilityLabels[item.accessibility]}`}
-              {item.weapon && (
-                <small>
-                  {` — ${weaponFamilyLabels[item.weapon.family]}; ${item.weapon.damage_profiles.map((profile) => damageProfileLabels[profile]).join("/")}; ${weaponReachLabels[item.weapon.reach]}; ${handRequirementLabels[item.weapon.hand_requirement]}`}
-                </small>
-              )}
-              {item.armor && (
-                <small>
-                  {` — cobre ${item.armor.coverage.map((area) => bodyAreaLabels[area]).join(", ")}; proteção ${Object.entries(item.armor.physical_protections).map(([profile, value]) => `${damageProfileLabels[profile as keyof typeof damageProfileLabels]} ${value}`).join(", ")}`}
-                </small>
-              )}
-              {item.tool && (
-                <small>
-                  {` — ferramenta para ${item.tool.capabilities.map((capability) => toolCapabilityLabels[capability]).join(", ")}`}
-                </small>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+
+      <section className="fantasy-section">
+        <h4 className="fantasy-section-title">Equipado</h4>
+        {equipped.length === 0 ? (
+          <p className="panel-empty">Nada equipado.</p>
+        ) : (
+          <div className="inventory-item-grid">
+            {equipped.map((item) => (
+              <ItemCard key={item.item_instance_id} item={item} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="fantasy-section">
+        <h4 className="fantasy-section-title">Mochila</h4>
+        {bag.length === 0 ? (
+          <p className="panel-empty">A mochila está vazia.</p>
+        ) : (
+          <div className="inventory-item-grid">
+            {bag.map((item) => (
+              <ItemCard key={item.item_instance_id} item={item} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

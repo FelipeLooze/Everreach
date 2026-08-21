@@ -1,3 +1,4 @@
+from app.db.models.business import Business
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.attribute import AttributeDefinition, AttributeEvidenceRecord
 from app.db.models.character import Character, CharacterAttribute
@@ -115,6 +116,7 @@ from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
+    "Business",
     "Campaign",
     "AttributeDefinition",
     "AttributeEvidenceRecord",

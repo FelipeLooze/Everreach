@@ -2,10 +2,10 @@
 
 pay_wage is the one authoritative path from a Job (Phase 14D) to actual
 money moving. An employer must be able to afford it — this is not a new
-rule invented here, it falls straight out of reusing the real holdings:
-withdraw_funds (Organization treasury, Phase 13J/14A) and wallet.withdraw
-(character/NPC holdings, Phase 14A) both already refuse an amount they
-don't have. There is no infinite employer money.
+rule invented here, it falls straight out of reusing the real holdings
+via withdraw_from_actor (Phase 14J's shared actor-funds helper), which
+already refuses an amount the employer doesn't have. There is no
+infinite employer money.
 
 Payment frequency (Job.payment_frequency, Phase 14D) is not
 automatically scheduled here — pay_wage is an explicit, callable action;
@@ -15,14 +15,9 @@ future/world-simulation work, not this subphase's job.
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import EconomicActorType, EventType, JobApplicationStatus
+from app.core.enums import EventType, JobApplicationStatus
 from app.db.models.job import Job, JobApplication
-from app.db.models.organization import Organization
-from app.game.economy.currency import CurrencyError
-from app.game.economy.wallet import deposit, get_or_create_holding
-from app.game.economy.wallet import withdraw as wallet_withdraw
-from app.game.organizations.assets import withdraw_funds
-from app.game.organizations.service import OrganizationError
+from app.game.economy.actors import ActorFundsError, deposit_to_actor, withdraw_from_actor
 from app.services.event_log import log_event
 
 
@@ -47,27 +42,14 @@ def pay_wage(
     if not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0:
         raise WageError("O salário pago precisa ser um inteiro positivo de Bronze.")
 
-    if job.employer_type == EconomicActorType.ORGANIZATION:
-        employer = db.get(Organization, job.employer_id)
-        if employer is None:
-            raise WageError("A organização empregadora não existe mais.")
-        try:
-            withdraw_funds(db, employer, amount, reason=reason)
-        except OrganizationError as exc:
-            raise WageError(str(exc)) from exc
-    else:
-        employer_holding = get_or_create_holding(
-            db, job.campaign_id, job.employer_type, job.employer_id
-        )
-        try:
-            wallet_withdraw(db, employer_holding, amount, reason=reason)
-        except CurrencyError as exc:
-            raise WageError(str(exc)) from exc
+    try:
+        withdraw_from_actor(db, job.employer_type, job.employer_id, job.campaign_id, amount, reason=reason)
+    except ActorFundsError as exc:
+        raise WageError(str(exc)) from exc
 
-    worker_holding = get_or_create_holding(
-        db, job.campaign_id, application.applicant_type, application.applicant_id
+    deposit_to_actor(
+        db, application.applicant_type, application.applicant_id, job.campaign_id, amount, reason=reason
     )
-    deposit(db, worker_holding, amount, reason=reason)
 
     log_event(
         db,

@@ -17,7 +17,7 @@ const state: GameState = {
     description: "Uma vila de mercado.", discovery_status: "VISITED",
   },
   world_time: { year: 1, month: 2, day: 3, hour: 8, minute: 5 },
-  nearby_npcs: [{ id: "npc_1", name: "Mara", role: "Ferreira" }],
+  nearby_npcs: [{ id: "npc_1", name: "Mara", role: "Ferreira", activity: "WORKING" }],
   nearby_simulated_players: [{
     id: "simp_1", name: "Caio", level: 4, xp: 0, archetype: "EXPLORER",
     risk_tolerance: "BALANCED", goal: "", group_id: null,
@@ -38,6 +38,7 @@ describe("GameSidebar", () => {
     expect(screen.getByText("Cardal")).toBeInTheDocument();
     expect(screen.getByText("Uma vila de mercado.")).toBeInTheDocument();
     expect(screen.getByText("Mara")).toBeInTheDocument();
+    expect(screen.getByText("Ferreira · trabalhando")).toBeInTheDocument();
     expect(screen.getByText("Caio")).toBeInTheDocument();
     expect(screen.getByText("08:05")).toBeInTheDocument();
     expect(screen.getByText("A estrada perdida")).toBeInTheDocument();

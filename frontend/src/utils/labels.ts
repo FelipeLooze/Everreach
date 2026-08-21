@@ -31,6 +31,12 @@ const DISCOVERY_STATUS_LABELS: Record<string, string> = {
   MAPPED: "mapeado",
 };
 
+const NPC_ACTIVITY_LABELS: Record<string, string> = {
+  RESTING: "descansando",
+  WORKING: "trabalhando",
+  AVAILABLE: "disponível",
+};
+
 const QUEST_STATUS_LABELS: Record<string, string> = {
   NOT_STARTED: "não iniciada",
   ACTIVE: "ativa",
@@ -117,6 +123,7 @@ export const locationTypeLabel = (type: string) => translate(LOCATION_TYPE_LABEL
 const CONNECTION_TYPE_LABELS: Record<string, string> = {PATH: "trilha",ROAD: "estrada",};
 export const characterAttributeLabel = (key: string) => translate(CHARACTER_ATTRIBUTE_LABELS, key);
 export const discoveryStatusLabel = (status: string) => translate(DISCOVERY_STATUS_LABELS, status);
+export const npcActivityLabel = (activity: string) => translate(NPC_ACTIVITY_LABELS, activity);
 export const questStatusLabel = (status: string) => translate(QUEST_STATUS_LABELS, status);
 export const eventTypeLabel = (type: string) => translate(EVENT_TYPE_LABELS, type);
 export const connectionTypeLabel = (type: string) => translate(CONNECTION_TYPE_LABELS, type.toUpperCase());

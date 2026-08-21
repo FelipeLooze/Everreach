@@ -54,6 +54,7 @@ export interface NearbyNPC {
   id: string;
   name: string;
   role: string;
+  activity: string;
 }
 
 export interface NearbySimulatedPlayer {

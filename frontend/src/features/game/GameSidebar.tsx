@@ -1,4 +1,5 @@
 import type { GameState } from "@/types/game";
+import { npcActivityLabel } from "@/utils/labels";
 
 function formatTime(state: GameState) {
   if (!state.world_time) return "--:--";
@@ -59,7 +60,9 @@ export function GameSidebar({ state }: { state: GameState }) {
                 <span className="presence-dot" />
                 <span>{npc.name}</span>
               </div>
-              <span className="person-role">{npc.role}</span>
+              <span className="person-role">
+                {npc.role} · {npcActivityLabel(npc.activity)}
+              </span>
             </div>
           ))}
 

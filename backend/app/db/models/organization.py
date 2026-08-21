@@ -1,7 +1,12 @@
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.enums import OrganizationStatus, OrganizationType, OrganizationVisibility
+from app.core.enums import (
+    OrganizationOrigin,
+    OrganizationStatus,
+    OrganizationType,
+    OrganizationVisibility,
+)
 from app.core.ids import generate_id
 from app.db.base import Base
 
@@ -31,3 +36,5 @@ class Organization(Base):
     founder_type: Mapped[str | None] = mapped_column(String, nullable=True)
     founder_id: Mapped[str | None] = mapped_column(String, nullable=True)
     founded_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    origin: Mapped[str] = mapped_column(String, default=OrganizationOrigin.NATIVE, nullable=False)
+    transported_people_stance: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -763,6 +763,31 @@ class OrganizationStatus(StrEnum):
     UNDERGROUND = "UNDERGROUND"
 
 
+class OrganizationOrigin(StrEnum):
+    """Phase 13D/13E — did this organization predate transported people
+    arriving, or did transported people found it? Two different creation
+    paths (app.game.organizations.native / .transported), same
+    Organization model."""
+
+    NATIVE = "NATIVE"
+    TRANSPORTED_CREATED = "TRANSPORTED_CREATED"
+
+
+class TransportedPeopleStance(StrEnum):
+    """Phase 13D — a native organization's own disposition toward
+    transported people. Deliberately a per-organization field, not a
+    single hardcoded universal attitude — two native organizations may
+    (and should be free to) hold different stances."""
+
+    WELCOMING = "WELCOMING"
+    FEARFUL = "FEARFUL"
+    EXPLOITATIVE = "EXPLOITATIVE"
+    RECRUITING = "RECRUITING"
+    INDIFFERENT = "INDIFFERENT"
+    OPPOSED = "OPPOSED"
+    STUDYING = "STUDYING"
+
+
 class OrganizationVisibility(StrEnum):
     """Whether the organization's existence itself is publicly known —
     not the same axis as legal recognition (Phase 13E's INFORMAL /

@@ -11,9 +11,11 @@ from sqlalchemy.orm import Session
 from app.core.enums import (
     CombatActorType,
     EventType,
+    OrganizationOrigin,
     OrganizationStatus,
     OrganizationType,
     OrganizationVisibility,
+    TransportedPeopleStance,
 )
 from app.db.models.organization import Organization
 from app.game.time.clock import get_world_time
@@ -30,12 +32,20 @@ def create_organization(
     name: str,
     *,
     organization_type: OrganizationType,
+    origin: OrganizationOrigin,
     description: str = "",
     visibility: OrganizationVisibility = OrganizationVisibility.PUBLIC,
     headquarters_location_id: str | None = None,
     founder_type: CombatActorType | None = None,
     founder_id: str | None = None,
+    transported_people_stance: TransportedPeopleStance | None = None,
 ) -> Organization:
+    """origin (Phase 13D) is always explicit — never a silent default —
+    since whether an organization predated transported people is a real
+    world fact, not a detail to guess. transported_people_stance is
+    per-organization and optional: leave it unset when the world hasn't
+    established one yet; never assume every native organization reacts
+    to transported people the same way."""
     if not name.strip():
         raise OrganizationError("Uma organização precisa de um nome.")
     world_minute = get_world_time(db, campaign_id).total_minutes()
@@ -50,6 +60,8 @@ def create_organization(
         founder_type=founder_type,
         founder_id=founder_id,
         founded_world_minute=world_minute,
+        origin=origin,
+        transported_people_stance=transported_people_stance,
     )
     db.add(organization)
     db.flush()

@@ -4,6 +4,7 @@ import unicodedata
 
 from sqlalchemy.orm import Session
 from app.db.models.npc import NPC
+from app.db.models.quest import CharacterQuestObjective, QuestObjective
 from app.db.models.simulated_player import SimulatedPlayer
 from app.core.enums import (
     DiscoveryStatus,
@@ -66,6 +67,31 @@ def _format_known_fact(fact: KnownFact) -> str:
     statement = _clip(fact.statement, MAX_FACT_CHARS)
     source = _clip(fact.source, 80)
     return f"- [{fact.certainty}; fonte: {source}] {statement}"
+
+
+def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> list[str]:
+    """Phase 12L — the same free-text objective descriptions Phase 12G
+    already locked down as the entire player-facing surface (no
+    trigger_subject_id, no coordinates), now reaching the narrator too."""
+    objectives = (
+        db.query(QuestObjective)
+        .filter(QuestObjective.quest_id == quest_id)
+        .order_by(QuestObjective.order)
+        .all()
+    )
+    completed_ids = {
+        row.objective_id
+        for row in db.query(CharacterQuestObjective).filter(
+            CharacterQuestObjective.character_id == character_id,
+            CharacterQuestObjective.completed.is_(True),
+        )
+    }
+    return [
+        f"    - {_clip(objective.description, 200)} "
+        f"[{'completed' if objective.id in completed_ids else 'pending'}]"
+        + (" (optional)" if objective.optional else "")
+        for objective in objectives
+    ]
 
 
 def _format_memory(memory) -> str:
@@ -908,11 +934,14 @@ def build_context(
         "or its mastery."
     )
     quest_lines = ["ACTIVE QUESTS"]
-    quest_lines.extend(
-        [
-            f"- {_clip(quest.name, 160)} [{link.status}]"
-            for link, quest in state.active_quests[:MAX_ACTIVE_QUESTS]
-        ] or ["- none"]
+    for link, quest in state.active_quests[:MAX_ACTIVE_QUESTS]:
+        quest_lines.append(f"- {_clip(quest.name, 160)} [{link.status}]")
+        quest_lines.extend(_quest_objective_lines(db, state.character.id, quest.id))
+    if not state.active_quests:
+        quest_lines.append("- none")
+    quest_lines.append(
+        "Objective text is exactly what the character currently knows. Never state a "
+        "location, identity, or detail beyond it — no magic waypoints or hidden facts."
     )
     input_canon_lines = [
         "PLAYER INPUT CANON CHECK",

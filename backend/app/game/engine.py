@@ -19,7 +19,8 @@ from app.core.enums import (
 from app.core.logging import get_logger
 from app.core.ids import generate_id
 from app.db.models.character import Character
-from app.db.models.location import CharacterLocationDiscovery, Location
+from app.db.models.location import CharacterLocationDiscovery, Location, LocationFeature
+from app.db.models.notice import Notice
 from app.game import game_state
 from app.game.combat import bridge as combat_bridge
 from app.game.combat import hostility as combat_hostility
@@ -31,6 +32,7 @@ from app.game.items.interactions import (
 )
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
+from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.relationships import service as relationship_service
 from app.game.progression.outcomes import resolve_progression_outcome
@@ -863,6 +865,10 @@ def _handle_examine(
     character: Character,
     intent: Intent,
 ) -> tuple[str, int]:
+    board_lines = _examine_notice_board_if_targeted(db, character, intent)
+    if board_lines is not None:
+        return " ".join(board_lines), 2
+
     result = perception_service.observe_surroundings(
         db,
         character,
@@ -890,3 +896,42 @@ def _handle_examine(
         )
 
     return " ".join(lines), 2
+
+
+def _examine_notice_board_if_targeted(
+    db: Session, character: Character, intent: Intent
+) -> list[str] | None:
+    """Phase 12L: examining a named feature that actually has notices
+    posted to it reads the board (Phase 12I) instead of the generic
+    surroundings summary. Returns None when the target isn't a real board
+    at this location, so the caller falls through to the ordinary EXAMINE
+    behavior — nothing here invents a board out of thin air."""
+    if not intent.target:
+        return None
+    board = (
+        db.query(LocationFeature)
+        .filter(
+            LocationFeature.location_id == character.location_id,
+            LocationFeature.name.ilike(f"%{intent.target}%"),
+        )
+        .first()
+    )
+    if board is None:
+        return None
+    has_ever_had_a_notice = (
+        db.query(Notice).filter(Notice.board_feature_id == board.id).first() is not None
+    )
+    if not has_ever_had_a_notice:
+        return None
+
+    try:
+        notices = read_notice_board(db, character.id, board.id)
+    except NoticeBoardError:
+        return None
+
+    lines = [f"{character.name} lê o {board.name}."]
+    if not notices:
+        lines.append("Não há nenhum aviso ativo no momento.")
+    else:
+        lines.extend(f"[{notice.category}] {notice.title}: {notice.text}" for notice in notices)
+    return lines

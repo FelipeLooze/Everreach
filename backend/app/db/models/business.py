@@ -28,3 +28,6 @@ class Business(Base):
     location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
     status: Mapped[str] = mapped_column(String, default=BusinessStatus.ACTIVE, nullable=False)
     founded_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Phase 14K — the business's own funds, separate from its owner's
+    # personal/organizational money (see app.game.economy.actors).
+    till_bronze: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

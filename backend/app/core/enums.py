@@ -687,6 +687,7 @@ class EventType(StrEnum):
     BUSINESS_FOUNDED = "BUSINESS_FOUNDED"
     BUSINESS_CLOSED = "BUSINESS_CLOSED"
     BUSINESS_OPERATOR_CHANGED = "BUSINESS_OPERATOR_CHANGED"
+    BUSINESS_FUNDS_CHANGED = "BUSINESS_FUNDS_CHANGED"
     NPC_DIED = "NPC_DIED"
     REGION_DISCOVERED = "REGION_DISCOVERED"
     LOCATION_DISCOVERED = "LOCATION_DISCOVERED"
@@ -950,15 +951,19 @@ class ShopStatus(StrEnum):
 class EconomicActorType(StrEnum):
     """Phase 14 — who can participate economically. A superset of
     CombatActorType (CHARACTER/NPC/SIMULATED_PLAYER): Organizations
-    (Phase 13) are real economic actors too (employers, business owners
-    — Phase 14L) but are not a CombatActorType. Used for Job employers
-    and Business owners; workers/applicants stay CombatActorType since
-    only living actors work a job."""
+    (Phase 13) and Businesses (Phase 14J/14K) are real economic actors
+    too (employers, owners of money) but are not a CombatActorType. Used
+    for Job employers and Business owners; workers/applicants stay
+    CombatActorType since only living actors work a job.
+    withdraw_from_actor/deposit_to_actor (Phase 14J) is where each of
+    these actually keeps its money: Organization.treasury, Business.
+    till_bronze, or a CurrencyHolding."""
 
     CHARACTER = "CHARACTER"
     NPC = "NPC"
     SIMULATED_PLAYER = "SIMULATED_PLAYER"
     ORGANIZATION = "ORGANIZATION"
+    BUSINESS = "BUSINESS"
 
 
 class JobStatus(StrEnum):

@@ -25,7 +25,7 @@ from app.core.enums import (
     EventType,
 )
 from app.db.models.business import Business
-from app.game.economy.actors import ActorFundsError, withdraw_from_actor
+from app.game.economy.actors import ActorFundsError, deposit_to_actor, withdraw_from_actor
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -120,6 +120,29 @@ def close_business(db: Session, business: Business, *, reason: str = "") -> Busi
         payload={"reason": reason},
         occurred_world_minute=world_minute,
     )
+    return business
+
+
+def deposit_business_funds(db: Session, business: Business, amount_bronze: int, *, reason: str) -> Business:
+    """Phase 14K — earning money (a sale, an investment). Thin, named
+    counterpart to deposit_to_actor, matching the same wrapper style
+    already used by Organization/Shop till functions."""
+    if amount_bronze <= 0:
+        raise BusinessError("O valor depositado precisa ser positivo.")
+    deposit_to_actor(db, EconomicActorType.BUSINESS, business.id, business.campaign_id, amount_bronze, reason=reason)
+    return business
+
+
+def withdraw_business_funds(db: Session, business: Business, amount_bronze: int, *, reason: str) -> Business:
+    """Phase 14K — losing money (an expense, a purchase, a wage). Raises
+    if the business's till can't afford it — no infinite business money,
+    same as every other actor's funds in this system."""
+    if amount_bronze <= 0:
+        raise BusinessError("O valor retirado precisa ser positivo.")
+    try:
+        withdraw_from_actor(db, EconomicActorType.BUSINESS, business.id, business.campaign_id, amount_bronze, reason=reason)
+    except ActorFundsError as exc:
+        raise BusinessError(str(exc)) from exc
     return business
 
 

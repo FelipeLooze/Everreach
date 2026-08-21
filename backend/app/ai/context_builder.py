@@ -3,10 +3,12 @@ from typing import Protocol, Sequence
 import unicodedata
 
 from sqlalchemy.orm import Session
+from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
 from app.db.models.quest import CharacterQuestObjective, QuestObjective
+from app.db.models.shop import Shop, ShopListing
 from app.db.models.simulated_player import SimulatedPlayer
 from app.core.enums import (
     CombatActorType,
@@ -16,6 +18,7 @@ from app.core.enums import (
     NoticeStatus,
     OrganizationMembershipStatus,
     OrganizationVisibility,
+    ShopStatus,
     SimulatedPlayerStatus,
 )
 from app.core.logging import get_logger
@@ -43,6 +46,10 @@ from app.game.relationships.service import (
 )
 from app.game.players.groups import active_group_for_player
 from app.game.organizations.reputation import organization_reputation_category, organization_reputation_score
+from app.game.economy.currency import to_denominations
+from app.game.economy.local_economy import get_settlement_wealth, gold_circulates_normally
+from app.game.economy.pricing import PricingError, resolve_market_price
+from app.game.economy.wallet import total_carried_by_owner
 
 
 logger = get_logger("context")
@@ -192,6 +199,91 @@ def _known_organizations_lines(db: Session, character) -> list[str]:
         "Only state organization facts explicitly listed above. Never invent secret "
         "goals, hidden treasury, hidden membership, alliances, wars, or reputation "
         "changes the character has no way of knowing."
+    )
+    return lines
+
+
+def _currency_context_lines(db: Session, character) -> list[str]:
+    """Phase 14N — the character's own carried money, in denominations
+    (Phase 14A's own preferred display), always safe to show since it is
+    the character's own wallet, never anyone else's."""
+    total_bronze = total_carried_by_owner(db, CombatActorType.CHARACTER, character.id)
+    breakdown = to_denominations(total_bronze)
+    return [
+        "CURRENCY",
+        f"Gold: {breakdown.gold}",
+        f"Silver: {breakdown.silver}",
+        f"Bronze: {breakdown.bronze}",
+        "This is exactly what the character carries. Never invent additional money, "
+        "change a balance, or complete a purchase/payment — only the backend does that.",
+    ]
+
+
+def _local_economy_context_lines(db: Session, character) -> list[str]:
+    """Phase 14N — settlement wealth (Phase 14I) is a narrative texture
+    hint, never a price. Money communicates world stakes: this line lets
+    the narrator phrase Gold as unusual where it should be, without
+    inventing that judgment itself."""
+    if character.location_id is None:
+        return []
+    wealth_band = get_settlement_wealth(db, character.location_id)
+    gold_is_routine = gold_circulates_normally(wealth_band)
+    return [
+        "LOCAL ECONOMY",
+        f"Settlement wealth: {wealth_band}",
+        "Gold coins circulate routinely here."
+        if gold_is_routine
+        else "Gold is unusual here — even a single Gold coin may draw attention, "
+        "suspicion, or curiosity; small shops may lack change for it.",
+    ]
+
+
+def _nearby_shops_context_lines(db: Session, character) -> list[str]:
+    """Phase 14N — only shops physically here (Phase 14G never assumed a
+    global storefront menu), with only what a browsing customer would
+    actually see: name, whether it's open, and priced stock. Never the
+    shop's till or specialization internals."""
+    lines = ["NEARBY SHOPS"]
+    if character.location_id is None:
+        lines.append("- none")
+        return lines
+    shops = (
+        db.query(Shop)
+        .filter(Shop.location_id == character.location_id)
+        .order_by(Shop.name)
+        .limit(MAX_VISIBLE_ENTITIES)
+        .all()
+    )
+    if not shops:
+        lines.append("- none")
+        return lines
+    for shop in shops:
+        status_text = "open" if shop.status == ShopStatus.OPEN else "closed"
+        lines.append(f"- {shop.name} [{status_text}]")
+        if shop.status != ShopStatus.OPEN:
+            continue
+        listings = (
+            db.query(ShopListing)
+            .join(ItemInstance, ItemInstance.id == ShopListing.item_instance_id)
+            .filter(ShopListing.shop_id == shop.id)
+            .limit(MAX_VISIBLE_ENTITIES)
+            .all()
+        )
+        for listing in listings:
+            item = db.get(ItemInstance, listing.item_instance_id)
+            if item is None:
+                continue
+            if listing.asking_price_bronze is not None:
+                price = listing.asking_price_bronze
+            else:
+                try:
+                    price = resolve_market_price(db, item)
+                except PricingError:
+                    continue
+            lines.append(f"    - {item.definition.name}: {price} bronze")
+    lines.append(
+        "Only these listed items and prices are for sale. Never invent stock, a price, "
+        "or complete a transaction — the backend already decides all of that."
     )
     return lines
 
@@ -1046,6 +1138,9 @@ def build_context(
         "location, identity, or detail beyond it — no magic waypoints or hidden facts."
     )
     organization_lines = _known_organizations_lines(db, state.character)
+    currency_lines = _currency_context_lines(db, state.character)
+    local_economy_lines = _local_economy_context_lines(db, state.character)
+    shop_lines = _nearby_shops_context_lines(db, state.character)
     input_canon_lines = [
         "PLAYER INPUT CANON CHECK",
         *_build_input_canon_check(db, state, player_input, npc_facts, player_facts),
@@ -1070,6 +1165,9 @@ def build_context(
         "\n".join(active_lines),
         "\n".join(active_transported_lines),
         "\n".join(organization_lines),
+        "\n".join(currency_lines),
+        *([("\n".join(local_economy_lines))] if local_economy_lines else []),
+        "\n".join(shop_lines),
         npc_knowledge_section,
         player_knowledge_section,
         npc_memory_section,

@@ -1102,3 +1102,74 @@ def test_narrator_catches_protagonist_agency_violation_after_a_comma_appositive(
 
     assert result == "Lobo Selvagem foge, derrotado, pela viela estreita."
     assert len(llm.calls) == 3
+
+
+def test_narrator_drops_unauthorized_npc_speaker_but_keeps_the_active_interlocutors_reply():
+    llm = StubbornLLM(
+        "Osgar Vell sorri e acena, ouvindo a pergunta com atenção.\n\n"
+        'Talven Brooks: "Aqui, jovem, eu cuido bem dos hóspedes da minha estalagem!"'
+    )
+    context = (
+        "CURRENT PLAYER\nName: Filipe (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Talven Brooks (estalajadeiro; activity=WORKING)\n"
+        "- Osgar Vell (ancião da vila; activity=IDLE)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar Vell"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Filipe conversa com Osgar Vell (ancião da vila).",
+        context,
+        "Eu pergunto a Osgar se há uma pousada.",
+        "(sem histórico)",
+    )
+
+    assert result == "Osgar Vell sorri e acena, ouvindo a pergunta com atenção."
+    assert "Talven" not in result
+    assert len(llm.calls) == 3
+
+
+def test_narrator_allows_a_bystander_npc_to_speak_after_being_explicitly_introduced():
+    llm = StubbornLLM(
+        "Osgar Vell começa a responder, mas para quando Talven Brooks entra correndo na praça.\n\n"
+        'Talven Brooks: "Perdão pela interrupção, mas isso é comigo!"'
+    )
+    context = (
+        "CURRENT PLAYER\nName: Filipe (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Talven Brooks (estalajadeiro; activity=WORKING)\n"
+        "- Osgar Vell (ancião da vila; activity=IDLE)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar Vell"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Filipe conversa com Osgar Vell (ancião da vila).",
+        context,
+        "Eu pergunto a Osgar se há uma pousada.",
+        "(sem histórico)",
+    )
+
+    assert result == llm.response
+    assert len(llm.calls) == 1
+
+
+def test_narrator_catches_protagonist_agency_violation_in_screenplay_colon_format():
+    llm = StubbornLLM(
+        "Osgar Vell aguarda pacientemente.\n\n"
+        'Filipe: "Sim, eu adoraria ficar na pousada esta noite."'
+    )
+    context = (
+        "CURRENT PLAYER\nName: Filipe (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar Vell"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Filipe conversa com Osgar Vell (ancião da vila).",
+        context,
+        "Eu pergunto a ele se há uma pousada.",
+        "(sem histórico)",
+    )
+
+    assert result == "Osgar Vell aguarda pacientemente."
+    assert len(llm.calls) == 3

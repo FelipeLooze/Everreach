@@ -101,6 +101,17 @@ def test_apply_intent_move_does_not_reveal_unknown_location(db_session):
     assert character.location_id == village.id
 
 
+def test_apply_intent_talk_resolves_npc_by_role_when_target_is_not_a_name(db_session):
+    campaign, region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(type=ActionIntentType.TALK, target="estalajadeiro", raw_text="Eu falo com o estalajadeiro")
+    summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
+
+    assert "Talven Brooks" in summary
+    assert minutes >= 0
+
+
 def test_apply_intent_talk_completes_matching_quest_objective(db_session):
     campaign, region, village, character = _setup(db_session)
 

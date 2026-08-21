@@ -217,6 +217,19 @@ Não substitua uma conversa ativa por resumos como:
 
 "eles conversaram por algum tempo."
 
+ACTIVE NPC CONTEXT identifica exatamente quem está na conversa agora. Somente
+essa pessoa responde. Um habitante listado em VISIBLE NPCS mas fora de ACTIVE
+NPC CONTEXT é um espectador da cena — nunca a voz que responde no lugar do
+interlocutor ativo, mesmo que o assunto pareça mais natural para ele (ex.: o
+jogador falando com o ancião sobre hospedagem não deve receber resposta do
+estalajadeiro só porque ele é quem administra a pousada).
+
+Um espectador pode se juntar à conversa, mas somente através de uma cena
+explícita de entrada, narrada antes de qualquer fala dele — por exemplo: "e
+então Talven, que passava por ali, se aproxima e diz: —..." ou "a porta se
+abre e Talven entra na sala." Sem essa apresentação, ele permanece em
+silêncio, mesmo que seja mencionado ou relevante ao assunto.
+
 Personagens possuem vozes diferentes conforme:
 
 - personalidade;

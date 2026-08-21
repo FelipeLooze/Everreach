@@ -341,6 +341,81 @@ def _drop_unauthorized_combatant_segments(text: str, context: str) -> str:
     return "\n\n".join(kept_paragraphs).strip()
 
 
+# Verbs that legitimately bring a bystander NPC into an ongoing conversation —
+# only after one of these narrates them arriving may they be voiced at all.
+_NPC_ENTRANCE_VERBS = re.compile(
+    r"\b(?:chega(?:m)?|chegou|chegaram|entra(?:m)?|entrou|entraram|"
+    r"aparece(?:m)?|apareceu|apareceram|surge(?:m)?|surgiu|surgiram|"
+    r"aproxima(?:m)?(?:-se)?|aproximou-se|aproximaram-se|"
+    r"interrompe(?:m)?|interrompeu|interromperam|"
+    r"junta(?:m)?-se|juntou-se|juntaram-se)\b",
+    re.IGNORECASE,
+)
+
+
+def _unauthorized_speaker_message(name: str) -> str:
+    return (
+        f"'{name}' recebe fala atribuída sem ser o interlocutor ativo nem ter sido "
+        "apresentado entrando na cena; um NPC apenas visível é espectador — só pode "
+        "falar depois de uma cena explícita de chegada/aproximação/interrupção"
+    )
+
+
+def _scan_unauthorized_speakers(
+    paragraphs: list[str], visible_npcs: list[str], active_interlocutor_name: str
+):
+    """Yield (paragraph, unauthorized_speaker) for each paragraph, tracking NPC
+    entrances as they're narrated so a later paragraph may legitimately voice
+    an NPC who was just explicitly introduced joining the scene."""
+    authorized = {active_interlocutor_name} if active_interlocutor_name else set()
+    for paragraph in paragraphs:
+        if not _is_dialogue_paragraph(paragraph):
+            normalized = _normalized(paragraph)
+            for name in visible_npcs:
+                if name in authorized:
+                    continue
+                first = re.escape(_normalized(name.split()[0]))
+                if re.search(rf"\b{first}\b", normalized) and _NPC_ENTRANCE_VERBS.search(normalized):
+                    authorized.add(name)
+            yield paragraph, None
+            continue
+        speaker = _paragraph_speaker_among(paragraph, visible_npcs)
+        yield paragraph, (speaker if speaker and speaker not in authorized else None)
+
+
+def _find_unauthorized_speaker_violations(
+    text: str, context: str, active_interlocutor_name: str
+) -> list[str]:
+    """Only the active interlocutor may be given attributed dialogue. A
+    different NPC merely visible in the scene is a bystander and may speak
+    only once explicitly narrated joining the conversation."""
+    visible_npcs = _visible_npc_names(context)
+    if not visible_npcs:
+        return []
+    for _, unauthorized in _scan_unauthorized_speakers(
+        _split_paragraphs(text), visible_npcs, active_interlocutor_name
+    ):
+        if unauthorized:
+            return [_unauthorized_speaker_message(unauthorized)]
+    return []
+
+
+def _drop_unauthorized_speaker_segments(
+    text: str, context: str, active_interlocutor_name: str
+) -> str:
+    """Granular fallback: remove only the paragraph(s) giving a bystander NPC
+    unauthorized dialogue, preserving the rest of the narration."""
+    visible_npcs = _visible_npc_names(context)
+    kept_paragraphs = [
+        paragraph
+        for paragraph, unauthorized in _scan_unauthorized_speakers(
+            _split_paragraphs(text), visible_npcs, active_interlocutor_name
+        )
+        if not unauthorized
+    ]
+    return "\n\n".join(kept_paragraphs).strip()
+
+
 _AGENCY_VIOLATION_MESSAGE = (
     "a resposta usa o protagonista como personagem narrado; não escreva novas "
     "falas, gestos, ações ou reações para ele e mantenha mundo/NPCs como sujeitos"
@@ -372,6 +447,11 @@ def _protagonist_agency_violations(
     if not character_name:
         return []
     name = re.escape(character_name)
+
+    for paragraph in _split_paragraphs(text):
+        colon_speaker = _colon_dialogue_speaker(paragraph)
+        if colon_speaker is not None and _mentions(colon_speaker, character_name):
+            return [_AGENCY_VIOLATION_MESSAGE]
 
     speaks_pattern = re.compile(rf"\b(?:{_SPEECH_VERBS})\s+{name}\b", re.IGNORECASE)
     if speaks_pattern.search(text):
@@ -577,8 +657,22 @@ def _split_sentences(paragraph: str) -> list[str]:
     return [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", paragraph) if sentence.strip()]
 
 
+# A local model sometimes writes dialogue in screenplay style ('Nome: "..."')
+# instead of the expected em-dash convention. Both must be recognized as
+# dialogue, or every dialogue-aware check below silently misses this format.
+_COLON_DIALOGUE_ATTRIBUTION = re.compile(
+    r"^([A-ZÀ-Ý][\wÀ-ÿ'’]{1,40}(?:\s+[A-ZÀ-Ý][\wÀ-ÿ'’]{1,40}){0,2})\s*:\s*(?=[\"“—-])"
+)
+
+
+def _colon_dialogue_speaker(paragraph: str) -> str | None:
+    match = _COLON_DIALOGUE_ATTRIBUTION.match(paragraph.strip())
+    return match.group(1).strip() if match else None
+
+
 def _is_dialogue_paragraph(paragraph: str) -> bool:
-    return paragraph.strip().startswith(("—", "-"))
+    stripped = paragraph.strip()
+    return stripped.startswith(("—", "-")) or _colon_dialogue_speaker(paragraph) is not None
 
 
 def _extract_simulated_player_names(
@@ -706,24 +800,38 @@ def _mentions(paragraph: str, name: str) -> bool:
     return re.search(rf"\b{re.escape(first_name)}\b", paragraph, re.IGNORECASE) is not None
 
 
-def _paragraph_attributed_speaker(paragraph: str, character_name: str, npc_name: str) -> str | None:
-    """Who does a DIALOGUE paragraph explicitly establish as speaking, via a
+def _paragraph_speaker_among(paragraph: str, candidates: list[str]) -> str | None:
+    """Which of these candidate names (if any) does this paragraph explicitly
+    establish as speaking — via 'Nome: "..."' screenplay attribution, or a
     speech-verb adjacent to a name ("— ... — diz Osgar", "Osgar pergunta: — ...")?
 
     Deliberately stricter than a bare name search: a name appearing inside the
     dialogue text itself is often vocative address ("E você, senhor Osgar?"),
     not proof of who is speaking — treating it as attribution would let a
-    fabricated player line that merely addresses the NPC by name slip through.
+    fabricated player line that merely addresses someone by name slip through.
     """
-    for name, label in ((npc_name, "npc"), (character_name, "player")):
+    colon_speaker = _colon_dialogue_speaker(paragraph)
+    if colon_speaker is not None:
+        for name in candidates:
+            if name and _mentions(colon_speaker, name):
+                return name
+        return None
+    for name in candidates:
         if not name:
             continue
         first = re.escape(name.split()[0])
         if re.search(rf"\b(?:{_SPEECH_VERBS})\s+{first}\b", paragraph, re.IGNORECASE):
-            return label
+            return name
         if re.search(rf"\b{first}\b\s*(?:,)?\s*(?:{_SPEECH_VERBS})\b", paragraph, re.IGNORECASE):
-            return label
+            return name
     return None
+
+
+def _paragraph_attributed_speaker(paragraph: str, character_name: str, npc_name: str) -> str | None:
+    speaker = _paragraph_speaker_among(paragraph, [npc_name, character_name])
+    if speaker is None:
+        return None
+    return "npc" if speaker == npc_name else "player"
 
 
 def _paragraph_establishes_speaker(paragraph: str, character_name: str, npc_name: str) -> str | None:
@@ -929,6 +1037,11 @@ def narrate(
         unauthorized_combatant_violations = (
             [] if empty_violations else _find_unauthorized_combatant_violations(draft, context)
         )
+        unauthorized_speaker_violations = (
+            []
+            if empty_violations
+            else _find_unauthorized_speaker_violations(draft, context, active_interlocutor_name)
+        )
         hidden_name_violations = [] if empty_violations else _find_hidden_name_violations(
             draft, context, active_interlocutor_name
         )
@@ -951,6 +1064,7 @@ def narrate(
             + agency_violations
             + turn_violations
             + unauthorized_combatant_violations
+            + unauthorized_speaker_violations
             + hidden_name_violations
             + opening_interaction_violations
         )
@@ -958,7 +1072,7 @@ def narrate(
         logger.debug(
             "REVIEW RESULT (attempt %s)\nEMPTY/LEAK VIOLATIONS: %s\nCANON VIOLATIONS: %s\n"
             "META-AWARENESS VIOLATIONS: %s\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
-            "UNAUTHORIZED COMBATANT VIOLATIONS: %s\n"
+            "UNAUTHORIZED COMBATANT VIOLATIONS: %s\nUNAUTHORIZED SPEAKER VIOLATIONS: %s\n"
             "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
             "STYLE VIOLATIONS: %s",
             attempt,
@@ -968,6 +1082,7 @@ def narrate(
             agency_violations,
             turn_violations,
             unauthorized_combatant_violations,
+            unauthorized_speaker_violations,
             hidden_name_violations,
             opening_interaction_violations,
             style_violations,
@@ -1028,6 +1143,9 @@ def narrate(
     remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
     remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
     remaining_unauthorized_combatant = _find_unauthorized_combatant_violations(draft, context)
+    remaining_unauthorized_speaker = _find_unauthorized_speaker_violations(
+        draft, context, active_interlocutor_name
+    )
     remaining_hidden_names = _find_hidden_name_violations(
         draft, context, active_interlocutor_name
     )
@@ -1040,12 +1158,13 @@ def narrate(
 
     logger.debug(
         "REVIEW RESULT (final)\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
-        "UNAUTHORIZED COMBATANT VIOLATIONS: %s\n"
+        "UNAUTHORIZED COMBATANT VIOLATIONS: %s\nUNAUTHORIZED SPEAKER VIOLATIONS: %s\n"
         "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
         "STYLE VIOLATIONS: %s",
         remaining_agency,
         remaining_turn,
         remaining_unauthorized_combatant,
+        remaining_unauthorized_speaker,
         remaining_hidden_names,
         remaining_opening_interaction,
         remaining_style,
@@ -1101,6 +1220,30 @@ def narrate(
                 "without emptying the response. Returning deterministic safe fallback "
                 "instead of the known-invalid draft: %s\nFALLBACK:\n%s",
                 remaining_unauthorized_combatant,
+                safe,
+            )
+            return safe
+
+    # A bystander NPC given dialogue they were never authorized for (the wrong
+    # NPC "answering" instead of the one actually being addressed) — drop only
+    # the paragraph(s) that voice them, keeping the rest of the exchange.
+    if remaining_unauthorized_speaker:
+        trimmed = _drop_unauthorized_speaker_segments(draft, context, active_interlocutor_name)
+        if trimmed:
+            logger.warning(
+                "FALLBACK REASON: draft gave an unauthorized bystander NPC dialogue after "
+                "hard revisions; offending paragraph(s) dropped: %s\nKEPT:\n%s",
+                remaining_unauthorized_speaker,
+                trimmed,
+            )
+            draft = trimmed
+        else:
+            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+            logger.error(
+                "FALLBACK REASON: unauthorized speaker violation could not be removed "
+                "without emptying the response. Returning deterministic safe fallback "
+                "instead of the known-invalid draft: %s\nFALLBACK:\n%s",
+                remaining_unauthorized_speaker,
                 safe,
             )
             return safe

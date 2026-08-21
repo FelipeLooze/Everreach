@@ -607,6 +607,7 @@ def _handle_talk(
             candidate
             for candidate in state.nearby_npcs
             if target_lower in candidate.name.casefold()
+            or target_lower in candidate.role.casefold()
         ]
 
         simulated_player_matches = [

@@ -10,6 +10,7 @@ from app.db.models.quest import (
     QuestObjective,
 )
 from app.db.models.character import Character
+from app.game.quests.consequences import QuestConsequences, apply_quest_consequences
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -104,10 +105,22 @@ def _get_character_quest(db: Session, character_id: str, quest_id: str) -> Chara
     return cq
 
 
-def abandon_quest(db: Session, campaign_id: str, character_id: str, quest_id: str) -> CharacterQuest:
+def abandon_quest(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    quest_id: str,
+    *,
+    consequences: QuestConsequences | None = None,
+) -> CharacterQuest:
     """Player-initiated withdrawal from a quest they are actively pursuing.
     Only a real, active involvement can be abandoned — a quest that already
-    resolved one way or another is history, not something to undo."""
+    resolved one way or another is history, not something to undo.
+
+    consequences (Phase 12E) is optional — most abandonments (e.g. simple
+    test scaffolding) have none; a requester noticing they were left
+    hanging is a real possible consequence once content actually supplies
+    one."""
     cq = _get_character_quest(db, character_id, quest_id)
     if cq.status != QuestStatus.ACTIVE:
         raise QuestLifecycleError(
@@ -123,16 +136,24 @@ def abandon_quest(db: Session, campaign_id: str, character_id: str, quest_id: st
         actor_id=character_id,
         payload={"quest_id": quest_id},
     )
+    apply_quest_consequences(db, campaign_id, character_id, consequences)
     return cq
 
 
 def fail_quest(
-    db: Session, campaign_id: str, character_id: str, quest_id: str, *, reason: str = ""
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    quest_id: str,
+    *,
+    reason: str = "",
+    consequences: QuestConsequences | None = None,
 ) -> CharacterQuest:
     """System-initiated failure of one character's participation (e.g. a
     deadline passed, a target died) — see Phase 12D. This only closes that
     character's involvement; the world-level Quest is untouched, since
-    someone else may still resolve it."""
+    someone else may still resolve it. consequences is optional — see
+    Phase 12E."""
     cq = _get_character_quest(db, character_id, quest_id)
     if cq.status != QuestStatus.ACTIVE:
         raise QuestLifecycleError(
@@ -148,6 +169,7 @@ def fail_quest(
         actor_id=character_id,
         payload={"quest_id": quest_id, "reason": reason},
     )
+    apply_quest_consequences(db, campaign_id, character_id, consequences)
     return cq
 
 

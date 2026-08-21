@@ -135,6 +135,49 @@ def add_item(
     return entry
 
 
+def remove_item(db: Session, character_id: str, item_name: str, quantity: int = 1) -> None:
+    """Phase 14F needs this to consume production inputs — Phase 10 had
+    add_item's counterpart missing. Mirrors add_item's shape: character-
+    held stacks only (matching add_item's own scope; NPC-held removal
+    would need an NPC-side add_item counterpart that doesn't exist
+    either — a pre-existing Phase 10 gap, not something this widens).
+    Consumes from whichever matching stacks exist (any quality/material),
+    oldest first, deleting a stack once it reaches zero. Raises if the
+    character doesn't hold enough in total."""
+    if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
+        raise ValueError("Item quantity must be a positive integer.")
+    item = db.query(Item).filter(Item.name == item_name).first()
+    if item is None:
+        raise ValueError(f"Item desconhecido: {item_name}")
+    stacks = (
+        db.query(ItemInstance)
+        .filter(
+            ItemInstance.definition_id == item.id,
+            ItemInstance.location_type == ItemLocationType.CHARACTER.value,
+            ItemInstance.location_ref == character_id,
+        )
+        .order_by(ItemInstance.id)
+        .all()
+    )
+    available = sum(stack.quantity for stack in stacks)
+    if available < quantity:
+        raise ValueError(
+            f"Quantidade insuficiente de '{item_name}' "
+            f"({available} disponível, {quantity} necessário)."
+        )
+    remaining = quantity
+    for stack in stacks:
+        if remaining <= 0:
+            break
+        taken = min(stack.quantity, remaining)
+        remaining -= taken
+        if taken == stack.quantity:
+            db.delete(stack)
+        else:
+            stack.quantity -= taken
+    db.flush()
+
+
 def list_inventory(db: Session, character_id: str) -> list[ItemInstance]:
     direct = (
         db.query(ItemInstance)

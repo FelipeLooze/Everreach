@@ -429,6 +429,42 @@ class QuestStatus(StrEnum):
     RESOLVED_EXTERNALLY = "RESOLVED_EXTERNALLY"
 
 
+class ObjectiveType(StrEnum):
+    """The kind of involvement an Objective represents — a display/
+    organization category, not a mechanical trigger (see
+    ObjectiveTriggerType for that)."""
+
+    INVESTIGATION = "INVESTIGATION"
+    DISCOVERY = "DISCOVERY"
+    DELIVERY = "DELIVERY"
+    PROTECTION = "PROTECTION"
+    NEGOTIATION = "NEGOTIATION"
+    EXPLORATION = "EXPLORATION"
+    RETRIEVAL = "RETRIEVAL"
+    SURVIVAL = "SURVIVAL"
+    OBSERVATION = "OBSERVATION"
+    COMBAT = "COMBAT"
+    CRAFTING = "CRAFTING"
+    SOCIAL_INTERACTION = "SOCIAL_INTERACTION"
+    WORLD_STATE_CHANGE = "WORLD_STATE_CHANGE"
+
+
+class ObjectiveTriggerType(StrEnum):
+    """What authoritative backend fact the Objective Evaluator
+    (app.game.quests.service.evaluate_objective_trigger) watches for.
+    MANUAL means no automatic evaluator exists yet for this objective —
+    only an explicit complete_objective call can satisfy it. Not every
+    ObjectiveType has a generic trigger wired yet; see the Phase 12B
+    report for which of these have a live call site today."""
+
+    TALK_TO_NPC = "TALK_TO_NPC"
+    REACH_LOCATION = "REACH_LOCATION"
+    DELIVER_ITEM = "DELIVER_ITEM"
+    RETRIEVE_ITEM = "RETRIEVE_ITEM"
+    DEFEAT_TARGET = "DEFEAT_TARGET"
+    MANUAL = "MANUAL"
+
+
 class QuestSource(StrEnum):
     """Where a Quest originated. Phase 12A only defines the vocabulary —
     ORGANIZATION_REQUEST/NOTICE_BOARD/WORLD_EVENT sources are not yet wired

@@ -13,13 +13,13 @@ from app.core.enums import (
     EventType,
     KnowerType,
     KnowledgeCertainty,
+    ObjectiveTriggerType,
     TravelIncidentKind,
 )
 from app.core.logging import get_logger
 from app.core.ids import generate_id
 from app.db.models.character import Character
 from app.db.models.location import CharacterLocationDiscovery, Location
-from app.db.models.quest import QuestObjective
 from app.game import game_state
 from app.game.combat import bridge as combat_bridge
 from app.game.combat import hostility as combat_hostility
@@ -643,6 +643,14 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
     except travel_service.TravelError as exc:
         return str(exc), 0
 
+    quests_service.evaluate_objective_trigger(
+        db,
+        campaign_id,
+        character.id,
+        ObjectiveTriggerType.REACH_LOCATION,
+        subject_id=destination.id,
+    )
+
     summary = (
         f"{character.name} viaja até {destination.name}. "
         f"A viagem leva {travel_result.minutes} minutos e consome "
@@ -786,30 +794,17 @@ def _handle_talk(
 
 
 def _auto_complete_talk_objectives(db: Session, campaign_id: str, character: Character, npc) -> None:
-    """MVP shortcut: talking to an NPC named in an active quest objective completes it.
-    A richer dialogue/objective-trigger system is future work."""
-    for _cq, quest in _active_quests_for(db, character.id):
-        objectives = db.query(QuestObjective).filter(QuestObjective.quest_id == quest.id).all()
-        for objective in objectives:
-            if npc.name in objective.description:
-                quests_service.complete_objective(db, campaign_id, character.id, objective.id)
-
-
-def _active_quests_for(db: Session, character_id: str):
-    from app.core.enums import QuestStatus
-    from app.db.models.quest import CharacterQuest, Quest
-
-    links = (
-        db.query(CharacterQuest)
-        .filter(CharacterQuest.character_id == character_id, CharacterQuest.status == QuestStatus.ACTIVE)
-        .all()
+    """Phase 12B: talking to an NPC is an authoritative backend fact — route
+    it through the Objective Evaluator (structured trigger_type/
+    trigger_subject_id matching) instead of guessing from free-text
+    objective descriptions."""
+    quests_service.evaluate_objective_trigger(
+        db,
+        campaign_id,
+        character.id,
+        ObjectiveTriggerType.TALK_TO_NPC,
+        subject_id=npc.id,
     )
-    active = []
-    for link in links:
-        quest = db.get(Quest, link.quest_id)
-        if quest is not None:
-            active.append((link, quest))
-    return active
 
 
 def _handle_rest(

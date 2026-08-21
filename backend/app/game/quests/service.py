@@ -2,7 +2,7 @@ from typing import Sequence
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import EventType, QuestSource, QuestStatus
+from app.core.enums import EventType, ObjectiveTriggerType, QuestSource, QuestStatus
 from app.db.models.quest import (
     CharacterQuest,
     CharacterQuestObjective,
@@ -252,3 +252,63 @@ def complete_objective(db: Session, campaign_id: str, character_id: str, objecti
 
 def list_character_quests(db: Session, character_id: str) -> list[CharacterQuest]:
     return db.query(CharacterQuest).filter(CharacterQuest.character_id == character_id).all()
+
+
+def active_character_quests(db: Session, character_id: str) -> list[tuple[CharacterQuest, Quest]]:
+    links = (
+        db.query(CharacterQuest)
+        .filter(CharacterQuest.character_id == character_id, CharacterQuest.status == QuestStatus.ACTIVE)
+        .all()
+    )
+    active = []
+    for link in links:
+        quest = db.get(Quest, link.quest_id)
+        if quest is not None:
+            active.append((link, quest))
+    return active
+
+
+def evaluate_objective_trigger(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    trigger_type: ObjectiveTriggerType,
+    *,
+    subject_id: str | None = None,
+) -> list[CharacterQuestObjective]:
+    """The Objective Evaluator (Phase 12B). Call this after an authoritative
+    backend fact occurs — an NPC was actually talked to, a location was
+    actually reached, and so on (see the call sites in engine.py) — and any
+    not-yet-completed objective on the character's active quests whose
+    trigger matches is completed. The LLM never calls this and never
+    decides the outcome; only real state changes reach here.
+
+    A trigger with no trigger_subject_id matches any subject_id for that
+    trigger_type; one with a trigger_subject_id requires an exact match.
+    """
+    completed: list[CharacterQuestObjective] = []
+    for _cq, quest in active_character_quests(db, character_id):
+        objectives = (
+            db.query(QuestObjective)
+            .filter(QuestObjective.quest_id == quest.id, QuestObjective.trigger_type == trigger_type)
+            .all()
+        )
+        for objective in objectives:
+            if (
+                objective.trigger_subject_id is not None
+                and objective.trigger_subject_id != subject_id
+            ):
+                continue
+            already_done = (
+                db.query(CharacterQuestObjective)
+                .filter(
+                    CharacterQuestObjective.character_id == character_id,
+                    CharacterQuestObjective.objective_id == objective.id,
+                    CharacterQuestObjective.completed.is_(True),
+                )
+                .first()
+            )
+            if already_done:
+                continue
+            completed.append(complete_objective(db, campaign_id, character_id, objective.id))
+    return completed

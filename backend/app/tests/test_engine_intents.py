@@ -5,9 +5,10 @@ from app.game.travel import service as travel_service
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService
 from app.core.enums import (
-    ActionIntentType, 
-    DiscoveryStatus, 
-    MemoryOwnerType, 
+    ActionIntentType,
+    DiscoveryStatus,
+    MemoryOwnerType,
+    ObjectiveTriggerType,
     TravelPace,
 )
 from app.core.enums import EventType
@@ -115,6 +116,8 @@ def test_apply_intent_talk_resolves_npc_by_role_when_target_is_not_a_name(db_ses
 def test_apply_intent_talk_completes_matching_quest_objective(db_session):
     campaign, region, village, character = _setup(db_session)
 
+    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+
     quest = Quest(
         region_id=region.id,
         name="Falar com o Ancião",
@@ -127,6 +130,8 @@ def test_apply_intent_talk_completes_matching_quest_objective(db_session):
         quest_id=quest.id,
         description="Falar com Osgar Vell em Cardal.",
         order=0,
+        trigger_type=ObjectiveTriggerType.TALK_TO_NPC,
+        trigger_subject_id=osgar.id,
     )
     db_session.add(objective)
     db_session.flush()

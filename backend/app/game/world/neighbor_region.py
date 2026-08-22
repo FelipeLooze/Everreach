@@ -61,6 +61,7 @@ from app.game.world.generator import (
     generate_subregion_identity,
     generate_subregion_names,
 )
+from app.game.world.cross_region_canon import record_cross_region_historical_relationship
 from app.game.world.neighbor_constraints import build_neighbor_region_constraints
 from app.game.world.region_content import generate_region_settlements_and_infrastructure
 from app.game.world.validation import validate_region_package
@@ -145,5 +146,8 @@ def materialize_neighbor_region(
     )
 
     validate_region_package(db, region)
+
+    source_region = db.get(Region, boundary.source_region_id)
+    record_cross_region_historical_relationship(db, campaign_id, source_region, region, constraints)
 
     return region

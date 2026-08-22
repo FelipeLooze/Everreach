@@ -74,6 +74,7 @@ from app.db.models.simulated_player_arrival import (
     SimulatedPlayerArrivalPolicy,
 )
 from app.db.models.region import Region
+from app.db.models.region_materialization import RegionMaterializationRequest
 from app.db.models.relationship import (
     CharacterNPCRelationship,
     CharacterSimulatedPlayerRelationship,
@@ -192,6 +193,7 @@ __all__ = [
     "QuestObjective",
     "CharacterRecovery",
     "Region",
+    "RegionMaterializationRequest",
     "CharacterNPCRelationship",
     "CharacterSimulatedPlayerRelationship",
     "SimulatedPlayerRelationship",

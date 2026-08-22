@@ -653,6 +653,29 @@ class SimulatedPlayerGroupStatus(StrEnum):
     DISSOLVED = "DISSOLVED"
 
 
+class RegionMaterializationRequestSource(StrEnum):
+    """Phase 16A — who/what determined that a neighboring Region needs to
+    exist. Mirrors the trigger categories from the Phase 16 spec; the
+    protagonist is deliberately not privileged over any other source."""
+
+    PLAYER_EXPLORATION = "PLAYER_EXPLORATION"
+    SIMULATED_CHARACTER = "SIMULATED_CHARACTER"
+    ORGANIZATION = "ORGANIZATION"
+    MILITARY_POLITICAL = "MILITARY_POLITICAL"
+    QUEST_EVENT = "QUEST_EVENT"
+    ECONOMY = "ECONOMY"
+    WORLD_HISTORY = "WORLD_HISTORY"
+
+
+class RegionMaterializationRequestStatus(StrEnum):
+    """Phase 16A — a request never generates a Region by itself (that is
+    16I+); this only tracks whether one still needs to happen."""
+
+    PENDING = "PENDING"
+    FULFILLED = "FULFILLED"
+    REJECTED = "REJECTED"
+
+
 class EventType(StrEnum):
     CAMPAIGN_CREATED = "CAMPAIGN_CREATED"
     WORLD_STARTED = "WORLD_STARTED"
@@ -800,6 +823,9 @@ class EventType(StrEnum):
     SOCIAL_KNOWLEDGE_OPPORTUNITY_RESOLVED = (
         "SOCIAL_KNOWLEDGE_OPPORTUNITY_RESOLVED"
     )
+    REGION_MATERIALIZATION_REQUESTED = "REGION_MATERIALIZATION_REQUESTED"
+    REGION_MATERIALIZATION_FULFILLED = "REGION_MATERIALIZATION_FULFILLED"
+    REGION_MATERIALIZATION_REJECTED = "REGION_MATERIALIZATION_REJECTED"
 
 class TravelPace(StrEnum):
     SLOW = "SLOW"

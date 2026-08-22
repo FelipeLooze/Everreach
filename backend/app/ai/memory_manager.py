@@ -5,7 +5,7 @@ import json
 import re
 from app.db.models.simulated_player import SimulatedPlayer
 from typing import Sequence
-from sqlalchemy import case, or_
+from sqlalchemy import case, or_, text
 from sqlalchemy.orm import Session
 from app.core.enums import EventType, MemoryOwnerType, TravelIncidentKind
 from app.db.models.character import Character
@@ -392,7 +392,15 @@ def memories_for_subject(
 ) -> list[Memory]:
     """Every memory this owner has about exactly this subject, oldest
     first — Phase 18E's consolidation reads this to summarize many small
-    episodes into one durable long-term document."""
+    episodes into one durable long-term document.
+
+    Tie-broken by SQLite's own implicit rowid (monotonically increasing
+    with insertion), not Memory.id: id is a random uuid4 hex, so several
+    memories created within the same datetime.now() tick (routine on a
+    fast machine — Windows' clock resolution is coarser than a tight
+    creation loop) would otherwise have their relative order decided by
+    chance, silently scrambling which episode consolidate_memories
+    treats as "first" vs "most recent"."""
     return (
         db.query(Memory)
         .filter(
@@ -401,7 +409,7 @@ def memories_for_subject(
             Memory.owner_id == owner_id,
             Memory.subject == subject,
         )
-        .order_by(Memory.created_at, Memory.id)
+        .order_by(Memory.created_at, text("memories.rowid"))
         .all()
     )
 

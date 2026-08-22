@@ -36,7 +36,7 @@ def _setup(db_session):
 
 def test_post_notice_requires_real_context(db_session):
     campaign, region, village, character, board = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
 
     notice = post_notice(
         db_session,

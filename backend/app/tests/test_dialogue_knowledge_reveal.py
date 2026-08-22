@@ -3,6 +3,7 @@ from app.ai.llm_service import LLMService
 from app.api.serializers import to_game_state_response
 from app.core.enums import DiscoveryStatus, KnowerType
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.db.models.npc import NPC
 from app.game import engine
 from app.game.character.service import create_character
 from app.game.discovery.service import set_location_discovery
@@ -18,21 +19,23 @@ def _cardal_scene(db_session):
     set_location_discovery(db_session, character.id, village.id, DiscoveryStatus.VISITED)
     grant_initial_player_knowledge(db_session, campaign.id, character.id)
     db_session.commit()
-    return campaign, character
+    elder = db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.role == "ancião da vila").one()
+    return campaign, character, village, region, elder
 
 
 class NarratingLLM(LLMService):
     """Simulates a real narrator: correctly classifies TALK, then has the NPC
     voice a known fact in paraphrased, in-character dialogue."""
 
-    def __init__(self, narration: str) -> None:
+    def __init__(self, narration: str, elder_name: str) -> None:
         self.calls: list[tuple[str, str]] = []
         self._narration = narration
+        self._elder_name = elder_name
 
     def generate(self, system: str, prompt: str) -> str:
         self.calls.append((system, prompt))
         if "intent" in system.lower():
-            return '{"intent": "TALK", "target": "Osgar Vell"}'
+            return f'{{"intent": "TALK", "target": "{self._elder_name}"}}'
         return self._narration
 
 
@@ -50,12 +53,12 @@ def _player_fact_keys(db_session, character_id: str) -> set[str]:
 
 
 def test_npc_revealing_the_village_name_in_dialogue_teaches_the_player(db_session):
-    campaign, character = _cardal_scene(db_session)
+    campaign, character, village, region, elder = _cardal_scene(db_session)
 
     state = build_game_state(db_session, campaign.id, character.id)
     assert to_game_state_response(db_session, state).location.name is None
 
-    llm = NarratingLLM("— Isto aqui é Cardal, uma vila tranquila do Vale Verdejante.")
+    llm = NarratingLLM(f"— Isto aqui é {village.name}, uma vila tranquila do {region.name}.", elder.name)
     engine.resolve_action(
         db_session, llm, campaign.id, character.id,
         "— Com licença, como se chama este lugar?",
@@ -67,14 +70,14 @@ def test_npc_revealing_the_village_name_in_dialogue_teaches_the_player(db_sessio
 
     state_after = build_game_state(db_session, campaign.id, character.id)
     response_after = to_game_state_response(db_session, state_after)
-    assert response_after.location.name == "Cardal"
-    assert response_after.region.name == "Vale Verdejante"
+    assert response_after.location.name == village.name
+    assert response_after.region.name == region.name
 
 
 def test_npc_not_mentioning_the_name_does_not_teach_it(db_session):
-    campaign, character = _cardal_scene(db_session)
+    campaign, character, village, region, elder = _cardal_scene(db_session)
 
-    llm = NarratingLLM("— Bom dia. Em que posso ajudar?")
+    llm = NarratingLLM("— Bom dia. Em que posso ajudar?", elder.name)
     engine.resolve_action(
         db_session, llm, campaign.id, character.id, "— Bom dia.",
     )
@@ -86,9 +89,9 @@ def test_npc_not_mentioning_the_name_does_not_teach_it(db_session):
 
 
 def test_repeated_reveals_across_turns_stay_idempotent(db_session):
-    campaign, character = _cardal_scene(db_session)
+    campaign, character, village, region, elder = _cardal_scene(db_session)
 
-    llm = NarratingLLM("— Isto aqui é Cardal, uma vila tranquila do Vale Verdejante.")
+    llm = NarratingLLM(f"— Isto aqui é {village.name}, uma vila tranquila do {region.name}.", elder.name)
     engine.resolve_action(
         db_session, llm, campaign.id, character.id, "— Onde estou?",
     )

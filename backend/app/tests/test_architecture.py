@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService
 from app.db.models.character import Character
+from app.db.models.location import Location
+from app.db.models.npc import NPC
 from app.db.models.quest import Quest, QuestObjective
 from app.game.character.service import create_character
 from app.game.game_state import build_game_state
@@ -27,6 +29,11 @@ def test_context_builder_sends_only_current_player_context(db_session):
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
 
+    elder = db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.role == "ancião da vila").one()
+    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").one()
+    clearing = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "clearing").one()
+    blacksmith = db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.role == "ferreira").one()
+
     quest = Quest(
         region_id=region.id,
         name="Quest de Teste",
@@ -37,7 +44,7 @@ def test_context_builder_sends_only_current_player_context(db_session):
 
     objective = QuestObjective(
         quest_id=quest.id,
-        description="Falar com Osgar Vell em Cardal.",
+        description=f"Falar com {elder.name} em {village.name}.",
         order=0,
     )
     db_session.add(objective)
@@ -51,13 +58,13 @@ def test_context_builder_sends_only_current_player_context(db_session):
         db_session, build_game_state(db_session, campaign.id, character.id)
     )
 
-    assert "Vale Verdejante" in context
-    assert "Cardal" in context
+    assert region.name in context
+    assert village.name in context
     assert "Hero" in context
-    assert "Osgar Vell" in context
-    assert "Bosque da Beira do Vale" not in context
-    assert "Clareira do Vidro Antigo" not in context
-    assert "Assumiu a forja do pai" not in context
+    assert elder.name in context
+    assert forest.name not in context
+    assert clearing.name not in context
+    assert blacksmith.backstory not in context
     assert "NPCs do not know it automatically" in context
     assert "main_boss" not in context
     assert "WORLD_STARTED" not in context

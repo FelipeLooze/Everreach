@@ -39,7 +39,7 @@ def test_get_quests_endpoint_never_leaks_backend_only_fields(client, db_session)
     campaign = create_campaign(db_session, "No Magic Markers")
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
 
     quest = create_quest(
         db_session,

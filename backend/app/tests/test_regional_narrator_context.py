@@ -12,7 +12,6 @@ from app.core.enums import SubregionBiome
 from app.db.models.subregion import Subregion
 from app.game.character.service import create_character
 from app.game.game_state import build_game_state
-from app.game.world.content_pools import ANCHOR_SUBREGION_NAME
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -34,17 +33,15 @@ def test_regional_context_never_names_the_subregion_or_other_subregions(db_sessi
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
 
-    other_subregion_names = [
-        s.name
-        for s in db_session.query(Subregion).filter(Subregion.region_id == region.id).all()
-        if s.name != ANCHOR_SUBREGION_NAME
-    ]
+    all_subregions = db_session.query(Subregion).filter(Subregion.region_id == region.id).all()
+    anchor_name = next(s.name for s in all_subregions if s.order_index == 0)
+    other_subregion_names = [s.name for s in all_subregions if s.order_index != 0]
     assert other_subregion_names  # sanity: the region really is massive
 
     state = build_game_state(db_session, campaign.id, character.id)
     context = context_builder.build_context(db_session, state, player_input="Olho ao redor.")
 
-    assert ANCHOR_SUBREGION_NAME not in context
+    assert anchor_name not in context
     for name in other_subregion_names:
         assert name not in context
 

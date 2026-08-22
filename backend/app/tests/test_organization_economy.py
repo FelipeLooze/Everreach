@@ -88,7 +88,7 @@ def test_organization_purchases_an_item_through_an_agent(db_session):
     from app.db.models.npc import NPC
 
     campaign, region, village, org, character = _setup(db_session)
-    agent = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    agent = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     deposit_funds(db_session, org, 100, reason="Fundos da guilda.")
     definition = get_or_create_item(db_session, "Arco Longo")
     set_item_base_value(db_session, definition, 40)

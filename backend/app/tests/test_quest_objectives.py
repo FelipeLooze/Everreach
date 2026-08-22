@@ -51,7 +51,7 @@ def _quest_with_objective(db_session, region_id, *, trigger_type, subject_id=Non
 
 def test_evaluate_objective_trigger_completes_a_matching_manualless_objective(db_session):
     campaign, region, village, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     quest, objective = _quest_with_objective(
         db_session, region.id, trigger_type=ObjectiveTriggerType.TALK_TO_NPC, subject_id=osgar.id
     )
@@ -72,8 +72,8 @@ def test_evaluate_objective_trigger_completes_a_matching_manualless_objective(db
 
 def test_evaluate_objective_trigger_ignores_a_different_subject(db_session):
     campaign, region, village, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
-    mira = db_session.query(NPC).filter(NPC.name == "Mira Draske").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    mira = db_session.query(NPC).filter(NPC.role == "ferreira").first()
     quest, objective = _quest_with_objective(
         db_session, region.id, trigger_type=ObjectiveTriggerType.TALK_TO_NPC, subject_id=osgar.id
     )
@@ -88,7 +88,7 @@ def test_evaluate_objective_trigger_ignores_a_different_subject(db_session):
 
 def test_evaluate_objective_trigger_ignores_a_different_trigger_type(db_session):
     campaign, region, village, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     quest, objective = _quest_with_objective(
         db_session, region.id, trigger_type=ObjectiveTriggerType.TALK_TO_NPC, subject_id=osgar.id
     )
@@ -117,7 +117,7 @@ def test_manual_trigger_objectives_are_never_auto_completed(db_session):
 
 def test_evaluate_objective_trigger_is_idempotent(db_session):
     campaign, region, village, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     quest, objective = _quest_with_objective(
         db_session, region.id, trigger_type=ObjectiveTriggerType.TALK_TO_NPC, subject_id=osgar.id
     )
@@ -153,7 +153,7 @@ def test_reaching_a_location_completes_a_matching_objective_via_move(db_session)
     )
     start_quest(db_session, character.id, quest.id)
 
-    intent = Intent(type=ActionIntentType.MOVE, target="Bosque da Beira do Vale", raw_text="Vou ao bosque")
+    intent = Intent(type=ActionIntentType.MOVE, target=forest.name, raw_text="Vou ao bosque")
     engine._apply_intent(db_session, campaign.id, character, intent, None)
 
     row = (

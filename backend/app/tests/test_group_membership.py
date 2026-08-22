@@ -28,8 +28,8 @@ def _setup(db_session):
     campaign = create_campaign(db_session, "Group Membership")
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
-    mira = db_session.query(NPC).filter(NPC.name == "Mira Draske").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    mira = db_session.query(NPC).filter(NPC.role == "ferreira").first()
     db_session.flush()
     return campaign, region, village, character, osgar, mira
 

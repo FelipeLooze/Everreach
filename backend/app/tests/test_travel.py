@@ -247,7 +247,7 @@ def test_move_character_rejects_unconnected_location(db_session):
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
     db_session.commit()
 
-    clearing = db_session.query(Location).filter(Location.region_id == region.id, Location.name == "Clareira do Vidro Antigo").first()
+    clearing = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "clearing").first()
 
     with pytest.raises(TravelError):
         move_character(db_session, campaign.id, character, clearing.id)

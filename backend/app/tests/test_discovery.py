@@ -237,11 +237,11 @@ def test_known_map_is_individual_per_character(db_session):
         for location in second_map["locations"]
     }
 
-    assert "Cardal" in first_names
-    assert "Cardal" in second_names
+    assert village.name in first_names
+    assert village.name in second_names
 
-    assert "Bosque da Beira do Vale" in first_names
-    assert "Bosque da Beira do Vale" not in second_names
+    assert forest.name in first_names
+    assert forest.name not in second_names
 
 def test_observe_discovers_route_only_for_observing_character(db_session):
     campaign = create_campaign(
@@ -436,7 +436,7 @@ def test_observe_makes_discovered_destination_available_for_travel(db_session):
 
     intent = Intent(
         type=ActionIntentType.MOVE,
-        target="Bosque da Beira do Vale",
+        target=forest.name,
         raw_text="Vou até o bosque.",
     )
 
@@ -583,7 +583,7 @@ def test_known_destination_without_known_route_cannot_be_traveled(
 
     intent = Intent(
         type=ActionIntentType.MOVE,
-        target="Bosque da Beira do Vale",
+        target=forest.name,
         raw_text="Vou até o bosque.",
     )
 

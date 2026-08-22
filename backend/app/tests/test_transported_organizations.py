@@ -32,7 +32,7 @@ def _setup(db_session):
     campaign = create_campaign(db_session, "Transported Organizations")
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     db_session.flush()
     return campaign, region, village, character, osgar
 

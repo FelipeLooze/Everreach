@@ -72,11 +72,11 @@ def test_apply_intent_move_relocates_character(db_session):
     )
     state = build_game_state(db_session, campaign.id, character.id)
 
-    intent = Intent(type=ActionIntentType.MOVE, target="Bosque da Beira do Vale", raw_text="I walk to the forest")
+    intent = Intent(type=ActionIntentType.MOVE, target=forest.name, raw_text="I walk to the forest")
     summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
     assert minutes > 0
-    assert "Bosque da Beira do Vale" in summary
+    assert forest.name in summary
     assert character.location_id != village.id
 
     discovery = get_location_discovery(
@@ -92,9 +92,10 @@ def test_apply_intent_move_relocates_character(db_session):
 
 def test_apply_intent_move_does_not_reveal_unknown_location(db_session):
     campaign, region, village, character = _setup(db_session)
+    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
     state = build_game_state(db_session, campaign.id, character.id)
 
-    intent = Intent(type=ActionIntentType.MOVE, target="Bosque da Beira do Vale", raw_text="Vou ao bosque")
+    intent = Intent(type=ActionIntentType.MOVE, target=forest.name, raw_text="Vou ao bosque")
     summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
     assert minutes == 0
@@ -104,19 +105,20 @@ def test_apply_intent_move_does_not_reveal_unknown_location(db_session):
 
 def test_apply_intent_talk_resolves_npc_by_role_when_target_is_not_a_name(db_session):
     campaign, region, village, character = _setup(db_session)
+    innkeeper = db_session.query(NPC).filter(NPC.role == "estalajadeiro").first()
     state = build_game_state(db_session, campaign.id, character.id)
 
     intent = Intent(type=ActionIntentType.TALK, target="estalajadeiro", raw_text="Eu falo com o estalajadeiro")
     summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
-    assert "Talven Brooks" in summary
+    assert innkeeper.name in summary
     assert minutes >= 0
 
 
 def test_apply_intent_talk_completes_matching_quest_objective(db_session):
     campaign, region, village, character = _setup(db_session)
 
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
 
     quest = Quest(
         region_id=region.id,
@@ -128,7 +130,7 @@ def test_apply_intent_talk_completes_matching_quest_objective(db_session):
 
     objective = QuestObjective(
         quest_id=quest.id,
-        description="Falar com Osgar Vell em Cardal.",
+        description=f"Falar com {osgar.name} em {village.name}.",
         order=0,
         trigger_type=ObjectiveTriggerType.TALK_TO_NPC,
         trigger_subject_id=osgar.id,
@@ -138,14 +140,14 @@ def test_apply_intent_talk_completes_matching_quest_objective(db_session):
 
     start_quest(db_session, character.id, quest.id)
 
-    
+
     db_session.commit()
 
     state = build_game_state(db_session, campaign.id, character.id)
-    intent = Intent(type=ActionIntentType.TALK, target="Osgar Vell", raw_text="I talk to Osgar Vell")
+    intent = Intent(type=ActionIntentType.TALK, target=osgar.name, raw_text=f"I talk to {osgar.name}")
     summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
-    assert "Osgar Vell" in summary
+    assert osgar.name in summary
     assert minutes == 0
 
     world_time = clock.get_world_time(
@@ -243,14 +245,16 @@ def test_active_interlocutor_comes_from_events_and_scene_boundaries_clear_it(db_
 
 
 class ConversationLLM(LLMService):
-    def __init__(self) -> None:
+    def __init__(self, elder_first_name: str, elder_full_name: str) -> None:
         self.calls: list[tuple[str, str]] = []
+        self.elder_first_name = elder_first_name
+        self.elder_full_name = elder_full_name
 
     def generate(self, system: str, prompt: str) -> str:
         self.calls.append((system, prompt))
         if "intent" in system.lower():
-            if "Falo com Osgar" in prompt:
-                return '{"intent": "TALK", "target": "Osgar Vell"}'
+            if f"Falo com {self.elder_first_name}" in prompt:
+                return f'{{"intent": "TALK", "target": "{self.elder_full_name}"}}'
             return '{"intent": "FREEFORM", "target": null}'
         return "— Bom dia."
 
@@ -260,12 +264,14 @@ class PassiveLLM(LLMService):
 
 def test_direct_follow_up_keeps_npc_and_exact_recent_history(db_session):
     campaign, _region, _village, character = _setup(db_session)
-    llm = ConversationLLM()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").one()
+    elder_first_name = osgar.name.split()[0]
+    llm = ConversationLLM(elder_first_name, osgar.name)
 
     first = engine.resolve_action(
-        db_session, llm, campaign.id, character.id, "Falo com Osgar: — Bom dia."
+        db_session, llm, campaign.id, character.id, f"Falo com {elder_first_name}: — Bom dia."
     )
-    assert "Osgar" not in first.narrative
+    assert elder_first_name not in first.narrative
 
     first_call_count = len(llm.calls)
     engine.resolve_action(
@@ -274,9 +280,9 @@ def test_direct_follow_up_keeps_npc_and_exact_recent_history(db_session):
     second_calls = llm.calls[first_call_count:]
     second_prompts = "\n".join(prompt for _system, prompt in second_calls)
 
-    assert "ACTIVE NPC CONTEXT\nName: Osgar Vell" in second_prompts
+    assert f"ACTIVE NPC CONTEXT\nName: {osgar.name}" in second_prompts
     assert "RELEVANT NPC MEMORIES" in second_prompts
-    assert "Hero lhe disse: Falo com Osgar" in second_prompts
+    assert f"Hero lhe disse: Falo com {elder_first_name}" in second_prompts
     assert "Relationship with player: familiarity=1" in second_prompts
 
     relationship = db_session.query(CharacterNPCRelationship).one()
@@ -301,7 +307,7 @@ def test_direct_follow_up_keeps_npc_and_exact_recent_history(db_session):
         .count()
         == 3
     )
-    assert "PLAYER: Falo com Osgar: — Bom dia." in second_prompts
+    assert f"PLAYER: Falo com {elder_first_name}: — Bom dia." in second_prompts
     assert "NARRATOR: — Bom dia." in second_prompts
 
 def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
@@ -373,7 +379,7 @@ def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
         "parse",
         lambda *args, **kwargs: Intent(
             type=ActionIntentType.MOVE,
-            target="Bosque da Beira do Vale",
+            target=forest.name,
             raw_text="Vou até o bosque.",
         ),
     )
@@ -532,7 +538,7 @@ def test_examine_narrator_receives_discoveries_in_same_turn(
     )[0]
 
     assert "noroeste -> Local desconhecido" in connection_section
-    assert "Bosque da Beira do Vale" not in connection_section
+    assert forest.name not in connection_section
 
     assert "PLAYER SPATIAL KNOWLEDGE" in fresh_context
     assert "Local desconhecido [DISCOVERED]" in fresh_context
@@ -660,7 +666,7 @@ def test_apply_intent_move_uses_requested_fast_pace(db_session):
 
     intent = Intent(
         type=ActionIntentType.MOVE,
-        target="Bosque da Beira do Vale",
+        target=forest.name,
         raw_text="Corro até o bosque.",
         pace=TravelPace.FAST,
     )
@@ -700,10 +706,11 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
         db_session.query(NPC)
         .filter(
             NPC.campaign_id == campaign.id,
-            NPC.name == "Osgar Vell",
+            NPC.role == "ancião da vila",
         )
         .one()
     )
+    elder_first_name = osgar.name.split()[0]
 
     # O mundo começa às 08:00.
     # Leva o relógio até 21:59:59 sem iniciar uma ação.
@@ -742,14 +749,14 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
         .count()
     )
 
-    llm = ConversationLLM()
+    llm = ConversationLLM(elder_first_name, osgar.name)
 
     result = engine.resolve_action(
         db_session,
         llm,
         campaign.id,
         character.id,
-        "Falo com Osgar: — Boa noite.",
+        f"Falo com {elder_first_name}: — Boa noite.",
     )
 
     db_session.refresh(osgar)
@@ -794,7 +801,7 @@ def test_talk_keeps_action_interlocutor_when_npc_rests_during_action(
         if "intent" not in system.lower()
     )
 
-    assert "ACTIVE NPC CONTEXT\nName: Osgar Vell" in narrator_prompts
+    assert f"ACTIVE NPC CONTEXT\nName: {osgar.name}" in narrator_prompts
     assert "Current activity: RESTING" in narrator_prompts
     assert (
         "participated in the action that just occurred"

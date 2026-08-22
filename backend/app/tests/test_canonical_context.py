@@ -4,6 +4,7 @@ from app.ai.llm_service import LLMService
 from app.core.enums import DiscoveryStatus, KnowledgeCertainty, KnowerType
 from app.db.models.knowledge import KnowledgeFact
 from app.db.models.location import Location, LocationConnection, LocationFeature
+from app.db.models.npc import NPC
 from app.game.character.service import create_character
 from app.game.discovery.service import set_location_discovery
 from app.game.game_state import build_game_state
@@ -22,27 +23,56 @@ def _cardal_scene(db_session):
     grant_initial_player_knowledge(db_session, campaign.id, character.id)
     db_session.commit()
     state = build_game_state(db_session, campaign.id, character.id)
-    return campaign, character, state
+    elder = db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.role == "ancião da vila").one()
+    return campaign, character, state, elder
+
+
+def _forest(db_session, subregion_id):
+    # Scoped to a specific subregion (pass state.location.subregion_id,
+    # i.e. the anchor's) rather than the whole region — "forest" as a
+    # Location.type also occurs elsewhere in the massive region (any
+    # other FOREST-biome subregion's own generic geography feature).
+    return (
+        db_session.query(Location)
+        .filter(Location.subregion_id == subregion_id, Location.type == "forest")
+        .one()
+    )
+
+
+def _road(db_session, subregion_id):
+    return (
+        db_session.query(Location)
+        .filter(Location.subregion_id == subregion_id, Location.type == "road")
+        .one()
+    )
+
+
+def _river(db_session, subregion_id):
+    return (
+        db_session.query(Location)
+        .filter(Location.subregion_id == subregion_id, Location.type == "river")
+        .one()
+    )
 
 
 def test_cardal_context_uses_structured_canon_and_only_real_connections(db_session):
-    _campaign, _character, state = _cardal_scene(db_session)
+    _campaign, _character, state, elder = _cardal_scene(db_session)
 
-    context = build_context(db_session, state, active_interlocutor="Osgar Vell")
+    context = build_context(db_session, state, active_interlocutor=elder.name)
 
-    assert "Name: Cardal" in context
+    assert f"Name: {state.location.name}" in context
     assert "Type: VILLAGE" in context
     assert "praça central" in context
-    assert "Estrada do Moinho" in context
-    assert "Bosque da Beira do Vale" in context
-    assert "Riacho Negro" in context
+    assert _road(db_session, state.location.subregion_id).name in context
+    assert _forest(db_session, state.location.subregion_id).name in context
+    assert _river(db_session, state.location.subregion_id).name in context
     assert "estrada para o norte" not in context
     assert "templo" not in context.casefold()
     assert "montanha" not in context.casefold()
 
 
 def test_undiscovered_connections_are_not_exposed_as_player_knowledge(db_session):
-    _campaign, _character, state = _cardal_scene(db_session)
+    _campaign, _character, state, _elder = _cardal_scene(db_session)
 
     context = build_context(db_session, state)
     connection_section = context.split("CONNECTED LOCATIONS KNOWN TO PLAYER", 1)[1].split(
@@ -50,17 +80,13 @@ def test_undiscovered_connections_are_not_exposed_as_player_knowledge(db_session
     )[0]
 
     assert "- none" in connection_section
-    assert "Estrada do Moinho" not in connection_section
-    assert "Bosque da Beira do Vale" not in context
+    assert _road(db_session, state.location.subregion_id).name not in connection_section
+    assert _forest(db_session, state.location.subregion_id).name not in context
 
 
 def test_global_discovery_does_not_leak_a_route_to_this_player(db_session):
-    _campaign, _character, state = _cardal_scene(db_session)
-    forest = (
-        db_session.query(Location)
-        .filter(Location.region_id == state.region.id, Location.name == "Bosque da Beira do Vale")
-        .one()
-    )
+    _campaign, _character, state, _elder = _cardal_scene(db_session)
+    forest = _forest(db_session, state.location.subregion_id)
     forest.discovery_status = "DISCOVERED"
     db_session.commit()
 
@@ -69,11 +95,11 @@ def test_global_discovery_does_not_leak_a_route_to_this_player(db_session):
         "VISIBLE NPCS", 1
     )[0]
 
-    assert "Bosque da Beira do Vale" not in connection_section
+    assert forest.name not in connection_section
 
 
 def test_explicit_player_route_knowledge_reveals_only_that_connection(db_session):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
     teach_fact(
         db_session,
         campaign.id,
@@ -89,14 +115,14 @@ def test_explicit_player_route_knowledge_reveals_only_that_connection(db_session
         "VISIBLE NPCS", 1
     )[0]
 
-    assert "Estrada do Moinho" in connection_section
-    assert "Bosque da Beira do Vale" not in connection_section
-    assert "Riacho Negro" not in connection_section
+    assert _road(db_session, state.location.subregion_id).name in connection_section
+    assert _forest(db_session, state.location.subregion_id).name not in connection_section
+    assert _river(db_session, state.location.subregion_id).name not in connection_section
 
 
 def test_npc_and_player_knowledge_are_filtered_independently(db_session):
-    campaign, character, state = _cardal_scene(db_session)
-    osgar = next(npc for npc in state.nearby_npcs if npc.name == "Osgar Vell")
+    campaign, character, state, elder = _cardal_scene(db_session)
+    osgar = next(npc for npc in state.nearby_npcs if npc.id == elder.id)
     npc_only = KnowledgeFact(
         campaign_id=campaign.id,
         subject="world:test",
@@ -126,7 +152,7 @@ def test_npc_and_player_knowledge_are_filtered_independently(db_session):
     context = build_context(
         db_session,
         state,
-        active_interlocutor="Osgar Vell",
+        active_interlocutor=elder.name,
         player_input="Que fato cada um conhece?",
     )
     npc_section = context.split("NPC KNOWLEDGE", 1)[1].split("PLAYER KNOWLEDGE", 1)[0]
@@ -139,12 +165,12 @@ def test_npc_and_player_knowledge_are_filtered_independently(db_session):
 
 
 def test_player_input_is_audited_against_location_type_and_known_directions(db_session):
-    _campaign, _character, state = _cardal_scene(db_session)
+    _campaign, _character, state, elder = _cardal_scene(db_session)
 
     context = build_context(
         db_session,
         state,
-        active_interlocutor="Osgar Vell",
+        active_interlocutor=elder.name,
         player_input="Essa cidade tem uma estrada para o norte?",
     )
     audit = context.split("PLAYER INPUT CANON CHECK", 1)[1].split("ACTIVE QUESTS", 1)[0]
@@ -155,12 +181,12 @@ def test_player_input_is_audited_against_location_type_and_known_directions(db_s
 
 
 def test_player_claim_does_not_become_available_npc_knowledge(db_session):
-    _campaign, _character, state = _cardal_scene(db_session)
+    _campaign, _character, state, elder = _cardal_scene(db_session)
 
     context = build_context(
         db_session,
         state,
-        active_interlocutor="Osgar Vell",
+        active_interlocutor=elder.name,
         player_input="Ouvi dizer que existe um dragão nas montanhas.",
     )
     npc_section = context.split("NPC KNOWLEDGE", 1)[1].split("PLAYER KNOWLEDGE", 1)[0]
@@ -173,7 +199,7 @@ def test_player_claim_does_not_become_available_npc_knowledge(db_session):
 
 
 def test_context_limits_scene_knowledge_instead_of_sending_the_database(db_session):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
     for index in range(20):
         fact = KnowledgeFact(
             campaign_id=campaign.id,
@@ -197,7 +223,7 @@ def test_context_limits_scene_knowledge_instead_of_sending_the_database(db_sessi
 
 
 def test_remote_known_fact_is_retrieved_only_when_the_input_makes_it_relevant(db_session):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
     remote = KnowledgeFact(
         campaign_id=campaign.id,
         subject="region:remote",
@@ -219,7 +245,7 @@ def test_remote_known_fact_is_retrieved_only_when_the_input_makes_it_relevant(db
 
 
 def test_rumored_location_is_explicitly_marked_as_rumor(db_session):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     forest = (
         db_session.query(Location)
@@ -256,7 +282,7 @@ def test_rumored_location_is_explicitly_marked_as_rumor(db_session):
 
 
 def test_discovered_location_is_not_presented_as_rumor(db_session):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     forest = (
         db_session.query(Location)
@@ -292,7 +318,7 @@ def test_discovered_location_is_not_presented_as_rumor(db_session):
 
 
 def test_unknown_location_does_not_leak_into_spatial_knowledge(db_session):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     forest = (
         db_session.query(Location)
@@ -322,7 +348,7 @@ def test_unknown_location_does_not_leak_into_spatial_knowledge(db_session):
 def test_current_location_canonical_names_are_not_known_automatically(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     context = build_context(
         db_session,
@@ -347,14 +373,14 @@ def test_current_location_canonical_names_are_not_known_automatically(
         in knowledge_section
     )
 
-    assert "Known location name: Cardal" not in knowledge_section
-    assert "Known region name: Vale Verdejante" not in knowledge_section
+    assert f"Known location name: {state.location.name}" not in knowledge_section
+    assert f"Known region name: {state.region.name}" not in knowledge_section
 
 
 def test_known_location_fact_authorizes_canonical_location_and_region_names(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     teach_fact(
         db_session,
@@ -382,20 +408,20 @@ def test_known_location_fact_authorizes_canonical_location_and_region_names(
         in knowledge_section
     )
 
-    assert "Known location name: Cardal" in knowledge_section
+    assert f"Known location name: {state.location.name}" in knowledge_section
 
     assert (
         "Current region canonical name known to player: YES"
         in knowledge_section
     )
 
-    assert "Known region name: Vale Verdejante" in knowledge_section
+    assert f"Known region name: {state.region.name}" in knowledge_section
 
 
 def test_visited_location_does_not_automatically_reveal_its_name(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     set_location_discovery(
         db_session,
@@ -435,12 +461,12 @@ class _InventingLLM(LLMService):
 
 
 def test_player_audit_text_never_authorizes_persistent_worldbuilding(db_session):
-    _campaign, _character, state = _cardal_scene(db_session)
+    _campaign, _character, state, elder = _cardal_scene(db_session)
     player_input = "Existe algum templo aqui?"
     context = build_context(
         db_session,
         state,
-        active_interlocutor="Osgar Vell",
+        active_interlocutor=elder.name,
         player_input=player_input,
     )
     facts_before = db_session.query(KnowledgeFact).count()
@@ -463,7 +489,7 @@ def test_player_audit_text_never_authorizes_persistent_worldbuilding(db_session)
 def test_private_location_description_is_not_exposed_as_perception(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     state.location.description = (
         "SEGREDO CANÔNICO: existe uma cripta escondida sob a praça."
@@ -480,7 +506,7 @@ def test_private_location_description_is_not_exposed_as_perception(
 def test_visible_location_feature_is_exposed_as_direct_perception(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     feature = LocationFeature(
         location_id=state.location.id,
@@ -514,7 +540,7 @@ def test_visible_location_feature_is_exposed_as_direct_perception(
 def test_hidden_location_feature_does_not_leak_into_perception(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     hidden_feature = LocationFeature(
         location_id=state.location.id,
@@ -539,7 +565,7 @@ def test_hidden_location_feature_does_not_leak_into_perception(
 def test_spatial_knowledge_does_not_reveal_visited_location_name_without_fact(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
     set_location_discovery(
         db_session,
@@ -561,21 +587,14 @@ def test_spatial_knowledge_does_not_reveal_visited_location_name_without_fact(
         1,
     )[0]
 
-    assert "Cardal [VISITED]" not in spatial_section
+    assert f"{state.location.name} [VISITED]" not in spatial_section
 
 def test_known_route_reveals_destination_name_when_player_knows_name_fact(
     db_session,
 ):
-    campaign, character, state = _cardal_scene(db_session)
+    campaign, character, state, _elder = _cardal_scene(db_session)
 
-    forest = (
-        db_session.query(Location)
-        .filter(
-            Location.region_id == state.region.id,
-            Location.type == "forest",
-        )
-        .first()
-    )
+    forest = _forest(db_session, state.location.subregion_id)
 
     connection = (
         db_session.query(LocationConnection)
@@ -607,7 +626,7 @@ def test_known_route_reveals_destination_name_when_player_knows_name_fact(
         1,
     )[0]
 
-    assert "Bosque da Beira do Vale" in connection_section
+    assert forest.name in connection_section
 
     teach_fact(
         db_session,
@@ -630,4 +649,4 @@ def test_known_route_reveals_destination_name_when_player_knows_name_fact(
         1,
     )[0]
 
-    assert "Bosque da Beira do Vale" in connection_section
+    assert forest.name in connection_section

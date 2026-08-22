@@ -9,7 +9,6 @@ from app.core.enums import SettlementType
 from app.db.models.location import Location
 from app.db.models.settlement import Settlement
 from app.db.models.subregion import Subregion
-from app.game.world.content_pools import ANCHOR_SUBREGION_NAME
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -18,7 +17,7 @@ def test_every_non_anchor_subregion_gets_one_major_settlement(db_session):
     region, _village = seed_initial_region(db_session, campaign.id)
 
     subregions = db_session.query(Subregion).filter(Subregion.region_id == region.id).all()
-    non_anchor = [s for s in subregions if s.name != ANCHOR_SUBREGION_NAME]
+    non_anchor = [s for s in subregions if s.order_index != 0]
 
     for subregion in non_anchor:
         major_locations = (

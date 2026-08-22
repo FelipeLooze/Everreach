@@ -7,7 +7,6 @@ the fixed starting village) stays constrained to a playable baseline.
 
 from app.core.enums import DangerLevel, SubregionBiome
 from app.db.models.subregion import Subregion
-from app.game.world.content_pools import ANCHOR_SUBREGION_NAME
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -30,7 +29,7 @@ def test_anchor_subregion_stays_playable(db_session):
 
     anchor = (
         db_session.query(Subregion)
-        .filter(Subregion.region_id == region.id, Subregion.name == ANCHOR_SUBREGION_NAME)
+        .filter(Subregion.region_id == region.id, Subregion.order_index == 0)
         .one()
     )
 

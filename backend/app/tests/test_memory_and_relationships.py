@@ -34,7 +34,7 @@ def _scene(db_session):
     region, cardal = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, cardal.id)
     db_session.commit()
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").one()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").one()
     return campaign, character, osgar
 
 
@@ -82,7 +82,10 @@ def test_explicit_knowledge_propagation_preserves_source_and_certainty(db_sessio
         )
         .one()
     )
-    assert "Estrada do Moinho" in player_memory.summary_text
+    road = db_session.query(Location).filter(
+        Location.region_id == character.region_id, Location.type == "road"
+    ).one()
+    assert road.name in player_memory.summary_text
 
     relevant = get_relevant_memories(
         db_session,

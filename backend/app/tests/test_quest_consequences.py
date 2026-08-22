@@ -40,7 +40,7 @@ def test_no_consequences_is_a_safe_noop(db_session):
 
 def test_relationship_consequence_applies_through_the_real_relationship_service(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
 
     consequences = QuestConsequences(
         relationships=(
@@ -80,7 +80,7 @@ def test_knowledge_consequence_teaches_a_registered_fact(db_session):
 
 def test_fail_quest_applies_its_consequences(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     quest = create_quest(db_session, region.id, "Escolta", source=QuestSource.NPC_REQUEST)
     start_quest(db_session, character.id, quest.id)
 
@@ -98,7 +98,7 @@ def test_fail_quest_applies_its_consequences(db_session):
 
 def test_abandon_quest_applies_its_consequences(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     quest = create_quest(db_session, region.id, "Escolta", source=QuestSource.NPC_REQUEST)
     start_quest(db_session, character.id, quest.id)
 

@@ -1,13 +1,13 @@
 """Phase 15C — Region Skeleton.
 
 A massive Region is divided into many subregions before any deep local
-materialization happens. The starting village always belongs to a fixed
-anchor subregion ("Campos de Cardal") — everything else in the skeleton
-is seed-driven and varies per campaign.
+materialization happens. The starting village always belongs to the
+anchor subregion (order_index 0 — its name is generated per campaign
+too) — everything else in the skeleton is seed-driven and varies per
+campaign.
 """
 
 from app.db.models.subregion import Subregion
-from app.game.world.content_pools import ANCHOR_SUBREGION_NAME
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -32,7 +32,6 @@ def test_anchor_subregion_always_exists_first(db_session):
         .all()
     )
 
-    assert subregions[0].name == ANCHOR_SUBREGION_NAME
     assert subregions[0].order_index == 0
 
 
@@ -42,7 +41,7 @@ def test_starting_village_belongs_to_the_anchor_subregion(db_session):
 
     anchor = (
         db_session.query(Subregion)
-        .filter(Subregion.region_id == region.id, Subregion.name == ANCHOR_SUBREGION_NAME)
+        .filter(Subregion.region_id == region.id, Subregion.order_index == 0)
         .one()
     )
 

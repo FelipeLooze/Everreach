@@ -207,11 +207,16 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
 
     from app.core.enums import KnowerType
     from app.db.database import get_db
+    from app.db.models.location import Location
+    from app.db.models.region import Region
     from app.game.npcs.service import teach_fact
     from app.main import app
 
     db_gen = app.dependency_overrides[get_db]()
     db = next(db_gen)
+
+    region = db.query(Region).filter(Region.campaign_id == campaign_id).one()
+    village = db.query(Location).filter(Location.region_id == region.id, Location.type == "village").first()
 
     teach_fact(
         db,
@@ -227,19 +232,19 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
         params={"character_id": character_id},
     ).json()
 
-    assert state["location"]["name"] == "Cardal"
-    assert state["region"]["name"] == "Vale Verdejante"
+    assert state["location"]["name"] == village.name
+    assert state["region"]["name"] == region.name
 
     map_data = client.get(
         f"/api/campaigns/{campaign_id}/map",
         params={"character_id": character_id},
     ).json()
 
-    assert [region["name"] for region in map_data["regions"]] == [
-        "Vale Verdejante"
+    assert [region_row["name"] for region_row in map_data["regions"]] == [
+        region.name
     ]
 
-    assert "Cardal" in [
+    assert village.name in [
         location["name"]
         for location in map_data["locations"]
     ]

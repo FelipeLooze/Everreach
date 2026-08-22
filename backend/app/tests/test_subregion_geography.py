@@ -3,14 +3,14 @@
 Every non-anchor subregion gets one major physical geography feature
 matching its own biome, as a real Location — persistent world truth that
 exists whether or not the protagonist has ever been near it. The anchor
-subregion keeps its bespoke, hand-authored geography from the original
-seed (forest edge, creek, clearing) instead of also getting a generated
-feature layered on top.
+subregion keeps its bespoke geography (forest edge, road, river,
+clearing — names generated per campaign, see the Phase 15 follow-up)
+instead of also getting a generated feature layered on top.
 """
 
 from app.db.models.location import Location
 from app.db.models.subregion import Subregion
-from app.game.world.content_pools import ANCHOR_SUBREGION_NAME, GEOGRAPHY_BY_BIOME
+from app.game.world.content_pools import GEOGRAPHY_BY_BIOME
 from app.game.world.seed import create_campaign, seed_initial_region
 
 ALL_GEOGRAPHY_NAMES = {name for pool in GEOGRAPHY_BY_BIOME.values() for name, _type, _desc in pool}
@@ -30,7 +30,7 @@ def test_every_non_anchor_subregion_gets_a_geography_feature(db_session):
     region, _village = seed_initial_region(db_session, campaign.id)
 
     subregions = db_session.query(Subregion).filter(Subregion.region_id == region.id).all()
-    non_anchor = [s for s in subregions if s.name != ANCHOR_SUBREGION_NAME]
+    non_anchor = [s for s in subregions if s.order_index != 0]
 
     for subregion in non_anchor:
         features = _geography_locations(db_session, subregion.id)
@@ -44,21 +44,15 @@ def test_anchor_subregion_keeps_its_bespoke_geography_only(db_session):
 
     anchor = (
         db_session.query(Subregion)
-        .filter(Subregion.region_id == region.id, Subregion.name == ANCHOR_SUBREGION_NAME)
+        .filter(Subregion.region_id == region.id, Subregion.order_index == 0)
         .one()
     )
-    anchor_location_names = {
-        loc.name
+    anchor_location_types = {
+        loc.type
         for loc in db_session.query(Location).filter(Location.subregion_id == anchor.id).all()
     }
 
-    assert anchor_location_names == {
-        "Cardal",
-        "Bosque da Beira do Vale",
-        "Estrada do Moinho",
-        "Riacho Negro",
-        "Clareira do Vidro Antigo",
-    }
+    assert anchor_location_types == {"village", "forest", "road", "river", "clearing"}
 
 
 def test_geography_features_exist_regardless_of_player_discovery(db_session):
@@ -66,7 +60,7 @@ def test_geography_features_exist_regardless_of_player_discovery(db_session):
     region, _village = seed_initial_region(db_session, campaign.id)
 
     subregions = db_session.query(Subregion).filter(Subregion.region_id == region.id).all()
-    non_anchor = next(s for s in subregions if s.name != ANCHOR_SUBREGION_NAME)
+    non_anchor = next(s for s in subregions if s.order_index != 0)
     [feature] = _geography_locations(db_session, non_anchor.id)
 
     from app.core.enums import DiscoveryStatus

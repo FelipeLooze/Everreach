@@ -36,11 +36,29 @@ HISTORICAL_SUMMARIES = [
     "Lendas locais falam de uma catástrofe antiga que moldou boa parte da geografia atual.",
 ]
 
-# Phase 15C — "Campos de Cardal" is the fixed anchor subregion containing
-# the pinned starting village (see 15B); every other name here is a pool
-# candidate for the rest of the massive region and may or may not be
-# selected for a given campaign's generation_seed.
-ANCHOR_SUBREGION_NAME = "Campos de Cardal"
+# Phase 15 follow-up — the Region's own name and its anchor subregion's
+# name are now generated too (no proper noun in Everreach's starting
+# point is fixed anymore — every campaign gets its own).
+REGION_NAME_POOL = [
+    "Vale Verdejante",
+    "Terras de Halwen",
+    "Planície de Cordal",
+    "Vale do Sol Poente",
+    "Confins de Marrow",
+    "Terras Altas de Sernn",
+    "Vale das Águas Claras",
+    "Campos de Kessler",
+    "Terras de Draven",
+    "Vale Ferrow",
+]
+
+ANCHOR_SUBREGION_NAME_POOL = [
+    "Campos Iniciais",
+    "Terras do Primeiro Passo",
+    "Campina Central",
+    "Planície de Chegada",
+    "Terras Baixas do Começo",
+]
 
 SUBREGION_NAME_POOL = [
     "Bosque Sussurrante",
@@ -131,8 +149,9 @@ SETTLEMENT_NAME_PARTS_B = [
 
 # Phase 15F — which major settlement types make plausible sense for a
 # given biome (settlements should have a reason to exist, spec). The
-# anchor subregion's own settlement (Cardal) is hand-authored, not
-# generated from this pool.
+# starting settlement's TYPE stays fixed ("village", see seed.py) even
+# though its NAME is now generated from the same SETTLEMENT_NAME_PARTS_*
+# pool above — this table isn't consulted for it.
 SETTLEMENT_TYPE_BY_BIOME = {
     "PLAINS": ["TOWN", "TRADE_SETTLEMENT", "VILLAGE"],
     "FOREST": ["VILLAGE", "ISOLATED_SETTLEMENT", "RELIGIOUS_SETTLEMENT"],
@@ -262,12 +281,19 @@ LEADER_TITLE_BY_ORG_TYPE = {
     "RELIGIOUS": "sumo sacerdote",
 }
 
+# Deliberately excludes "Corren"/"Dessa"/"Bram" and "Ashvale"/"Marrow"/
+# "Holt": those are the fixed given/family names of the 3 SimulatedPlayers
+# (Phase 7) always placed at the starting village — a generated NPC name
+# colliding with one of them made app.game.engine._handle_talk's
+# substring-based TALK-target resolution genuinely ambiguous (both an NPC
+# and a SimulatedPlayer would match), a real bug caught by
+# test_apply_intent_talk_completes_matching_quest_objective flaking.
 NPC_GIVEN_NAME_POOL = [
-    "Corren", "Dessa", "Bram", "Ilya", "Thane", "Rowan", "Sable", "Perrin",
+    "Ilya", "Thane", "Rowan", "Sable", "Perrin",
     "Wren", "Colm", "Astra", "Dorian", "Lena", "Garrick", "Nessa", "Aldric",
 ]
 NPC_FAMILY_NAME_POOL = [
-    "Ashvale", "Marrow", "Holt", "Sernn", "Talbrook", "Ferrow", "Kessler",
+    "Sernn", "Talbrook", "Ferrow", "Kessler",
     "Draven", "Wystan", "Corrin", "Hallow", "Brennig", "Sowerby", "Quill",
 ]
 
@@ -329,7 +355,74 @@ THREAT_POOL = [
     ("MAGICAL_ANOMALY", "Fenômenos que desafiam explicação comum ocorrem ocasionalmente nesta área."),
 ]
 
-ANCHOR_THREAT = ("BOARS", "Javalis selvagens vêm do Bosque da Beira do Vale e, de vez em quando, invadem plantações próximas a Cardal.")
+# Phase 15 follow-up — the starting settlement's 4 hand-authored flavor
+# locations (a nearby forest/road/river/clearing) keep their original
+# SHAPE (still exactly these 4, still the anchor subregion's own bespoke
+# geography rather than the generic 1-feature-per-subregion pool) but
+# their proper names/descriptions are now picked per campaign instead of
+# being one fixed string forever.
+ANCHOR_FOREST_OPTIONS = [
+    ("Bosque da Beira do Vale", "A orla mais próxima de uma mata densa que se espessa e escurece em direção ao oeste."),
+    ("Mata do Limiar", "Uma faixa de árvores altas que marca a borda das terras cultivadas."),
+    ("Floresta do Véu Cinza", "Uma mata cujo dossel fechado deixa a luz sempre difusa e acinzentada."),
+]
+
+ANCHOR_ROAD_OPTIONS = [
+    ("Estrada do Moinho", "Uma estrada de terra batida que segue a leste da vila rumo às terras altas."),
+    ("Caminho dos Mercadores", "Uma via bem batida, usada com frequência por quem viaja entre assentamentos."),
+    ("Trilha do Vale", "Um caminho de terra que serpenteia entre os campos rumo ao resto da região."),
+]
+
+ANCHOR_RIVER_OPTIONS = [
+    ("Riacho Negro", "Um riacho raso de águas escuras ao sul da vila, bom para pescar."),
+    ("Ribeirão Claro", "Um curso de água estreito e transparente que corta o terreno baixo."),
+    ("Riacho do Junco", "Águas calmas cercadas por juncos altos, favoritas dos pescadores locais."),
+]
+
+ANCHOR_CLEARING_OPTIONS = [
+    ("Clareira do Vidro Antigo", "Uma clareira silenciosa no fundo da mata, cuja relva estranhamente não é perturbada por animais."),
+    ("Clareira do Sol Parado", "Um espaço aberto entre as árvores onde a luz do sol parece durar mais que o normal."),
+    ("Clareira Silenciosa", "Um trecho de grama baixa cercado de árvores, estranhamente quieto mesmo durante o dia."),
+]
+
+# Phase 15 follow-up — the starting settlement's 3 role-fixed NPCs (an
+# elder/leader, a blacksmith, an innkeeper — many earlier-phase tests
+# already look these three up BY ROLE as their standard fixture) keep
+# their roles, but their names and flavor text are now generated too.
+ELDER_FLAVOR_OPTIONS = [
+    (
+        "Paciente, atento, fala devagar e raramente repete o que diz.",
+        "Nasceu em {village}, vive ali há décadas e lidera o conselho da vila há tanto tempo "
+        "quanto a maioria dos moradores consegue lembrar.",
+    ),
+    (
+        "Observadora e ponderada, prefere ouvir tudo antes de dar uma opinião.",
+        "Assumiu a liderança informal de {village} depois de anos de serviço à comunidade, "
+        "e poucos discordam abertamente de suas decisões.",
+    ),
+]
+
+BLACKSMITH_FLAVOR_OPTIONS = [
+    (
+        "Direta, trabalhadora, orgulhosa do seu ofício.",
+        "Assumiu a forja da família; desconfia de forasteiros que não pagam adiantado.",
+    ),
+    (
+        "Séria e de poucas palavras, mas justa nos preços.",
+        "Aprendeu o ofício ainda jovem e nunca considerou fazer outra coisa da vida.",
+    ),
+]
+
+INNKEEPER_FLAVOR_OPTIONS = [
+    (
+        "Falante, recolhe fofocas de todo viajante que passa por ali.",
+        "Administra a única estalagem de {village}; conhece todos os boatos que circulam por lá.",
+    ),
+    (
+        "Hospitaleiro e curioso sobre quem vem de fora.",
+        "Herdou a estalagem da família e trata cada hóspede como uma fonte de boas histórias.",
+    ),
+]
 
 # Phase 15N — Deep Location Materialization. Generic enough for
 # VILLAGE/HAMLET/ISOLATED_SETTLEMENT minor-settlement stubs (Phase 15F

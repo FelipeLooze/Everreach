@@ -58,18 +58,18 @@ def _log_npc_death(db_session, campaign, npc, cause="combate"):
 
 def test_valid_proposal_grounded_in_the_event_is_accepted(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     event = _log_npc_death(db_session, campaign, osgar)
     llm = ScriptedLLM(
-        '{"name": "A morte de Osgar Vell", '
-        '"description": "Osgar Vell morreu em Cardal. Alguém pode querer saber o que houve."}'
+        f'{{"name": "A morte de {osgar.name}", '
+        f'"description": "{osgar.name} morreu. Alguém pode querer saber o que houve."}}'
     )
 
     quest = propose_emergent_quest_from_npc_death(
         db_session, campaign.id, llm, world_event_id=event.id
     )
 
-    assert quest.name == "A morte de Osgar Vell"
+    assert quest.name == f"A morte de {osgar.name}"
     assert quest.source == QuestSource.WORLD_EVENT
     assert quest.source_event_id == event.id
     assert llm.calls == 1
@@ -77,29 +77,29 @@ def test_valid_proposal_grounded_in_the_event_is_accepted(db_session):
 
 def test_proposal_inventing_an_unknown_name_is_rejected_then_falls_back(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     event = _log_npc_death(db_session, campaign, osgar)
     llm = ScriptedLLM(
-        '{"name": "A conspiração da Guilda das Sombras", '
-        '"description": "A Guilda das Sombras matou Osgar Vell."}'
+        f'{{"name": "A conspiração da Guilda das Sombras", '
+        f'"description": "A Guilda das Sombras matou {osgar.name}."}}'
     )
 
     quest = propose_emergent_quest_from_npc_death(
         db_session, campaign.id, llm, world_event_id=event.id
     )
 
-    assert quest.name == "A morte de Osgar Vell"
-    assert "Osgar Vell morreu" in quest.description
+    assert quest.name == f"A morte de {osgar.name}"
+    assert f"{osgar.name} morreu" in quest.description
     assert llm.calls == 2  # both attempts consumed, both rejected
 
 
 def test_proposal_inventing_a_numeric_reward_is_rejected_then_falls_back(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     event = _log_npc_death(db_session, campaign, osgar)
     llm = ScriptedLLM(
-        '{"name": "A morte de Osgar Vell", '
-        '"description": "Osgar Vell morreu. Há 50 moedas de recompensa por informações."}'
+        f'{{"name": "A morte de {osgar.name}", '
+        f'"description": "{osgar.name} morreu. Há 50 moedas de recompensa por informações."}}'
     )
 
     quest = propose_emergent_quest_from_npc_death(
@@ -111,22 +111,22 @@ def test_proposal_inventing_a_numeric_reward_is_rejected_then_falls_back(db_sess
 
 def test_unavailable_llm_falls_back_to_backend_authored_identity(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     event = _log_npc_death(db_session, campaign, osgar)
 
     quest = propose_emergent_quest_from_npc_death(
         db_session, campaign.id, UnavailableLLM(), world_event_id=event.id
     )
 
-    assert quest.name == "A morte de Osgar Vell"
+    assert quest.name == f"A morte de {osgar.name}"
     assert quest.source_event_id == event.id
 
 
 def test_is_idempotent_per_source_event(db_session):
     campaign, region, character = _setup(db_session)
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     event = _log_npc_death(db_session, campaign, osgar)
-    llm = ScriptedLLM('{"name": "A morte de Osgar Vell", "description": "Osgar Vell morreu."}')
+    llm = ScriptedLLM(f'{{"name": "A morte de {osgar.name}", "description": "{osgar.name} morreu."}}')
 
     first = propose_emergent_quest_from_npc_death(
         db_session, campaign.id, llm, world_event_id=event.id

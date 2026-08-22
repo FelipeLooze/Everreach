@@ -36,16 +36,20 @@ from app.game.organizations.service import create_organization
 from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
-    anchor_threat,
     choose_major_settlement_type,
     choose_minor_settlement_type,
     city_districts,
     danger_level_to_connection_danger,
     EXPORT_SUPPLY_BONUS,
     export_good_for_settlement,
+    generate_anchor_flavor_location,
+    generate_blacksmith_flavor,
+    generate_elder_flavor,
+    generate_innkeeper_flavor,
     generate_leader_flavor,
     generate_npc_name,
     generate_region_identity,
+    generate_region_name,
     generate_settlement_name,
     generate_settlement_services,
     generate_subregion_geography,
@@ -72,11 +76,9 @@ from app.game.world.generator import (
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
 
-REGION_NAME = "Vale Verdejante"
 REGION_DESCRIPTION = (
-    "Uma região temperada de terras baixas, com campos ondulantes, matas antigas e uma "
-    "única vila de mercado, cercada por colinas baixas cujo lado mais distante ninguém "
-    "hoje vivo já mapeou."
+    "Uma vasta região de escala quase continental, cujos limites mais distantes ninguém "
+    "hoje vivo já mapeou por completo."
 )
 
 INITIAL_PLAYER_FACT_KEYS = ("arrival_square_visible",)
@@ -110,10 +112,11 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     region_seed = derive_seed(campaign.world_seed, "region:0")
     identity_rng = random.Random(derive_seed(region_seed, "identity"))
     climate_summary, cultural_summary, historical_summary = generate_region_identity(identity_rng)
+    region_name = generate_region_name(random.Random(derive_seed(region_seed, "region_name")))
 
     region = Region(
         campaign_id=campaign_id,
-        name=REGION_NAME,
+        name=region_name,
         description=REGION_DESCRIPTION,
         discovery_status=DiscoveryStatus.DISCOVERED,
         generation_seed=region_seed,
@@ -148,10 +151,30 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     anchor_subregion = subregions[0]
     region.skeleton_complete = True
 
+    # Phase 15 follow-up — the starting settlement is no longer a fixed
+    # "Cardal": its name, and its 4 companion flavor locations' names/
+    # descriptions, are generated per campaign like everything else in
+    # Phase 15. They keep their original SHAPE (still exactly a village +
+    # nearby forest/road/river/clearing, still the anchor subregion's own
+    # bespoke geography rather than the generic 1-feature pool every
+    # other subregion gets) — only the proper nouns became procedural.
+    used_location_names: set[str] = set()
+    anchor_flavor_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "anchor_flavor"))
+
+    village_name = generate_settlement_name(anchor_flavor_rng, used_location_names)
+    forest_name, forest_description = generate_anchor_flavor_location(anchor_flavor_rng, "forest")
+    used_location_names.add(forest_name)
+    road_name, road_description = generate_anchor_flavor_location(anchor_flavor_rng, "road")
+    used_location_names.add(road_name)
+    river_name, river_description = generate_anchor_flavor_location(anchor_flavor_rng, "river")
+    used_location_names.add(river_name)
+    clearing_name, clearing_description = generate_anchor_flavor_location(anchor_flavor_rng, "clearing")
+    used_location_names.add(clearing_name)
+
     village = Location(
         region_id=region.id,
         subregion_id=anchor_subregion.id,
-        name="Cardal",
+        name=village_name,
         type="village",
         x=0,
         y=0,
@@ -161,50 +184,46 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     forest_edge = Location(
         region_id=region.id,
         subregion_id=anchor_subregion.id,
-        name="Bosque da Beira do Vale",
+        name=forest_name,
         type="forest",
         x=-2,
         y=1,
-        description="A orla mais próxima de uma mata densa que se espessa e escurece em direção ao oeste.",
+        description=forest_description,
         discovery_status=DiscoveryStatus.UNKNOWN,
     )
     road = Location(
         region_id=region.id,
         subregion_id=anchor_subregion.id,
-        name="Estrada do Moinho",
+        name=road_name,
         type="road",
         x=2,
         y=0,
-        description="Uma estrada de terra batida que segue a leste da vila rumo às terras altas.",
+        description=road_description,
         discovery_status=DiscoveryStatus.UNKNOWN,
     )
     creek = Location(
         region_id=region.id,
         subregion_id=anchor_subregion.id,
-        name="Riacho Negro",
+        name=river_name,
         type="river",
         x=0,
         y=-2,
-        description="Um riacho raso de águas escuras ao sul da vila, bom para pescar.",
+        description=river_description,
         discovery_status=DiscoveryStatus.UNKNOWN,
     )
     clearing = Location(
         region_id=region.id,
         subregion_id=anchor_subregion.id,
-        name="Clareira do Vidro Antigo",
+        name=clearing_name,
         type="clearing",
         x=-4,
         y=2,
-        description="Uma clareira silenciosa no fundo da mata, cuja relva estranhamente não é perturbada por animais.",
+        description=clearing_description,
         discovery_status=DiscoveryStatus.UNKNOWN,
     )
 
     db.add_all([village, forest_edge, road, creek, clearing])
     db.flush()
-
-    used_location_names: set[str] = {
-        village.name, forest_edge.name, road.name, creek.name, clearing.name,
-    }
 
     # Phase 15E — one major physical geography feature per non-anchor
     # subregion, matching its biome. The anchor subregion already has its
@@ -443,8 +462,9 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # travel mechanic) — just scaled up so crossing subregions actually
     # takes days, not minutes. Non-anchor subregions form one chain (not a
     # fully connected mesh — the world needs empty stretches, spec), and
-    # the existing "Estrada do Moinho" (already narrated as leading east
-    # "rumo às terras altas") is the literal bridge from Cardal into it.
+    # the anchor's own road location (generated to already lead "east
+    # toward the highlands" narratively) is the literal bridge from the
+    # starting village into it.
     if major_settlement_rows:
         roads_rng = random.Random(derive_seed(region_seed, "roads"))
         ordered_majors = sorted(major_settlement_rows, key=lambda row: row[0].order_index)
@@ -544,26 +564,37 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
                 ctype=ConnectionType.TRAIL,
             )
 
+    # Phase 15 follow-up — the 3 starting NPCs keep their fixed ROLES
+    # (many earlier-phase tests already look these up BY ROLE — "an
+    # elder/leader", "a blacksmith", "an innkeeper" — as their standard
+    # fixture), but their names and flavor text are generated per
+    # campaign now, same as every other NPC Phase 15 creates.
+    used_npc_names: set[str] = set()
+    starting_npc_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "starting_npcs"))
+
+    elder_name = generate_npc_name(starting_npc_rng, used_npc_names)
+    elder_personality, elder_backstory = generate_elder_flavor(starting_npc_rng, village.name)
     elder = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,
-        name="Osgar Vell", role="ancião da vila",
-        personality="Paciente, atento, fala devagar e raramente repete o que diz.",
-        backstory=(
-            "Nasceu em Cardal, vive ali há décadas e lidera o conselho da vila há tanto tempo "
-            "quanto a maioria dos moradores consegue lembrar."
-        ),
+        name=elder_name, role="ancião da vila",
+        personality=elder_personality,
+        backstory=elder_backstory,
     )
+    blacksmith_name = generate_npc_name(starting_npc_rng, used_npc_names)
+    blacksmith_personality, blacksmith_backstory = generate_blacksmith_flavor(starting_npc_rng)
     blacksmith = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,
-        name="Mira Draske", role="ferreira",
-        personality="Direta, trabalhadora, orgulhosa do seu ofício.",
-        backstory="Assumiu a forja do pai; desconfia de forasteiros que não pagam adiantado.",
+        name=blacksmith_name, role="ferreira",
+        personality=blacksmith_personality,
+        backstory=blacksmith_backstory,
     )
+    innkeeper_name = generate_npc_name(starting_npc_rng, used_npc_names)
+    innkeeper_personality, innkeeper_backstory = generate_innkeeper_flavor(starting_npc_rng, village.name)
     innkeeper = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,
-        name="Talven Brooks", role="estalajadeiro",
-        personality="Falante, recolhe fofocas de todo viajante que passa por ali.",
-        backstory="Administra a única estalagem da vila; conhece todos os boatos que circulam em Cardal.",
+        name=innkeeper_name, role="estalajadeiro",
+        personality=innkeeper_personality,
+        backstory=innkeeper_backstory,
     )
     db.add_all([elder, blacksmith, innkeeper])
     db.flush()
@@ -574,7 +605,6 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # random type) and one named leader NPC who founds and leads it.
     # Deliberately NOT every citizen — just the individual who matters
     # structurally right now.
-    used_npc_names: set[str] = {elder.name, blacksmith.name, innkeeper.name}
     for subregion, major_location, _settlement in major_settlement_rows:
         org_rng = random.Random(derive_seed(subregion.generation_seed, "organization"))
 
@@ -626,16 +656,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # abstraction only (one row per subregion, never individual
     # creatures) — gives future world simulation something real to
     # reference (e.g. "boars leave the forest, crops get damaged").
-    anchor_threat_type, anchor_threat_description = anchor_threat()
-    db.add(
-        RegionalThreat(
-            subregion_id=anchor_subregion.id,
-            threat_type=anchor_threat_type,
-            intensity=threat_intensity_for_danger_level(anchor_subregion.danger_level),
-            description=anchor_threat_description,
-        )
-    )
-    for subregion in subregions[1:]:
+    for subregion in subregions:
         threat_rng = random.Random(derive_seed(subregion.generation_seed, "threat"))
         threat_type, threat_description = generate_threat(threat_rng)
         db.add(
@@ -648,12 +669,18 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         )
     db.flush()
 
+    # Phase 15 follow-up — fact_keys stay the exact same internal strings
+    # as before (they're opaque lookup slugs, never displayed or matched
+    # against — see app.game.knowledge.service.explicitly_knows_name,
+    # which only ever inspects `statement` text, never `fact_key`). Only
+    # the statements themselves need to become dynamic now that the
+    # names they describe are generated per campaign.
     canonical_facts = [
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"location:{village.id}",
             fact_key="cardal_is_village",
-            statement="Cardal é uma vila da região Vale Verdejante.",
+            statement=f"{village.name} é uma vila da região {region.name}.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
@@ -665,25 +692,25 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             campaign_id=campaign_id,
             subject=f"npc:{elder.id}",
             fact_key="osgar_born_in_cardal",
-            statement="Osgar Vell nasceu em Cardal e vive ali há décadas.",
+            statement=f"{elder.name} nasceu em {village.name} e vive ali há décadas.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"connection:{forest_connection.id}",
             fact_key="osgar_knows_cardal_northwest_path",
-            statement="Uma trilha sai de Cardal a noroeste em direção ao Bosque da Beira do Vale.",
+            statement=f"Uma trilha sai de {village.name} a noroeste em direção a {forest_edge.name}.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"connection:{road_connection.id}",
             fact_key="osgar_knows_cardal_east_road",
-            statement="A Estrada do Moinho sai de Cardal para leste.",
+            statement=f"{road.name} sai de {village.name} para leste.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"connection:{creek_connection.id}",
             fact_key="osgar_knows_cardal_south_creek",
-            statement="O Riacho Negro fica ao sul de Cardal e é alcançado por uma trilha.",
+            statement=f"{creek.name} fica ao sul de {village.name} e é alcançado por uma trilha.",
         ),
     ]
     db.add_all(canonical_facts)
@@ -707,7 +734,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             level=0,
             location_id=village.id,
             archetype=SimulatedPlayerArchetype.EXPLORER,
-            goal="Mapear os limites do Vale Verdejante.",
+            goal=f"Mapear os limites de {region.name}.",
             goal_type=SimulatedPlayerGoalType.EXPLORE_REGION,
             goal_subject=f"region:{region.id}",
             risk_tolerance=RiskTolerance.BALANCED.value,

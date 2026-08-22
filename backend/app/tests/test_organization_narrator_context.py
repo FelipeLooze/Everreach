@@ -40,7 +40,7 @@ def test_public_organization_headquartered_here_is_shown(db_session):
     )
     guildmaster = create_role(db_session, org, "Guildmaster", rank_order=0)
     from app.db.models.npc import NPC
-    osgar = db_session.query(NPC).filter(NPC.name == "Osgar Vell").first()
+    osgar = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
     join_organization(db_session, org, CombatActorType.NPC, osgar.id, role_id=guildmaster.id)
 
     state = build_game_state(db_session, campaign.id, character.id)

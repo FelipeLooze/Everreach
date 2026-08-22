@@ -53,7 +53,7 @@ def test_known_map_only_shows_the_starting_village(db_session):
     result = known_map(db_session, campaign.id, character.id)
 
     location_names = [loc["name"] if isinstance(loc, dict) else loc.name for loc in result["locations"]]
-    assert location_names == ["Cardal"]
+    assert location_names == [village.name]
 
 
 def test_player_learns_no_facts_beyond_the_initial_grant(db_session):

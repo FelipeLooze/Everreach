@@ -225,6 +225,6 @@ def test_context_exposes_working_activity(
     )
 
     assert (
-        "Mira Draske (ferreira; activity=WORKING)"
+        f"{blacksmith.name} (ferreira; activity=WORKING)"
         in context
     )

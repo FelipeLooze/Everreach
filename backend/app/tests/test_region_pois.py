@@ -7,7 +7,7 @@ dangerously) from its subregion's major settlement.
 
 from app.db.models.location import Location, LocationConnection
 from app.db.models.subregion import Subregion
-from app.game.world.content_pools import ANCHOR_SUBREGION_NAME, POI_POOL
+from app.game.world.content_pools import POI_POOL
 from app.game.world.seed import create_campaign, seed_initial_region
 
 POI_TYPES = {poi_type for _name, poi_type, _desc in POI_POOL}
@@ -18,7 +18,7 @@ def test_every_non_anchor_subregion_gets_at_least_one_poi(db_session):
     region, _village = seed_initial_region(db_session, campaign.id)
 
     subregions = db_session.query(Subregion).filter(Subregion.region_id == region.id).all()
-    non_anchor = [s for s in subregions if s.name != ANCHOR_SUBREGION_NAME]
+    non_anchor = [s for s in subregions if s.order_index != 0]
 
     for subregion in non_anchor:
         pois = (

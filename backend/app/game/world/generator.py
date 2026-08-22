@@ -21,17 +21,24 @@ import random
 
 from app.core.enums import DangerLevel, PopulationDensity, SubregionBiome, ThreatIntensity
 from app.game.world.content_pools import (
-    ANCHOR_SUBREGION_NAME,
-    ANCHOR_THREAT,
+    ANCHOR_CLEARING_OPTIONS,
+    ANCHOR_FOREST_OPTIONS,
+    ANCHOR_RIVER_OPTIONS,
+    ANCHOR_ROAD_OPTIONS,
+    ANCHOR_SUBREGION_NAME_POOL,
+    BLACKSMITH_FLAVOR_OPTIONS,
     CITY_DISTRICTS,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
+    ELDER_FLAVOR_OPTIONS,
     EXPORT_GOOD_BY_SETTLEMENT_TYPE,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
+    INNKEEPER_FLAVOR_OPTIONS,
     INTERIOR_DESCRIPTION_BY_SERVICE_TYPE,
     LEADER_BACKSTORY_POOL,
     LEADER_PERSONALITY_POOL,
+    REGION_NAME_POOL,
     LEADER_TITLE_BY_ORG_TYPE,
     MINOR_SETTLEMENT_DESCRIPTIONS,
     NPC_FAMILY_NAME_POOL,
@@ -232,13 +239,6 @@ def interior_description_for_service(service_type: str) -> str | None:
     return INTERIOR_DESCRIPTION_BY_SERVICE_TYPE.get(str(service_type))
 
 
-def anchor_threat() -> tuple[str, str]:
-    """The anchor subregion's threat is fixed, not rolled — boars from
-    the already-existing Bosque da Beira do Vale occasionally raiding
-    farmland near Cardal, mirroring the spec's own worked example
-    (Whispering Woods boars -> Cardal farmland -> Notice)."""
-    return ANCHOR_THREAT
-
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 
 MIN_SUBREGIONS = 8
@@ -371,11 +371,47 @@ def city_districts() -> list[tuple[str, str]]:
 
 
 def generate_subregion_names(rng: random.Random) -> list[str]:
-    """Phase 15C — the Region Skeleton's macro subdivision list. Always
-    includes the fixed anchor subregion (Campos de Cardal, containing the
-    pinned starting village) first, then a seed-driven sample of the rest
-    of the pool — a massive Region has many subregions (spec: "8-15"), but
-    exactly which ones exist varies per campaign."""
+    """Phase 15C — the Region Skeleton's macro subdivision list. The
+    anchor subregion (index 0, containing the starting settlement) always
+    comes first, but its name — like every other subregion's — is picked
+    per campaign, not fixed (Phase 15 follow-up). A massive Region has
+    many subregions (spec: "8-15"), varying per campaign."""
     count = rng.randint(MIN_SUBREGIONS, MAX_SUBREGIONS)
+    anchor_name = rng.choice(ANCHOR_SUBREGION_NAME_POOL)
     rest = rng.sample(SUBREGION_NAME_POOL, k=count - 1)
-    return [ANCHOR_SUBREGION_NAME, *rest]
+    return [anchor_name, *rest]
+
+
+def generate_region_name(rng: random.Random) -> str:
+    """Phase 15 follow-up — the Region's own name is generated per
+    campaign, same discipline as everything else in Phase 15 (no proper
+    noun in Everreach's starting point is fixed anymore)."""
+    return rng.choice(REGION_NAME_POOL)
+
+
+def generate_anchor_flavor_location(rng: random.Random, kind: str) -> tuple[str, str]:
+    """Phase 15 follow-up — the starting settlement's 4 hand-authored
+    flavor locations (forest/road/river/clearing) keep their original
+    shape but pick their name+description from a small per-kind pool
+    instead of being one fixed string forever."""
+    pool = {
+        "forest": ANCHOR_FOREST_OPTIONS,
+        "road": ANCHOR_ROAD_OPTIONS,
+        "river": ANCHOR_RIVER_OPTIONS,
+        "clearing": ANCHOR_CLEARING_OPTIONS,
+    }[kind]
+    return rng.choice(pool)
+
+
+def generate_elder_flavor(rng: random.Random, village_name: str) -> tuple[str, str]:
+    personality, backstory_template = rng.choice(ELDER_FLAVOR_OPTIONS)
+    return personality, backstory_template.format(village=village_name)
+
+
+def generate_blacksmith_flavor(rng: random.Random) -> tuple[str, str]:
+    return rng.choice(BLACKSMITH_FLAVOR_OPTIONS)
+
+
+def generate_innkeeper_flavor(rng: random.Random, village_name: str) -> tuple[str, str]:
+    personality, backstory_template = rng.choice(INNKEEPER_FLAVOR_OPTIONS)
+    return personality, backstory_template.format(village=village_name)

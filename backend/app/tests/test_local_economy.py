@@ -6,6 +6,7 @@ claim. Only WEALTHY settlements treat Gold as routine.
 """
 
 from app.core.enums import SettlementWealthBand
+from app.db.models.location import Location
 from app.game.economy.local_economy import (
     get_settlement_wealth,
     gold_circulates_normally,
@@ -23,9 +24,16 @@ def _setup(db_session):
 
 
 def test_unset_settlement_defaults_to_modest(db_session):
+    # The starting village itself now always has an explicit wealth band
+    # (Phase 15 follow-up — settlement parity), so this test needs a
+    # location that genuinely has no LocationEconomy row at all: its own
+    # forest geography feature never gets one.
     campaign, region, village = _setup(db_session)
+    forest = db_session.query(Location).filter(
+        Location.subregion_id == village.subregion_id, Location.type == "forest"
+    ).one()
 
-    assert get_settlement_wealth(db_session, village.id) == SettlementWealthBand.MODEST
+    assert get_settlement_wealth(db_session, forest.id) == SettlementWealthBand.MODEST
 
 
 def test_setting_wealth_persists_and_is_readable(db_session):

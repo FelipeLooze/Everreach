@@ -65,7 +65,7 @@ def test_local_economy_flags_gold_as_unusual_outside_wealthy_settlements(db_sess
     context = context_builder.build_context(db_session, state, player_input="Olho ao redor.")
 
     section = context.split("LOCAL ECONOMY", 1)[1].split("NEARBY SHOPS", 1)[0]
-    assert "Settlement wealth: MODEST" in section
+    assert "Settlement wealth: POOR" in section
     assert "unusual here" in section
 
 

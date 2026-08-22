@@ -135,7 +135,7 @@ def test_evaluate_objective_trigger_is_idempotent(db_session):
 
 def test_reaching_a_location_completes_a_matching_objective_via_move(db_session):
     campaign, region, village, character = _setup(db_session)
-    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
+    forest = db_session.query(Location).filter(Location.subregion_id == village.subregion_id, Location.type == "forest").first()
     connection = (
         db_session.query(LocationConnection)
         .filter(

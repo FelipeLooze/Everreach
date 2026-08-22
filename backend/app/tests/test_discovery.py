@@ -172,7 +172,7 @@ def test_known_map_is_individual_per_character(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -257,7 +257,7 @@ def test_observe_discovers_route_only_for_observing_character(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -408,7 +408,7 @@ def test_observe_makes_discovered_destination_available_for_travel(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -562,7 +562,7 @@ def test_known_destination_without_known_route_cannot_be_traveled(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()

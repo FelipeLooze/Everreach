@@ -250,7 +250,7 @@ def test_rumored_location_is_explicitly_marked_as_rumor(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == state.region.id,
+            Location.subregion_id == state.location.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -287,7 +287,7 @@ def test_discovered_location_is_not_presented_as_rumor(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == state.region.id,
+            Location.subregion_id == state.location.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -323,7 +323,7 @@ def test_unknown_location_does_not_leak_into_spatial_knowledge(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == state.region.id,
+            Location.subregion_id == state.location.subregion_id,
             Location.type == "forest",
         )
         .first()

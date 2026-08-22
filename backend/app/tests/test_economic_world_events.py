@@ -25,35 +25,40 @@ def _setup(db_session):
 
 
 def test_a_disruption_raises_local_prices_for_the_affected_items(db_session):
+    # Not "Grão"/"Ferramentas": those are real settlement export goods now
+    # (Phase 15K/15 follow-up) and may already carry a boosted local
+    # supply at the starting village, which would understate this test's
+    # own disruption delta. A fresh, uninvolved item keeps the assertion
+    # about apply_economic_disruption itself, not about export baselines.
     campaign, region, village, character = _setup(db_session)
-    grain = get_or_create_item(db_session, "Grão")
-    set_item_base_value(db_session, grain, 10)
-    grain_stack = add_item(db_session, character.id, "Grão")
+    spice = get_or_create_item(db_session, "Especiarias Raras")
+    set_item_base_value(db_session, spice, 10)
+    spice_stack = add_item(db_session, character.id, "Especiarias Raras")
 
     apply_economic_disruption(
-        db_session, campaign.id, village.id, [grain.id],
+        db_session, campaign.id, village.id, [spice.id],
         supply_delta=-60, reason="Ponte destruída corta a rota de importação.",
     )
 
-    assert resolve_local_market_price(db_session, grain_stack, village.id) > 10
+    assert resolve_local_market_price(db_session, spice_stack, village.id) > 10
 
 
 def test_a_disruption_affects_multiple_items_at_once(db_session):
     campaign, region, village, character = _setup(db_session)
-    grain = get_or_create_item(db_session, "Grão")
-    set_item_base_value(db_session, grain, 10)
-    tools = get_or_create_item(db_session, "Ferramentas")
-    set_item_base_value(db_session, tools, 30)
-    grain_stack = add_item(db_session, character.id, "Grão")
-    tool_stack = add_item(db_session, character.id, "Ferramentas")
+    spice = get_or_create_item(db_session, "Especiarias Raras")
+    set_item_base_value(db_session, spice, 10)
+    silk = get_or_create_item(db_session, "Seda Fina")
+    set_item_base_value(db_session, silk, 30)
+    spice_stack = add_item(db_session, character.id, "Especiarias Raras")
+    silk_stack = add_item(db_session, character.id, "Seda Fina")
 
     apply_economic_disruption(
-        db_session, campaign.id, village.id, [grain.id, tools.id],
+        db_session, campaign.id, village.id, [spice.id, silk.id],
         supply_delta=-60, reason="Estrada bloqueada.",
     )
 
-    assert resolve_local_market_price(db_session, grain_stack, village.id) > 10
-    assert resolve_local_market_price(db_session, tool_stack, village.id) > 30
+    assert resolve_local_market_price(db_session, spice_stack, village.id) > 10
+    assert resolve_local_market_price(db_session, silk_stack, village.id) > 30
 
 
 def test_a_positive_disruption_can_lower_prices(db_session):

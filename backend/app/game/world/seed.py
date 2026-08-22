@@ -599,6 +599,71 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     db.add_all([elder, blacksmith, innkeeper])
     db.flush()
 
+    # Phase 15 follow-up — settlement parity: the starting village used to
+    # be the only VILLAGE-type settlement in the whole region without a
+    # Settlement row (wealth band), an Organization, or the service
+    # locations (inn/general store/blacksmith/notice board) every other
+    # generated VILLAGE gets — a real content gap found by the user
+    # ("só tem esses NPCs, ou são garantidos?"). Reuses the exact same
+    # per-settlement machinery as every other subregion, with the
+    # already-existing elder as the organization's founder/leader instead
+    # of spawning a redundant 4th "village leader" NPC.
+    village_settlement = Settlement(
+        location_id=village.id,
+        settlement_type=SettlementType.VILLAGE,
+        profile=settlement_profile(SettlementType.VILLAGE),
+        population_tier=settlement_population_tier(SettlementType.VILLAGE),
+    )
+    db.add(village_settlement)
+    db.flush()
+
+    village_org_type = organization_type_for_settlement(SettlementType.VILLAGE)
+    village_org_leader_title = leader_title_for_organization(village_org_type)
+    village_organization = create_organization(
+        db, campaign_id,
+        organization_name_for_settlement(village.name, village_org_type),
+        organization_type=OrganizationType(village_org_type),
+        origin=OrganizationOrigin.NATIVE,
+        description=settlement_profile(SettlementType.VILLAGE),
+        visibility=OrganizationVisibility.PUBLIC,
+        headquarters_location_id=village.id,
+        founder_type=CombatActorType.NPC,
+        founder_id=elder.id,
+    )
+    village_org_role = create_role(db, village_organization, village_org_leader_title.capitalize(), rank_order=0)
+    join_organization(db, village_organization, CombatActorType.NPC, elder.id, role_id=village_org_role.id)
+
+    set_settlement_wealth(db, campaign_id, village.id, SettlementWealthBand(wealth_band_for_settlement(SettlementType.VILLAGE)))
+    village_export_good_name = export_good_for_settlement(SettlementType.VILLAGE)
+    if village_export_good_name is not None:
+        village_export_item = get_or_create_item(db, village_export_good_name)
+        village_supply_level = get_or_create_supply_level(db, campaign_id, village.id, village_export_item.id)
+        adjust_supply(
+            db, village_supply_level, EXPORT_SUPPLY_BONUS,
+            reason=f"{village.name} produz {village_export_good_name.lower()} localmente em abundância.",
+        )
+
+    village_service_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "village_services"))
+    village_service_locations = []
+    for service_name, service_type, service_description in generate_settlement_services(SettlementType.VILLAGE):
+        village_service_locations.append(
+            Location(
+                region_id=region.id,
+                subregion_id=anchor_subregion.id,
+                parent_location_id=village.id,
+                name=f"{service_name} de {village.name}",
+                type=service_type,
+                description=service_description,
+                discovery_status=DiscoveryStatus.UNKNOWN,
+                materialization_tier=1,
+            )
+        )
+    db.add_all(village_service_locations)
+    db.flush()
+    for service_location in village_service_locations:
+        forward, back = roll_compass_direction_pair(village_service_rng)
+        connect(village, service_location, forward, back, distance=0.2, danger=0)
+
     # Phase 15J — Regional Organizations & Major NPCs. Every major
     # settlement gets one organization (type matching the settlement's own
     # SettlementType — a mining settlement gets a miners' guild, never a

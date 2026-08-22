@@ -46,7 +46,7 @@ def _setup(db_session):
 
 def test_apply_intent_move_relocates_character(db_session):
     campaign, region, village, character = _setup(db_session)
-    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
+    forest = db_session.query(Location).filter(Location.subregion_id == village.subregion_id, Location.type == "forest").first()
     connection = (
         db_session.query(LocationConnection)
         .filter(
@@ -92,7 +92,7 @@ def test_apply_intent_move_relocates_character(db_session):
 
 def test_apply_intent_move_does_not_reveal_unknown_location(db_session):
     campaign, region, village, character = _setup(db_session)
-    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").first()
+    forest = db_session.query(Location).filter(Location.subregion_id == village.subregion_id, Location.type == "forest").first()
     state = build_game_state(db_session, campaign.id, character.id)
 
     intent = Intent(type=ActionIntentType.MOVE, target=forest.name, raw_text="Vou ao bosque")
@@ -319,7 +319,7 @@ def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -435,7 +435,7 @@ def test_examine_narrator_receives_discoveries_in_same_turn(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -626,7 +626,7 @@ def test_apply_intent_move_uses_requested_fast_pace(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()

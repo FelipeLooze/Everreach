@@ -47,9 +47,14 @@ def test_anchor_subregion_keeps_its_bespoke_geography_only(db_session):
         .filter(Subregion.region_id == region.id, Subregion.order_index == 0)
         .one()
     )
+    # Top-level only: the village also now has its own service locations
+    # (inn/general store/blacksmith/notice board — Phase 15 follow-up,
+    # settlement parity) as children, which this test isn't about.
     anchor_location_types = {
         loc.type
-        for loc in db_session.query(Location).filter(Location.subregion_id == anchor.id).all()
+        for loc in db_session.query(Location)
+        .filter(Location.subregion_id == anchor.id, Location.parent_location_id.is_(None))
+        .all()
     }
 
     assert anchor_location_types == {"village", "forest", "road", "river", "clearing"}

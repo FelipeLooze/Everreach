@@ -39,7 +39,7 @@ def test_move_character_rejects_travel_without_enough_stamina(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -100,7 +100,7 @@ def test_move_character_spends_stamina(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -208,7 +208,7 @@ def test_move_character_follows_valid_connection(db_session):
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -426,7 +426,7 @@ def test_move_character_delay_incident_adds_travel_time(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()
@@ -508,7 +508,7 @@ def test_move_character_fatigue_incident_spends_extra_stamina(
     forest = (
         db_session.query(Location)
         .filter(
-            Location.region_id == region.id,
+            Location.subregion_id == village.subregion_id,
             Location.type == "forest",
         )
         .first()

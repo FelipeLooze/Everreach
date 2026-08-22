@@ -41,7 +41,11 @@ def test_organization_action_can_be_recorded_for_a_never_visited_organization(db
     region, village = seed_initial_region(db_session, campaign.id)
     create_character(db_session, campaign.id, "Hero", region.id, village.id)
 
-    organization = db_session.query(Organization).filter(Organization.campaign_id == campaign.id).first()
+    organization = (
+        db_session.query(Organization)
+        .filter(Organization.campaign_id == campaign.id, Organization.headquarters_location_id != village.id)
+        .first()
+    )
     assert organization is not None
     # The protagonist has only ever been at the starting village — this
     # organization's headquarters is somewhere else entirely (Phase 15J).

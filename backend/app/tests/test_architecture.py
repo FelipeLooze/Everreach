@@ -30,7 +30,12 @@ def test_context_builder_sends_only_current_player_context(db_session):
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
 
     elder = db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.role == "ancião da vila").one()
-    forest = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "forest").one()
+    # Scoped to the anchor subregion, not the whole region: "forest" as a
+    # Location.type also occurs elsewhere in the massive region (any other
+    # FOREST-biome subregion's own generic geography feature).
+    forest = db_session.query(Location).filter(
+        Location.subregion_id == village.subregion_id, Location.type == "forest"
+    ).one()
     clearing = db_session.query(Location).filter(Location.region_id == region.id, Location.type == "clearing").one()
     blacksmith = db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.role == "ferreira").one()
 

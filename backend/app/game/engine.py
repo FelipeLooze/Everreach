@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.ai import context_builder, intent_parser, memory_manager, narrator, narrative_validator
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService, LLMServiceError
+from app.ai.validation.contract import NarrativeProposal, validate_narrative_proposal
 from app.core.enums import (
     ActionIntentType,
     CharacterStatus,
@@ -359,6 +360,25 @@ def resolve_action(
 
     validation = narrative_validator.validate(narrative_text, canonical_facts)
 
+    # Phase 19A — the new validation seam, alongside (not replacing) the
+    # existing narrative_validator check above. Currently always a
+    # pass-through (validate_narrative_proposal runs no real validators
+    # yet), so final_text always equals validation.text here — using it
+    # downstream now is zero-risk today and means 19D/19F+ won't require
+    # another engine.py rewiring once real repair logic lands.
+    narrative_proposal = NarrativeProposal(
+        text=validation.text,
+        mode="CONTINUATION",
+        context=fresh_context,
+        mechanical_summary=mechanical_summary,
+        player_input=text,
+        recent_history=recent_history,
+        character_name=character.name,
+        active_npc_id=context_npc.id if context_npc is not None else None,
+        active_npc_name=context_npc.name if context_npc is not None else None,
+    )
+    narrative_validation = validate_narrative_proposal(db, campaign_id, narrative_proposal)
+
     if context_npc is not None:
         _teach_facts_revealed_in_narration(
             db,
@@ -367,7 +387,7 @@ def resolve_action(
             fresh_state,
             context_npc,
             player_input=text,
-            narrated_text=validation.text,
+            narrated_text=narrative_validation.final_text,
         )
 
     action_has_interlocutor = (
@@ -389,7 +409,7 @@ def resolve_action(
             "action_key": resolved_action_key,
             "technique_id": technique_id,
             "player_text": text,
-            "narrative": validation.text,
+            "narrative": narrative_validation.final_text,
             "narrator_unavailable": narrator_unavailable,
         },
         importance=2 if is_dialogue else 1,
@@ -409,7 +429,7 @@ def resolve_action(
             character,
             action_npc,
             text,
-            validation.text,
+            narrative_validation.final_text,
             importance=(
                 3
                 if intent.type == ActionIntentType.TALK
@@ -434,7 +454,7 @@ def resolve_action(
             character,
             action_simulated_player,
             text,
-            validation.text,
+            narrative_validation.final_text,
             importance=(
                 3
                 if intent.type == ActionIntentType.TALK
@@ -445,11 +465,11 @@ def resolve_action(
     db.commit()
 
     return ActionResult(
-        narrative=validation.text,
+        narrative=narrative_validation.final_text,
         narrator_unavailable=narrator_unavailable,
         mechanical_summary=mechanical_summary,
         intent_type=intent.type.value,
-        warnings=[*mechanical_warnings, *validation.warnings],
+        warnings=[*mechanical_warnings, *validation.warnings, *narrative_validation.violations],
     )
 
 

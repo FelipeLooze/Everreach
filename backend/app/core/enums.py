@@ -528,6 +528,13 @@ class KnowerType(StrEnum):
     PLAYER = "PLAYER"
     NPC = "NPC"
     SIMULATED_PLAYER = "SIMULATED_PLAYER"
+    # Phase 17O — an Organization is a "mind" of its own for geographic
+    # intelligence purposes (spec's "Organizations may possess shared
+    # geographic intelligence"), reusing the exact same
+    # KnowledgeFact/KnowledgeKnower machinery every other knower already
+    # uses — no parallel "organization knowledge" table. knower_id is
+    # the Organization's own id.
+    ORGANIZATION = "ORGANIZATION"
 
 
 class MemoryOwnerType(StrEnum):

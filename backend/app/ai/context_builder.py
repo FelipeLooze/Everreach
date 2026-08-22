@@ -15,6 +15,7 @@ from app.core.enums import (
     DiscoveryStatus,
     KnowerType,
     KnowledgeDocumentType,
+    KnowledgeSourceType,
     MemoryOwnerType,
     NoticeStatus,
     OrganizationMembershipStatus,
@@ -27,6 +28,7 @@ from app.ai.retrieval.access import knowledge_aware_documents
 from app.ai.retrieval.budget import fit_to_budget, format_ranked_documents
 from app.ai.retrieval.ranking import rank_documents
 from app.ai.retrieval.semantic import ScoredDocument
+from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.location import (
     CharacterConnectionDiscovery,
     CharacterLocationDiscovery,
@@ -698,6 +700,32 @@ _RETRIEVED_LONG_TERM_DOCUMENT_TYPES = [
     KnowledgeDocumentType.RELATIONSHIP,
 ]
 
+# Phase 18O — "current location lore" (the spec's own tavern-revisit
+# example: identity, current state, and any established history for
+# exactly the location the character is standing in).
+_LOCATION_LORE_DOCUMENT_TYPES = [
+    KnowledgeDocumentType.IDENTITY,
+    KnowledgeDocumentType.BACKGROUND,
+    KnowledgeDocumentType.CURRENT_STATE,
+]
+
+
+def _current_location_lore_candidates(
+    db: Session, state: GameStateSnapshot
+) -> list[IndexedKnowledgeDocument]:
+    """Only the location the character currently occupies — never every
+    location ever discovered. Still gated by knowledge_aware_documents
+    (Phase 18I/18G): a canon document existing for this location never
+    implies the player may see it."""
+    if state.location is None:
+        return []
+    candidates = knowledge_aware_documents(
+        db, state.campaign_id, KnowerType.PLAYER, state.character.id,
+        source_types=[KnowledgeSourceType.LOCATION],
+        document_types=_LOCATION_LORE_DOCUMENT_TYPES,
+    )
+    return [document for document in candidates if document.source_id == state.location.id]
+
 
 def _retrieved_long_term_context(
     db: Session,
@@ -705,7 +733,7 @@ def _retrieved_long_term_context(
     active_npc: NPC | None,
     scene_subjects: Sequence[str],
 ) -> str:
-    """Phase 18N — Context Builder Integration.
+    """Phase 18N/18O — Context Builder Integration + Narrator Retrieval.
 
     The OPTIONAL retrieved tail (priority level 9: relevant long-term
     history) appended AFTER the existing direct-query NPC/PLAYER memory
@@ -714,13 +742,20 @@ def _retrieved_long_term_context(
     from knowledge_aware_documents (Phase 18I), so nothing a knower
     lacks access to can appear here regardless of how it ranks.
 
+    Narrator retrieval (Phase 18O) is not a separate pipeline: the
+    Narrator is currently the sole consumer of build_context's output
+    (app.game.engine passes it straight to narrator.narrate), so this
+    same section already serves it — continuity via relationship/
+    history documents (Phase 18N) plus current-location lore (this
+    subphase) for the tavern-revisit style case. narrator.py itself
+    still cannot see the database (architecture-enforced); it only ever
+    receives this already-built, already-filtered string.
+
     No LLMService is threaded through build_context — that would be a
     much larger, separate integration than this subphase's scope — so
     the semantic-similarity component of ranking (Phase 18H) stays
     neutral (0.0) here; entity-match/recency/importance (Phase 18K)
-    still meaningfully order the result. A consumer that does have an
-    LLMService (Phase 18O's Narrator retrieval) may build a richer,
-    semantically-ranked query on the same pipeline.
+    still meaningfully order the result.
 
     Ranked per-knower (player, then the active NPC) before merging: a
     single hard-filter pass in app.ai.retrieval.ranking.rank_documents
@@ -730,11 +765,7 @@ def _retrieved_long_term_context(
     """
     current_world_minute = state.world_time.total_minutes()
 
-    def _ranked_for(knower_type: KnowerType, knower_id: str):
-        candidates = knowledge_aware_documents(
-            db, state.campaign_id, knower_type, knower_id,
-            document_types=_RETRIEVED_LONG_TERM_DOCUMENT_TYPES,
-        )
+    def _ranked(candidates: list, knower_type: KnowerType, knower_id: str):
         return rank_documents(
             db, state.campaign_id,
             [ScoredDocument(document, 0.0) for document in candidates],
@@ -743,7 +774,17 @@ def _retrieved_long_term_context(
             scene_subjects=scene_subjects,
         )
 
+    def _ranked_for(knower_type: KnowerType, knower_id: str):
+        candidates = knowledge_aware_documents(
+            db, state.campaign_id, knower_type, knower_id,
+            document_types=_RETRIEVED_LONG_TERM_DOCUMENT_TYPES,
+        )
+        return _ranked(candidates, knower_type, knower_id)
+
     merged = _ranked_for(KnowerType.PLAYER, state.character.id)
+    merged += _ranked(
+        _current_location_lore_candidates(db, state), KnowerType.PLAYER, state.character.id
+    )
     if active_npc is not None:
         merged = merged + _ranked_for(KnowerType.NPC, active_npc.id)
     merged.sort(key=lambda ranked: ranked.score, reverse=True)

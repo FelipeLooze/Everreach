@@ -51,7 +51,8 @@ def test_valid_narrative_survives_repair_when_only_one_sentence_is_invalid(db_se
     must not destroy an otherwise valid narration."""
     campaign = create_campaign(db_session, "Reparo Preserva O Valido")
     proposal = _proposal(
-        "Osgar entra na taverna carregando seu martelo. Logan sorri e o abraça."
+        "Osgar entra na taverna carregando seu martelo. Logan sorri e o abraça.",
+        context="CURRENT PLAYER\nName: Logan\n\nCANONICAL LOCATION CONTEXT\nA taverna do vilarejo.",
     )
 
     result = validate_narrative_proposal(db_session, campaign.id, proposal)

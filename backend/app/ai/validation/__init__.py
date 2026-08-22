@@ -12,6 +12,7 @@ from app.ai.validation.contract import (
     validate_narrative_proposal,
 )
 from app.ai.validation import agency  # noqa: F401 — Phase 19D
+from app.ai.validation import canon  # noqa: F401 — Phase 19F
 
 __all__ = [
     "NarrativeProposal",

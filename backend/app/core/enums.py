@@ -687,6 +687,17 @@ class Season(StrEnum):
     WINTER = "WINTER"
 
 
+class CrossingFeasibilityVerdict(StrEnum):
+    """Phase 16F — always advisory, never a gate. None of these values
+    block travel; app.game.world.crossing.evaluate_crossing_feasibility
+    is a preview a character (or the narrator) can consult, not a
+    CAN_CROSS boolean (spec explicitly rejects that shape)."""
+
+    FEASIBLE = "FEASIBLE"
+    POSSIBLE_BUT_DANGEROUS = "POSSIBLE_BUT_DANGEROUS"
+    LIKELY_TO_FAIL = "LIKELY_TO_FAIL"
+
+
 class RouteAccessibility(StrEnum):
     """Phase 16E/16F — always derived on demand from a route + current
     season (see app.game.world.boundaries.route_accessibility_for_season),

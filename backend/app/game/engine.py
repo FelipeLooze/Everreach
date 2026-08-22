@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.ai import context_builder, intent_parser, memory_manager, narrator, narrative_validator
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService, LLMServiceError
-from app.ai.validation.contract import NarrativeProposal, validate_narrative_proposal
+from app.ai.validation import NarrativeProposal, validate_narrative_proposal
 from app.core.enums import (
     ActionIntentType,
     CharacterStatus,

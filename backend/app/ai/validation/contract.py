@@ -58,10 +58,12 @@ call) means later subphases attach real behavior here without another
 engine.py integration.
 """
 from dataclasses import dataclass, field
+from typing import Callable
 
 from sqlalchemy.orm import Session
 
 from app.ai.narrator import NarrationMode
+from app.ai.validation.claims import ClaimCategory, NarrativeClaim, extract_claims
 
 
 @dataclass(frozen=True)
@@ -84,10 +86,56 @@ class NarrativeProposal:
 
 
 @dataclass(frozen=True)
+class Violation:
+    """One claim (Phase 19B/19C, sentence-granularity) a validator
+    rejected, and why. claim_index refers to the claim list
+    validate_narrative_proposal extracts from proposal.text — the same
+    list every registered validator receives, so repair (Phase 19Q) can
+    map every violation straight back to the exact sentence to drop."""
+
+    claim_index: int
+    category: ClaimCategory
+    reason: str
+
+
+@dataclass(frozen=True)
 class NarrativeValidationResult:
     valid: bool
     final_text: str
     violations: list[str] = field(default_factory=list)
+
+
+NarrativeValidator = Callable[
+    [Session, str, NarrativeProposal, list[NarrativeClaim]], list[Violation]
+]
+
+_VALIDATORS: list[NarrativeValidator] = []
+
+
+def register_validator(fn: NarrativeValidator) -> NarrativeValidator:
+    """Phase 19D+ — each validator module (agency, canon, knowledge,
+    spatial, ...) registers itself here via this decorator when
+    imported. app.ai.validation's package __init__ imports every
+    validator module for its registration side effect, so callers only
+    ever need `from app.ai.validation import validate_narrative_proposal`
+    — never a hand-maintained list of validators to keep in sync."""
+    _VALIDATORS.append(fn)
+    return fn
+
+
+def _repair(
+    proposal: NarrativeProposal, claims: list[NarrativeClaim], violations: list[Violation]
+) -> str:
+    """Phase 19D's minimal repair primitive: drop every claim a
+    violation referenced, keep the rest, rejoin. This is intentionally
+    the simplest tier of the spec's own REPAIR PRIORITY ("1. Remove
+    invalid clause if prose remains coherent") — Phase 19Q adds the
+    richer tiers (rewrite using validated facts, bounded regeneration)
+    on top of this same violations list; Phase 19R adds a true
+    scene-grounded fallback for when nothing survives removal."""
+    invalid_indices = {violation.claim_index for violation in violations}
+    kept = [claim.text for claim in claims if claim.index not in invalid_indices]
+    return " ".join(kept).strip()
 
 
 def validate_narrative_proposal(
@@ -95,11 +143,24 @@ def validate_narrative_proposal(
     campaign_id: str,
     proposal: NarrativeProposal,
 ) -> NarrativeValidationResult:
-    """Phase 19A — the seam only. Always accepts the proposal unchanged;
-    no validator, repair, or fallback logic runs here yet. `db` and
-    `campaign_id` are accepted now (unused) because every real validator
-    the spec lists (Canon, Knowledge, Spatial, Capability, Item, NPC
-    State, Organization, Temporal, Mechanical) explicitly needs
-    deterministic database checks — shaping the entry point once, ahead
-    of that need, avoids a second signature change when 19D/19F+ land."""
-    return NarrativeValidationResult(valid=True, final_text=proposal.text, violations=[])
+    """Runs every registered validator (empty until 19D) against the
+    proposal's extracted claims and repairs (drops) whatever any of them
+    reject. Accepts the proposal unchanged when there are no violations
+    — including, still today, whenever no validator is registered."""
+    known_names = (proposal.active_npc_name,) if proposal.active_npc_name else ()
+    claims = extract_claims(
+        proposal.text, character_name=proposal.character_name, known_names=known_names
+    )
+
+    violations: list[Violation] = []
+    for validator in _VALIDATORS:
+        violations.extend(validator(db, campaign_id, proposal, claims))
+
+    if not violations:
+        return NarrativeValidationResult(valid=True, final_text=proposal.text, violations=[])
+
+    return NarrativeValidationResult(
+        valid=False,
+        final_text=_repair(proposal, claims, violations),
+        violations=[violation.reason for violation in violations],
+    )

@@ -24,9 +24,10 @@ def _proposal(text: str, **overrides) -> NarrativeProposal:
 
 
 def test_validate_narrative_proposal_is_a_pass_through_today(db_session):
-    """Phase 19A introduces only the seam, no validators — this pins that
-    baseline so a future subphase (19D+) that starts rejecting/repairing
-    text is a deliberate, visible change to this test, not silent drift."""
+    """Narration with no protagonist-agency claim (no registered
+    validator today has anything else to check) passes through
+    unchanged — proves the pipeline doesn't reject ordinary narration
+    just because it now has a real validator registered (Phase 19D)."""
     campaign = create_campaign(db_session, "Contrato De Validacao")
     proposal = _proposal("O vento frio corta pelo vale.")
 
@@ -55,24 +56,23 @@ def test_ordinary_sensory_narration_is_not_rejected(db_session):
     assert result.final_text == proposal.text
 
 
-def test_unsupported_voluntary_protagonist_action_is_not_yet_rejected(db_session):
-    """Documents the CURRENT (pre-19D) baseline for a PLAYER_VOLUNTARY-
-    shaped claim the player never caused ("Logan sorri e abraça Osgar")
-    — the contract itself does not judge agency yet; app.ai.narrator's
-    own existing regex-based agency checks are a separate, already-
-    working layer (unaffected by this module). Phase 19D will replace
-    this pass-through with a real check; when it does, this test's
-    expected result should change alongside it — it is not a
-    correctness guarantee today, only a documented starting point."""
-    campaign = create_campaign(db_session, "Agencia Ainda Nao Validada")
+def test_unsupported_voluntary_protagonist_action_is_now_rejected_by_19d(db_session):
+    """Phase 19D landed the real Player Agency Validator: this same
+    PLAYER_VOLUNTARY-shaped claim ("Logan sorri e abraça Osgar") that
+    the pre-19D pass-through baseline let through is now rejected and
+    repaired away. See test_narrative_agency.py for the dedicated
+    Phase 19D test suite; this one just confirms the seam introduced in
+    19A actually carries the new behavior end-to-end."""
+    campaign = create_campaign(db_session, "Agencia Agora Validada")
     proposal = _proposal(
         "Logan sorri e abraça Osgar.", player_input="Eu descanso."
     )
 
     result = validate_narrative_proposal(db_session, campaign.id, proposal)
 
-    assert result.valid is True
-    assert result.final_text == "Logan sorri e abraça Osgar."
+    assert result.valid is False
+    assert "Logan sorri e abraça Osgar." not in result.final_text
+    assert result.violations
 
 
 def test_narrative_proposal_carries_active_npc_identity_when_present(db_session):

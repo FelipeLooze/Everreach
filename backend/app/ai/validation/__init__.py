@@ -1,0 +1,21 @@
+"""Phase 19 — Narrative Validator & Canon Guard.
+
+Importing this package registers every validator module (each uses
+app.ai.validation.contract.register_validator as a decorator on import)
+— callers only ever need `from app.ai.validation import
+validate_narrative_proposal`, never a hand-maintained validator list.
+"""
+from app.ai.validation.contract import (
+    NarrativeProposal,
+    NarrativeValidationResult,
+    Violation,
+    validate_narrative_proposal,
+)
+from app.ai.validation import agency  # noqa: F401 — Phase 19D
+
+__all__ = [
+    "NarrativeProposal",
+    "NarrativeValidationResult",
+    "Violation",
+    "validate_narrative_proposal",
+]

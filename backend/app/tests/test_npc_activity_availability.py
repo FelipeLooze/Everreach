@@ -160,6 +160,7 @@ def test_resting_npc_clears_active_interlocutor(
         db_session.query(NPC)
         .filter(
             NPC.campaign_id == campaign.id,
+            NPC.location_id == village.id,
         )
         .first()
     )

@@ -228,6 +228,66 @@ POI_POOL = [
     ("Vale das Sombras", "dangerous_valley", "Um vale estreito com reputação sinistra entre os que vivem por perto."),
 ]
 
+# Phase 15J — Regional Organizations & Major NPCs. Every major settlement
+# gets one organization whose type/name matches its own SettlementType —
+# a mining settlement gets a miners' guild, not a random org type.
+ORG_TYPE_BY_SETTLEMENT_TYPE = {
+    "MAJOR_CITY": "POLITICAL",
+    "CITY": "COMMERCIAL",
+    "TOWN": "COMMERCIAL",
+    "VILLAGE": "COMMUNITY",
+    "HAMLET": "COMMUNITY",
+    "ISOLATED_SETTLEMENT": "COMMUNITY",
+    "FORTRESS_SETTLEMENT": "MILITARY",
+    "MINING_SETTLEMENT": "GUILD",
+    "RELIGIOUS_SETTLEMENT": "RELIGIOUS",
+    "TRADE_SETTLEMENT": "COMMERCIAL",
+}
+
+ORG_NAME_TEMPLATE_BY_TYPE = {
+    "POLITICAL": "Conselho de {name}",
+    "COMMERCIAL": "Guilda dos Mercadores de {name}",
+    "COMMUNITY": "Conselho de {name}",
+    "MILITARY": "Guarnição de {name}",
+    "GUILD": "Guilda dos Mineradores de {name}",
+    "RELIGIOUS": "Ordem de {name}",
+}
+
+LEADER_TITLE_BY_ORG_TYPE = {
+    "POLITICAL": "líder do conselho",
+    "COMMERCIAL": "mestre da guilda",
+    "COMMUNITY": "líder do conselho",
+    "MILITARY": "comandante da guarnição",
+    "GUILD": "mestre da guilda",
+    "RELIGIOUS": "sumo sacerdote",
+}
+
+NPC_GIVEN_NAME_POOL = [
+    "Corren", "Dessa", "Bram", "Ilya", "Thane", "Rowan", "Sable", "Perrin",
+    "Wren", "Colm", "Astra", "Dorian", "Lena", "Garrick", "Nessa", "Aldric",
+]
+NPC_FAMILY_NAME_POOL = [
+    "Ashvale", "Marrow", "Holt", "Sernn", "Talbrook", "Ferrow", "Kessler",
+    "Draven", "Wystan", "Corrin", "Hallow", "Brennig", "Sowerby", "Quill",
+]
+
+LEADER_PERSONALITY_POOL = [
+    "Ponderado e cauteloso, prefere ouvir antes de decidir.",
+    "Direto e prático, tem pouca paciência para formalidades.",
+    "Carismático e falante, conhece quase todos pelo nome.",
+    "Reservado e desconfiado de forasteiros, mas justo com os seus.",
+    "Ambicioso e atento a oportunidades que beneficiem seu povo.",
+    "Calmo mesmo sob pressão, respeitado por sua serenidade.",
+]
+
+LEADER_BACKSTORY_POOL = [
+    "Assumiu a posição após anos de serviço dedicado à comunidade.",
+    "Herdou a responsabilidade de um antecessor que confiava em seu julgamento.",
+    "Chegou de outro lugar há anos, mas conquistou a confiança local com o tempo.",
+    "Cresceu ali mesmo e nunca considerou viver em outro lugar.",
+    "Assumiu o posto em um momento difícil e conseguiu estabilizar a situação.",
+]
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

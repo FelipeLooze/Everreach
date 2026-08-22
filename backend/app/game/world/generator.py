@@ -27,6 +27,13 @@ from app.game.world.content_pools import (
     CULTURAL_SUMMARIES,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
+    LEADER_BACKSTORY_POOL,
+    LEADER_PERSONALITY_POOL,
+    LEADER_TITLE_BY_ORG_TYPE,
+    NPC_FAMILY_NAME_POOL,
+    NPC_GIVEN_NAME_POOL,
+    ORG_NAME_TEMPLATE_BY_TYPE,
+    ORG_TYPE_BY_SETTLEMENT_TYPE,
     POI_POOL,
     POPULATION_TIER_BY_TYPE,
     SERVICES_BY_SETTLEMENT_TYPE,
@@ -133,6 +140,44 @@ def roll_poi_distance(rng: random.Random) -> float:
 
 def poi_connection_danger(subregion_danger_level: str) -> int:
     return danger_level_to_connection_danger(subregion_danger_level) + POI_DANGER_BONUS
+
+
+# Phase 15J — Regional Organizations & Major NPCs.
+def organization_type_for_settlement(settlement_type: str) -> str:
+    return ORG_TYPE_BY_SETTLEMENT_TYPE[str(settlement_type)]
+
+
+def organization_name_for_settlement(settlement_name: str, organization_type: str) -> str:
+    template = ORG_NAME_TEMPLATE_BY_TYPE[str(organization_type)]
+    return template.format(name=settlement_name)
+
+
+def leader_title_for_organization(organization_type: str) -> str:
+    return LEADER_TITLE_BY_ORG_TYPE[str(organization_type)]
+
+
+def generate_npc_name(rng: random.Random, used_names: set[str], max_attempts: int = 30) -> str:
+    """Combines given+family name pools, retrying on collision — same
+    discipline as generate_settlement_name, distinct pools so NPCs never
+    read like place names."""
+    for _ in range(max_attempts):
+        name = f"{rng.choice(NPC_GIVEN_NAME_POOL)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
+        if name not in used_names:
+            used_names.add(name)
+            return name
+    suffix = 2
+    base = f"{rng.choice(NPC_GIVEN_NAME_POOL)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
+    name = f"{base} {suffix}"
+    while name in used_names:
+        suffix += 1
+        name = f"{base} {suffix}"
+    used_names.add(name)
+    return name
+
+
+def generate_leader_flavor(rng: random.Random) -> tuple[str, str]:
+    """Returns (personality, backstory) for a settlement/organization leader."""
+    return rng.choice(LEADER_PERSONALITY_POOL), rng.choice(LEADER_BACKSTORY_POOL)
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 

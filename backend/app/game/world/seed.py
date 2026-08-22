@@ -3,11 +3,15 @@ import random
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    CombatActorType,
     ConnectionType,
     DiscoveryStatus,
     EventType,
     KnowledgeCertainty,
     KnowerType,
+    OrganizationOrigin,
+    OrganizationType,
+    OrganizationVisibility,
     PopulationDensity,
     SettlementType,
     SimulatedPlayerArchetype,
@@ -22,12 +26,16 @@ from app.db.models.region import Region
 from app.db.models.settlement import Settlement
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.subregion import Subregion
+from app.game.organizations.roles import create_role, join_organization
+from app.game.organizations.service import create_organization
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
     choose_major_settlement_type,
     choose_minor_settlement_type,
     city_districts,
     danger_level_to_connection_danger,
+    generate_leader_flavor,
+    generate_npc_name,
     generate_region_identity,
     generate_settlement_name,
     generate_settlement_services,
@@ -36,7 +44,10 @@ from app.game.world.generator import (
     generate_subregion_names,
     generate_pois,
     is_city_scale,
+    leader_title_for_organization,
     minor_settlement_count,
+    organization_name_for_settlement,
+    organization_type_for_settlement,
     poi_connection_danger,
     roll_compass_direction_pair,
     roll_inter_subregion_distance,
@@ -525,6 +536,42 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     db.add_all([elder, blacksmith, innkeeper])
     db.flush()
+
+    # Phase 15J — Regional Organizations & Major NPCs. Every major
+    # settlement gets one organization (type matching the settlement's own
+    # SettlementType — a mining settlement gets a miners' guild, never a
+    # random type) and one named leader NPC who founds and leads it.
+    # Deliberately NOT every citizen — just the individual who matters
+    # structurally right now.
+    used_npc_names: set[str] = {elder.name, blacksmith.name, innkeeper.name}
+    for subregion, major_location, _settlement in major_settlement_rows:
+        org_rng = random.Random(derive_seed(subregion.generation_seed, "organization"))
+
+        leader_name = generate_npc_name(org_rng, used_npc_names)
+        organization_type = organization_type_for_settlement(_settlement.settlement_type)
+        leader_title = leader_title_for_organization(organization_type)
+        personality, backstory = generate_leader_flavor(org_rng)
+        leader_npc = NPC(
+            campaign_id=campaign_id, region_id=region.id, location_id=major_location.id,
+            name=leader_name, role=leader_title,
+            personality=personality, backstory=backstory,
+        )
+        db.add(leader_npc)
+        db.flush()
+
+        organization = create_organization(
+            db, campaign_id,
+            organization_name_for_settlement(major_location.name, organization_type),
+            organization_type=OrganizationType(organization_type),
+            origin=OrganizationOrigin.NATIVE,
+            description=settlement_profile(_settlement.settlement_type),
+            visibility=OrganizationVisibility.PUBLIC,
+            headquarters_location_id=major_location.id,
+            founder_type=CombatActorType.NPC,
+            founder_id=leader_npc.id,
+        )
+        leader_role = create_role(db, organization, leader_title.capitalize(), rank_order=0)
+        join_organization(db, organization, CombatActorType.NPC, leader_npc.id, role_id=leader_role.id)
 
     canonical_facts = [
         KnowledgeFact(

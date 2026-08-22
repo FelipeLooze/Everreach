@@ -81,6 +81,8 @@ class NarrativeProposal:
     player_input: str
     recent_history: str
     character_name: str
+    character_id: str = ""
+    location_id: str | None = None
     active_npc_id: str | None = None
     active_npc_name: str | None = None
 

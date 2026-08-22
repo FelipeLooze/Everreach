@@ -374,6 +374,8 @@ def resolve_action(
         player_input=text,
         recent_history=recent_history,
         character_name=character.name,
+        character_id=character.id,
+        location_id=character.location_id,
         active_npc_id=context_npc.id if context_npc is not None else None,
         active_npc_name=context_npc.name if context_npc is not None else None,
     )

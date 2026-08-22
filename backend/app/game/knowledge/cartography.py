@@ -44,6 +44,8 @@ class SurveyedAspect:
     statement: str
     precision: GeographicPrecision | None
     certainty: str
+    fact_key: str
+    is_rumor: bool
 
 
 @dataclass
@@ -97,6 +99,8 @@ def survey_cartographic_knowledge(
                 statement=fact.statement,
                 precision=GeographicPrecision(knower.precision) if knower.precision else None,
                 certainty=knower.certainty,
+                fact_key=fact.fact_key,
+                is_rumor=":rumor:" in fact.fact_key,
             )
         )
     return survey

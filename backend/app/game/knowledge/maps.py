@@ -40,6 +40,8 @@ def _serialize_survey(survey: CartographicSurvey) -> str:
                     "statement": surveyed.statement,
                     "precision": surveyed.precision.value if surveyed.precision else None,
                     "certainty": surveyed.certainty,
+                    "fact_key": surveyed.fact_key,
+                    "is_rumor": surveyed.is_rumor,
                 }
                 for surveyed in survey.aspects
             ],

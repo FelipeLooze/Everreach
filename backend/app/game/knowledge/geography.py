@@ -116,6 +116,31 @@ def ensure_geographic_fact(
     return fact
 
 
+def update_geographic_fact_statement(
+    db: Session,
+    campaign_id: str,
+    subject_kind: str,
+    entity_id: str,
+    aspect: GeographicKnowledgeAspect,
+    new_statement: str,
+) -> KnowledgeFact:
+    """Phase 17H — the world genuinely changes (spec's own example: a
+    bridge existing in Year 12, destroyed by Year 15). Unlike
+    ensure_geographic_fact (create-once, never overwrites), this is a
+    deliberate, explicit mutation of already-established world truth —
+    a caller who has a real reason to believe the canonical fact is
+    stale (an event resolved it, a GM-equivalent system decided it).
+    Raises ValueError if the aspect was never established; you cannot
+    "update" a fact that doesn't exist yet."""
+    fact_key = geographic_fact_key(subject_kind, entity_id, aspect)
+    fact = db.query(KnowledgeFact).filter(KnowledgeFact.campaign_id == campaign_id, KnowledgeFact.fact_key == fact_key).first()
+    if fact is None:
+        raise ValueError(f"Unknown geographic fact '{fact_key}' for campaign {campaign_id}")
+    fact.statement = new_statement
+    db.flush()
+    return fact
+
+
 def grant_fact_with_precision(
     db: Session,
     campaign_id: str,

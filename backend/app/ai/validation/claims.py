@@ -80,6 +80,40 @@ _MECHANICAL_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Phase 19E — SENSATION != EMOTION. Unlike PLAYER_VOLUNTARY's subject-
+# position check above (which only catches "Logan decide/sente X"),
+# an interpreted emotional conclusion is invalid regardless of grammar
+# — the spec's own invalid example "Terror fills you" puts the
+# protagonist as the OBJECT, not the subject. Matching this keyword
+# list anywhere the protagonist is mentioned (not just as subject)
+# closes that gap without needing real subject/object parsing.
+_INTERPRETED_EMOTION_KEYWORDS = re.compile(
+    r"\b("
+    r"medo|terror|panico|apavorad[oa]s?|assustad[oa]s?|"
+    r"felicidade|feliz(?:es)?|alegria|alegre[s]?|"
+    r"tristeza|trist[eo]s?|"
+    r"raiva|zangad[oa]s?|irritad[oa]s?|"
+    r"alivio|aliviad[oa]s?|"
+    r"atracao|atraid[oa]s?|"
+    r"desejo|desejand[oa]|"
+    r"nojo|repulsa|enojad[oa]s?|"
+    r"odio|odeia\w*|"
+    r"curiosidade"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+_CLAUSE_SEPARATORS = re.compile(r",| e | mas | ou | porem | contudo | entretanto |;")
+
+
+def _has_same_clause_emotion_claim(text: str, character_name: str) -> bool:
+    name_token = re.escape(_normalized(character_name).split()[0])
+    for clause in _CLAUSE_SEPARATORS.split(_normalized(text)):
+        if re.search(rf"\b{name_token}\b", clause) and _INTERPRETED_EMOTION_KEYWORDS.search(clause):
+            return True
+    return False
+
 
 def split_into_claims(text: str) -> list[str]:
     return _split_sentences(text)
@@ -103,6 +137,14 @@ def classify_claim(
     # — "Osgar sorri para Logan" must not classify as PLAYER_VOLUNTARY
     # just because Logan is named as the object, not the subject.
     if character_name and _protagonist_agency_violations(text, character_name):
+        categories.add(ClaimCategory.PLAYER_VOLUNTARY)
+
+    # Phase 19E — catches "Terror fills you"-shaped claims the check
+    # above misses (protagonist as object, not subject of the verb).
+    # Clause-scoped (not "anywhere in the sentence"): "Osgar sente
+    # alívio e sorri ao ver Logan chegar" must not flag just because
+    # Logan is named in a LATER clause than Osgar's own emotion.
+    if character_name and _has_same_clause_emotion_claim(text, character_name):
         categories.add(ClaimCategory.PLAYER_VOLUNTARY)
 
     if _PERSISTENT_ENTITY_KEYWORDS.search(normalized_text):

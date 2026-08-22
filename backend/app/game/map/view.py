@@ -76,14 +76,35 @@ included once BOTH its endpoints survive the current scope — so
 scoping to one Region or Subregion (20E) automatically scopes routes
 too, and the "world" scope (no location detail) yields no routes
 either, with zero extra logic.
+
+Phase 20G — Physical Map Integration.
+
+Reuses Phase 17G/17F in full: a physical map is a frozen
+CartographicSurvey snapshot (app.game.knowledge.maps.map_content),
+taken once, never a live reference back to KnowledgeFact/
+KnowledgeKnower. A location covered ONLY by an owned map — no live
+CharacterLocationDiscovery row, no live Knowledge grant — now surfaces
+too (source="map"), built from that frozen snapshot instead of the
+live geography lookups every other path uses; this is the concrete
+mechanism behind "MAP DATA != CURRENT WORLD TRUTH" (spec): if the
+character's live knowledge is later revoked or the world changes, the
+owned map's info does not, because it was never wired to either.
+`source` on MapViewLocation ("discovery" / "knowledge" / "map")
+is the minimal provenance signal the spec's "MAP SOURCE PROVENANCE"
+section asks for; a location known through more than one channel keeps
+whichever live signal already included it (discovery/knowledge take
+precedence — a live signal is always at least as good as a frozen
+snapshot of past knowledge).
 """
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
 from app.core.enums import DiscoveryStatus, GeographicKnowledgeAspect, GeographicPrecision, KnowerType
+from app.db.models.item import ItemInstance
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location
+from app.db.models.map import Map
 from app.db.models.region import Region
 from app.game.knowledge.geography import (
     geographic_fact_key,
@@ -91,6 +112,7 @@ from app.game.knowledge.geography import (
     known_geographic_aspects,
     precision_rank,
 )
+from app.game.knowledge.maps import map_content
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.map.service import known_map
 from app.game.npcs.service import knows
@@ -120,6 +142,7 @@ class MapViewLocation:
     x: int | None
     y: int | None
     discovery_status: str
+    source: str = "discovery"
     known_aspects: list[str] = field(default_factory=list)
 
 
@@ -211,12 +234,70 @@ def _phase17_known_location_ids(db: Session, campaign_id: str, character_id: str
     return ids
 
 
+def _owned_map_contents_by_location(db: Session, character_id: str) -> dict[str, list[dict]]:
+    """Every "location"-subject physical Map the character currently
+    owns, grouped by the entity it covers. A map that changed hands or
+    was lost stops counting (same ItemInstance-ownership convention as
+    app.game.knowledge.maps.character_maps_covering)."""
+    map_rows = (
+        db.query(Map)
+        .join(ItemInstance, ItemInstance.id == Map.item_instance_id)
+        .filter(
+            ItemInstance.owner_type == "CHARACTER",
+            ItemInstance.owner_ref == character_id,
+            Map.subject_kind == "location",
+        )
+        .all()
+    )
+    by_location: dict[str, list[dict]] = {}
+    for map_row in map_rows:
+        by_location.setdefault(map_row.entity_id, []).append(map_content(map_row))
+    return by_location
+
+
+def _build_map_view_location_from_maps(
+    location: Location,
+    discovery_status: DiscoveryStatus,
+    contents: list[dict],
+) -> MapViewLocation:
+    all_aspects = [aspect for content in contents for aspect in content["aspects"]]
+    known_aspect_values = {aspect["aspect"] for aspect in all_aspects}
+    known_aspect_values.add(GeographicKnowledgeAspect.EXISTENCE.value)
+    name_known = GeographicKnowledgeAspect.NAME.value in known_aspect_values
+
+    position_aspect_values = {aspect.value for aspect in _POSITION_ASPECTS}
+    best_precision: GeographicPrecision | None = None
+    for aspect in all_aspects:
+        if aspect["aspect"] not in position_aspect_values or aspect["precision"] is None:
+            continue
+        precision = GeographicPrecision(aspect["precision"])
+        if best_precision is None or precision_rank(precision) > precision_rank(best_precision):
+            best_precision = precision
+    exact_position_known = best_precision == GeographicPrecision.PRECISE
+
+    return MapViewLocation(
+        id=location.id,
+        region_id=location.region_id,
+        subregion_id=location.subregion_id,
+        type=location.type,
+        name=location.name if name_known else None,
+        precision=best_precision.value if best_precision is not None else None,
+        x=location.x if exact_position_known else None,
+        y=location.y if exact_position_known else None,
+        discovery_status=discovery_status.value,
+        source="map",
+        known_aspects=sorted(known_aspect_values),
+    )
+
+
 def _build_map_view_location(
     db: Session,
     campaign_id: str,
     character_id: str,
     location: Location,
     discovery_status: DiscoveryStatus,
+    *,
+    source: str = "discovery",
 ) -> MapViewLocation:
     precision = _best_known_precision(db, campaign_id, character_id, location, discovery_status)
     name_known = _knows_name_aspect(
@@ -247,6 +328,7 @@ def _build_map_view_location(
         x=location.x if exact_position_known else None,
         y=location.y if exact_position_known else None,
         discovery_status=discovery_status.value,
+        source=source,
         known_aspects=sorted(known_aspects),
     )
 
@@ -320,7 +402,31 @@ def get_map_view(
             # RUMORED is the closest existing status to "aware it exists,
             # never physically encountered it".
             locations.append(
-                _build_map_view_location(db, campaign_id, character_id, location, DiscoveryStatus.RUMORED)
+                _build_map_view_location(
+                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED, source="knowledge"
+                )
+            )
+            if location.region_id not in regions_by_id:
+                region = db.get(Region, location.region_id)
+                if region is not None:
+                    regions_by_id[region.id] = region
+
+    included_location_ids = {location.id for location in locations}
+    map_contents_by_location = _owned_map_contents_by_location(db, character_id)
+    map_only_ids = set(map_contents_by_location.keys()) - included_location_ids
+    if map_only_ids:
+        map_only_locations = (
+            db.query(Location)
+            .join(Region, Region.id == Location.region_id)
+            .filter(Location.id.in_(map_only_ids), Region.campaign_id == campaign_id)
+            .order_by(Location.name)
+            .all()
+        )
+        for location in map_only_locations:
+            locations.append(
+                _build_map_view_location_from_maps(
+                    location, DiscoveryStatus.RUMORED, map_contents_by_location[location.id]
+                )
             )
             if location.region_id not in regions_by_id:
                 region = db.get(Region, location.region_id)

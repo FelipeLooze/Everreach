@@ -5,6 +5,7 @@ import {
   discoveryStatusLabel,
   geographicPrecisionLabel,
   locationTypeLabel,
+  mapLocationSourceLabel,
 } from "@/utils/labels";
 
 /**
@@ -321,6 +322,7 @@ export function InteractiveMap({
           <p>{discoveryStatusLabel(selected.discovery_status)}</p>
           {selected.precision && <p>Precisão: {geographicPrecisionLabel(selected.precision)}</p>}
           {!selected.positionKnown && <p>Posição exata desconhecida.</p>}
+          <p>Fonte: {mapLocationSourceLabel(selected.source)}</p>
         </div>
       )}
     </div>

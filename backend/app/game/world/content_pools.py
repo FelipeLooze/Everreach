@@ -464,3 +464,49 @@ SUBREGION_ECONOMY_SUMMARIES = [
     "A economia é modesta e majoritariamente voltada ao próprio sustento, com pouco excedente.",
     "Um recurso local específico (minério, madeira rara, sal) atrai comerciantes de fora.",
 ]
+
+# Phase 16B — Regional Boundary Foundation. Name/description pairs for the
+# frontier where a Region's currently-mapped world ends, keyed by the
+# anchor subregion's own biome so the boundary reads as a natural
+# continuation of what's already there (a MOUNTAINS subregion borders a
+# mountain range, a COASTAL one borders open sea) rather than an
+# arbitrary label. Purely flavor at this stage — which hazard categories
+# actually apply is Phase 16C, kept separate on purpose.
+BOUNDARY_NAME_POOL_BY_BIOME = {
+    "PLAINS": [
+        ("Planície Sem Fim", "As pastagens continuam até onde a vista alcança, sem marco algum indicando onde a região termina."),
+        ("Campos Além do Marco", "Um antigo marco de pedra é o último sinal conhecido de que alguém já mapeou essa direção."),
+    ],
+    "FOREST": [
+        ("Floresta Profunda do Limiar", "A mata se torna mais densa e mais velha a cada légua, engolindo qualquer trilha clara."),
+        ("Bosque Sem Retorno", "Viajantes falam de uma floresta tão densa que poucos que se afastam da trilha conhecida voltam a contar o que viram."),
+    ],
+    "HILLS": [
+        ("Colinas do Fim do Mapa", "As colinas se erguem em ondas cada vez mais íngremes, escondendo o que existe do outro lado."),
+        ("Serra do Horizonte Incerto", "Nenhum mapa da região marca o que fica além dessas colinas."),
+    ],
+    "MOUNTAINS": [
+        ("Montanhas Cinzentas", "Picos nevados se estendem além do que qualquer morador local já escalou."),
+        ("Cordilheira do Véu Branco", "Uma parede de rocha e gelo domina o horizonte, seus passos conhecidos apenas de nome."),
+    ],
+    "WETLANDS": [
+        ("Grande Pântano Sem Nome", "A terra firme cede lugar a um lamaçal extenso, onde trilhas se perdem em poucos passos."),
+        ("Brejo do Fim da Trilha", "Névoa baixa e água parada marcam onde os caminhos conhecidos simplesmente somem."),
+    ],
+    "RIVER_VALLEY": [
+        ("Foz Desconhecida", "O rio segue além da última vila mapeada, seu curso incerto a partir daqui."),
+        ("Vale do Rio Sem Fim", "Ninguém na região sabe ao certo até onde o rio corre, ou o que encontra pelo caminho."),
+    ],
+    "LAKE_COUNTRY": [
+        ("Cadeia de Lagos Ignota", "Um lago leva a outro, e ninguém mapeou onde essa cadeia finalmente termina."),
+        ("Águas do Longe", "Barcos raramente se aventuram além do último lago conhecido."),
+    ],
+    "COASTAL": [
+        ("Mar Sem Costa Conhecida", "A linha da costa termina aqui; o que existe além da água é apenas rumor de marinheiros."),
+        ("Grande Mar do Horizonte", "Nenhum navio da região já retornou de muito além dessas águas para contar o que viu."),
+    ],
+    "FRONTIER": [
+        ("Confins Despovoados", "A terra aqui é vazia e sem dono, e poucos se arriscam a ir mais longe."),
+        ("Vastidão Sem Marcos", "Nenhuma estrada, aldeia ou marco indica o que existe além desse ponto."),
+    ],
+}

@@ -1317,3 +1317,37 @@ class GroupInviteStatus(StrEnum):
     DECLINED = "DECLINED"
     WITHDRAWN = "WITHDRAWN"
     EXPIRED = "EXPIRED"
+
+
+class KnowledgeSourceType(StrEnum):
+    """Phase 18B — which authoritative table/model an IndexedKnowledgeDocument
+    is a retrievable chunk about (app.ai.retrieval). Independent of the
+    lowercase "kind:id" vocabulary KnowledgeFact.subject already uses
+    (app.game.knowledge.geography) — this says which table source_id
+    belongs to, so a retrieval consumer can re-fetch the authoritative row
+    after a semantic candidate is selected (RAG DOCUMENT -> REFERENCES
+    AUTHORITATIVE ENTITY, never the only place the fact exists)."""
+
+    REGION = "REGION"
+    SUBREGION = "SUBREGION"
+    SETTLEMENT = "SETTLEMENT"
+    LOCATION = "LOCATION"
+    ORGANIZATION = "ORGANIZATION"
+    NPC = "NPC"
+    EVENT = "EVENT"
+
+
+class KnowledgeDocumentType(StrEnum):
+    """Phase 18B/18D — a retrievable index chunk's category. Deliberately
+    small and targeted (spec: never one giant per-entity document like
+    OSGAR_FULL_CONTEXT.txt) so retrieval can select just the relevant
+    slice of an entity instead of its entire profile."""
+
+    IDENTITY = "IDENTITY"
+    CURRENT_STATE = "CURRENT_STATE"
+    BACKGROUND = "BACKGROUND"
+    IMPORTANT_HISTORY = "IMPORTANT_HISTORY"
+    RELATIONSHIP = "RELATIONSHIP"
+    GEOGRAPHY = "GEOGRAPHY"
+    ORGANIZATION_CONTEXT = "ORGANIZATION_CONTEXT"
+    HISTORICAL_EVENT = "HISTORICAL_EVENT"

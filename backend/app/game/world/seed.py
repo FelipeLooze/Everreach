@@ -498,6 +498,25 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
                 danger=danger_level_to_connection_danger(subregion.danger_level),
             )
 
+    # Phase 15O — fixes a real Phase 15G gap found while auditing
+    # interiors/sublocations: districts and services were created with a
+    # parent_location_id but no LocationConnection, making them
+    # permanently unreachable under the existing travel system (which
+    # requires an active, known connection to move at all). Short,
+    # low-danger connections — everything here is inside the same
+    # settlement.
+    internal_rng = random.Random(derive_seed(region_seed, "settlement_internal"))
+    locations_by_id = {
+        location.id: location
+        for _sub, location, _settlement in major_settlement_rows
+    }
+    locations_by_id.update({loc.id: loc for loc in district_locations})
+    locations_by_id.update({loc.id: loc for loc in service_locations})
+    for child in (*district_locations, *service_locations):
+        parent = locations_by_id[child.parent_location_id]
+        forward, back = roll_compass_direction_pair(internal_rng)
+        connect(parent, child, forward, back, distance=0.2, danger=0)
+
     # Phase 15I — Major Points of Interest. Persistent world truth, exists
     # whether or not the protagonist ever finds it — connected (remotely,
     # dangerously) to its subregion's major settlement so it's reachable

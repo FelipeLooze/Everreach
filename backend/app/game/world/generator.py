@@ -29,6 +29,7 @@ from app.game.world.content_pools import (
     EXPORT_GOOD_BY_SETTLEMENT_TYPE,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
+    INTERIOR_DESCRIPTION_BY_SERVICE_TYPE,
     LEADER_BACKSTORY_POOL,
     LEADER_PERSONALITY_POOL,
     LEADER_TITLE_BY_ORG_TYPE,
@@ -223,6 +224,12 @@ def materialize_minor_settlement_description(rng: random.Random) -> str:
     """Phase 15N — deep materialization of a Tier 2 minor settlement stub
     (see app.game.world.materialization.ensure_location_materialized)."""
     return rng.choice(MINOR_SETTLEMENT_DESCRIPTIONS)
+
+
+def interior_description_for_service(service_type: str) -> str | None:
+    """Phase 15O — None means this service type has no distinct interior
+    concept (e.g. an open-air market square)."""
+    return INTERIOR_DESCRIPTION_BY_SERVICE_TYPE.get(str(service_type))
 
 
 def anchor_threat() -> tuple[str, str]:

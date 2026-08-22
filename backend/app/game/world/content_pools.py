@@ -190,14 +190,14 @@ SETTLEMENT_SERVICE_POOL = {
 }
 
 SERVICES_BY_SETTLEMENT_TYPE = {
-    "MAJOR_CITY": ["market_square", "inn", "tavern", "temple", "general_store", "barracks", "notice_board"],
-    "CITY": ["market_square", "inn", "tavern", "temple", "general_store", "notice_board"],
-    "TOWN": ["inn", "tavern", "general_store", "notice_board"],
-    "VILLAGE": ["inn", "general_store", "notice_board"],
+    "MAJOR_CITY": ["market_square", "inn", "tavern", "temple", "general_store", "blacksmith", "barracks", "notice_board"],
+    "CITY": ["market_square", "inn", "tavern", "temple", "general_store", "blacksmith", "notice_board"],
+    "TOWN": ["inn", "tavern", "general_store", "blacksmith", "notice_board"],
+    "VILLAGE": ["inn", "general_store", "blacksmith", "notice_board"],
     "HAMLET": ["notice_board"],
     "ISOLATED_SETTLEMENT": [],
-    "FORTRESS_SETTLEMENT": ["barracks", "inn", "notice_board"],
-    "MINING_SETTLEMENT": ["mine_entrance", "warehouse", "tavern", "notice_board"],
+    "FORTRESS_SETTLEMENT": ["barracks", "inn", "blacksmith", "notice_board"],
+    "MINING_SETTLEMENT": ["mine_entrance", "warehouse", "tavern", "blacksmith", "notice_board"],
     "RELIGIOUS_SETTLEMENT": ["temple", "inn", "notice_board"],
     "TRADE_SETTLEMENT": ["warehouse", "general_store", "inn", "market_square", "notice_board"],
 }
@@ -347,6 +347,19 @@ MINOR_SETTLEMENT_FEATURES = [
     ("celeiro compartilhado", "Um celeiro simples onde parte da colheita é guardada em conjunto."),
     ("cruzamento de caminhos", "O ponto onde as poucas trilhas locais se encontram."),
 ]
+
+# Phase 15O — Interiors & Sublocations. Only service types plausible
+# enough to have a real "inside" get one; market_square/notice_board/
+# mine_entrance/barracks stay as-is (already effectively their own
+# interior or exterior by nature).
+INTERIOR_DESCRIPTION_BY_SERVICE_TYPE = {
+    "inn": "Um salão simples com mesas de madeira gasta e um fogo aceso na maior parte do dia.",
+    "tavern": "Ar carregado de fumaça e conversa, bancos e mesas lotados nos horários de maior movimento.",
+    "blacksmith": "Calor da forja, ferramentas penduradas nas paredes e o som constante do martelo sobre a bigorna.",
+    "shop": "Prateleiras apertadas com mercadorias variadas, um balcão de madeira perto da entrada.",
+    "temple": "Um espaço silencioso e penumbroso, com um pequeno altar ao fundo.",
+    "warehouse": "Fileiras de caixas e sacos empilhados, o ar pesado com cheiro de madeira e poeira.",
+}
 
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",

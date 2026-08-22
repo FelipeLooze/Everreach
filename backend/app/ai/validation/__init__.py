@@ -20,6 +20,7 @@ from app.ai.validation import currency  # noqa: F401 — Phase 19J
 from app.ai.validation import npc_state  # noqa: F401 — Phase 19K
 from app.ai.validation import organizations  # noqa: F401 — Phase 19L
 from app.ai.validation import temporal  # noqa: F401 — Phase 19M
+from app.ai.validation import mechanical  # noqa: F401 — Phase 19N
 
 __all__ = [
     "NarrativeProposal",

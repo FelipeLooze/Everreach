@@ -33,6 +33,7 @@ from app.game.economy.supply_demand import adjust_supply, get_or_create_supply_l
 from app.game.inventory.service import get_or_create_item
 from app.game.organizations.roles import create_role, join_organization
 from app.game.organizations.service import create_organization
+from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
     anchor_threat,
@@ -736,6 +737,15 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     ]
     db.add_all(simulated_players)
     db.flush()
+
+    # Phase 15Q — Region Validation & Persistence. An independent
+    # consistency pass over what was just generated — not trusting the
+    # generation-time bookkeeping (duplicate-name sets, connection
+    # counts...) — before this is allowed to become committed Canon. The
+    # caller (app.api.routes.campaigns.start_world) only commits after
+    # this function returns; a RegionValidationError here means nothing
+    # generated in this call is ever committed.
+    validate_region_package(db, region)
 
     return region, village
 

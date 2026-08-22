@@ -1,15 +1,14 @@
-"""Phase 16B/16C — Regional Boundary Foundation & Boundary Barriers.
+"""Phase 16B/16C/16D — Regional Boundary Foundation, Boundary Barriers &
+Cross-Region Routes.
 
 A RegionalBoundary represents the world conditions separating a
 materialized Region from whatever lies beyond it — not a map line, not a
 level gate (spec's "REGION BORDER = WORLD PROBLEM"). create_regional_boundary
 creates the boundary itself, the one real Location that anchors it in the
 world (a "frontier" reachable through the ordinary travel graph like any
-other Location), and its BoundaryBarrier rows (16C) — what actually makes
-it hard to cross, one or more per boundary, "COMBINED BARRIERS" per spec.
-
-What routes exist through it (16D) is a deliberately separate concern,
-added in a later subphase — "BOUNDARY != ROUTE".
+other Location), its BoundaryBarrier rows (16C) — what actually makes it
+hard to cross — and its BoundaryRoute rows (16D) — the possible ways
+through, "BOUNDARY != ROUTE" kept as separate tables throughout.
 """
 
 import random
@@ -17,6 +16,8 @@ import random
 from sqlalchemy.orm import Session
 
 from app.db.models.boundary_barrier import BoundaryBarrier
+from app.db.models.boundary_route import BoundaryRoute
+from app.db.models.knowledge import KnowledgeFact
 from app.db.models.location import Location, LocationConnection
 from app.db.models.regional_boundary import RegionalBoundary
 from app.db.models.region import Region
@@ -27,6 +28,7 @@ from app.game.world.generation import derive_seed
 from app.game.world.generator import (
     POI_DISTANCE_RANGE,
     generate_boundary_barriers,
+    generate_boundary_routes,
     poi_connection_danger,
     roll_compass_direction_pair,
 )
@@ -160,11 +162,41 @@ def create_regional_boundary(
         )
     db.flush()
 
+    used_names = {row[0] for row in db.query(Location.name).filter(Location.region_id == source_region_id).all()}
+    for route_data in generate_boundary_routes(rng, subregion.biome, used_names):
+        route = BoundaryRoute(
+            boundary_id=boundary.id,
+            origin_location_id=frontier_location.id,
+            **route_data,
+        )
+        db.add(route)
+        db.flush()
+
+        # World truth always exists the moment a route is generated; who
+        # (if anyone) actually knows about it is a separate question left
+        # to 16G — nobody is granted this fact here, not even a publicly
+        # known route.
+        route.knowledge_fact_key = f"boundary_route_exists:{route.id}"
+        db.add(
+            KnowledgeFact(
+                campaign_id=campaign_id,
+                subject=f"boundary_route:{route.id}",
+                fact_key=route.knowledge_fact_key,
+                statement=f"{route.name} é uma possível passagem por {boundary.name}.",
+                is_secret=not route.is_publicly_known,
+            )
+        )
+    db.flush()
+
     return boundary
 
 
 def get_boundary_barriers(db: Session, boundary_id: str) -> list[BoundaryBarrier]:
     return db.query(BoundaryBarrier).filter(BoundaryBarrier.boundary_id == boundary_id).all()
+
+
+def get_boundary_routes(db: Session, boundary_id: str) -> list[BoundaryRoute]:
+    return db.query(BoundaryRoute).filter(BoundaryRoute.boundary_id == boundary_id).all()
 
 
 def get_regional_boundaries(db: Session, campaign_id: str, source_region_id: str) -> list[RegionalBoundary]:

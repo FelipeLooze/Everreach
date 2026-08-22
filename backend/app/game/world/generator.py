@@ -35,6 +35,7 @@ from app.game.world.content_pools import (
     GEOGRAPHICAL_BARRIER_HAZARDS_BY_BIOME,
     LOGISTICAL_BARRIER_POOL,
     POLITICAL_BARRIER_POOL,
+    ROUTE_TERM_BY_BIOME,
     ELDER_FLAVOR_OPTIONS,
     EXPORT_GOOD_BY_SETTLEMENT_TYPE,
     GEOGRAPHY_BY_BIOME,
@@ -283,6 +284,69 @@ def generate_boundary_barriers(rng: random.Random, biome: str) -> list[tuple[str
             barriers.append((category.value, name, description))
 
     return barriers
+
+
+# Phase 16D — Cross-Region Routes. Two archetypes always exist (spec's
+# "NO SINGLE REQUIRED ROUTE" — a boundary must offer real tradeoffs, not
+# one path), a third (hidden, uncertain) exists only sometimes. Distance
+# is on the same scale as inter-subregion road distance (Phase 15H), but
+# longer — crossing a Boundary is a bigger journey than crossing a
+# subregion.
+BOUNDARY_ROUTE_LONG_DISTANCE_RANGE = (250.0, 500.0)
+BOUNDARY_ROUTE_SHORT_DISTANCE_RANGE = (120.0, 250.0)
+HIDDEN_ROUTE_CHANCE = 0.4
+
+
+def generate_boundary_routes(
+    rng: random.Random, biome: str, used_names: set[str]
+) -> list[dict]:
+    """Returns a list of route dicts (name, description, terrain,
+    estimated_distance, danger_hint, political_control,
+    is_publicly_known) for one RegionalBoundary. Always at least 2
+    routes with genuinely different tradeoffs; a third, hidden one
+    exists about 40% of the time."""
+    terms = ROUTE_TERM_BY_BIOME.get(str(biome), ROUTE_TERM_BY_BIOME["FRONTIER"])
+    base_danger = danger_level_to_connection_danger(DangerLevel.MODERATE)
+
+    def named(term: str) -> str:
+        place = generate_settlement_name(rng, used_names)
+        return f"{term} de {place}"
+
+    routes = [
+        {
+            "name": named(rng.choice(terms)),
+            "description": "A rota mais longa, mas também a mais conhecida e a mais segura entre as opções.",
+            "terrain": str(biome),
+            "estimated_distance": round(rng.uniform(*BOUNDARY_ROUTE_LONG_DISTANCE_RANGE), 1),
+            "danger_hint": base_danger + 1,
+            "political_control": "Controlada por um posto ou guarnição local.",
+            "is_publicly_known": True,
+        },
+        {
+            "name": named(rng.choice(terms)),
+            "description": "Uma rota bem mais curta, mas conhecida por sua reputação perigosa.",
+            "terrain": str(biome),
+            "estimated_distance": round(rng.uniform(*BOUNDARY_ROUTE_SHORT_DISTANCE_RANGE), 1),
+            "danger_hint": base_danger + 5,
+            "political_control": "",
+            "is_publicly_known": True,
+        },
+    ]
+
+    if rng.random() < HIDDEN_ROUTE_CHANCE:
+        routes.append(
+            {
+                "name": named(rng.choice(terms)),
+                "description": "Uma passagem quase esquecida, mencionada apenas em relatos antigos e incertos.",
+                "terrain": str(biome),
+                "estimated_distance": round(rng.uniform(*BOUNDARY_ROUTE_SHORT_DISTANCE_RANGE), 1),
+                "danger_hint": rng.randint(base_danger, base_danger + 8),
+                "political_control": "",
+                "is_publicly_known": False,
+            }
+        )
+
+    return routes
 
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)

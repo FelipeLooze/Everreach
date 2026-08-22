@@ -562,3 +562,21 @@ LOGISTICAL_BARRIER_POOL = [
 MAGICAL_BARRIER_POOL = [
     ("Névoa Instável", "Relatos incomuns de desorientação e distorção cercam essa área."),
 ]
+
+# Phase 16D — Cross-Region Routes. Route-type noun keyed by the boundary's
+# anchor-subregion biome, so a generated route name reads as the natural
+# vocabulary for that terrain ("Passagem de X" for a mountain range,
+# "Rota Marítima de X" for open sea) — combined with a synthesized place
+# name (reuses the same SETTLEMENT_NAME_PARTS_A/B syllables generic
+# proper-noun generation already uses, see generate_settlement_name).
+ROUTE_TERM_BY_BIOME = {
+    "PLAINS": ["Estrada", "Trilha"],
+    "FOREST": ["Trilha", "Caminho"],
+    "HILLS": ["Passagem", "Trilha"],
+    "MOUNTAINS": ["Passagem", "Desfiladeiro", "Túnel"],
+    "WETLANDS": ["Passagem Elevada", "Trilha"],
+    "RIVER_VALLEY": ["Travessia", "Vau"],
+    "LAKE_COUNTRY": ["Travessia", "Rota das Águas"],
+    "COASTAL": ["Rota Marítima", "Travessia"],
+    "FRONTIER": ["Trilha", "Rota"],
+}

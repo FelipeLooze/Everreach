@@ -26,10 +26,17 @@ from app.game.world.content_pools import (
     CULTURAL_SUMMARIES,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
+    POPULATION_TIER_BY_TYPE,
+    SETTLEMENT_NAME_PARTS_A,
+    SETTLEMENT_NAME_PARTS_B,
+    SETTLEMENT_PROFILE_BY_TYPE,
+    SETTLEMENT_TYPE_BY_BIOME,
     SUBREGION_CULTURE_SUMMARIES,
     SUBREGION_ECONOMY_SUMMARIES,
     SUBREGION_NAME_POOL,
 )
+
+MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 
 MIN_SUBREGIONS = 8
 MAX_SUBREGIONS = 1 + len(SUBREGION_NAME_POOL)  # anchor + every pool entry
@@ -74,12 +81,69 @@ def generate_subregion_identity(rng: random.Random, *, is_anchor: bool = False) 
     )
 
 
-def generate_subregion_geography(rng: random.Random, biome: str) -> tuple[str, str, str]:
+def generate_subregion_geography(
+    rng: random.Random, biome: str, used_names: set[str]
+) -> tuple[str, str, str]:
     """Picks one major physical geography feature (name, Location.type,
     description) matching a subregion's biome — geography must influence
-    placement, not appear at random (Phase 15E spec)."""
-    candidates = GEOGRAPHY_BY_BIOME[str(biome)]
-    return rng.choice(candidates)
+    placement, not appear at random (Phase 15E spec). Avoids reusing a
+    name already claimed elsewhere in the region (two MOUNTAINS
+    subregions should not both produce a place called "Muralha de
+    Pedra") by falling back to any other biome's unclaimed candidate."""
+    own_candidates = [c for c in GEOGRAPHY_BY_BIOME[str(biome)] if c[0] not in used_names]
+    if own_candidates:
+        chosen = rng.choice(own_candidates)
+        used_names.add(chosen[0])
+        return chosen
+
+    all_candidates = [c for pool in GEOGRAPHY_BY_BIOME.values() for c in pool if c[0] not in used_names]
+    chosen = rng.choice(all_candidates) if all_candidates else rng.choice(GEOGRAPHY_BY_BIOME[str(biome)])
+    used_names.add(chosen[0])
+    return chosen
+
+
+def generate_settlement_name(rng: random.Random, used_names: set[str], max_attempts: int = 50) -> str:
+    """Combines two syllable pools into a settlement name, retrying on
+    collision so a massive region never produces duplicate settlement
+    names (Phase 15Q's own "duplicate names where inappropriate" check)."""
+    for _ in range(max_attempts):
+        name = rng.choice(SETTLEMENT_NAME_PARTS_A) + rng.choice(SETTLEMENT_NAME_PARTS_B)
+        if name not in used_names:
+            used_names.add(name)
+            return name
+    # Pool exhausted at this scale — fall back to a numbered variant rather
+    # than looping forever or silently persisting a duplicate.
+    base = rng.choice(SETTLEMENT_NAME_PARTS_A) + rng.choice(SETTLEMENT_NAME_PARTS_B)
+    suffix = 2
+    name = f"{base} {suffix}"
+    while name in used_names:
+        suffix += 1
+        name = f"{base} {suffix}"
+    used_names.add(name)
+    return name
+
+
+def choose_major_settlement_type(rng: random.Random, biome: str) -> str:
+    """Picks a plausible major-settlement type for a subregion's biome —
+    settlements should have a reason to exist (Phase 15F spec)."""
+    return rng.choice(SETTLEMENT_TYPE_BY_BIOME[str(biome)])
+
+
+def choose_minor_settlement_type(rng: random.Random) -> str:
+    return rng.choice(["VILLAGE", "HAMLET", "ISOLATED_SETTLEMENT"])
+
+
+def minor_settlement_count(rng: random.Random) -> int:
+    low, high = MINOR_SETTLEMENTS_PER_SUBREGION
+    return rng.randint(low, high)
+
+
+def settlement_profile(settlement_type: str) -> str:
+    return SETTLEMENT_PROFILE_BY_TYPE[str(settlement_type)]
+
+
+def settlement_population_tier(settlement_type: str) -> int:
+    return POPULATION_TIER_BY_TYPE[str(settlement_type)]
 
 
 def generate_subregion_names(rng: random.Random) -> list[str]:

@@ -601,6 +601,24 @@ class DangerLevel(StrEnum):
     SEVERE = "SEVERE"
 
 
+class SettlementType(StrEnum):
+    """Phase 15F — settlement scale/purpose. Deliberately richer than a
+    bare CITY/VILLAGE split (spec), but bounded — not every conceivable
+    settlement archetype, just enough to give settlements a reason to
+    exist and differ from each other."""
+
+    MAJOR_CITY = "MAJOR_CITY"
+    CITY = "CITY"
+    TOWN = "TOWN"
+    VILLAGE = "VILLAGE"
+    HAMLET = "HAMLET"
+    ISOLATED_SETTLEMENT = "ISOLATED_SETTLEMENT"
+    FORTRESS_SETTLEMENT = "FORTRESS_SETTLEMENT"
+    MINING_SETTLEMENT = "MINING_SETTLEMENT"
+    RELIGIOUS_SETTLEMENT = "RELIGIOUS_SETTLEMENT"
+    TRADE_SETTLEMENT = "TRADE_SETTLEMENT"
+
+
 class PopulationDensity(StrEnum):
     """Phase 15D — how densely a subregion is settled, independent of any
     single settlement's own size (see Phase 15F)."""

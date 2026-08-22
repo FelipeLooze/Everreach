@@ -8,6 +8,8 @@ from app.core.enums import (
     EventType,
     KnowledgeCertainty,
     KnowerType,
+    PopulationDensity,
+    SettlementType,
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
     RiskTolerance,
@@ -17,14 +19,21 @@ from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location, LocationConnection, LocationFeature
 from app.db.models.npc import NPC
 from app.db.models.region import Region
+from app.db.models.settlement import Settlement
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.subregion import Subregion
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
+    choose_major_settlement_type,
+    choose_minor_settlement_type,
     generate_region_identity,
+    generate_settlement_name,
     generate_subregion_geography,
     generate_subregion_identity,
     generate_subregion_names,
+    minor_settlement_count,
+    settlement_population_tier,
+    settlement_profile,
 )
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
@@ -159,6 +168,10 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     db.add_all([village, forest_edge, road, creek, clearing])
     db.flush()
 
+    used_location_names: set[str] = {
+        village.name, forest_edge.name, road.name, creek.name, clearing.name,
+    }
+
     # Phase 15E — one major physical geography feature per non-anchor
     # subregion, matching its biome. The anchor subregion already has its
     # own bespoke geography above (forest/river/clearing); this only fills
@@ -166,7 +179,9 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     geography_features = []
     for subregion in subregions[1:]:
         geo_rng = random.Random(derive_seed(subregion.generation_seed, "geography"))
-        geo_name, geo_type, geo_description = generate_subregion_geography(geo_rng, subregion.biome)
+        geo_name, geo_type, geo_description = generate_subregion_geography(
+            geo_rng, subregion.biome, used_location_names
+        )
         geography_features.append(
             Location(
                 region_id=region.id,
@@ -179,6 +194,76 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         )
     db.add_all(geography_features)
     db.flush()
+
+    # Phase 15F — Settlement Network. Every non-anchor subregion gets one
+    # major settlement (Tier 1, fully placed) plus a handful of minor
+    # settlement stubs (Tier 2 — named, but not deep-materialized yet; see
+    # Location.materialization_tier and Phase 15N/15P content-on-demand).
+    # Exactly one eligible subregion's major settlement is upgraded to
+    # MAJOR_CITY so the massive region has a single clear commercial peak,
+    # matching the spec's own example scale ("several major cities").
+    major_settlement_rows: list[tuple[Subregion, Location, Settlement]] = []
+    minor_settlement_locations: list[Location] = []
+
+    for subregion in subregions[1:]:
+        settlement_rng = random.Random(derive_seed(subregion.generation_seed, "settlements"))
+
+        major_type = choose_major_settlement_type(settlement_rng, subregion.biome)
+        major_name = generate_settlement_name(settlement_rng, used_location_names)
+        major_location = Location(
+            region_id=region.id,
+            subregion_id=subregion.id,
+            name=major_name,
+            type=major_type.lower(),
+            description="",
+            discovery_status=DiscoveryStatus.UNKNOWN,
+            materialization_tier=1,
+        )
+        major_settlement = Settlement(
+            settlement_type=major_type,
+            profile=settlement_profile(major_type),
+            population_tier=settlement_population_tier(major_type),
+        )
+        major_settlement_rows.append((subregion, major_location, major_settlement))
+
+        for _ in range(minor_settlement_count(settlement_rng)):
+            minor_type = choose_minor_settlement_type(settlement_rng)
+            minor_name = generate_settlement_name(settlement_rng, used_location_names)
+            minor_settlement_locations.append(
+                Location(
+                    region_id=region.id,
+                    subregion_id=subregion.id,
+                    name=minor_name,
+                    type=minor_type.lower(),
+                    description="",
+                    discovery_status=DiscoveryStatus.UNKNOWN,
+                    materialization_tier=2,
+                )
+            )
+
+    db.add_all([location for _sub, location, _settlement in major_settlement_rows])
+    db.add_all(minor_settlement_locations)
+    db.flush()
+
+    for subregion, location, settlement in major_settlement_rows:
+        settlement.location_id = location.id
+    db.add_all([settlement for _sub, _location, settlement in major_settlement_rows])
+    db.flush()
+
+    major_city_rng = random.Random(derive_seed(region_seed, "major_city"))
+    dense_candidates = [
+        (sub, loc, settlement)
+        for sub, loc, settlement in major_settlement_rows
+        if sub.population_density in (PopulationDensity.HIGH, PopulationDensity.DENSE)
+    ]
+    major_city_pool = dense_candidates or major_settlement_rows
+    if major_city_pool:
+        _chosen_sub, major_city_location, major_city_settlement = major_city_rng.choice(major_city_pool)
+        major_city_location.type = SettlementType.MAJOR_CITY.lower()
+        major_city_settlement.settlement_type = SettlementType.MAJOR_CITY
+        major_city_settlement.profile = settlement_profile(SettlementType.MAJOR_CITY)
+        major_city_settlement.population_tier = settlement_population_tier(SettlementType.MAJOR_CITY)
+        db.flush()
 
     db.add_all(
         [

@@ -55,6 +55,7 @@ from app.db.models.simulated_player_group import (
     SimulatedPlayerGroupMember,
 )
 from app.db.models.simulated_player_routine import SimulatedPlayerRoutine
+from app.db.models.settlement import Settlement
 from app.db.models.subregion import Subregion
 from app.db.models.simulated_player_arrival import (
     ScheduledSimulatedPlayerArrival,
@@ -284,6 +285,7 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(LocationFeature).filter(LocationFeature.location_id.in_(location_ids)).delete(
         synchronize_session=False
     )
+    db.query(Settlement).filter(Settlement.location_id.in_(location_ids)).delete(synchronize_session=False)
     db.query(Location).filter(Location.id.in_(location_ids)).delete(synchronize_session=False)
     db.query(Subregion).filter(Subregion.region_id.in_(region_ids)).delete(synchronize_session=False)
     db.query(Region).filter(Region.id.in_(region_ids)).delete(synchronize_session=False)

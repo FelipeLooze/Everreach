@@ -30,6 +30,14 @@ class Location(Base):
     description: Mapped[str] = mapped_column(String, default="")
     discovery_status: Mapped[str] = mapped_column(String, default=DiscoveryStatus.UNKNOWN)
 
+    # Phase 15F — Three-Tier Materialization Model. 1 = fully materialized
+    # at generation (macro structure). 2 = exists as a named stub only
+    # (minor settlements/POIs — filled in later, see Phase 15N/15P
+    # content-on-demand). 3 = micro detail (interiors), materialized only
+    # on demand. Every Location generated so far in Phase 15 is Tier 1
+    # except Phase 15F's minor settlement stubs.
+    materialization_tier: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+
 
 class LocationConnection(Base):
     __tablename__ = "location_connections"

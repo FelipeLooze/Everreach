@@ -19,7 +19,7 @@ stage later never shifts the RNG stream consumed by unrelated stages.
 
 import random
 
-from app.core.enums import DangerLevel, PopulationDensity, SubregionBiome, ThreatIntensity
+from app.core.enums import BoundaryBarrierCategory, DangerLevel, PopulationDensity, SubregionBiome, ThreatIntensity
 from app.game.world.content_pools import (
     ANCHOR_CLEARING_OPTIONS,
     ANCHOR_FOREST_OPTIONS,
@@ -29,7 +29,12 @@ from app.game.world.content_pools import (
     BLACKSMITH_FLAVOR_OPTIONS,
     CITY_DISTRICTS,
     CLIMATE_SUMMARIES,
+    CLIMATIC_BARRIER_POOL,
     CULTURAL_SUMMARIES,
+    ECOLOGICAL_BARRIER_POOL,
+    GEOGRAPHICAL_BARRIER_HAZARDS_BY_BIOME,
+    LOGISTICAL_BARRIER_POOL,
+    POLITICAL_BARRIER_POOL,
     ELDER_FLAVOR_OPTIONS,
     EXPORT_GOOD_BY_SETTLEMENT_TYPE,
     GEOGRAPHY_BY_BIOME,
@@ -237,6 +242,47 @@ def interior_description_for_service(service_type: str) -> str | None:
     """Phase 15O — None means this service type has no distinct interior
     concept (e.g. an open-air market square)."""
     return INTERIOR_DESCRIPTION_BY_SERVICE_TYPE.get(str(service_type))
+
+
+# Phase 16C — Boundary Barriers. Independent per-category roll chance —
+# GEOGRAPHICAL always applies (the terrain itself is always a factor),
+# the rest combine probabilistically so most boundaries end up with 1-3
+# barriers total, never a single arbitrary difficulty number (spec).
+# MAGICAL is deliberately never rolled here — see content_pools.py's
+# MAGICAL_BARRIER_POOL docstring.
+_BARRIER_ROLL_CHANCE = {
+    BoundaryBarrierCategory.CLIMATIC: 0.5,
+    BoundaryBarrierCategory.ECOLOGICAL: 0.35,
+    BoundaryBarrierCategory.POLITICAL: 0.25,
+    BoundaryBarrierCategory.LOGISTICAL: 0.2,
+}
+_BARRIER_POOL_BY_CATEGORY = {
+    BoundaryBarrierCategory.CLIMATIC: CLIMATIC_BARRIER_POOL,
+    BoundaryBarrierCategory.ECOLOGICAL: ECOLOGICAL_BARRIER_POOL,
+    BoundaryBarrierCategory.POLITICAL: POLITICAL_BARRIER_POOL,
+    BoundaryBarrierCategory.LOGISTICAL: LOGISTICAL_BARRIER_POOL,
+}
+
+
+def generate_boundary_barriers(rng: random.Random, biome: str) -> list[tuple[str, str, str]]:
+    """Returns [(category, name, description), ...] for one
+    RegionalBoundary. Always includes one GEOGRAPHICAL barrier flavored
+    by the anchor subregion's own biome; other categories combine in
+    probabilistically (spec's "COMBINED BARRIERS: prefer believable
+    combinations")."""
+    geo_name, geo_description = rng.choice(
+        GEOGRAPHICAL_BARRIER_HAZARDS_BY_BIOME.get(
+            str(biome), GEOGRAPHICAL_BARRIER_HAZARDS_BY_BIOME["FRONTIER"]
+        )
+    )
+    barriers = [(BoundaryBarrierCategory.GEOGRAPHICAL.value, geo_name, geo_description)]
+
+    for category, chance in _BARRIER_ROLL_CHANCE.items():
+        if rng.random() < chance:
+            name, description = rng.choice(_BARRIER_POOL_BY_CATEGORY[category])
+            barriers.append((category.value, name, description))
+
+    return barriers
 
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)

@@ -676,6 +676,19 @@ class RegionMaterializationRequestStatus(StrEnum):
     REJECTED = "REJECTED"
 
 
+class BoundaryBarrierCategory(StrEnum):
+    """Phase 16C — what makes a RegionalBoundary hard to cross. A single
+    boundary may combine several (spec's "COMBINED BARRIERS" — difficulty
+    comes from the combination, never an arbitrary difficulty number)."""
+
+    GEOGRAPHICAL = "GEOGRAPHICAL"
+    CLIMATIC = "CLIMATIC"
+    ECOLOGICAL = "ECOLOGICAL"
+    POLITICAL = "POLITICAL"
+    LOGISTICAL = "LOGISTICAL"
+    MAGICAL = "MAGICAL"
+
+
 class EventType(StrEnum):
     CAMPAIGN_CREATED = "CAMPAIGN_CREATED"
     WORLD_STARTED = "WORLD_STARTED"

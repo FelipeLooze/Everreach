@@ -1,22 +1,22 @@
-"""Phase 16B — Regional Boundary Foundation.
+"""Phase 16B/16C — Regional Boundary Foundation & Boundary Barriers.
 
 A RegionalBoundary represents the world conditions separating a
 materialized Region from whatever lies beyond it — not a map line, not a
-level gate (spec's "REGION BORDER = WORLD PROBLEM"). This module creates
-the boundary itself plus the one real, ordinary Location that anchors it
-in the world: a "frontier" the protagonist (or anyone else) can actually
-walk to using the existing travel graph, exactly like any other Location.
+level gate (spec's "REGION BORDER = WORLD PROBLEM"). create_regional_boundary
+creates the boundary itself, the one real Location that anchors it in the
+world (a "frontier" reachable through the ordinary travel graph like any
+other Location), and its BoundaryBarrier rows (16C) — what actually makes
+it hard to cross, one or more per boundary, "COMBINED BARRIERS" per spec.
 
-What makes crossing hard (16C barriers) and what routes exist through it
-(16D routes) are deliberately separate concerns, added in later
-subphases — this module only establishes that the edge itself exists and
-is reachable.
+What routes exist through it (16D) is a deliberately separate concern,
+added in a later subphase — "BOUNDARY != ROUTE".
 """
 
 import random
 
 from sqlalchemy.orm import Session
 
+from app.db.models.boundary_barrier import BoundaryBarrier
 from app.db.models.location import Location, LocationConnection
 from app.db.models.regional_boundary import RegionalBoundary
 from app.db.models.region import Region
@@ -26,6 +26,7 @@ from app.game.world.content_pools import BOUNDARY_NAME_POOL_BY_BIOME
 from app.game.world.generation import derive_seed
 from app.game.world.generator import (
     POI_DISTANCE_RANGE,
+    generate_boundary_barriers,
     poi_connection_danger,
     roll_compass_direction_pair,
 )
@@ -148,7 +149,22 @@ def create_regional_boundary(
     db.add(boundary)
     db.flush()
 
+    for category, barrier_name, barrier_description in generate_boundary_barriers(rng, subregion.biome):
+        db.add(
+            BoundaryBarrier(
+                boundary_id=boundary.id,
+                category=category,
+                name=barrier_name,
+                description=barrier_description,
+            )
+        )
+    db.flush()
+
     return boundary
+
+
+def get_boundary_barriers(db: Session, boundary_id: str) -> list[BoundaryBarrier]:
+    return db.query(BoundaryBarrier).filter(BoundaryBarrier.boundary_id == boundary_id).all()
 
 
 def get_regional_boundaries(db: Session, campaign_id: str, source_region_id: str) -> list[RegionalBoundary]:

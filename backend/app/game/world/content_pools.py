@@ -510,3 +510,55 @@ BOUNDARY_NAME_POOL_BY_BIOME = {
         ("Vastidão Sem Marcos", "Nenhuma estrada, aldeia ou marco indica o que existe além desse ponto."),
     ],
 }
+
+# Phase 16C — Boundary Barriers. GEOGRAPHICAL hazards are keyed by the
+# boundary's own anchor-subregion biome (the terrain itself is the
+# barrier); the other categories are boundary-level rather than
+# terrain-level, so they stay flat pools. MAGICAL is defined but never
+# auto-rolled by generate_boundary_barriers (16C) — spec: "Do not use
+# magical barriers merely as convenient invisible walls... must exist
+# coherently in world Canon", and no such Canon exists yet anywhere in
+# Everreach. Reserved for a future subphase that can actually ground it.
+GEOGRAPHICAL_BARRIER_HAZARDS_BY_BIOME = {
+    "PLAINS": [("Distância Vazia", "Léguas de campo aberto sem um único assentamento para reabastecer.")],
+    "FOREST": [("Mata Fechada", "A vegetação densa torna qualquer rota reta impossível de seguir.")],
+    "HILLS": [("Terreno Acidentado", "Subidas e descidas constantes tornam a viagem lenta e exaustiva.")],
+    "MOUNTAINS": [("Altitude Extrema", "O ar rarefeito e o terreno íngreme cobram um preço físico severo."), ("Risco de Avalanche", "Encostas instáveis podem ceder sem aviso em certas condições.")],
+    "WETLANDS": [("Lamaçal Traiçoeiro", "O solo instável pode engolir uma pessoa ou uma carroça inteira.")],
+    "RIVER_VALLEY": [("Correnteza Forte", "A travessia do rio principal é perigosa fora dos pontos conhecidos.")],
+    "LAKE_COUNTRY": [("Águas Traiçoeiras", "Correntes e bancos de areia tornam a navegação arriscada sem prática.")],
+    "COASTAL": [("Mar Aberto", "Ondas e correntes imprevisíveis tornam qualquer travessia marítima incerta.")],
+    "FRONTIER": [("Terra Sem Lei Nem Mapa", "Nenhuma autoridade e nenhum mapa confiável cobrem essa extensão.")],
+}
+
+CLIMATIC_BARRIER_POOL = [
+    ("Inverno Mortal", "No inverno, o frio por si só é capaz de matar um viajante despreparado."),
+    ("Tempestades Sazonais", "Tempestades violentas e frequentes tornam certas épocas do ano quase intransponíveis."),
+    ("Calor Extremo", "O calor do dia é implacável, e a água se torna o recurso mais precioso."),
+    ("Nevoeiro Constante", "Uma névoa espessa e persistente reduz a visibilidade a poucos passos."),
+]
+
+ECOLOGICAL_BARRIER_POOL = [
+    ("Território de Predador", "Uma criatura territorial de grande porte é vista com frequência na região."),
+    ("Enxame Hostil", "Enxames agressivos tornam certas trilhas perigosas em determinadas épocas."),
+    ("Migração Sazonal", "Uma migração animal periódica torna a travessia temporariamente muito mais arriscada."),
+    ("Fauna Venenosa", "Criaturas peçonhentas são incomumente numerosas nessa região."),
+]
+
+POLITICAL_BARRIER_POOL = [
+    ("Fronteira Fechada", "A autoridade local restringe fortemente a entrada de forasteiros."),
+    ("Zona de Conflito", "Tensões armadas recentes tornam a travessia arriscada por motivos que nada têm a ver com o terreno."),
+    ("Território Sob Disputa", "Mais de uma facção reivindica autoridade sobre essa área, sem uma resposta clara sobre quem a controla."),
+    ("Posto de Controle Rígido", "Uma guarnição controla a passagem e exige documentação ou permissão formal."),
+]
+
+LOGISTICAL_BARRIER_POOL = [
+    ("Longa Travessia", "A distância exige dias de suprimentos que a maioria dos viajantes não carrega."),
+    ("Escassez de Água", "Fontes de água confiáveis são raras ao longo do caminho."),
+    ("Rota Mal Documentada", "Poucos mapas confiáveis existem, tornando a navegação um desafio à parte."),
+    ("Ausência de Pousos", "Não há assentamentos ao longo do caminho para descanso ou reabastecimento."),
+]
+
+MAGICAL_BARRIER_POOL = [
+    ("Névoa Instável", "Relatos incomuns de desorientação e distorção cercam essa área."),
+]

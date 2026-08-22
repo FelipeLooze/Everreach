@@ -542,6 +542,29 @@ class KnowledgeCertainty(StrEnum):
     CONFIRMED = "CONFIRMED"
 
 
+class GeographicKnowledgeAspect(StrEnum):
+    """Phase 17A — a geographic entity (Region/Subregion/Settlement/
+    Location/POI/BoundaryRoute/RegionalBoundary/...) is never known
+    all-or-nothing. Each aspect becomes its own KnowledgeFact under the
+    same subject (see app.game.knowledge.geography), so a character can
+    know a place EXISTS long before knowing its NAME, let alone a ROUTE
+    there — matching the spec's own worked example (Arven: existence →
+    name/direction → distance → route, each a separate moment).
+    LOCATION_PRECISION is deliberately not a member here — *how precise*
+    a DIRECTION/DISTANCE/ROUTE fact is is 17B's concern, layered onto
+    these same aspects rather than a tenth aspect of its own."""
+
+    EXISTENCE = "EXISTENCE"
+    NAME = "NAME"
+    DIRECTION = "DIRECTION"
+    DISTANCE = "DISTANCE"
+    ROUTE = "ROUTE"
+    DESCRIPTION = "DESCRIPTION"
+    DANGERS = "DANGERS"
+    SERVICES = "SERVICES"
+    RELATIONSHIPS = "RELATIONSHIPS"
+
+
 class SimulatedPlayerArchetype(StrEnum):
     EXPLORER = "EXPLORER"
     TRAINER = "TRAINER"

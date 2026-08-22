@@ -29,6 +29,7 @@ from app.db.models.location import (
     LocationConnection,
     LocationFeature,
 )
+from app.db.models.subregion import Subregion
 from app.game.combat.context import build_active_encounter_snapshot
 from app.game.game_state import GameStateSnapshot
 from app.game.items.context import build_narrator_inventory_context
@@ -216,6 +217,50 @@ def _currency_context_lines(db: Session, character) -> list[str]:
         f"Bronze: {breakdown.bronze}",
         "This is exactly what the character carries. Never invent additional money, "
         "change a balance, or complete a purchase/payment — only the backend does that.",
+    ]
+
+
+_BIOME_TEXTURE = {
+    "PLAINS": "planícies abertas",
+    "FOREST": "floresta densa",
+    "HILLS": "colinas",
+    "MOUNTAINS": "terreno montanhoso",
+    "WETLANDS": "pântano",
+    "RIVER_VALLEY": "vale fluvial",
+    "LAKE_COUNTRY": "terras lacustres",
+    "COASTAL": "litoral",
+    "FRONTIER": "fronteira pouco povoada",
+}
+
+_DANGER_TEXTURE = {
+    "SAFE": "geralmente segura",
+    "LOW": "razoavelmente segura",
+    "MODERATE": "moderadamente perigosa",
+    "HIGH": "perigosa",
+    "SEVERE": "extremamente perigosa",
+}
+
+
+def _regional_context_lines(db: Session, character) -> list[str]:
+    """Phase 15S — massive-region texture for wherever the character
+    currently physically is (never the Region's other subregions/
+    settlements — Do NOT send the entire massive Region to the LLM,
+    spec). Only category/adjective-level facts (biome, danger), same
+    trust level as Phase 14N's wealth band line — never the subregion's
+    proper name, which has no Knowledge-gating mechanism of its own yet."""
+    if character.location_id is None:
+        return []
+    location = db.get(Location, character.location_id)
+    if location is None or location.subregion_id is None:
+        return []
+    subregion = db.get(Subregion, location.subregion_id)
+    if subregion is None:
+        return []
+    biome_text = _BIOME_TEXTURE.get(str(subregion.biome), "terreno variado")
+    danger_text = _DANGER_TEXTURE.get(str(subregion.danger_level), "de perigo incerto")
+    return [
+        "REGIONAL CONTEXT",
+        f"This area is characterized by {biome_text}, generally considered {danger_text}.",
     ]
 
 
@@ -1139,6 +1184,7 @@ def build_context(
     )
     organization_lines = _known_organizations_lines(db, state.character)
     currency_lines = _currency_context_lines(db, state.character)
+    regional_lines = _regional_context_lines(db, state.character)
     local_economy_lines = _local_economy_context_lines(db, state.character)
     shop_lines = _nearby_shops_context_lines(db, state.character)
     input_canon_lines = [
@@ -1166,6 +1212,7 @@ def build_context(
         "\n".join(active_transported_lines),
         "\n".join(organization_lines),
         "\n".join(currency_lines),
+        *([("\n".join(regional_lines))] if regional_lines else []),
         *([("\n".join(local_economy_lines))] if local_economy_lines else []),
         "\n".join(shop_lines),
         npc_knowledge_section,

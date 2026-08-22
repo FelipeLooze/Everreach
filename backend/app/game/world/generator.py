@@ -420,7 +420,13 @@ def generate_subregion_geography(
     placement, not appear at random (Phase 15E spec). Avoids reusing a
     name already claimed elsewhere in the region (two MOUNTAINS
     subregions should not both produce a place called "Muralha de
-    Pedra") by falling back to any other biome's unclaimed candidate."""
+    Pedra") by falling back to any other biome's unclaimed candidate,
+    and — once the whole pool (only ~18 entries total) is exhausted, a
+    real scenario once a second Region draws from the same finite pool
+    (Phase 16I) — a numbered variant, same discipline as
+    generate_settlement_name/generate_pois, rather than silently
+    repeating an already-claimed name (a real duplicate-name bug this
+    fallback used to have)."""
     own_candidates = [c for c in GEOGRAPHY_BY_BIOME[str(biome)] if c[0] not in used_names]
     if own_candidates:
         chosen = rng.choice(own_candidates)
@@ -428,9 +434,19 @@ def generate_subregion_geography(
         return chosen
 
     all_candidates = [c for pool in GEOGRAPHY_BY_BIOME.values() for c in pool if c[0] not in used_names]
-    chosen = rng.choice(all_candidates) if all_candidates else rng.choice(GEOGRAPHY_BY_BIOME[str(biome)])
-    used_names.add(chosen[0])
-    return chosen
+    if all_candidates:
+        chosen = rng.choice(all_candidates)
+        used_names.add(chosen[0])
+        return chosen
+
+    base_name, geo_type, description = rng.choice(GEOGRAPHY_BY_BIOME[str(biome)])
+    suffix = 2
+    name = f"{base_name} {suffix}"
+    while name in used_names:
+        suffix += 1
+        name = f"{base_name} {suffix}"
+    used_names.add(name)
+    return name, geo_type, description
 
 
 def generate_settlement_name(rng: random.Random, used_names: set[str], max_attempts: int = 50) -> str:
@@ -508,6 +524,37 @@ def generate_subregion_names(rng: random.Random) -> list[str]:
     anchor_name = rng.choice(ANCHOR_SUBREGION_NAME_POOL)
     rest = rng.sample(SUBREGION_NAME_POOL, k=count - 1)
     return [anchor_name, *rest]
+
+
+def generate_subregion_names_for_neighbor_region(rng: random.Random, used_names: set[str]) -> list[str]:
+    """Phase 16I — a neighboring Region has no "anchor" (no starting
+    settlement of its own, spec's "the protagonist is not the only
+    trigger"), so its first subregion should not draw from
+    ANCHOR_SUBREGION_NAME_POOL (that pool's own names read as "the
+    beginning" — Campos Iniciais, Planície de Chegada — which makes no
+    sense for unexplored territory nobody has arrived in). Draws only
+    from SUBREGION_NAME_POOL for every subregion, tracking used_names
+    against the whole campaign (not just this Region) so two Regions
+    never end up with an identically named subregion — the same
+    collision class validate_neighbor_region_package (16R) checks for
+    at the Location level."""
+    count = rng.randint(MIN_SUBREGIONS, MAX_SUBREGIONS)
+    available = [name for name in SUBREGION_NAME_POOL if name not in used_names]
+    if len(available) < count:
+        available = list(SUBREGION_NAME_POOL)
+    chosen = rng.sample(available, k=min(count, len(available)))
+    names = []
+    for name in chosen:
+        if name in used_names:
+            suffix = 2
+            candidate = f"{name} {suffix}"
+            while candidate in used_names:
+                suffix += 1
+                candidate = f"{name} {suffix}"
+            name = candidate
+        used_names.add(name)
+        names.append(name)
+    return names
 
 
 def generate_region_name(rng: random.Random) -> str:

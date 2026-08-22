@@ -14,9 +14,11 @@ persist pass).
 
 from sqlalchemy.orm import Session
 
+from app.db.models.boundary_route import BoundaryRoute
 from app.db.models.location import Location, LocationConnection
 from app.db.models.organization import Organization
 from app.db.models.region import Region
+from app.db.models.regional_boundary import RegionalBoundary
 from app.db.models.settlement import Settlement
 from app.db.models.subregion import Subregion
 from app.game.world.generator import MAX_SUBREGIONS, MIN_SUBREGIONS
@@ -109,3 +111,59 @@ def validate_region_package(db: Session, region: Region) -> None:
                 f"Organization {organization.id} referencia headquarters_location_id "
                 f"{organization.headquarters_location_id}, que não existe em nenhuma Region da campanha."
             )
+
+
+def validate_neighbor_region_package(
+    db: Session,
+    boundary: RegionalBoundary,
+    neighbor_region: Region,
+) -> None:
+    """Phase 16R — cross-Region checks on top of validate_region_package's
+    own (already-reused) internal checks: geography continuity, route
+    consistency, and unique identifiers across BOTH Regions, not just
+    within one. Independent of generation-time bookkeeping, same
+    discipline as 15Q — never trusts that materialize_neighbor_region/
+    connect_boundary_to_neighbor_region got it right just because they
+    ran without raising."""
+    validate_region_package(db, neighbor_region)
+
+    if boundary.destination_region_id != neighbor_region.id:
+        raise RegionValidationError(
+            f"Boundary {boundary.id} tem destination_region_id "
+            f"{boundary.destination_region_id}, esperado {neighbor_region.id}."
+        )
+
+    anchor_subregion = db.get(Subregion, boundary.anchor_subregion_id)
+    neighbor_first_subregion = (
+        db.query(Subregion)
+        .filter(Subregion.region_id == neighbor_region.id, Subregion.order_index == 0)
+        .one()
+    )
+    if neighbor_first_subregion.biome != anchor_subregion.biome:
+        raise RegionValidationError(
+            f"Subregion {neighbor_first_subregion.id} (vizinha) tem bioma "
+            f"{neighbor_first_subregion.biome}, mas a boundary {boundary.id} exige "
+            f"continuidade com {anchor_subregion.biome}."
+        )
+
+    neighbor_location_ids = {
+        row[0] for row in db.query(Location.id).filter(Location.region_id == neighbor_region.id).all()
+    }
+    routes = db.query(BoundaryRoute).filter(BoundaryRoute.boundary_id == boundary.id).all()
+    for route in routes:
+        if route.destination_location_id is not None and route.destination_location_id not in neighbor_location_ids:
+            raise RegionValidationError(
+                f"BoundaryRoute {route.id} tem destination_location_id "
+                f"{route.destination_location_id}, que não pertence à Region vizinha {neighbor_region.id}."
+            )
+
+    source_names = {
+        row[0] for row in db.query(Location.name).filter(Location.region_id == boundary.source_region_id).all()
+    }
+    neighbor_names = {row[0] for row in db.query(Location.name).filter(Location.region_id == neighbor_region.id).all()}
+    collisions = source_names & neighbor_names
+    if collisions:
+        raise RegionValidationError(
+            f"Nomes de localização duplicados entre a Region de origem e a vizinha {neighbor_region.id}: "
+            f"{sorted(collisions)}."
+        )

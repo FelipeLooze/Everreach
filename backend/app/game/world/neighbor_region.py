@@ -52,6 +52,7 @@ from sqlalchemy.orm import Session
 from app.core.enums import DiscoveryStatus
 from app.db.models.campaign import Campaign
 from app.db.models.region import Region
+from app.db.models.location import Location
 from app.db.models.regional_boundary import RegionalBoundary
 from app.db.models.subregion import Subregion
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
@@ -59,7 +60,7 @@ from app.game.world.generator import (
     generate_region_identity,
     generate_region_name,
     generate_subregion_identity,
-    generate_subregion_names,
+    generate_subregion_names_for_neighbor_region,
 )
 from app.game.world.cross_region_canon import record_cross_region_historical_relationship
 from app.game.world.neighbor_constraints import build_neighbor_region_constraints
@@ -116,8 +117,28 @@ def materialize_neighbor_region(
 
     anchor_subregion = db.get(Subregion, boundary.anchor_subregion_id)
 
+    # Campaign-wide, not region-scoped: the content pools generation
+    # draws from (subregion names, geography/settlement/POI names) are
+    # finite and shared across every Region in the campaign, so a second
+    # Region's own generation must know what the first one already
+    # claimed, or the two can collide (a real, previously-untested
+    # scenario — only ever mattered once a second Region could exist,
+    # same root cause as the validate_region_package fix in 16I).
+    used_subregion_names = {
+        row[0]
+        for row in db.query(Subregion.name).join(Region, Subregion.region_id == Region.id).filter(
+            Region.campaign_id == campaign_id
+        ).all()
+    }
+    used_location_names = {
+        row[0]
+        for row in db.query(Location.name).join(Region, Location.region_id == Region.id).filter(
+            Region.campaign_id == campaign_id
+        ).all()
+    }
+
     subregion_rng = random.Random(derive_seed(region_seed, "subregions"))
-    subregion_names = generate_subregion_names(subregion_rng)
+    subregion_names = generate_subregion_names_for_neighbor_region(subregion_rng, used_subregion_names)
     subregions = []
     for index, name in enumerate(subregion_names):
         subregion_seed = derive_seed(region_seed, f"subregion:{index}")
@@ -138,7 +159,6 @@ def materialize_neighbor_region(
     db.flush()
     region.skeleton_complete = True
 
-    used_location_names: set[str] = set()
     used_npc_names: set[str] = set()
     generate_region_settlements_and_infrastructure(
         db, campaign_id, region, region_seed, subregions,

@@ -72,6 +72,49 @@ SUBREGION_CULTURE_SUMMARIES = [
     "Práticas religiosas variam bastante de um assentamento a outro, sem uma autoridade única.",
 ]
 
+# Phase 15E — one major physical geography feature archetype per biome.
+# Each entry is (name, Location.type, description). Kept distinct from the
+# subregion's own name (a geography feature is a specific place inside the
+# subregion, not a synonym for it).
+GEOGRAPHY_BY_BIOME = {
+    "PLAINS": [
+        ("Planície das Espigas", "plains", "Uma vasta planície de capim alto, pontuada por poucas árvores isoladas."),
+        ("Campo Aberto do Meiodia", "plains", "Terras baixas e planas, boas para pastagem e cultivo em grande escala."),
+    ],
+    "FOREST": [
+        ("Floresta das Sombras Longas", "forest", "Uma mata densa e antiga, cuja copa fechada mantém o chão sempre em penumbra."),
+        ("Bosque do Silêncio", "forest", "Árvores altas e próximas tornam a passagem lenta e o som abafado."),
+    ],
+    "HILLS": [
+        ("Colinas Onduladas", "hills", "Uma sucessão de colinas baixas cobertas de vegetação rasteira."),
+        ("Terras Altas Rochosas", "hills", "Elevações rochosas cortadas por trilhas estreitas e íngremes."),
+    ],
+    "MOUNTAINS": [
+        ("Cordilheira dos Picos Cinzentos", "mountain_range", "Uma cadeia de montanhas altas, com passagens estreitas e perigosas."),
+        ("Muralha de Pedra", "mountain_range", "Uma barreira natural de rocha que isola o que fica além dela."),
+    ],
+    "WETLANDS": [
+        ("Pântano das Águas Paradas", "marsh", "Um terreno alagadiço, difícil de atravessar e cheio de vida escondida."),
+        ("Brejo Cinzento", "marsh", "Névoa constante paira sobre um solo encharcado e traiçoeiro."),
+    ],
+    "RIVER_VALLEY": [
+        ("Rio Correntoso", "river", "Um rio largo e caudaloso que corta o vale de ponta a ponta."),
+        ("Vale do Grande Rio", "river", "Terras férteis às margens de um rio importante para a região."),
+    ],
+    "LAKE_COUNTRY": [
+        ("Grande Lago Sereno", "lake", "Um lago extenso, cujas águas calmas sustentam vilas de pescadores."),
+        ("Lago das Mil Ilhas", "lake", "Um corpo de água pontuado por pequenas ilhotas dispersas."),
+    ],
+    "COASTAL": [
+        ("Costa Batida pelo Vento", "coast", "Falésias e praias rochosas encontram o mar aberto."),
+        ("Litoral das Marés Altas", "coast", "Uma faixa costeira sujeita a marés fortes e ventos constantes."),
+    ],
+    "FRONTIER": [
+        ("Terras Ermas da Fronteira", "wilderness", "Um território pouco povoado, na fronteira do que é considerado seguro."),
+        ("Descampado Selvagem", "wilderness", "Vastidão aberta e inóspita, raramente cruzada por viajantes."),
+    ],
+}
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

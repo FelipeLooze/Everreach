@@ -24,6 +24,7 @@ from app.game.world.content_pools import (
     ANCHOR_SUBREGION_NAME,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
+    GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
     SUBREGION_CULTURE_SUMMARIES,
     SUBREGION_ECONOMY_SUMMARIES,
@@ -71,6 +72,14 @@ def generate_subregion_identity(rng: random.Random, *, is_anchor: bool = False) 
         culture_summary=rng.choice(SUBREGION_CULTURE_SUMMARIES),
         economy_summary=rng.choice(SUBREGION_ECONOMY_SUMMARIES),
     )
+
+
+def generate_subregion_geography(rng: random.Random, biome: str) -> tuple[str, str, str]:
+    """Picks one major physical geography feature (name, Location.type,
+    description) matching a subregion's biome — geography must influence
+    placement, not appear at random (Phase 15E spec)."""
+    candidates = GEOGRAPHY_BY_BIOME[str(biome)]
+    return rng.choice(candidates)
 
 
 def generate_subregion_names(rng: random.Random) -> list[str]:

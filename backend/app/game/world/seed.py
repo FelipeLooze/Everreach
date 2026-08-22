@@ -22,6 +22,7 @@ from app.db.models.subregion import Subregion
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
     generate_region_identity,
+    generate_subregion_geography,
     generate_subregion_identity,
     generate_subregion_names,
 )
@@ -116,6 +117,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     forest_edge = Location(
         region_id=region.id,
+        subregion_id=anchor_subregion.id,
         name="Bosque da Beira do Vale",
         type="forest",
         x=-2,
@@ -125,6 +127,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     road = Location(
         region_id=region.id,
+        subregion_id=anchor_subregion.id,
         name="Estrada do Moinho",
         type="road",
         x=2,
@@ -134,6 +137,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     creek = Location(
         region_id=region.id,
+        subregion_id=anchor_subregion.id,
         name="Riacho Negro",
         type="river",
         x=0,
@@ -143,6 +147,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     clearing = Location(
         region_id=region.id,
+        subregion_id=anchor_subregion.id,
         name="Clareira do Vidro Antigo",
         type="clearing",
         x=-4,
@@ -152,6 +157,27 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
 
     db.add_all([village, forest_edge, road, creek, clearing])
+    db.flush()
+
+    # Phase 15E — one major physical geography feature per non-anchor
+    # subregion, matching its biome. The anchor subregion already has its
+    # own bespoke geography above (forest/river/clearing); this only fills
+    # in the rest of the massive region.
+    geography_features = []
+    for subregion in subregions[1:]:
+        geo_rng = random.Random(derive_seed(subregion.generation_seed, "geography"))
+        geo_name, geo_type, geo_description = generate_subregion_geography(geo_rng, subregion.biome)
+        geography_features.append(
+            Location(
+                region_id=region.id,
+                subregion_id=subregion.id,
+                name=geo_name,
+                type=geo_type,
+                description=geo_description,
+                discovery_status=DiscoveryStatus.UNKNOWN,
+            )
+        )
+    db.add_all(geography_features)
     db.flush()
 
     db.add_all(

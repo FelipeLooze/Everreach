@@ -32,6 +32,7 @@ from app.game.world.content_pools import (
     LEADER_BACKSTORY_POOL,
     LEADER_PERSONALITY_POOL,
     LEADER_TITLE_BY_ORG_TYPE,
+    MINOR_SETTLEMENT_DESCRIPTIONS,
     NPC_FAMILY_NAME_POOL,
     NPC_GIVEN_NAME_POOL,
     ORG_NAME_TEMPLATE_BY_TYPE,
@@ -216,6 +217,12 @@ def generate_threat(rng: random.Random) -> tuple[str, str]:
     just one per subregion — a population/habitat abstraction, not
     individual creature instances (spec)."""
     return rng.choice(THREAT_POOL)
+
+
+def materialize_minor_settlement_description(rng: random.Random) -> str:
+    """Phase 15N — deep materialization of a Tier 2 minor settlement stub
+    (see app.game.world.materialization.ensure_location_materialized)."""
+    return rng.choice(MINOR_SETTLEMENT_DESCRIPTIONS)
 
 
 def anchor_threat() -> tuple[str, str]:

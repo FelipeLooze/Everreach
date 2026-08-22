@@ -331,6 +331,23 @@ THREAT_POOL = [
 
 ANCHOR_THREAT = ("BOARS", "Javalis selvagens vêm do Bosque da Beira do Vale e, de vez em quando, invadem plantações próximas a Cardal.")
 
+# Phase 15N — Deep Location Materialization. Generic enough for
+# VILLAGE/HAMLET/ISOLATED_SETTLEMENT minor-settlement stubs (Phase 15F
+# Tier 2) — filled in only when something (usually the protagonist
+# traveling there) actually requires the detail to exist.
+MINOR_SETTLEMENT_DESCRIPTIONS = [
+    "Um pequeno aglomerado de casas simples, vivendo principalmente da terra ao redor.",
+    "Poucas famílias vivem aqui, unidas pelo trabalho diário e pouco mais.",
+    "Um povoado modesto, cujas construções de madeira mostram sinais de uso constante.",
+    "Um lugar tranquilo, onde forasteiros são raros o suficiente para chamar atenção.",
+]
+
+MINOR_SETTLEMENT_FEATURES = [
+    ("poço comunitário", "O poço de onde a maior parte da água do povoado é tirada."),
+    ("celeiro compartilhado", "Um celeiro simples onde parte da colheita é guardada em conjunto."),
+    ("cruzamento de caminhos", "O ponto onde as poucas trilhas locais se encontram."),
+]
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

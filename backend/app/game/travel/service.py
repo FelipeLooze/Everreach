@@ -16,6 +16,7 @@ from app.game.discovery.service import (
     set_location_discovery,
 )
 from app.game.items.encumbrance import get_character_encumbrance
+from app.game.world.materialization import ensure_location_materialized
 from app.services.event_log import log_event
 
 BASE_MINUTES_PER_DISTANCE = 15
@@ -215,6 +216,12 @@ def move_character(
         raise TravelError(
             "Destino desconhecido."
         )
+
+    # Phase 15N — content-on-demand: a Tier 2 stub (Phase 15F minor
+    # settlement) gets deep-materialized the moment something actually
+    # requires its detail to exist — here, the character arriving. A
+    # no-op for anything already Tier 1.
+    destination = ensure_location_materialized(db, destination)
 
     try:
         pace = TravelPace(pace)

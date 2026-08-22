@@ -22,6 +22,7 @@ class Location(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("loc"))
     region_id: Mapped[str] = mapped_column(ForeignKey("regions.id"), nullable=False)
+    subregion_id: Mapped[str | None] = mapped_column(ForeignKey("subregions.id"), nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, default="generic")
     x: Mapped[int] = mapped_column(Integer, default=0)

@@ -97,6 +97,7 @@ from app.db.models.simulated_player_group import (
 from app.db.models.simulated_player_routine import (
     SimulatedPlayerRoutine,
 )
+from app.db.models.subregion import Subregion
 from app.db.models.technique_evidence import (
     CharacterTechniquePatternEvidence,
     TechniqueExperimentRecord,
@@ -203,6 +204,7 @@ __all__ = [
     "SimulatedPlayerGroup",
     "SimulatedPlayerGroupMember",
     "SimulatedPlayerRoutine",
+    "Subregion",
     "SimulatedPlayerArrivalPolicy",
     "SimulatedPlayerArrivalLocation",
     "CharacterTechniquePatternEvidence",

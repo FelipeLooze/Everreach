@@ -35,3 +35,25 @@ HISTORICAL_SUMMARIES = [
     "A região foi unificada sob um único conselho apenas há poucas gerações, após séculos de fragmentação.",
     "Lendas locais falam de uma catástrofe antiga que moldou boa parte da geografia atual.",
 ]
+
+# Phase 15C — "Campos de Cardal" is the fixed anchor subregion containing
+# the pinned starting village (see 15B); every other name here is a pool
+# candidate for the rest of the massive region and may or may not be
+# selected for a given campaign's generation_seed.
+ANCHOR_SUBREGION_NAME = "Campos de Cardal"
+
+SUBREGION_NAME_POOL = [
+    "Bosque Sussurrante",
+    "Terras Altas de Arven",
+    "Fronteira Norte",
+    "Terra dos Grandes Lagos",
+    "Planalto Oriental",
+    "Terras Selvagens do Sul",
+    "Montanhas Cinzentas",
+    "Vale de Halwen",
+    "Charco Negro",
+    "Costa dos Ventos",
+    "Terras Baixas do Rio",
+    "Passagem da Fronteira",
+    "Floresta Profunda",
+]

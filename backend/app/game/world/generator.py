@@ -20,10 +20,15 @@ stage later never shifts the RNG stream consumed by unrelated stages.
 import random
 
 from app.game.world.content_pools import (
+    ANCHOR_SUBREGION_NAME,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
     HISTORICAL_SUMMARIES,
+    SUBREGION_NAME_POOL,
 )
+
+MIN_SUBREGIONS = 8
+MAX_SUBREGIONS = 1 + len(SUBREGION_NAME_POOL)  # anchor + every pool entry
 
 
 def generate_region_identity(rng: random.Random) -> tuple[str, str, str]:
@@ -34,3 +39,14 @@ def generate_region_identity(rng: random.Random) -> tuple[str, str, str]:
         rng.choice(CULTURAL_SUMMARIES),
         rng.choice(HISTORICAL_SUMMARIES),
     )
+
+
+def generate_subregion_names(rng: random.Random) -> list[str]:
+    """Phase 15C — the Region Skeleton's macro subdivision list. Always
+    includes the fixed anchor subregion (Campos de Cardal, containing the
+    pinned starting village) first, then a seed-driven sample of the rest
+    of the pool — a massive Region has many subregions (spec: "8-15"), but
+    exactly which ones exist varies per campaign."""
+    count = rng.randint(MIN_SUBREGIONS, MAX_SUBREGIONS)
+    rest = rng.sample(SUBREGION_NAME_POOL, k=count - 1)
+    return [ANCHOR_SUBREGION_NAME, *rest]

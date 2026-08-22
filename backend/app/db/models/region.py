@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import DiscoveryStatus
@@ -32,3 +32,8 @@ class Region(Base):
     climate_summary: Mapped[str] = mapped_column(String, default="")
     cultural_summary: Mapped[str] = mapped_column(String, default="")
     historical_summary: Mapped[str] = mapped_column(String, default="")
+
+    # Phase 15C — "WORLD MAP FIRST, ROOM DETAILS LATER": explicit gate so
+    # deep materialization (15N+) can assert the macro skeleton (currently:
+    # subregions) already exists before it ever runs.
+    skeleton_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")

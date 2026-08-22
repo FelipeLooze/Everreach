@@ -174,8 +174,10 @@ def log_event(
     db.flush()
     if event.importance >= 3:
         from app.ai.memory_manager import remember_important_event
+        from app.ai.retrieval.history import index_historical_event
 
         remember_important_event(db, event)
+        index_historical_event(db, event)
     logger.info("event %s campaign=%s actor=%s:%s", event_type.value, campaign_id, actor_type, actor_id)
     return event
 

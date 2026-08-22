@@ -46,6 +46,7 @@ from app.db.models.domain import (
 )
 from app.db.models.item import ItemInstance
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.location import CharacterLocationDiscovery, Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
@@ -229,6 +230,11 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(KnowledgeFact).filter(KnowledgeFact.id.in_(fact_ids)).delete(synchronize_session=False)
 
     db.query(Memory).filter(Memory.campaign_id == campaign_id).delete(synchronize_session=False)
+    # Phase 18B — IndexedKnowledgeDocument (app.ai.retrieval) always
+    # carries campaign_id directly, same as Memory above.
+    db.query(IndexedKnowledgeDocument).filter(
+        IndexedKnowledgeDocument.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
     db.query(CharacterNPCRelationship).filter(
         CharacterNPCRelationship.campaign_id == campaign_id
     ).delete(synchronize_session=False)

@@ -1,6 +1,7 @@
 from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.character import Character
 from app.db.models.event import WorldEvent
+from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.npc import NPC
 from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
@@ -35,6 +36,12 @@ def test_reset_deletes_only_the_selected_campaign(client, db_session):
     assert db_session.query(WorldTime).filter(WorldTime.campaign_id == deleted_campaign["id"]).count() == 0
     assert db_session.query(WorldEvent).filter(WorldEvent.campaign_id == deleted_campaign["id"]).count() == 0
     assert db_session.query(Memory).filter(Memory.campaign_id == deleted_campaign["id"]).count() == 0
+    assert (
+        db_session.query(IndexedKnowledgeDocument)
+        .filter(IndexedKnowledgeDocument.campaign_id == deleted_campaign["id"])
+        .count()
+        == 0
+    )
     assert (
         db_session.query(CharacterNPCRelationship)
         .filter(CharacterNPCRelationship.campaign_id == deleted_campaign["id"])

@@ -85,7 +85,7 @@ def _event_subject(payload: dict, event: WorldEvent) -> str:
     return f"{event.actor_type}:{event.actor_id}" if event.actor_id else "world"
 
 
-def _event_summary(db: Session, event: WorldEvent, payload: dict) -> str:
+def event_summary_text(db: Session, event: WorldEvent, payload: dict) -> str:
     event_type = event.event_type
     character = db.get(Character, event.actor_id) if event.actor_type == "character" else None
     actor_name = character.name if character is not None else "O personagem"
@@ -204,7 +204,7 @@ def remember_important_event(db: Session, event: WorldEvent) -> list[Memory]:
             owner_type,
             owner_id,
             _event_subject(payload, event),
-            _event_summary(db, event, payload),
+            event_summary_text(db, event, payload),
             importance=event.importance,
             source_event=event,
         )

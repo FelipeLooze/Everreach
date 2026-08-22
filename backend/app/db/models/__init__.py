@@ -24,6 +24,7 @@ from app.db.models.character_class import (
 from app.db.models.currency import CurrencyHolding
 from app.db.models.event import WorldEvent
 from app.db.models.group import Group, GroupInvite, GroupMember
+from app.db.models.expedition import Expedition
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
@@ -150,6 +151,7 @@ __all__ = [
     "Group",
     "GroupMember",
     "GroupInvite",
+    "Expedition",
     "DomainDefinition",
     "CharacterDomainEvidence",
     "DomainEvidenceRecord",

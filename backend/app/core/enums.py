@@ -543,6 +543,19 @@ class KnowledgeCertainty(StrEnum):
     CONFIRMED = "CONFIRMED"
 
 
+class ExpeditionStatus(StrEnum):
+    """Phase 17I — a planned journey's lifecycle. Terminal states mirror
+    the spec's own list of possible outcomes (success/partial success/
+    retreat/failure/loss) rather than a bare success/fail boolean."""
+
+    PLANNED = "PLANNED"
+    UNDERWAY = "UNDERWAY"
+    SUCCEEDED = "SUCCEEDED"
+    PARTIAL_SUCCESS = "PARTIAL_SUCCESS"
+    FAILED = "FAILED"
+    LOST = "LOST"
+
+
 class GeographicKnowledgeAspect(StrEnum):
     """Phase 17A — a geographic entity (Region/Subregion/Settlement/
     Location/POI/BoundaryRoute/RegionalBoundary/...) is never known

@@ -18,14 +18,14 @@ from app.core.enums import KnowerType, KnowledgeSourceType
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 
-_GEOGRAPHIC_SOURCE_TYPES = (
+GEOGRAPHIC_SOURCE_TYPES = (
     KnowledgeSourceType.REGION,
     KnowledgeSourceType.SUBREGION,
     KnowledgeSourceType.SETTLEMENT,
     KnowledgeSourceType.LOCATION,
 )
 
-_SOURCE_TYPE_TO_SUBJECT_KIND = {
+SOURCE_TYPE_TO_SUBJECT_KIND = {
     KnowledgeSourceType.REGION: "region",
     KnowledgeSourceType.SUBREGION: "subregion",
     KnowledgeSourceType.SETTLEMENT: "settlement",
@@ -33,7 +33,7 @@ _SOURCE_TYPE_TO_SUBJECT_KIND = {
 }
 
 
-def _knows_about_subject(
+def knows_about_geographic_subject(
     db: Session, campaign_id: str, knower_type: KnowerType, knower_id: str, subject: str
 ) -> bool:
     """At least one KnowledgeFact under this subject has been granted to
@@ -62,16 +62,16 @@ def geographic_documents_known_to(
     knower_type: KnowerType,
     knower_id: str,
     *,
-    source_types: tuple[KnowledgeSourceType, ...] = _GEOGRAPHIC_SOURCE_TYPES,
+    source_types: tuple[KnowledgeSourceType, ...] = GEOGRAPHIC_SOURCE_TYPES,
 ) -> list[IndexedKnowledgeDocument]:
     candidates = current_documents(db, campaign_id, source_types=list(source_types))
     allowed = []
     for document in candidates:
         source_type = KnowledgeSourceType(document.source_type)
-        kind = _SOURCE_TYPE_TO_SUBJECT_KIND.get(source_type)
+        kind = SOURCE_TYPE_TO_SUBJECT_KIND.get(source_type)
         if kind is None:
             continue
         subject = f"{kind}:{document.source_id}"
-        if _knows_about_subject(db, campaign_id, knower_type, knower_id, subject):
+        if knows_about_geographic_subject(db, campaign_id, knower_type, knower_id, subject):
             allowed.append(document)
     return allowed

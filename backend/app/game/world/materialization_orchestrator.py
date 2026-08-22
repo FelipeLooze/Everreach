@@ -29,6 +29,7 @@ from app.db.models.regional_boundary import RegionalBoundary
 from app.game.world.cross_region_routes import connect_boundary_to_neighbor_region
 from app.game.world.neighbor_region import materialize_neighbor_region
 from app.game.world.region_materialization import mark_region_materialization_request_fulfilled
+from app.game.world.simulation_integration import enable_simulated_player_arrivals_for_region
 from app.game.world.validation import validate_neighbor_region_package
 
 
@@ -52,6 +53,10 @@ def fulfill_region_materialization_request(
     neighbor = materialize_neighbor_region(db, request.campaign_id, boundary, region_index)
     connect_boundary_to_neighbor_region(db, boundary, neighbor)
     validate_neighbor_region_package(db, boundary, neighbor)
+
+    # 16T — the new Region joins the living world now, not only once
+    # Logan happens to find it (spec).
+    enable_simulated_player_arrivals_for_region(db, request.campaign_id, neighbor.id)
 
     mark_region_materialization_request_fulfilled(db, request.id, neighbor.id)
 

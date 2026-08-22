@@ -15,6 +15,7 @@ from app.ai.validation import agency  # noqa: F401 — Phase 19D
 from app.ai.validation import canon  # noqa: F401 — Phase 19F
 from app.ai.validation import knowledge  # noqa: F401 — Phase 19G
 from app.ai.validation import spatial  # noqa: F401 — Phase 19H
+from app.ai.validation import capability  # noqa: F401 — Phase 19I
 
 __all__ = [
     "NarrativeProposal",

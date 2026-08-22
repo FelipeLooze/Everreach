@@ -49,6 +49,19 @@ known_aspects on MapViewLocation is the literal "Knowledge Aspects"
 section of the spec: EXISTENCE/NAME/DIRECTION/DISTANCE/ROUTE/... are
 never collapsed into one boolean — "knows place exists" must not
 silently become "knows exact map pin" anywhere in this module.
+
+Phase 20E — Hierarchical Map Levels.
+
+`scope` (already part of the 20A contract, unused until now) becomes a
+real filter: "world" (regions only, no location detail — the WORLD
+level never drills into geography), "region:{id}" (one Region's known
+locations only — the REGION level), "subregion:{id}" (one Subregion's
+known locations only). Settlement/district/local-area levels are 20I's
+job (independently-discoverable settlement interiors, a different
+concern from filtering this same flat knowledge-gated list). An
+unrecognized or not-yet-known scope target returns empty data rather
+than falling back to the unscoped view — silently ignoring an invalid
+scope would let a caller accidentally see more than requested.
 """
 from dataclasses import dataclass, field
 
@@ -86,6 +99,7 @@ _DISCOVERY_STATUS_PRECISION: dict[DiscoveryStatus, GeographicPrecision] = {
 class MapViewLocation:
     id: str
     region_id: str
+    subregion_id: str | None
     type: str
     name: str | None
     precision: str | None
@@ -199,6 +213,7 @@ def _build_map_view_location(
     return MapViewLocation(
         id=location.id,
         region_id=location.region_id,
+        subregion_id=location.subregion_id,
         type=location.type,
         name=location.name if name_known else None,
         precision=precision.value if precision is not None else None,
@@ -207,6 +222,43 @@ def _build_map_view_location(
         discovery_status=discovery_status.value,
         known_aspects=sorted(known_aspects),
     )
+
+
+def _apply_scope(
+    regions: list[MapViewRegion],
+    locations: list[MapViewLocation],
+    scope: str | None,
+) -> tuple[list[MapViewRegion], list[MapViewLocation]]:
+    if scope is None:
+        return regions, locations
+
+    if scope == "world":
+        return regions, []
+
+    if ":" in scope:
+        level, target_id = scope.split(":", 1)
+        if level == "region":
+            if target_id not in {region.id for region in regions}:
+                return [], []
+            return (
+                [region for region in regions if region.id == target_id],
+                [location for location in locations if location.region_id == target_id],
+            )
+        if level == "subregion":
+            known_subregion_ids = {
+                location.subregion_id for location in locations if location.subregion_id is not None
+            }
+            if target_id not in known_subregion_ids:
+                return [], []
+            scoped_locations = [location for location in locations if location.subregion_id == target_id]
+            scoped_region_ids = {location.region_id for location in scoped_locations}
+            return (
+                [region for region in regions if region.id in scoped_region_ids],
+                scoped_locations,
+            )
+
+    # Unrecognized scope — never fall back to the unscoped view.
+    return [], []
 
 
 def get_map_view(
@@ -261,6 +313,8 @@ def get_map_view(
             )
         )
     regions.sort(key=lambda region: region.id)
+
+    regions, locations = _apply_scope(regions, locations, scope)
 
     return MapViewData(
         campaign_id=campaign_id,

@@ -8,6 +8,7 @@ const locations: MapViewLocation[] = [
   {
     id: "location_1",
     region_id: "region_1",
+    subregion_id: null,
     type: "village",
     name: "Cardal",
     precision: "PRECISE",
@@ -18,6 +19,7 @@ const locations: MapViewLocation[] = [
   {
     id: "location_2",
     region_id: "region_1",
+    subregion_id: null,
     type: "forest",
     name: "Bosque",
     precision: "APPROXIMATE",
@@ -38,6 +40,7 @@ describe("InteractiveMap", () => {
           {
             id: "location_3",
             region_id: "region_1",
+            subregion_id: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -62,6 +65,7 @@ describe("InteractiveMap", () => {
           {
             id: "location_3",
             region_id: "region_1",
+            subregion_id: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -84,6 +88,7 @@ describe("InteractiveMap", () => {
           {
             id: "location_3",
             region_id: "region_1",
+            subregion_id: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -158,6 +163,7 @@ describe("InteractiveMap", () => {
           {
             id: "location_3",
             region_id: "region_1",
+            subregion_id: null,
             type: "generic",
             name: null,
             precision: "VAGUE",

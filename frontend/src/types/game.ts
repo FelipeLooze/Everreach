@@ -408,6 +408,7 @@ export interface MapViewRegion {
 export interface MapViewLocation {
   id: string;
   region_id: string;
+  subregion_id: string | null;
   type: string;
   name: string | null;
   precision: string | null;

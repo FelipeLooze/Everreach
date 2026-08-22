@@ -171,6 +171,48 @@ POPULATION_TIER_BY_TYPE = {
     "ISOLATED_SETTLEMENT": 1,
 }
 
+# Phase 15G — settlement-internal services. Each key maps to
+# (name, Location.type, description). Which keys a settlement gets
+# depends on its SettlementType (SERVICES_BY_SETTLEMENT_TYPE below) — not
+# every settlement has every service (spec: do not make every village
+# contain identical services).
+SETTLEMENT_SERVICE_POOL = {
+    "inn": ("Estalagem", "inn", "Um lugar para viajantes descansarem e conseguirem uma refeição quente."),
+    "tavern": ("Taverna", "tavern", "Bebida, conversa e as últimas notícias que circulam por ali."),
+    "blacksmith": ("Ferraria", "blacksmith", "Forja e bigorna, onde ferramentas e armas simples são feitas e reparadas."),
+    "general_store": ("Loja Geral", "shop", "Suprimentos básicos para viajantes e moradores."),
+    "temple": ("Templo", "temple", "Um pequeno espaço de culto e reflexão."),
+    "notice_board": ("Quadro de Avisos", "notice_board", "Onde recados, pedidos de ajuda e anúncios locais são fixados."),
+    "warehouse": ("Armazém", "warehouse", "Depósito de mercadorias à espera de transporte ou venda."),
+    "mine_entrance": ("Entrada da Mina", "mine_entrance", "O acesso principal aos túneis de extração de minério."),
+    "barracks": ("Quartel", "barracks", "Onde os guardas locais se organizam e descansam."),
+    "market_square": ("Praça do Mercado", "market_square", "Um espaço aberto tomado por barracas de comerciantes."),
+}
+
+SERVICES_BY_SETTLEMENT_TYPE = {
+    "MAJOR_CITY": ["market_square", "inn", "tavern", "temple", "general_store", "barracks", "notice_board"],
+    "CITY": ["market_square", "inn", "tavern", "temple", "general_store", "notice_board"],
+    "TOWN": ["inn", "tavern", "general_store", "notice_board"],
+    "VILLAGE": ["inn", "general_store", "notice_board"],
+    "HAMLET": ["notice_board"],
+    "ISOLATED_SETTLEMENT": [],
+    "FORTRESS_SETTLEMENT": ["barracks", "inn", "notice_board"],
+    "MINING_SETTLEMENT": ["mine_entrance", "warehouse", "tavern", "notice_board"],
+    "RELIGIOUS_SETTLEMENT": ["temple", "inn", "notice_board"],
+    "TRADE_SETTLEMENT": ["warehouse", "general_store", "inn", "market_square", "notice_board"],
+}
+
+# Phase 15G — districts, for MAJOR_CITY/CITY only (name, district type key).
+CITY_DISTRICTS = [
+    ("Distrito Central", "central"),
+    ("Distrito dos Mercadores", "merchant"),
+    ("Distrito dos Artesãos", "artisan"),
+    ("Distrito Residencial", "residential"),
+    ("Distrito Pobre", "poor"),
+    ("Distrito Religioso", "religious"),
+    ("Portões", "gates"),
+]
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

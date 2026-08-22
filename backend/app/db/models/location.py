@@ -23,6 +23,12 @@ class Location(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("loc"))
     region_id: Mapped[str] = mapped_column(ForeignKey("regions.id"), nullable=False)
     subregion_id: Mapped[str | None] = mapped_column(ForeignKey("subregions.id"), nullable=True)
+    # Phase 15G — hierarchical world structure (Region > Subregion >
+    # Settlement > District > Location > Sublocation > Interior), reusing
+    # Location at every level instead of a new model per level. Nullable:
+    # most locations (settlements, geography, top-level POIs) have no
+    # parent; only districts and settlement-internal services do.
+    parent_location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, default="generic")
     x: Mapped[int] = mapped_column(Integer, default=0)

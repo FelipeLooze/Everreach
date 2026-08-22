@@ -26,11 +26,14 @@ from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_
 from app.game.world.generator import (
     choose_major_settlement_type,
     choose_minor_settlement_type,
+    city_districts,
     generate_region_identity,
     generate_settlement_name,
+    generate_settlement_services,
     generate_subregion_geography,
     generate_subregion_identity,
     generate_subregion_names,
+    is_city_scale,
     minor_settlement_count,
     settlement_population_tier,
     settlement_profile,
@@ -264,6 +267,55 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         major_city_settlement.profile = settlement_profile(SettlementType.MAJOR_CITY)
         major_city_settlement.population_tier = settlement_population_tier(SettlementType.MAJOR_CITY)
         db.flush()
+
+    # Phase 15G — Settlement Internal Structure. Every major settlement
+    # already knows which services it has (backend already knows "Cardal
+    # has a blacksmith" — the protagonist doesn't have to walk around
+    # until the LLM decides). MAJOR_CITY/CITY settlements get an extra
+    # district layer; every other type attaches services directly.
+    # Two passes: districts must be flushed (and have a real id) before
+    # any service Location can reference one as its parent.
+    central_district_by_settlement: dict[str, Location] = {}
+    district_locations: list[Location] = []
+    for subregion, location, settlement in major_settlement_rows:
+        if not is_city_scale(settlement.settlement_type):
+            continue
+        for district_name, district_key in city_districts():
+            district_location = Location(
+                region_id=region.id,
+                subregion_id=subregion.id,
+                parent_location_id=location.id,
+                name=f"{district_name} de {location.name}",
+                type="district",
+                description="",
+                discovery_status=DiscoveryStatus.UNKNOWN,
+                materialization_tier=(1 if district_key == "central" else 2),
+            )
+            district_locations.append(district_location)
+            if district_key == "central":
+                central_district_by_settlement[location.id] = district_location
+    db.add_all(district_locations)
+    db.flush()
+
+    service_locations: list[Location] = []
+    for subregion, location, settlement in major_settlement_rows:
+        services = generate_settlement_services(settlement.settlement_type)
+        services_parent = central_district_by_settlement.get(location.id, location)
+        for service_name, service_type, service_description in services:
+            service_locations.append(
+                Location(
+                    region_id=region.id,
+                    subregion_id=subregion.id,
+                    parent_location_id=services_parent.id,
+                    name=f"{service_name} de {location.name}",
+                    type=service_type,
+                    description=service_description,
+                    discovery_status=DiscoveryStatus.UNKNOWN,
+                    materialization_tier=1,
+                )
+            )
+    db.add_all(service_locations)
+    db.flush()
 
     db.add_all(
         [

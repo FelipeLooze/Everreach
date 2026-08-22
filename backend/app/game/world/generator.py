@@ -22,19 +22,24 @@ import random
 from app.core.enums import DangerLevel, PopulationDensity, SubregionBiome
 from app.game.world.content_pools import (
     ANCHOR_SUBREGION_NAME,
+    CITY_DISTRICTS,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
     POPULATION_TIER_BY_TYPE,
+    SERVICES_BY_SETTLEMENT_TYPE,
     SETTLEMENT_NAME_PARTS_A,
     SETTLEMENT_NAME_PARTS_B,
     SETTLEMENT_PROFILE_BY_TYPE,
+    SETTLEMENT_SERVICE_POOL,
     SETTLEMENT_TYPE_BY_BIOME,
     SUBREGION_CULTURE_SUMMARIES,
     SUBREGION_ECONOMY_SUMMARIES,
     SUBREGION_NAME_POOL,
 )
+
+CITY_SCALE_TYPES = ("MAJOR_CITY", "CITY")
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 
@@ -144,6 +149,27 @@ def settlement_profile(settlement_type: str) -> str:
 
 def settlement_population_tier(settlement_type: str) -> int:
     return POPULATION_TIER_BY_TYPE[str(settlement_type)]
+
+
+def generate_settlement_services(settlement_type: str) -> list[tuple[str, str, str]]:
+    """Returns the (name, Location.type, description) triples for every
+    service a settlement of this type has — deterministic by type alone
+    (which services exist is a design fact, not a roll), so two
+    settlements of the same type always offer the same service set. Not
+    every settlement has every service (spec)."""
+    keys = SERVICES_BY_SETTLEMENT_TYPE[str(settlement_type)]
+    return [SETTLEMENT_SERVICE_POOL[key] for key in keys]
+
+
+def is_city_scale(settlement_type: str) -> bool:
+    return str(settlement_type) in CITY_SCALE_TYPES
+
+
+def city_districts() -> list[tuple[str, str]]:
+    """MAJOR_CITY/CITY settlements are organized into districts (spec) —
+    every city gets the same fixed set, since which districts a city has
+    is structural, not random."""
+    return list(CITY_DISTRICTS)
 
 
 def generate_subregion_names(rng: random.Random) -> list[str]:

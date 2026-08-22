@@ -30,7 +30,7 @@ const locations: MapViewLocation[] = [
 describe("InteractiveMap", () => {
   afterEach(cleanup);
 
-  it("renders a node per positioned location and omits unpositioned ones", () => {
+  it("renders a node for every location, positioned or not", () => {
     render(
       <InteractiveMap
         locations={[
@@ -51,7 +51,53 @@ describe("InteractiveMap", () => {
 
     expect(screen.getByTestId("map-node-location_1")).toBeInTheDocument();
     expect(screen.getByTestId("map-node-location_2")).toBeInTheDocument();
-    expect(screen.queryByTestId("map-node-location_3")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-node-location_3")).toBeInTheDocument();
+  });
+
+  it("marks a location with no known exact position as position-unknown, distinct from positioned ones", () => {
+    render(
+      <InteractiveMap
+        locations={[
+          ...locations,
+          {
+            id: "location_3",
+            region_id: "region_1",
+            type: "generic",
+            name: null,
+            precision: "VAGUE",
+            x: null,
+            y: null,
+            discovery_status: "RUMORED",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId("map-node-location_1")).toHaveAttribute("data-position-known", "true");
+    expect(screen.getByTestId("map-node-location_3")).toHaveAttribute("data-position-known", "false");
+  });
+
+  it("selecting an uncertain location's info panel says its exact position is unknown", () => {
+    render(
+      <InteractiveMap
+        locations={[
+          {
+            id: "location_3",
+            region_id: "region_1",
+            type: "generic",
+            name: null,
+            precision: "VAGUE",
+            x: null,
+            y: null,
+            discovery_status: "RUMORED",
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_3"));
+
+    expect(screen.getByTestId("map-selected-info")).toHaveTextContent("Posição exata desconhecida.");
   });
 
   it("selecting a node shows its known information panel", () => {
@@ -96,7 +142,16 @@ describe("InteractiveMap", () => {
     fireEvent.click(screen.getByTestId("map-zoom-out"));
   });
 
-  it("renders nothing but a fallback message when no location has a position", () => {
+  it("shows a fallback message only when there are no known locations at all", () => {
+    render(<InteractiveMap locations={[]} />);
+
+    expect(
+      screen.getByText("Nenhum local conhecido para exibir no mapa."),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("map-interactive")).not.toBeInTheDocument();
+  });
+
+  it("still renders the map when every known location is uncertain (no positioned locations at all)", () => {
     render(
       <InteractiveMap
         locations={[
@@ -114,9 +169,7 @@ describe("InteractiveMap", () => {
       />,
     );
 
-    expect(
-      screen.getByText("Nenhum local possui posição espacial conhecida."),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId("map-interactive")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-interactive")).toBeInTheDocument();
+    expect(screen.getByTestId("map-node-location_3")).toBeInTheDocument();
   });
 });

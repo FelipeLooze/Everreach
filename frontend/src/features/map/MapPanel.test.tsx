@@ -182,8 +182,8 @@ describe("MapPanel", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByTestId("map-node-location_3"),
-    ).not.toBeInTheDocument();
+      screen.getByTestId("map-node-location_3"),
+    ).toHaveAttribute("data-position-known", "false");
 
     expect(
       screen.getByText(

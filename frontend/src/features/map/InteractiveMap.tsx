@@ -20,46 +20,88 @@ import {
  * always produces the same layout, per the spec's "map generation must
  * be deterministic" rule); pan/zoom only ever move a *viewBox window*
  * over that fixed space, never recompute node positions.
+ *
+ * Phase 20D — Geographic Precision & Uncertainty.
+ *
+ * A location whose resolved precision (app.game.map.view) never
+ * reached PRECISE has no authoritative x/y at all (20A already refuses
+ * to leak it). Rather than dropping it from the visual map entirely —
+ * which would make "vague"/"approximate" Knowledge indistinguishable
+ * from "not known at all" — it is placed on a deterministic outer ring
+ * (evenly spaced by sorted id, never randomized, never re-derived from
+ * the hidden authoritative coordinate) and drawn as a dashed
+ * uncertainty circle with a "?" glyph, sized by precision tier. This is
+ * a UI affordance, not a claim about position: it never encodes real
+ * geography, so it cannot leak any.
  */
 
 const DISPLAY_SIZE = 100;
 const DISPLAY_PADDING = 10;
+const DISPLAY_CENTER = DISPLAY_SIZE / 2;
 const MIN_ZOOM_SPAN = 20;
 const MAX_ZOOM_SPAN = 100;
 const ZOOM_STEP = 0.8;
+const UNCERTAIN_RING_RADIUS = 42;
 
-type PositionedLocation = MapViewLocation & { displayX: number; displayY: number };
+const UNCERTAINTY_MARKER_RADIUS: Record<string, number> = {
+  VAGUE: 6,
+  APPROXIMATE: 4,
+  GOOD: 2.5,
+};
+const DEFAULT_UNCERTAINTY_RADIUS = 5;
+
+type PlacedLocation = MapViewLocation & {
+  displayX: number;
+  displayY: number;
+  positionKnown: boolean;
+};
 
 type ViewBox = { x: number; y: number; w: number; h: number };
 
-function normalizePositions(locations: MapViewLocation[]): PositionedLocation[] {
-  const known = locations.filter((location) => location.x !== null && location.y !== null);
-  if (known.length === 0) {
-    return [];
-  }
+function hasPosition(location: MapViewLocation): location is MapViewLocation & { x: number; y: number } {
+  return location.x !== null && location.y !== null;
+}
 
-  const xs = known.map((location) => location.x as number);
-  const ys = known.map((location) => location.y as number);
+function placeLocations(locations: MapViewLocation[]): PlacedLocation[] {
+  const certain = locations.filter(hasPosition);
+  const uncertain = [...locations.filter((location) => !hasPosition(location))].sort((a, b) =>
+    a.id.localeCompare(b.id),
+  );
+
+  const xs = certain.map((location) => location.x);
+  const ys = certain.map((location) => location.y);
   const minX = Math.min(...xs);
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
   const span = DISPLAY_SIZE - DISPLAY_PADDING * 2;
 
-  return known.map((location) => {
+  const placedCertain: PlacedLocation[] = certain.map((location) => {
     const displayX =
       minX === maxX
-        ? DISPLAY_SIZE / 2
-        : DISPLAY_PADDING + ((location.x as number) - minX) / (maxX - minX) * span;
+        ? DISPLAY_CENTER
+        : DISPLAY_PADDING + ((location.x - minX) / (maxX - minX)) * span;
 
     // Y positivo aparece para cima no mapa.
     const displayY =
       minY === maxY
-        ? DISPLAY_SIZE / 2
-        : DISPLAY_SIZE - DISPLAY_PADDING - ((location.y as number) - minY) / (maxY - minY) * span;
+        ? DISPLAY_CENTER
+        : DISPLAY_SIZE - DISPLAY_PADDING - ((location.y - minY) / (maxY - minY)) * span;
 
-    return { ...location, displayX, displayY };
+    return { ...location, displayX, displayY, positionKnown: true };
   });
+
+  const placedUncertain: PlacedLocation[] = uncertain.map((location, index) => {
+    const angle = (index / uncertain.length) * 2 * Math.PI;
+    return {
+      ...location,
+      displayX: DISPLAY_CENTER + UNCERTAIN_RING_RADIUS * Math.cos(angle),
+      displayY: DISPLAY_CENTER + UNCERTAIN_RING_RADIUS * Math.sin(angle),
+      positionKnown: false,
+    };
+  });
+
+  return [...placedCertain, ...placedUncertain];
 }
 
 function clampViewBox(viewBox: ViewBox): ViewBox {
@@ -78,10 +120,10 @@ export function InteractiveMap({
   locations: MapViewLocation[];
   onSelect?: (locationId: string | null) => void;
 }) {
-  const positioned = useMemo(() => normalizePositions(locations), [locations]);
-  const positionedById = useMemo(
-    () => Object.fromEntries(positioned.map((location) => [location.id, location])),
-    [positioned],
+  const placed = useMemo(() => placeLocations(locations), [locations]);
+  const placedById = useMemo(
+    () => Object.fromEntries(placed.map((location) => [location.id, location])),
+    [placed],
   );
 
   const [viewBox, setViewBox] = useState<ViewBox>({ x: 0, y: 0, w: DISPLAY_SIZE, h: DISPLAY_SIZE });
@@ -142,16 +184,16 @@ export function InteractiveMap({
     zoomBy(event.deltaY > 0 ? 1 / ZOOM_STEP : ZOOM_STEP);
   };
 
-  if (positioned.length === 0) {
+  if (placed.length === 0) {
     return (
       <p className="panel-empty">
-        Nenhum local possui posição espacial conhecida.
+        Nenhum local conhecido para exibir no mapa.
       </p>
     );
   }
 
-  const hovered = hoveredId ? positionedById[hoveredId] : null;
-  const selected = selectedId ? positionedById[selectedId] : null;
+  const hovered = hoveredId ? placedById[hoveredId] : null;
+  const selected = selectedId ? placedById[selectedId] : null;
 
   return (
     <div className="interactive-map" data-testid="map-interactive">
@@ -186,29 +228,53 @@ export function InteractiveMap({
         onWheel={handleWheel}
         onClick={() => select(null)}
       >
-        {positioned.map((location) => (
-          <g
-            key={location.id}
-            data-testid={`map-node-${location.id}`}
-            data-status={location.discovery_status}
-            data-selected={location.id === selectedId}
-            transform={`translate(${location.displayX}, ${location.displayY})`}
-            onClick={(event) => {
-              event.stopPropagation();
-              select(location.id);
-            }}
-            onMouseEnter={() => setHoveredId(location.id)}
-            onMouseLeave={() => setHoveredId((current) => (current === location.id ? null : current))}
-          >
-            <circle
-              r={location.id === selectedId ? 2.6 : 1.8}
-              className={`map-node-marker precision-${(location.precision ?? "unknown").toLowerCase()}`}
-            />
-            <text y={-2.5} textAnchor="middle" className="map-node-label">
-              {location.name ?? "?"}
-            </text>
-          </g>
-        ))}
+        {placed.map((location) => {
+          const precisionClass = (location.precision ?? "unknown").toLowerCase();
+          const uncertaintyRadius: number = location.precision
+            ? (UNCERTAINTY_MARKER_RADIUS[location.precision] ?? DEFAULT_UNCERTAINTY_RADIUS)
+            : DEFAULT_UNCERTAINTY_RADIUS;
+
+          return (
+            <g
+              key={location.id}
+              data-testid={`map-node-${location.id}`}
+              data-status={location.discovery_status}
+              data-selected={location.id === selectedId}
+              data-position-known={location.positionKnown}
+              transform={`translate(${location.displayX}, ${location.displayY})`}
+              onClick={(event) => {
+                event.stopPropagation();
+                select(location.id);
+              }}
+              onMouseEnter={() => setHoveredId(location.id)}
+              onMouseLeave={() => setHoveredId((current) => (current === location.id ? null : current))}
+            >
+              {location.positionKnown ? (
+                <circle
+                  r={location.id === selectedId ? 2.6 : 1.8}
+                  className={`map-node-marker precision-${precisionClass}`}
+                />
+              ) : (
+                <>
+                  <circle
+                    r={uncertaintyRadius}
+                    className={`map-node-uncertainty-ring precision-${precisionClass}`}
+                  />
+                  <text textAnchor="middle" dominantBaseline="central" className="map-node-uncertainty-glyph">
+                    ?
+                  </text>
+                </>
+              )}
+              <text
+                y={location.positionKnown ? -2.5 : -(uncertaintyRadius + 1.5)}
+                textAnchor="middle"
+                className="map-node-label"
+              >
+                {location.name ?? "?"}
+              </text>
+            </g>
+          );
+        })}
       </svg>
 
       {hovered && (
@@ -223,6 +289,7 @@ export function InteractiveMap({
           <p>{locationTypeLabel(selected.type)}</p>
           <p>{discoveryStatusLabel(selected.discovery_status)}</p>
           {selected.precision && <p>Precisão: {geographicPrecisionLabel(selected.precision)}</p>}
+          {!selected.positionKnown && <p>Posição exata desconhecida.</p>}
         </div>
       )}
     </div>

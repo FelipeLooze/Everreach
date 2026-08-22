@@ -572,6 +572,45 @@ class RiskTolerance(StrEnum):
     BALANCED = "BALANCED"
     BOLD = "BOLD"
 
+
+class SubregionBiome(StrEnum):
+    """Phase 15D — dominant terrain character of a subregion. Distinct
+    from ConnectionType/Location.type; this is a broad territorial label,
+    not a single point on the map."""
+
+    PLAINS = "PLAINS"
+    FOREST = "FOREST"
+    HILLS = "HILLS"
+    MOUNTAINS = "MOUNTAINS"
+    WETLANDS = "WETLANDS"
+    RIVER_VALLEY = "RIVER_VALLEY"
+    LAKE_COUNTRY = "LAKE_COUNTRY"
+    COASTAL = "COASTAL"
+    FRONTIER = "FRONTIER"
+
+
+class DangerLevel(StrEnum):
+    """Phase 15D — narrative/world danger baseline for a subregion. Not a
+    direct percentage — distinct from LocationConnection.danger, which
+    already drives real travel-incident math (app.game.travel.service)."""
+
+    SAFE = "SAFE"
+    LOW = "LOW"
+    MODERATE = "MODERATE"
+    HIGH = "HIGH"
+    SEVERE = "SEVERE"
+
+
+class PopulationDensity(StrEnum):
+    """Phase 15D — how densely a subregion is settled, independent of any
+    single settlement's own size (see Phase 15F)."""
+
+    SPARSE = "SPARSE"
+    LOW = "LOW"
+    MODERATE = "MODERATE"
+    HIGH = "HIGH"
+    DENSE = "DENSE"
+
 class SimulatedPlayerGroupStatus(StrEnum):
     ACTIVE = "ACTIVE"
     DISSOLVED = "DISSOLVED"

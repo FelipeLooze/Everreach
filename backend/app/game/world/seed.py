@@ -20,7 +20,11 @@ from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.subregion import Subregion
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
-from app.game.world.generator import generate_region_identity, generate_subregion_names
+from app.game.world.generator import (
+    generate_region_identity,
+    generate_subregion_identity,
+    generate_subregion_names,
+)
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
 
@@ -79,15 +83,22 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
 
     subregion_rng = random.Random(derive_seed(region_seed, "subregions"))
     subregion_names = generate_subregion_names(subregion_rng)
-    subregions = [
-        Subregion(
-            region_id=region.id,
-            name=name,
-            order_index=index,
-            generation_seed=derive_seed(region_seed, f"subregion:{index}"),
+    subregions = []
+    for index, name in enumerate(subregion_names):
+        subregion_seed = derive_seed(region_seed, f"subregion:{index}")
+        identity = generate_subregion_identity(
+            random.Random(derive_seed(subregion_seed, "identity")),
+            is_anchor=(index == 0),
         )
-        for index, name in enumerate(subregion_names)
-    ]
+        subregions.append(
+            Subregion(
+                region_id=region.id,
+                name=name,
+                order_index=index,
+                generation_seed=subregion_seed,
+                **identity,
+            )
+        )
     db.add_all(subregions)
     db.flush()
     anchor_subregion = subregions[0]

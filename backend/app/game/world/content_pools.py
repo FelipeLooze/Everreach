@@ -57,3 +57,28 @@ SUBREGION_NAME_POOL = [
     "Passagem da Fronteira",
     "Floresta Profunda",
 ]
+
+# Phase 15D — per-subregion flavor text, independent of the Region-level
+# summaries above (a subregion's culture/economy is not just a smaller
+# copy of the whole Region's).
+SUBREGION_CULTURE_SUMMARIES = [
+    "Famílias locais transmitem seus ofícios de geração em geração, com pouca entrada de forasteiros.",
+    "Uma rede de pequenos conselhos comunitários resolve a maioria das disputas sem recorrer a autoridades distantes.",
+    "Crenças ligadas aos ciclos das estações moldam boa parte do calendário social.",
+    "Viajantes e comerciantes itinerantes são bem recebidos e trazem notícias de outras partes da região.",
+    "Um forte senso de autossuficiência torna a população local reservada com estranhos.",
+    "Cantos e histórias tradicionais são preservados com cuidado nas poucas comunidades maiores.",
+    "A vida gira em torno de um punhado de famílias influentes que ocupam a região há gerações.",
+    "Práticas religiosas variam bastante de um assentamento a outro, sem uma autoridade única.",
+]
+
+SUBREGION_ECONOMY_SUMMARIES = [
+    "A economia local depende quase inteiramente da agricultura de subsistência.",
+    "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",
+    "Caravanas que cruzam a área deixam boa parte da renda local, ainda que passageira.",
+    "A criação de gado é a principal fonte de riqueza, com pastagens extensas.",
+    "Pesca e outras atividades ligadas à água sustentam a maioria dos assentamentos próximos.",
+    "O artesanato especializado é exportado para assentamentos maiores da região.",
+    "A economia é modesta e majoritariamente voltada ao próprio sustento, com pouco excedente.",
+    "Um recurso local específico (minério, madeira rara, sal) atrai comerciantes de fora.",
+]

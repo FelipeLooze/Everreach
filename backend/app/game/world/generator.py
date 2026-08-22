@@ -19,11 +19,14 @@ stage later never shifts the RNG stream consumed by unrelated stages.
 
 import random
 
+from app.core.enums import DangerLevel, PopulationDensity, SubregionBiome
 from app.game.world.content_pools import (
     ANCHOR_SUBREGION_NAME,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
     HISTORICAL_SUMMARIES,
+    SUBREGION_CULTURE_SUMMARIES,
+    SUBREGION_ECONOMY_SUMMARIES,
     SUBREGION_NAME_POOL,
 )
 
@@ -38,6 +41,35 @@ def generate_region_identity(rng: random.Random) -> tuple[str, str, str]:
         rng.choice(CLIMATE_SUMMARIES),
         rng.choice(CULTURAL_SUMMARIES),
         rng.choice(HISTORICAL_SUMMARIES),
+    )
+
+
+class SubregionIdentity(dict):
+    """Lightweight structured result of generate_subregion_identity —
+    a dict subclass so callers can do both identity["biome"] and, if it
+    reads better at a call site, identity.get(...) without a new import."""
+
+
+def generate_subregion_identity(rng: random.Random, *, is_anchor: bool = False) -> SubregionIdentity:
+    """Rolls (biome, danger_level, population_density, culture_summary,
+    economy_summary) for one subregion. The anchor subregion (containing
+    the fixed starting village) is constrained to stay playable at game
+    start — plains, no worse than LOW danger — per the spec's own "do not
+    place unavoidable lethal threats directly on the starting character"
+    guidance; every other subregion rolls freely."""
+    if is_anchor:
+        biome = SubregionBiome.PLAINS
+        danger_level = rng.choice([DangerLevel.SAFE, DangerLevel.LOW])
+    else:
+        biome = rng.choice(list(SubregionBiome))
+        danger_level = rng.choice(list(DangerLevel))
+
+    return SubregionIdentity(
+        biome=biome,
+        danger_level=danger_level,
+        population_density=rng.choice(list(PopulationDensity)),
+        culture_summary=rng.choice(SUBREGION_CULTURE_SUMMARIES),
+        economy_summary=rng.choice(SUBREGION_ECONOMY_SUMMARIES),
     )
 
 

@@ -383,6 +383,29 @@ def get_owner_memories(
     )
 
 
+def memories_for_subject(
+    db: Session,
+    campaign_id: str,
+    owner_type: MemoryOwnerType,
+    owner_id: str,
+    subject: str,
+) -> list[Memory]:
+    """Every memory this owner has about exactly this subject, oldest
+    first — Phase 18E's consolidation reads this to summarize many small
+    episodes into one durable long-term document."""
+    return (
+        db.query(Memory)
+        .filter(
+            Memory.campaign_id == campaign_id,
+            Memory.owner_type == owner_type.value,
+            Memory.owner_id == owner_id,
+            Memory.subject == subject,
+        )
+        .order_by(Memory.created_at, Memory.id)
+        .all()
+    )
+
+
 def get_recent_memories(db: Session, campaign_id: str, limit: int = 10) -> list[Memory]:
     """Compatibility query for administrative/world-level inspection."""
     return (

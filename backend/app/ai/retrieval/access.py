@@ -66,6 +66,11 @@ def _organization_access(
         # exceptions for public organizations — an outsider never sees
         # internal history just because the organization itself is public.
         organization_id = document.source_id.split(":", 1)[0]
+        # Phase 18Q — an organization always has full access to its OWN
+        # institutional records (it IS the record-keeper); this is not a
+        # membership question at all, unlike every other knower type.
+        if knower_type == KnowerType.ORGANIZATION and knower_id == organization_id:
+            return True
         if actor_type is None:
             return False
         return is_active_organization_member(db, organization_id, actor_type, knower_id)
@@ -76,6 +81,8 @@ def _organization_access(
     organization = db.get(Organization, document.source_id)
     if organization is None:
         return False
+    if knower_type == KnowerType.ORGANIZATION and knower_id == organization.id:
+        return True
     if organization.visibility == "PUBLIC":
         return True
     if actor_type is None:

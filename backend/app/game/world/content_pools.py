@@ -288,6 +288,36 @@ LEADER_BACKSTORY_POOL = [
     "Assumiu o posto em um momento difícil e conseguiu estabilizar a situação.",
 ]
 
+# Phase 15K — Regional Economy Baseline. Reuses Phase 14 in full
+# (SettlementWealthBand, LocalSupplyLevel) — no parallel economy system.
+WEALTH_BAND_BY_SETTLEMENT_TYPE = {
+    "MAJOR_CITY": "WEALTHY",
+    "CITY": "PROSPEROUS",
+    "TRADE_SETTLEMENT": "PROSPEROUS",
+    "TOWN": "MODEST",
+    "MINING_SETTLEMENT": "MODEST",
+    "RELIGIOUS_SETTLEMENT": "MODEST",
+    "FORTRESS_SETTLEMENT": "MODEST",
+    "VILLAGE": "POOR",
+    "HAMLET": "POOR",
+    "ISOLATED_SETTLEMENT": "POOR",
+}
+
+# What each settlement type is locally abundant in (its export good) —
+# None means nothing notable to export, a baseline fact, not a gap.
+EXPORT_GOOD_BY_SETTLEMENT_TYPE = {
+    "MAJOR_CITY": "Bens de Luxo",
+    "CITY": "Bens Manufaturados",
+    "TRADE_SETTLEMENT": "Mercadorias Diversas",
+    "TOWN": "Ferramentas",
+    "MINING_SETTLEMENT": "Minério",
+    "RELIGIOUS_SETTLEMENT": None,
+    "FORTRESS_SETTLEMENT": None,
+    "VILLAGE": "Grão",
+    "HAMLET": "Grão",
+    "ISOLATED_SETTLEMENT": None,
+}
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

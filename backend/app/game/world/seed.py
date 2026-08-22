@@ -14,6 +14,7 @@ from app.core.enums import (
     OrganizationVisibility,
     PopulationDensity,
     SettlementType,
+    SettlementWealthBand,
     SimulatedPlayerArchetype,
     SimulatedPlayerGoalType,
     RiskTolerance,
@@ -26,6 +27,9 @@ from app.db.models.region import Region
 from app.db.models.settlement import Settlement
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.subregion import Subregion
+from app.game.economy.local_economy import set_settlement_wealth
+from app.game.economy.supply_demand import adjust_supply, get_or_create_supply_level
+from app.game.inventory.service import get_or_create_item
 from app.game.organizations.roles import create_role, join_organization
 from app.game.organizations.service import create_organization
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
@@ -34,6 +38,8 @@ from app.game.world.generator import (
     choose_minor_settlement_type,
     city_districts,
     danger_level_to_connection_danger,
+    EXPORT_SUPPLY_BONUS,
+    export_good_for_settlement,
     generate_leader_flavor,
     generate_npc_name,
     generate_region_identity,
@@ -56,6 +62,7 @@ from app.game.world.generator import (
     settlement_population_tier,
     settlement_profile,
     travel_time_modifier_for_biome,
+    wealth_band_for_settlement,
 )
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
@@ -572,6 +579,24 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         )
         leader_role = create_role(db, organization, leader_title.capitalize(), rank_order=0)
         join_organization(db, organization, CombatActorType.NPC, leader_npc.id, role_id=leader_role.id)
+
+    # Phase 15K — Regional Economy Baseline. Reuses Phase 14 in full: real
+    # wealth bands (never a price multiplier — a liquidity/narrative
+    # signal only, per Phase 14I) and real LocalSupplyLevel rows for each
+    # settlement's own export good. Baseline facts only — no simulated
+    # trade routes or years of pre-simulated economy.
+    for subregion, major_location, settlement in major_settlement_rows:
+        wealth_band = wealth_band_for_settlement(settlement.settlement_type)
+        set_settlement_wealth(db, campaign_id, major_location.id, SettlementWealthBand(wealth_band))
+
+        export_good_name = export_good_for_settlement(settlement.settlement_type)
+        if export_good_name is not None:
+            export_item = get_or_create_item(db, export_good_name)
+            supply_level = get_or_create_supply_level(db, campaign_id, major_location.id, export_item.id)
+            adjust_supply(
+                db, supply_level, EXPORT_SUPPLY_BONUS,
+                reason=f"{major_location.name} produz {export_good_name.lower()} localmente em abundância.",
+            )
 
     canonical_facts = [
         KnowledgeFact(

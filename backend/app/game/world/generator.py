@@ -25,6 +25,7 @@ from app.game.world.content_pools import (
     CITY_DISTRICTS,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
+    EXPORT_GOOD_BY_SETTLEMENT_TYPE,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
     LEADER_BACKSTORY_POOL,
@@ -45,7 +46,10 @@ from app.game.world.content_pools import (
     SUBREGION_CULTURE_SUMMARIES,
     SUBREGION_ECONOMY_SUMMARIES,
     SUBREGION_NAME_POOL,
+    WEALTH_BAND_BY_SETTLEMENT_TYPE,
 )
+
+EXPORT_SUPPLY_BONUS = 80
 
 CITY_SCALE_TYPES = ("MAJOR_CITY", "CITY")
 
@@ -178,6 +182,15 @@ def generate_npc_name(rng: random.Random, used_names: set[str], max_attempts: in
 def generate_leader_flavor(rng: random.Random) -> tuple[str, str]:
     """Returns (personality, backstory) for a settlement/organization leader."""
     return rng.choice(LEADER_PERSONALITY_POOL), rng.choice(LEADER_BACKSTORY_POOL)
+
+
+# Phase 15K — Regional Economy Baseline.
+def wealth_band_for_settlement(settlement_type: str) -> str:
+    return WEALTH_BAND_BY_SETTLEMENT_TYPE[str(settlement_type)]
+
+
+def export_good_for_settlement(settlement_type: str) -> str | None:
+    return EXPORT_GOOD_BY_SETTLEMENT_TYPE[str(settlement_type)]
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 

@@ -64,6 +64,12 @@ from sqlalchemy.orm import Session
 
 from app.ai.narrator import NarrationMode
 from app.ai.validation.claims import ClaimCategory, NarrativeClaim, extract_claims
+from app.ai.validation.fallback import safe_fallback_narration
+
+# Phase 19Q — below this length, a repaired narration is treated as
+# incoherent fragments rather than a standalone scene beat, and Phase
+# 19R's safe fallback is used instead of returning something this thin.
+MIN_COHERENT_REPAIR_CHARS = 10
 
 
 @dataclass(frozen=True)
@@ -128,16 +134,25 @@ def register_validator(fn: NarrativeValidator) -> NarrativeValidator:
 def _repair(
     proposal: NarrativeProposal, claims: list[NarrativeClaim], violations: list[Violation]
 ) -> str:
-    """Phase 19D's minimal repair primitive: drop every claim a
-    violation referenced, keep the rest, rejoin. This is intentionally
-    the simplest tier of the spec's own REPAIR PRIORITY ("1. Remove
-    invalid clause if prose remains coherent") — Phase 19Q adds the
-    richer tiers (rewrite using validated facts, bounded regeneration)
-    on top of this same violations list; Phase 19R adds a true
-    scene-grounded fallback for when nothing survives removal."""
+    """Phase 19Q — Narrative Repair, tier 1 of the spec's own REPAIR
+    PRIORITY ("remove invalid clause if prose remains coherent"): drop
+    every claim a violation referenced, keep the rest, rejoin. Falls
+    through to Phase 19R's safe fallback when what survives is empty or
+    too fragmentary to stand alone as a scene beat (MIN_COHERENT_
+    REPAIR_CHARS) — never returns a bare empty string to the player.
+
+    Tiers 2-3 (rewrite using validated facts; bounded regeneration via
+    another LLM call) are NOT implemented: both would need an LLMService
+    threaded through this pipeline, a larger integration explicitly
+    deferred since Phase 19A/19N — this is a single deterministic pass,
+    never a loop, which already satisfies "do not loop indefinitely."
+    """
     invalid_indices = {violation.claim_index for violation in violations}
     kept = [claim.text for claim in claims if claim.index not in invalid_indices]
-    return " ".join(kept).strip()
+    repaired = " ".join(kept).strip()
+    if len(repaired) < MIN_COHERENT_REPAIR_CHARS:
+        return safe_fallback_narration(proposal.mode, proposal.active_npc_name)
+    return repaired
 
 
 def validate_narrative_proposal(

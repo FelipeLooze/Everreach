@@ -601,6 +601,19 @@ def _scene_subjects(
     return [
         *([f"region:{state.region.id}"] if state.region is not None else []),
         *([f"location:{state.location.id}"] if state.location is not None else []),
+        # Phase 17P — closes a real gap the Phase 15 REGIONAL CONTEXT
+        # section itself flagged (_regional_context_lines below: "the
+        # subregion's proper name... has no Knowledge-gating mechanism
+        # of its own yet"). Subregion-level geographic aspect facts
+        # (17A/17J — existence, dangers, description...) now surface in
+        # KNOWN/RUMORED FACTS the same way region/location facts already
+        # do, with zero other change to this module: relevant_known_facts
+        # already matches by subject alone.
+        *(
+            [f"subregion:{state.location.subregion_id}"]
+            if state.location is not None and state.location.subregion_id is not None
+            else []
+        ),
         *([f"npc:{active_npc.id}"] if active_npc is not None else []),
         *(f"connection:{connection.id}" for connection in outgoing_connections),
         *(f"quest:{quest.id}" for _link, quest in state.active_quests),

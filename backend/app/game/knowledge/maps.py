@@ -91,3 +91,29 @@ def create_map(
 
 def map_content(map_row: Map) -> dict:
     return json.loads(map_row.content_json)
+
+
+def character_maps_covering(
+    db: Session,
+    character_id: str,
+    subject_kind: str,
+    entity_id: str,
+) -> list[Map]:
+    """Phase 17P — which of a character's own physical maps actually
+    cover this entity, so a caller (the Narrator's context, a future
+    "read the map" action) can show what the map says instead of live
+    knowledge (spec's "MAP/KNOWLEDGE CONTEXT... only according to map
+    accuracy/content"). Scoped to maps the character actually possesses
+    right now (ItemInstance.owner_ref) — a map that changed hands or was
+    lost stops counting."""
+    return (
+        db.query(Map)
+        .join(ItemInstance, ItemInstance.id == Map.item_instance_id)
+        .filter(
+            ItemInstance.owner_type == "CHARACTER",
+            ItemInstance.owner_ref == character_id,
+            Map.subject_kind == subject_kind,
+            Map.entity_id == entity_id,
+        )
+        .all()
+    )

@@ -580,3 +580,19 @@ ROUTE_TERM_BY_BIOME = {
     "COASTAL": ["Rota Marítima", "Travessia"],
     "FRONTIER": ["Trilha", "Rota"],
 }
+
+# Phase 16E — which season a route through this biome is roughest in.
+# Cold/high-altitude/flood-prone terrain is worst in WINTER; open/arid
+# terrain is worst in SUMMER heat; water-adjacent terrain is worst
+# during AUTUMN storm season.
+HARSH_SEASON_BY_BIOME = {
+    "PLAINS": "SUMMER",
+    "FOREST": "WINTER",
+    "HILLS": "WINTER",
+    "MOUNTAINS": "WINTER",
+    "WETLANDS": "WINTER",
+    "RIVER_VALLEY": "AUTUMN",
+    "LAKE_COUNTRY": "AUTUMN",
+    "COASTAL": "AUTUMN",
+    "FRONTIER": "SUMMER",
+}

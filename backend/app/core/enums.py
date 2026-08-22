@@ -676,6 +676,27 @@ class RegionMaterializationRequestStatus(StrEnum):
     REJECTED = "REJECTED"
 
 
+class Season(StrEnum):
+    """Phase 16E — derived purely from WorldTime.month (already a real
+    12-month calendar, see app.game.time.clock.season_for_month), never
+    its own stored state."""
+
+    SPRING = "SPRING"
+    SUMMER = "SUMMER"
+    AUTUMN = "AUTUMN"
+    WINTER = "WINTER"
+
+
+class RouteAccessibility(StrEnum):
+    """Phase 16E/16F — always derived on demand from a route + current
+    season (see app.game.world.boundaries.route_accessibility_for_season),
+    never stored as a permanent boolean (spec)."""
+
+    OPEN = "OPEN"
+    RISKY = "RISKY"
+    NEARLY_IMPASSABLE = "NEARLY_IMPASSABLE"
+
+
 class BoundaryBarrierCategory(StrEnum):
     """Phase 16C — what makes a RegionalBoundary hard to cross. A single
     boundary may combine several (spec's "COMBINED BARRIERS" — difficulty

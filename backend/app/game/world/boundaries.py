@@ -1,5 +1,5 @@
-"""Phase 16B/16C/16D — Regional Boundary Foundation, Boundary Barriers &
-Cross-Region Routes.
+"""Phase 16B/16C/16D/16E — Regional Boundary Foundation, Boundary
+Barriers, Cross-Region Routes & Seasonal Accessibility.
 
 A RegionalBoundary represents the world conditions separating a
 materialized Region from whatever lies beyond it — not a map line, not a
@@ -9,12 +9,17 @@ world (a "frontier" reachable through the ordinary travel graph like any
 other Location), its BoundaryBarrier rows (16C) — what actually makes it
 hard to cross — and its BoundaryRoute rows (16D) — the possible ways
 through, "BOUNDARY != ROUTE" kept as separate tables throughout.
+
+route_accessibility_for_season (16E) is the one place accessibility is
+ever computed — always derived from a route + the current in-world
+season, never stored as a boolean (spec).
 """
 
 import random
 
 from sqlalchemy.orm import Session
 
+from app.core.enums import RouteAccessibility, Season
 from app.db.models.boundary_barrier import BoundaryBarrier
 from app.db.models.boundary_route import BoundaryRoute
 from app.db.models.knowledge import KnowledgeFact
@@ -23,6 +28,7 @@ from app.db.models.regional_boundary import RegionalBoundary
 from app.db.models.region import Region
 from app.db.models.settlement import Settlement
 from app.db.models.subregion import Subregion
+from app.game.time.clock import current_season
 from app.game.world.content_pools import BOUNDARY_NAME_POOL_BY_BIOME
 from app.game.world.generation import derive_seed
 from app.game.world.generator import (
@@ -34,6 +40,33 @@ from app.game.world.generator import (
 )
 
 FRONTIER_LOCATION_TYPE = "region_frontier"
+
+_SEASON_ORDER = [Season.SPRING, Season.SUMMER, Season.AUTUMN, Season.WINTER]
+_SEVERE_DANGER_THRESHOLD = 8
+
+
+def _season_distance(a: str, b: str) -> int:
+    ia, ib = _SEASON_ORDER.index(Season(a)), _SEASON_ORDER.index(Season(b))
+    diff = abs(ia - ib)
+    return min(diff, len(_SEASON_ORDER) - diff)
+
+
+def route_accessibility_for_season(route: BoundaryRoute, season: str) -> str:
+    """OPEN/RISKY/NEARLY_IMPASSABLE — always computed fresh, never read
+    from a stored field. A route already severe (high danger_hint) is
+    never fully OPEN even in its best season."""
+    distance = _season_distance(route.harsh_season, season)
+    severe = route.danger_hint >= _SEVERE_DANGER_THRESHOLD
+
+    if distance == 0:
+        return RouteAccessibility.NEARLY_IMPASSABLE.value if severe else RouteAccessibility.RISKY.value
+    if distance == 1:
+        return RouteAccessibility.RISKY.value
+    return RouteAccessibility.RISKY.value if severe else RouteAccessibility.OPEN.value
+
+
+def current_route_accessibility(db: Session, campaign_id: str, route: BoundaryRoute) -> str:
+    return route_accessibility_for_season(route, current_season(db, campaign_id).value)
 
 
 def _outermost_subregion(db: Session, region_id: str) -> Subregion:

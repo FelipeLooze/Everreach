@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.enums import EventType
+from app.core.enums import EventType, Season
 from app.db.models.campaign import WorldTime
 from app.services.event_log import log_event
 
@@ -9,6 +9,26 @@ MINUTES_PER_HOUR = 60
 HOURS_PER_DAY = 24
 DAYS_PER_MONTH = 30
 MONTHS_PER_YEAR = 12
+
+# Phase 16E — Seasonal & Temporal Accessibility. The calendar already
+# exists (year/month/day above); a season is just a read of month,
+# never new persisted state. Northern-hemisphere-style mapping, purely
+# a convention — nothing else in Everreach currently depends on which
+# months are named which season.
+_SEASON_BY_MONTH = {
+    12: Season.WINTER, 1: Season.WINTER, 2: Season.WINTER,
+    3: Season.SPRING, 4: Season.SPRING, 5: Season.SPRING,
+    6: Season.SUMMER, 7: Season.SUMMER, 8: Season.SUMMER,
+    9: Season.AUTUMN, 10: Season.AUTUMN, 11: Season.AUTUMN,
+}
+
+
+def season_for_month(month: int) -> Season:
+    return _SEASON_BY_MONTH[month]
+
+
+def current_season(db: Session, campaign_id: str) -> Season:
+    return season_for_month(get_world_time(db, campaign_id).month)
 
 
 def get_world_time(db: Session, campaign_id: str) -> WorldTime:

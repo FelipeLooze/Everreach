@@ -44,6 +44,14 @@ class BoundaryRoute(Base):
 
     political_control: Mapped[str] = mapped_column(String, default="")
 
+    # Phase 16E — the one season this route is roughest in (mountain
+    # passes: WINTER; desert-like crossings: SUMMER heat; storm-prone
+    # water routes: AUTUMN). Accessibility itself is never stored — see
+    # app.game.world.boundaries.route_accessibility_for_season, which
+    # derives OPEN/RISKY/NEARLY_IMPASSABLE from this plus the current
+    # in-world season on demand.
+    harsh_season: Mapped[str] = mapped_column(String, default="WINTER")
+
     # False means this route is not common knowledge — nobody is granted
     # the corresponding KnowledgeFact automatically (16G discovers these
     # through exploration/NPC knowledge/old maps, not by default).

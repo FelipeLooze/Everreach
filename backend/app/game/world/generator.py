@@ -34,6 +34,7 @@ from app.game.world.content_pools import (
     ECOLOGICAL_BARRIER_POOL,
     GEOGRAPHICAL_BARRIER_HAZARDS_BY_BIOME,
     LOGISTICAL_BARRIER_POOL,
+    HARSH_SEASON_BY_BIOME,
     POLITICAL_BARRIER_POOL,
     ROUTE_TERM_BY_BIOME,
     ELDER_FLAVOR_OPTIONS,
@@ -302,11 +303,12 @@ def generate_boundary_routes(
 ) -> list[dict]:
     """Returns a list of route dicts (name, description, terrain,
     estimated_distance, danger_hint, political_control,
-    is_publicly_known) for one RegionalBoundary. Always at least 2
-    routes with genuinely different tradeoffs; a third, hidden one
-    exists about 40% of the time."""
+    is_publicly_known, harsh_season) for one RegionalBoundary. Always at
+    least 2 routes with genuinely different tradeoffs; a third, hidden
+    one exists about 40% of the time."""
     terms = ROUTE_TERM_BY_BIOME.get(str(biome), ROUTE_TERM_BY_BIOME["FRONTIER"])
     base_danger = danger_level_to_connection_danger(DangerLevel.MODERATE)
+    harsh_season = HARSH_SEASON_BY_BIOME.get(str(biome), "WINTER")
 
     def named(term: str) -> str:
         place = generate_settlement_name(rng, used_names)
@@ -321,6 +323,7 @@ def generate_boundary_routes(
             "danger_hint": base_danger + 1,
             "political_control": "Controlada por um posto ou guarnição local.",
             "is_publicly_known": True,
+            "harsh_season": harsh_season,
         },
         {
             "name": named(rng.choice(terms)),
@@ -330,6 +333,7 @@ def generate_boundary_routes(
             "danger_hint": base_danger + 5,
             "political_control": "",
             "is_publicly_known": True,
+            "harsh_season": harsh_season,
         },
     ]
 
@@ -343,6 +347,7 @@ def generate_boundary_routes(
                 "danger_hint": rng.randint(base_danger, base_danger + 8),
                 "political_control": "",
                 "is_publicly_known": False,
+                "harsh_season": harsh_season,
             }
         )
 

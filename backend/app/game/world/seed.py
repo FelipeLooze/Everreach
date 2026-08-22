@@ -34,11 +34,14 @@ from app.game.world.generator import (
     generate_subregion_geography,
     generate_subregion_identity,
     generate_subregion_names,
+    generate_pois,
     is_city_scale,
     minor_settlement_count,
+    poi_connection_danger,
     roll_compass_direction_pair,
     roll_inter_subregion_distance,
     roll_local_distance,
+    roll_poi_distance,
     settlement_population_tier,
     settlement_profile,
     travel_time_modifier_for_biome,
@@ -471,6 +474,32 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
                 major_location, minor_location, forward, back,
                 distance=roll_local_distance(local_rng),
                 danger=danger_level_to_connection_danger(subregion.danger_level),
+            )
+
+    # Phase 15I — Major Points of Interest. Persistent world truth, exists
+    # whether or not the protagonist ever finds it — connected (remotely,
+    # dangerously) to its subregion's major settlement so it's reachable
+    # under the existing travel system, never floating disconnected.
+    for subregion, major_location, _settlement in major_settlement_rows:
+        poi_rng = random.Random(derive_seed(subregion.generation_seed, "pois"))
+        for poi_name, poi_type, poi_description in generate_pois(poi_rng, used_location_names):
+            poi_location = Location(
+                region_id=region.id,
+                subregion_id=subregion.id,
+                name=poi_name,
+                type=poi_type,
+                description=poi_description,
+                discovery_status=DiscoveryStatus.UNKNOWN,
+                materialization_tier=1,
+            )
+            db.add(poi_location)
+            db.flush()
+            forward, back = roll_compass_direction_pair(poi_rng)
+            connect(
+                major_location, poi_location, forward, back,
+                distance=roll_poi_distance(poi_rng),
+                danger=poi_connection_danger(subregion.danger_level),
+                ctype=ConnectionType.TRAIL,
             )
 
     elder = NPC(

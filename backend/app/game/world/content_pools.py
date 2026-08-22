@@ -213,6 +213,21 @@ CITY_DISTRICTS = [
     ("Portões", "gates"),
 ]
 
+# Phase 15I — major Points of Interest. Persistent regardless of player
+# discovery, one pool shared across all subregions (not biome-keyed —
+# ruins/caves/forts can plausibly appear almost anywhere).
+POI_POOL = [
+    ("Ruínas de Telmar", "ruins", "Restos de pedra cobertos por vegetação, de um povoado cuja queda ninguém hoje consegue explicar."),
+    ("Caverna Funda", "cave", "Uma caverna extensa cujos túneis mais distantes nunca foram totalmente mapeados."),
+    ("Mina Abandonada", "abandoned_mine", "Uma escavação antiga, abandonada há tempo suficiente para que ninguém lembre exatamente por quê."),
+    ("Templo Esquecido", "temple_ruins", "Um templo em ruínas, ainda visitado por poucos peregrinos que conhecem o caminho."),
+    ("Forte em Ruínas", "fort_ruins", "Os restos de uma fortificação que já controlou a passagem por ali."),
+    ("Torre Solitária", "tower", "Uma torre de pedra isolada, cujo propósito original se perdeu no tempo."),
+    ("Sítio Sagrado", "sacred_site", "Um lugar que comunidades próximas ainda tratam com reverência."),
+    ("Campo de Batalha Antigo", "battlefield", "O terreno ainda guarda sinais de um conflito de gerações passadas."),
+    ("Vale das Sombras", "dangerous_valley", "Um vale estreito com reputação sinistra entre os que vivem por perto."),
+]
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

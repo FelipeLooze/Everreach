@@ -27,6 +27,7 @@ from app.game.world.content_pools import (
     CULTURAL_SUMMARIES,
     GEOGRAPHY_BY_BIOME,
     HISTORICAL_SUMMARIES,
+    POI_POOL,
     POPULATION_TIER_BY_TYPE,
     SERVICES_BY_SETTLEMENT_TYPE,
     SETTLEMENT_NAME_PARTS_A,
@@ -89,6 +90,49 @@ def roll_local_distance(rng: random.Random) -> float:
 
 def roll_compass_direction_pair(rng: random.Random) -> tuple[str, str]:
     return rng.choice(COMPASS_DIRECTION_PAIRS)
+
+
+# Phase 15I — Major Points of Interest. Deliberately remote: farther and
+# more dangerous than the settlement-local connections from Phase 15G/15H.
+POI_DISTANCE_RANGE = (1.5, 4.0)
+POI_COUNT_RANGE = (1, 2)
+POI_DANGER_BONUS = 2
+
+
+def generate_pois(rng: random.Random, used_names: set[str]) -> list[tuple[str, str, str]]:
+    """Picks 1-2 major POIs for a subregion, never reusing a name already
+    claimed elsewhere in the region (same discipline as settlements and
+    geography — Phase 15Q's own "duplicate names" check). The pool (9
+    archetypes) is smaller than a massive region's total POI demand, so
+    once every archetype name is claimed, later ones fall back to a
+    numbered variant rather than silently repeating a name or running
+    dry (same discipline as generate_settlement_name)."""
+    low, high = POI_COUNT_RANGE
+    count = rng.randint(low, high)
+    chosen = []
+    for _ in range(count):
+        available = [poi for poi in POI_POOL if poi[0] not in used_names]
+        if available:
+            name, poi_type, description = rng.choice(available)
+        else:
+            base_name, poi_type, description = rng.choice(POI_POOL)
+            suffix = 2
+            name = f"{base_name} {suffix}"
+            while name in used_names:
+                suffix += 1
+                name = f"{base_name} {suffix}"
+        used_names.add(name)
+        chosen.append((name, poi_type, description))
+    return chosen
+
+
+def roll_poi_distance(rng: random.Random) -> float:
+    low, high = POI_DISTANCE_RANGE
+    return round(rng.uniform(low, high), 1)
+
+
+def poi_connection_danger(subregion_danger_level: str) -> int:
+    return danger_level_to_connection_danger(subregion_danger_level) + POI_DANGER_BONUS
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 

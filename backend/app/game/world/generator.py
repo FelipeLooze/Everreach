@@ -41,6 +41,55 @@ from app.game.world.content_pools import (
 
 CITY_SCALE_TYPES = ("MAJOR_CITY", "CITY")
 
+# Phase 15H — Roads, Routes & Connections. Distance is in the same unit
+# app.game.travel.service already uses (BASE_MINUTES_PER_DISTANCE=15
+# minutes per unit at normal pace/speed) — never a new travel mechanic,
+# just data at a scale that makes crossing the region actually take days.
+INTER_SUBREGION_DISTANCE_RANGE = (80.0, 300.0)  # ~20-75 hours per hop
+LOCAL_DISTANCE_RANGE = (0.5, 2.5)  # same scale as the original hand-authored Cardal connections
+HARSH_TRAVEL_BIOMES = ("MOUNTAINS", "WETLANDS")
+
+DANGER_LEVEL_TO_CONNECTION_DANGER = {
+    "SAFE": 0,
+    "LOW": 1,
+    "MODERATE": 3,
+    "HIGH": 6,
+    "SEVERE": 10,
+}
+
+COMPASS_DIRECTION_PAIRS = [
+    ("norte", "sul"),
+    ("sul", "norte"),
+    ("leste", "oeste"),
+    ("oeste", "leste"),
+    ("nordeste", "sudoeste"),
+    ("sudoeste", "nordeste"),
+    ("noroeste", "sudeste"),
+    ("sudeste", "noroeste"),
+]
+
+
+def danger_level_to_connection_danger(danger_level: str) -> int:
+    return DANGER_LEVEL_TO_CONNECTION_DANGER[str(danger_level)]
+
+
+def travel_time_modifier_for_biome(biome: str) -> float:
+    return 1.3 if str(biome) in HARSH_TRAVEL_BIOMES else 1.0
+
+
+def roll_inter_subregion_distance(rng: random.Random) -> float:
+    low, high = INTER_SUBREGION_DISTANCE_RANGE
+    return round(rng.uniform(low, high), 1)
+
+
+def roll_local_distance(rng: random.Random) -> float:
+    low, high = LOCAL_DISTANCE_RANGE
+    return round(rng.uniform(low, high), 1)
+
+
+def roll_compass_direction_pair(rng: random.Random) -> tuple[str, str]:
+    return rng.choice(COMPASS_DIRECTION_PAIRS)
+
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 
 MIN_SUBREGIONS = 8

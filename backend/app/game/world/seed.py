@@ -27,6 +27,7 @@ from app.game.world.generator import (
     choose_major_settlement_type,
     choose_minor_settlement_type,
     city_districts,
+    danger_level_to_connection_danger,
     generate_region_identity,
     generate_settlement_name,
     generate_settlement_services,
@@ -35,8 +36,12 @@ from app.game.world.generator import (
     generate_subregion_names,
     is_city_scale,
     minor_settlement_count,
+    roll_compass_direction_pair,
+    roll_inter_subregion_distance,
+    roll_local_distance,
     settlement_population_tier,
     settlement_profile,
+    travel_time_modifier_for_biome,
 )
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
@@ -371,6 +376,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         distance: float,
         danger: int = 0,
         ctype=ConnectionType.PATH,
+        modifier: float = 1.0,
     ) -> tuple[LocationConnection, LocationConnection]:
         outward = LocationConnection(
             from_location_id=a.id,
@@ -379,6 +385,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             connection_type=ctype,
             distance=distance,
             danger=danger,
+            travel_time_modifier=modifier,
         )
         returning = LocationConnection(
             from_location_id=b.id,
@@ -387,6 +394,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             connection_type=ctype,
             distance=distance,
             danger=danger,
+            travel_time_modifier=modifier,
         )
         db.add_all([outward, returning])
         db.flush()
@@ -403,6 +411,67 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     connect(forest_edge, clearing, "noroeste", "sudeste", distance=1.5, danger=2)
     db.flush()
+
+    # Phase 15H — Roads, Routes & Connections. Distances use the same
+    # travel formula app.game.travel.service already owns (never a new
+    # travel mechanic) — just scaled up so crossing subregions actually
+    # takes days, not minutes. Non-anchor subregions form one chain (not a
+    # fully connected mesh — the world needs empty stretches, spec), and
+    # the existing "Estrada do Moinho" (already narrated as leading east
+    # "rumo às terras altas") is the literal bridge from Cardal into it.
+    if major_settlement_rows:
+        roads_rng = random.Random(derive_seed(region_seed, "roads"))
+        ordered_majors = sorted(major_settlement_rows, key=lambda row: row[0].order_index)
+
+        bridge_subregion, bridge_location, _bridge_settlement = ordered_majors[0]
+        bridge_forward, bridge_back = roll_compass_direction_pair(roads_rng)
+        connect(
+            road, bridge_location, bridge_forward, bridge_back,
+            distance=roll_inter_subregion_distance(roads_rng),
+            danger=danger_level_to_connection_danger(bridge_subregion.danger_level),
+            ctype=ConnectionType.ROAD,
+            modifier=travel_time_modifier_for_biome(bridge_subregion.biome),
+        )
+
+        for (prev_sub, prev_loc, _prev_settlement), (next_sub, next_loc, _next_settlement) in zip(
+            ordered_majors, ordered_majors[1:]
+        ):
+            forward, back = roll_compass_direction_pair(roads_rng)
+            connect(
+                prev_loc, next_loc, forward, back,
+                distance=roll_inter_subregion_distance(roads_rng),
+                danger=danger_level_to_connection_danger(next_sub.danger_level),
+                ctype=ConnectionType.ROAD,
+                modifier=travel_time_modifier_for_biome(next_sub.biome),
+            )
+
+    # Local connections: each subregion's major settlement to its own
+    # geography feature and to its own minor settlements — a subregion is
+    # internally traversable even before any inter-subregion road exists.
+    minor_by_subregion_id: dict[str, list[Location]] = {}
+    for minor_location in minor_settlement_locations:
+        minor_by_subregion_id.setdefault(minor_location.subregion_id, []).append(minor_location)
+    geography_by_subregion_id = {loc.subregion_id: loc for loc in geography_features}
+
+    for subregion, major_location, _settlement in major_settlement_rows:
+        local_rng = random.Random(derive_seed(subregion.generation_seed, "local_roads"))
+
+        geography_location = geography_by_subregion_id.get(subregion.id)
+        if geography_location is not None:
+            forward, back = roll_compass_direction_pair(local_rng)
+            connect(
+                major_location, geography_location, forward, back,
+                distance=roll_local_distance(local_rng),
+                danger=danger_level_to_connection_danger(subregion.danger_level),
+            )
+
+        for minor_location in minor_by_subregion_id.get(subregion.id, []):
+            forward, back = roll_compass_direction_pair(local_rng)
+            connect(
+                major_location, minor_location, forward, back,
+                distance=roll_local_distance(local_rng),
+                danger=danger_level_to_connection_danger(subregion.danger_level),
+            )
 
     elder = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,

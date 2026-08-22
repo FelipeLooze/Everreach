@@ -1,3 +1,5 @@
+import random
+
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
@@ -16,6 +18,7 @@ from app.db.models.location import Location, LocationConnection, LocationFeature
 from app.db.models.npc import NPC
 from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
+from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
 
@@ -29,8 +32,10 @@ REGION_DESCRIPTION = (
 INITIAL_PLAYER_FACT_KEYS = ("arrival_square_visible",)
 
 
-def create_campaign(db: Session, name: str) -> Campaign:
-    campaign = Campaign(name=name)
+def create_campaign(db: Session, name: str, world_seed: int | None = None) -> Campaign:
+    if world_seed is None:
+        world_seed = random.SystemRandom().getrandbits(63)
+    campaign = Campaign(name=name, world_seed=world_seed)
     db.add(campaign)
     db.flush()
 
@@ -47,11 +52,18 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     """Create the single starting region for a fresh campaign. Only ever called once,
     when the player starts the world — later regions are created as the world progresses
     (spec section 6), not implemented yet in the MVP."""
+    campaign = db.get(Campaign, campaign_id)
+    if campaign.world_seed is None:
+        # Self-heal saves created before Phase 15A introduced world_seed.
+        campaign.world_seed = random.SystemRandom().getrandbits(63)
+
     region = Region(
         campaign_id=campaign_id,
         name=REGION_NAME,
         description=REGION_DESCRIPTION,
         discovery_status=DiscoveryStatus.DISCOVERED,
+        generation_seed=derive_seed(campaign.world_seed, "region:0"),
+        generation_version=CURRENT_REGION_GENERATION_VERSION,
     )
     db.add(region)
     db.flush()

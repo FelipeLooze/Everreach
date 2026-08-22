@@ -14,6 +14,8 @@ class Campaign(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
+    world_seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     world_time: Mapped["WorldTime"] = relationship(
         back_populates="campaign", uselist=False, cascade="all, delete-orphan"
     )

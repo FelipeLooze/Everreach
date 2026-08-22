@@ -580,6 +580,20 @@ class GeographicPrecision(StrEnum):
     PRECISE = "PRECISE"
 
 
+class RumorAccuracy(StrEnum):
+    """Phase 17C — the backend's own private truth about how a rumor's
+    statement relates to Canon. Never exposed to the player directly
+    (spec's "DO NOT SPOIL RISK" pattern, reused from Phase 16F/16H) —
+    Logan only ever sees the rumor's statement text and his own
+    certainty about it, never this label."""
+
+    TRUE = "TRUE"
+    FALSE = "FALSE"
+    PARTIALLY_TRUE = "PARTIALLY_TRUE"
+    OUTDATED = "OUTDATED"
+    MISINTERPRETED = "MISINTERPRETED"
+
+
 class SimulatedPlayerArchetype(StrEnum):
     EXPLORER = "EXPLORER"
     TRAINER = "TRAINER"

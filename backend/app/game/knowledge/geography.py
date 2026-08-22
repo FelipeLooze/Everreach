@@ -116,22 +116,22 @@ def ensure_geographic_fact(
     return fact
 
 
-def grant_geographic_knowledge(
+def grant_fact_with_precision(
     db: Session,
     campaign_id: str,
+    fact_key: str,
     knower_type: KnowerType,
     knower_id: str,
-    subject_kind: str,
-    entity_id: str,
-    aspect: GeographicKnowledgeAspect,
     *,
     source: str = "system",
     certainty: KnowledgeCertainty = KnowledgeCertainty.CONFIRMED,
     precision: GeographicPrecision = GeographicPrecision.VAGUE,
 ) -> None:
-    """Raises ValueError (via teach_fact) if the aspect fact was never
-    established with ensure_geographic_fact — world truth must exist
-    before anyone can be taught it.
+    """The shared grant primitive behind grant_geographic_knowledge and
+    app.game.knowledge.rumors.grant_rumor — any fact_key already
+    established (ensure_geographic_fact or a rumor's own establish_rumor)
+    works here. Raises ValueError (via teach_fact) if fact_key doesn't
+    exist yet — world truth must exist before anyone can be taught it.
 
     precision defaults to VAGUE — first knowledge of anything is vague
     (spec's own Arven example: "somewhere south" long before "two weeks
@@ -141,7 +141,6 @@ def grant_geographic_knowledge(
     monotonically, the same discipline teach_fact already applies to
     certainty — a less-detailed regrant never erases a more-detailed
     one already held."""
-    fact_key = geographic_fact_key(subject_kind, entity_id, aspect)
     teach_fact(db, campaign_id, fact_key, knower_type, knower_id, source=source, certainty=certainty)
 
     fact = db.query(KnowledgeFact).filter(KnowledgeFact.campaign_id == campaign_id, KnowledgeFact.fact_key == fact_key).one()
@@ -160,7 +159,7 @@ def grant_geographic_knowledge(
         db.flush()
 
 
-def geographic_knowledge_precision(
+def grant_geographic_knowledge(
     db: Session,
     campaign_id: str,
     knower_type: KnowerType,
@@ -168,10 +167,27 @@ def geographic_knowledge_precision(
     subject_kind: str,
     entity_id: str,
     aspect: GeographicKnowledgeAspect,
-) -> GeographicPrecision | None:
-    """None means the knower doesn't know this aspect at all (absence =
-    ignorance, same convention as everywhere else in Knowledge)."""
+    *,
+    source: str = "system",
+    certainty: KnowledgeCertainty = KnowledgeCertainty.CONFIRMED,
+    precision: GeographicPrecision = GeographicPrecision.VAGUE,
+) -> None:
     fact_key = geographic_fact_key(subject_kind, entity_id, aspect)
+    grant_fact_with_precision(
+        db, campaign_id, fact_key, knower_type, knower_id,
+        source=source, certainty=certainty, precision=precision,
+    )
+
+
+def fact_knowledge_precision(
+    db: Session,
+    campaign_id: str,
+    knower_type: KnowerType,
+    knower_id: str,
+    fact_key: str,
+) -> GeographicPrecision | None:
+    """None means the knower doesn't know this fact at all (absence =
+    ignorance, same convention as everywhere else in Knowledge)."""
     row = (
         db.query(KnowledgeKnower.precision)
         .join(KnowledgeFact, KnowledgeFact.id == KnowledgeKnower.fact_id)
@@ -186,6 +202,19 @@ def geographic_knowledge_precision(
     if row is None or row[0] is None:
         return None
     return GeographicPrecision(row[0])
+
+
+def geographic_knowledge_precision(
+    db: Session,
+    campaign_id: str,
+    knower_type: KnowerType,
+    knower_id: str,
+    subject_kind: str,
+    entity_id: str,
+    aspect: GeographicKnowledgeAspect,
+) -> GeographicPrecision | None:
+    fact_key = geographic_fact_key(subject_kind, entity_id, aspect)
+    return fact_knowledge_precision(db, campaign_id, knower_type, knower_id, fact_key)
 
 
 def knows_geographic_aspect(

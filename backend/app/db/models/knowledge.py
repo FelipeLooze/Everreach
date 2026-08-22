@@ -33,6 +33,12 @@ class KnowledgeFact(Base):
         default=1,
         nullable=False,
     )
+    # Phase 17C — only ever set on a rumor fact (see
+    # app.game.knowledge.rumors.establish_rumor). Backend-only truth
+    # about how this rumor's statement relates to Canon
+    # (TRUE/FALSE/PARTIALLY_TRUE/OUTDATED/MISINTERPRETED) — never read
+    # by anything player-facing. NULL for every non-rumor fact.
+    rumor_accuracy: Mapped[str | None] = mapped_column(String, nullable=True)
 
 class KnowledgeKnower(Base):
     """Links a fact to whoever (player / NPC / simulated player) knows it.

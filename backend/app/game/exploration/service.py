@@ -45,11 +45,12 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import EventType, GeographicKnowledgeAspect, KnowerType
+from app.core.enums import DiscoverySignificance, EventType, GeographicKnowledgeAspect, KnowerType
 from app.db.models.character import Character
 from app.db.models.location import CharacterConnectionDiscovery, Location, LocationConnection
 from app.game.dice import d20
 from app.game.discovery.service import discover_connection, set_location_discovery
+from app.game.exploration.discovery_significance import assess_location_discovery_significance
 from app.game.knowledge.geography import ensure_geographic_fact, grant_geographic_knowledge
 from app.game.time.clock import advance_world_time
 from app.services.event_log import log_event
@@ -64,6 +65,7 @@ class ExplorationOutcome:
     minutes_spent: int
     found_connection_id: str | None = None
     found_location_id: str | None = None
+    significance: DiscoverySignificance | None = None
 
 
 def _undiscovered_outgoing_connections(db: Session, character_id: str, location_id: str) -> list[LocationConnection]:
@@ -121,6 +123,7 @@ def explore_current_location(
     discover_connection(db, character.id, found.id)
     destination = db.get(Location, found.to_location_id)
     set_location_discovery(db, character.id, destination.id, "DISCOVERED")
+    significance = assess_location_discovery_significance(destination)
 
     ensure_geographic_fact(
         db, campaign_id, "location", destination.id, GeographicKnowledgeAspect.EXISTENCE,
@@ -145,7 +148,7 @@ def explore_current_location(
     log_event(
         db, campaign_id, EventType.LOCATION_DISCOVERED,
         actor_type="character", actor_id=character.id,
-        payload={"location_id": destination.id, "source": "exploration"},
+        payload={"location_id": destination.id, "source": "exploration", "significance": significance.value},
     )
     log_event(
         db, campaign_id, EventType.EXPLORATION_ATTEMPTED,
@@ -158,4 +161,5 @@ def explore_current_location(
         minutes_spent=EXPLORATION_MINUTES,
         found_connection_id=found.id,
         found_location_id=destination.id,
+        significance=significance,
     )

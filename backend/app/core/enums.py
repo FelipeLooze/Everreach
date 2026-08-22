@@ -543,6 +543,19 @@ class KnowledgeCertainty(StrEnum):
     CONFIRMED = "CONFIRMED"
 
 
+class DiscoverySignificance(StrEnum):
+    """Phase 17L — not every discovered tree is an achievement (spec).
+    Attached to discovery event payloads so a later consumer (17Q —
+    Exploration Progression Integration, owned by Phase 8, not this
+    module) can react differently to a minor landmark than to finding
+    an entire settlement, without this module deciding any reward
+    itself."""
+
+    MINOR = "MINOR"
+    NOTABLE = "NOTABLE"
+    MAJOR = "MAJOR"
+
+
 class NavigationRisk(StrEnum):
     """Phase 17K — how likely a character is to get lost trying to reach
     somewhere, derived from actual route/direction knowledge (17A/17E),

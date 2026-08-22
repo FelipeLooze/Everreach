@@ -376,16 +376,29 @@ class SubregionIdentity(dict):
     reads better at a call site, identity.get(...) without a new import."""
 
 
-def generate_subregion_identity(rng: random.Random, *, is_anchor: bool = False) -> SubregionIdentity:
+def generate_subregion_identity(
+    rng: random.Random, *, is_anchor: bool = False, forced_biome: str | None = None
+) -> SubregionIdentity:
     """Rolls (biome, danger_level, population_density, culture_summary,
     economy_summary) for one subregion. The anchor subregion (containing
     the fixed starting village) is constrained to stay playable at game
     start — plains, no worse than LOW danger — per the spec's own "do not
     place unavoidable lethal threats directly on the starting character"
-    guidance; every other subregion rolls freely."""
+    guidance; every other subregion rolls freely.
+
+    forced_biome (Phase 16I) exists for a different reason: a newly
+    materialized neighboring Region's own first subregion should read as
+    a plausible continuation of whatever terrain the RegionalBoundary it
+    borders already represents (spec's 16H "must respect established
+    border facts") — unlike is_anchor, this does NOT constrain danger,
+    since a mountain border can be exactly as dangerous as the mountains
+    already established on the near side."""
     if is_anchor:
         biome = SubregionBiome.PLAINS
         danger_level = rng.choice([DangerLevel.SAFE, DangerLevel.LOW])
+    elif forced_biome is not None:
+        biome = forced_biome
+        danger_level = rng.choice(list(DangerLevel))
     else:
         biome = rng.choice(list(SubregionBiome))
         danger_level = rng.choice(list(DangerLevel))

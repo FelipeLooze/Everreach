@@ -39,6 +39,7 @@ from app.game.players.service import (
 )
 from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
+from app.game.world.region_content import connect_locations, generate_region_settlements_and_infrastructure
 from app.game.world.generator import (
     choose_major_settlement_type,
     choose_minor_settlement_type,
@@ -229,148 +230,6 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     db.add_all([village, forest_edge, road, creek, clearing])
     db.flush()
 
-    # Phase 15E — one major physical geography feature per non-anchor
-    # subregion, matching its biome. The anchor subregion already has its
-    # own bespoke geography above (forest/river/clearing); this only fills
-    # in the rest of the massive region.
-    geography_features = []
-    for subregion in subregions[1:]:
-        geo_rng = random.Random(derive_seed(subregion.generation_seed, "geography"))
-        geo_name, geo_type, geo_description = generate_subregion_geography(
-            geo_rng, subregion.biome, used_location_names
-        )
-        geography_features.append(
-            Location(
-                region_id=region.id,
-                subregion_id=subregion.id,
-                name=geo_name,
-                type=geo_type,
-                description=geo_description,
-                discovery_status=DiscoveryStatus.UNKNOWN,
-            )
-        )
-    db.add_all(geography_features)
-    db.flush()
-
-    # Phase 15F — Settlement Network. Every non-anchor subregion gets one
-    # major settlement (Tier 1, fully placed) plus a handful of minor
-    # settlement stubs (Tier 2 — named, but not deep-materialized yet; see
-    # Location.materialization_tier and Phase 15N/15P content-on-demand).
-    # Exactly one eligible subregion's major settlement is upgraded to
-    # MAJOR_CITY so the massive region has a single clear commercial peak,
-    # matching the spec's own example scale ("several major cities").
-    major_settlement_rows: list[tuple[Subregion, Location, Settlement]] = []
-    minor_settlement_locations: list[Location] = []
-
-    for subregion in subregions[1:]:
-        settlement_rng = random.Random(derive_seed(subregion.generation_seed, "settlements"))
-
-        major_type = choose_major_settlement_type(settlement_rng, subregion.biome)
-        major_name = generate_settlement_name(settlement_rng, used_location_names)
-        major_location = Location(
-            region_id=region.id,
-            subregion_id=subregion.id,
-            name=major_name,
-            type=major_type.lower(),
-            description="",
-            discovery_status=DiscoveryStatus.UNKNOWN,
-            materialization_tier=1,
-        )
-        major_settlement = Settlement(
-            settlement_type=major_type,
-            profile=settlement_profile(major_type),
-            population_tier=settlement_population_tier(major_type),
-        )
-        major_settlement_rows.append((subregion, major_location, major_settlement))
-
-        for _ in range(minor_settlement_count(settlement_rng)):
-            minor_type = choose_minor_settlement_type(settlement_rng)
-            minor_name = generate_settlement_name(settlement_rng, used_location_names)
-            minor_settlement_locations.append(
-                Location(
-                    region_id=region.id,
-                    subregion_id=subregion.id,
-                    name=minor_name,
-                    type=minor_type.lower(),
-                    description="",
-                    discovery_status=DiscoveryStatus.UNKNOWN,
-                    materialization_tier=2,
-                )
-            )
-
-    db.add_all([location for _sub, location, _settlement in major_settlement_rows])
-    db.add_all(minor_settlement_locations)
-    db.flush()
-
-    for subregion, location, settlement in major_settlement_rows:
-        settlement.location_id = location.id
-    db.add_all([settlement for _sub, _location, settlement in major_settlement_rows])
-    db.flush()
-
-    major_city_rng = random.Random(derive_seed(region_seed, "major_city"))
-    dense_candidates = [
-        (sub, loc, settlement)
-        for sub, loc, settlement in major_settlement_rows
-        if sub.population_density in (PopulationDensity.HIGH, PopulationDensity.DENSE)
-    ]
-    major_city_pool = dense_candidates or major_settlement_rows
-    if major_city_pool:
-        _chosen_sub, major_city_location, major_city_settlement = major_city_rng.choice(major_city_pool)
-        major_city_location.type = SettlementType.MAJOR_CITY.lower()
-        major_city_settlement.settlement_type = SettlementType.MAJOR_CITY
-        major_city_settlement.profile = settlement_profile(SettlementType.MAJOR_CITY)
-        major_city_settlement.population_tier = settlement_population_tier(SettlementType.MAJOR_CITY)
-        db.flush()
-
-    # Phase 15G — Settlement Internal Structure. Every major settlement
-    # already knows which services it has (backend already knows "Cardal
-    # has a blacksmith" — the protagonist doesn't have to walk around
-    # until the LLM decides). MAJOR_CITY/CITY settlements get an extra
-    # district layer; every other type attaches services directly.
-    # Two passes: districts must be flushed (and have a real id) before
-    # any service Location can reference one as its parent.
-    central_district_by_settlement: dict[str, Location] = {}
-    district_locations: list[Location] = []
-    for subregion, location, settlement in major_settlement_rows:
-        if not is_city_scale(settlement.settlement_type):
-            continue
-        for district_name, district_key in city_districts():
-            district_location = Location(
-                region_id=region.id,
-                subregion_id=subregion.id,
-                parent_location_id=location.id,
-                name=f"{district_name} de {location.name}",
-                type="district",
-                description="",
-                discovery_status=DiscoveryStatus.UNKNOWN,
-                materialization_tier=(1 if district_key == "central" else 2),
-            )
-            district_locations.append(district_location)
-            if district_key == "central":
-                central_district_by_settlement[location.id] = district_location
-    db.add_all(district_locations)
-    db.flush()
-
-    service_locations: list[Location] = []
-    for subregion, location, settlement in major_settlement_rows:
-        services = generate_settlement_services(settlement.settlement_type)
-        services_parent = central_district_by_settlement.get(location.id, location)
-        for service_name, service_type, service_description in services:
-            service_locations.append(
-                Location(
-                    region_id=region.id,
-                    subregion_id=subregion.id,
-                    parent_location_id=services_parent.id,
-                    name=f"{service_name} de {location.name}",
-                    type=service_type,
-                    description=service_description,
-                    discovery_status=DiscoveryStatus.UNKNOWN,
-                    materialization_tier=1,
-                )
-            )
-    db.add_all(service_locations)
-    db.flush()
-
     db.add_all(
         [
             LocationFeature(
@@ -417,163 +276,38 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     db.flush()
 
-    def connect(
-        a: Location,
-        b: Location,
-        direction_from_a: str,
-        direction_from_b: str,
-        distance: float,
-        danger: int = 0,
-        ctype=ConnectionType.PATH,
-        modifier: float = 1.0,
-    ) -> tuple[LocationConnection, LocationConnection]:
-        outward = LocationConnection(
-            from_location_id=a.id,
-            to_location_id=b.id,
-            direction=direction_from_a,
-            connection_type=ctype,
-            distance=distance,
-            danger=danger,
-            travel_time_modifier=modifier,
-        )
-        returning = LocationConnection(
-            from_location_id=b.id,
-            to_location_id=a.id,
-            direction=direction_from_b,
-            connection_type=ctype,
-            distance=distance,
-            danger=danger,
-            travel_time_modifier=modifier,
-        )
-        db.add_all([outward, returning])
-        db.flush()
-        return outward, returning
-
-    forest_connection, _ = connect(
-        village, forest_edge, "noroeste", "sudeste", distance=1.0, danger=1
+    forest_connection, _ = connect_locations(
+        db, village, forest_edge, "noroeste", "sudeste", distance=1.0, danger=1
     )
-    road_connection, _ = connect(
-        village, road, "leste", "oeste", distance=1.0, ctype=ConnectionType.ROAD
+    road_connection, _ = connect_locations(
+        db, village, road, "leste", "oeste", distance=1.0, ctype=ConnectionType.ROAD
     )
-    creek_connection, _ = connect(
-        village, creek, "sul", "norte", distance=0.8
+    creek_connection, _ = connect_locations(
+        db, village, creek, "sul", "norte", distance=0.8
     )
-    connect(forest_edge, clearing, "noroeste", "sudeste", distance=1.5, danger=2)
+    connect_locations(db, forest_edge, clearing, "noroeste", "sudeste", distance=1.5, danger=2)
     db.flush()
 
-    # Phase 15H — Roads, Routes & Connections. Distances use the same
-    # travel formula app.game.travel.service already owns (never a new
-    # travel mechanic) — just scaled up so crossing subregions actually
-    # takes days, not minutes. Non-anchor subregions form one chain (not a
-    # fully connected mesh — the world needs empty stretches, spec), and
-    # the anchor's own road location (generated to already lead "east
-    # toward the highlands" narratively) is the literal bridge from the
-    # starting village into it.
-    if major_settlement_rows:
-        roads_rng = random.Random(derive_seed(region_seed, "roads"))
-        ordered_majors = sorted(major_settlement_rows, key=lambda row: row[0].order_index)
-
-        bridge_subregion, bridge_location, _bridge_settlement = ordered_majors[0]
-        bridge_forward, bridge_back = roll_compass_direction_pair(roads_rng)
-        connect(
-            road, bridge_location, bridge_forward, bridge_back,
-            distance=roll_inter_subregion_distance(roads_rng),
-            danger=danger_level_to_connection_danger(bridge_subregion.danger_level),
-            ctype=ConnectionType.ROAD,
-            modifier=travel_time_modifier_for_biome(bridge_subregion.biome),
-        )
-
-        for (prev_sub, prev_loc, _prev_settlement), (next_sub, next_loc, _next_settlement) in zip(
-            ordered_majors, ordered_majors[1:]
-        ):
-            forward, back = roll_compass_direction_pair(roads_rng)
-            connect(
-                prev_loc, next_loc, forward, back,
-                distance=roll_inter_subregion_distance(roads_rng),
-                danger=danger_level_to_connection_danger(next_sub.danger_level),
-                ctype=ConnectionType.ROAD,
-                modifier=travel_time_modifier_for_biome(next_sub.biome),
-            )
-
-    # Local connections: each subregion's major settlement to its own
-    # geography feature and to its own minor settlements — a subregion is
-    # internally traversable even before any inter-subregion road exists.
-    minor_by_subregion_id: dict[str, list[Location]] = {}
-    for minor_location in minor_settlement_locations:
-        minor_by_subregion_id.setdefault(minor_location.subregion_id, []).append(minor_location)
-    geography_by_subregion_id = {loc.subregion_id: loc for loc in geography_features}
-
-    for subregion, major_location, _settlement in major_settlement_rows:
-        local_rng = random.Random(derive_seed(subregion.generation_seed, "local_roads"))
-
-        geography_location = geography_by_subregion_id.get(subregion.id)
-        if geography_location is not None:
-            forward, back = roll_compass_direction_pair(local_rng)
-            connect(
-                major_location, geography_location, forward, back,
-                distance=roll_local_distance(local_rng),
-                danger=danger_level_to_connection_danger(subregion.danger_level),
-            )
-
-        for minor_location in minor_by_subregion_id.get(subregion.id, []):
-            forward, back = roll_compass_direction_pair(local_rng)
-            connect(
-                major_location, minor_location, forward, back,
-                distance=roll_local_distance(local_rng),
-                danger=danger_level_to_connection_danger(subregion.danger_level),
-            )
-
-    # Phase 15O — fixes a real Phase 15G gap found while auditing
-    # interiors/sublocations: districts and services were created with a
-    # parent_location_id but no LocationConnection, making them
-    # permanently unreachable under the existing travel system (which
-    # requires an active, known connection to move at all). Short,
-    # low-danger connections — everything here is inside the same
-    # settlement.
-    internal_rng = random.Random(derive_seed(region_seed, "settlement_internal"))
-    locations_by_id = {
-        location.id: location
-        for _sub, location, _settlement in major_settlement_rows
-    }
-    locations_by_id.update({loc.id: loc for loc in district_locations})
-    locations_by_id.update({loc.id: loc for loc in service_locations})
-    for child in (*district_locations, *service_locations):
-        parent = locations_by_id[child.parent_location_id]
-        forward, back = roll_compass_direction_pair(internal_rng)
-        connect(parent, child, forward, back, distance=0.2, danger=0)
-
-    # Phase 15I — Major Points of Interest. Persistent world truth, exists
-    # whether or not the protagonist ever finds it — connected (remotely,
-    # dangerously) to its subregion's major settlement so it's reachable
-    # under the existing travel system, never floating disconnected.
-    for subregion, major_location, _settlement in major_settlement_rows:
-        poi_rng = random.Random(derive_seed(subregion.generation_seed, "pois"))
-        for poi_name, poi_type, poi_description in generate_pois(poi_rng, used_location_names):
-            poi_location = Location(
-                region_id=region.id,
-                subregion_id=subregion.id,
-                name=poi_name,
-                type=poi_type,
-                description=poi_description,
-                discovery_status=DiscoveryStatus.UNKNOWN,
-                materialization_tier=1,
-            )
-            db.add(poi_location)
-            db.flush()
-            forward, back = roll_compass_direction_pair(poi_rng)
-            connect(
-                major_location, poi_location, forward, back,
-                distance=roll_poi_distance(poi_rng),
-                danger=poi_connection_danger(subregion.danger_level),
-                ctype=ConnectionType.TRAIL,
-            )
+    # Phase 15H (generalized 16I — see app.game.world.region_content) —
+    # Settlements, districts/services, roads, POIs, organizations,
+    # economy baseline and regional threats for every non-anchor
+    # subregion. The anchor's own road Location (generated to already
+    # lead "east toward the highlands" narratively) is the literal
+    # bridge from the starting village into the chain — passed as
+    # entry_location; app.game.world.neighbor_region.materialize_neighbor_region
+    # (16I) calls the same function with entry_location=None since a
+    # second Region's external link is 16Q's job, made from the outside.
+    used_npc_names: set[str] = set()
+    major_settlement_rows = generate_region_settlements_and_infrastructure(
+        db, campaign_id, region, region_seed, subregions[1:],
+        used_location_names, used_npc_names, entry_location=road,
+    )
 
     # Phase 15 follow-up — the 3 starting NPCs keep their fixed ROLES
     # (many earlier-phase tests already look these up BY ROLE — "an
     # elder/leader", "a blacksmith", "an innkeeper" — as their standard
     # fixture), but their names and flavor text are generated per
     # campaign now, same as every other NPC Phase 15 creates.
-    used_npc_names: set[str] = set()
     starting_npc_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "starting_npcs"))
 
     elder_name = generate_npc_name(starting_npc_rng, used_npc_names)
@@ -666,76 +400,24 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     db.flush()
     for service_location in village_service_locations:
         forward, back = roll_compass_direction_pair(village_service_rng)
-        connect(village, service_location, forward, back, distance=0.2, danger=0)
+        connect_locations(db, village, service_location, forward, back, distance=0.2, danger=0)
 
-    # Phase 15J — Regional Organizations & Major NPCs. Every major
-    # settlement gets one organization (type matching the settlement's own
-    # SettlementType — a mining settlement gets a miners' guild, never a
-    # random type) and one named leader NPC who founds and leads it.
-    # Deliberately NOT every citizen — just the individual who matters
-    # structurally right now.
-    for subregion, major_location, _settlement in major_settlement_rows:
-        org_rng = random.Random(derive_seed(subregion.generation_seed, "organization"))
-
-        leader_name = generate_npc_name(org_rng, used_npc_names)
-        organization_type = organization_type_for_settlement(_settlement.settlement_type)
-        leader_title = leader_title_for_organization(organization_type)
-        personality, backstory = generate_leader_flavor(org_rng)
-        leader_npc = NPC(
-            campaign_id=campaign_id, region_id=region.id, location_id=major_location.id,
-            name=leader_name, role=leader_title,
-            personality=personality, backstory=backstory,
+    # Phase 15J (organizations), 15K (economy) and most of 15L (threats)
+    # for every non-anchor subregion now happen inside
+    # generate_region_settlements_and_infrastructure above. Only the
+    # anchor subregion's own threat row (it was never part of
+    # major_settlement_rows, which only ever covers subregions[1:])
+    # still needs generating here.
+    threat_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "threat"))
+    threat_type, threat_description = generate_threat(threat_rng)
+    db.add(
+        RegionalThreat(
+            subregion_id=anchor_subregion.id,
+            threat_type=threat_type,
+            intensity=threat_intensity_for_danger_level(anchor_subregion.danger_level),
+            description=threat_description,
         )
-        db.add(leader_npc)
-        db.flush()
-
-        organization = create_organization(
-            db, campaign_id,
-            organization_name_for_settlement(major_location.name, organization_type),
-            organization_type=OrganizationType(organization_type),
-            origin=OrganizationOrigin.NATIVE,
-            description=settlement_profile(_settlement.settlement_type),
-            visibility=OrganizationVisibility.PUBLIC,
-            headquarters_location_id=major_location.id,
-            founder_type=CombatActorType.NPC,
-            founder_id=leader_npc.id,
-        )
-        leader_role = create_role(db, organization, leader_title.capitalize(), rank_order=0)
-        join_organization(db, organization, CombatActorType.NPC, leader_npc.id, role_id=leader_role.id)
-
-    # Phase 15K — Regional Economy Baseline. Reuses Phase 14 in full: real
-    # wealth bands (never a price multiplier — a liquidity/narrative
-    # signal only, per Phase 14I) and real LocalSupplyLevel rows for each
-    # settlement's own export good. Baseline facts only — no simulated
-    # trade routes or years of pre-simulated economy.
-    for subregion, major_location, settlement in major_settlement_rows:
-        wealth_band = wealth_band_for_settlement(settlement.settlement_type)
-        set_settlement_wealth(db, campaign_id, major_location.id, SettlementWealthBand(wealth_band))
-
-        export_good_name = export_good_for_settlement(settlement.settlement_type)
-        if export_good_name is not None:
-            export_item = get_or_create_item(db, export_good_name)
-            supply_level = get_or_create_supply_level(db, campaign_id, major_location.id, export_item.id)
-            adjust_supply(
-                db, supply_level, EXPORT_SUPPLY_BONUS,
-                reason=f"{major_location.name} produz {export_good_name.lower()} localmente em abundância.",
-            )
-
-    # Phase 15L — Regional Threats, Wildlife & Ecology. Population/habitat
-    # abstraction only (one row per subregion, never individual
-    # creatures) — gives future world simulation something real to
-    # reference (e.g. "boars leave the forest, crops get damaged").
-    for subregion in subregions:
-        threat_rng = random.Random(derive_seed(subregion.generation_seed, "threat"))
-        threat_type, threat_description = generate_threat(threat_rng)
-        db.add(
-            RegionalThreat(
-                subregion_id=subregion.id,
-                threat_type=threat_type,
-                intensity=threat_intensity_for_danger_level(subregion.danger_level),
-                description=threat_description,
-            )
-        )
+    )
     db.flush()
 
     # Phase 15 follow-up — fact_keys stay the exact same internal strings

@@ -86,13 +86,26 @@ def validate_region_package(db: Session, region: Region) -> None:
             f"Assentamentos sem nenhuma LocationConnection: {sorted(unreachable_settlements)}."
         )
 
+    # Campaign-wide, not region-scoped: an organization headquartered in
+    # a different (also valid) Region must not be flagged just because
+    # its headquarters isn't among *this* Region's locations — the
+    # invariant being checked is "no dangling reference", not "every
+    # organization belongs to this Region" (only ever surfaced once a
+    # second Region could exist at all, Phase 16I).
+    all_campaign_location_ids = {
+        row[0]
+        for row in db.query(Location.id)
+        .join(Region, Location.region_id == Region.id)
+        .filter(Region.campaign_id == region.campaign_id)
+        .all()
+    }
     organizations = db.query(Organization).filter(Organization.campaign_id == region.campaign_id).all()
     for organization in organizations:
         if (
             organization.headquarters_location_id is not None
-            and organization.headquarters_location_id not in location_ids
+            and organization.headquarters_location_id not in all_campaign_location_ids
         ):
             raise RegionValidationError(
                 f"Organization {organization.id} referencia headquarters_location_id "
-                f"{organization.headquarters_location_id}, que não pertence a esta Region."
+                f"{organization.headquarters_location_id}, que não existe em nenhuma Region da campanha."
             )

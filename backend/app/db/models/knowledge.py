@@ -59,3 +59,10 @@ class KnowledgeKnower(Base):
     discovered_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+    # Phase 17B — how DETAILED this specific grant is (VAGUE/APPROXIMATE/
+    # GOOD/PRECISE), independent of certainty above (how SURE). Nullable:
+    # only geographic grants (app.game.knowledge.geography) populate
+    # this; an NPC's birthplace fact or any other non-geographic
+    # Knowledge grant has no meaningful precision axis and leaves it
+    # None.
+    precision: Mapped[str | None] = mapped_column(String, nullable=True)

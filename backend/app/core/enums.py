@@ -565,6 +565,21 @@ class GeographicKnowledgeAspect(StrEnum):
     RELATIONSHIPS = "RELATIONSHIPS"
 
 
+class GeographicPrecision(StrEnum):
+    """Phase 17B — how DETAILED a geographic grant is, independent of
+    KnowledgeCertainty (how SURE the knower is). A character can be
+    completely confident in vague information ("everyone agrees it's
+    somewhere south") or hold a very precise but doubted claim (an old,
+    possibly-outdated detailed map). Ranked monotonic-upgrade-only via
+    app.game.knowledge.geography.precision_rank, the same discipline
+    certainty_rank already applies to certainty."""
+
+    VAGUE = "VAGUE"
+    APPROXIMATE = "APPROXIMATE"
+    GOOD = "GOOD"
+    PRECISE = "PRECISE"
+
+
 class SimulatedPlayerArchetype(StrEnum):
     EXPLORER = "EXPLORER"
     TRAINER = "TRAINER"

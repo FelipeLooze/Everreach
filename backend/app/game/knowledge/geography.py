@@ -62,9 +62,20 @@ physical presence/travel-gating, a different concept from
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import GeographicKnowledgeAspect, KnowerType, KnowledgeCertainty
+from app.core.enums import GeographicKnowledgeAspect, GeographicPrecision, KnowerType, KnowledgeCertainty
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.game.npcs.service import knows, teach_fact
+
+_PRECISION_RANK = {
+    GeographicPrecision.VAGUE: 1,
+    GeographicPrecision.APPROXIMATE: 2,
+    GeographicPrecision.GOOD: 3,
+    GeographicPrecision.PRECISE: 4,
+}
+
+
+def precision_rank(precision: GeographicPrecision) -> int:
+    return _PRECISION_RANK[precision]
 
 
 def geographic_subject(subject_kind: str, entity_id: str) -> str:
@@ -116,12 +127,65 @@ def grant_geographic_knowledge(
     *,
     source: str = "system",
     certainty: KnowledgeCertainty = KnowledgeCertainty.CONFIRMED,
+    precision: GeographicPrecision = GeographicPrecision.VAGUE,
 ) -> None:
     """Raises ValueError (via teach_fact) if the aspect fact was never
     established with ensure_geographic_fact — world truth must exist
-    before anyone can be taught it."""
+    before anyone can be taught it.
+
+    precision defaults to VAGUE — first knowledge of anything is vague
+    (spec's own Arven example: "somewhere south" long before "two weeks
+    down the main road"). teach_fact itself knows nothing about
+    precision (it's a geography-only concept, not a general Knowledge
+    one); this wrapper upgrades KnowledgeKnower.precision afterward,
+    monotonically, the same discipline teach_fact already applies to
+    certainty — a less-detailed regrant never erases a more-detailed
+    one already held."""
     fact_key = geographic_fact_key(subject_kind, entity_id, aspect)
     teach_fact(db, campaign_id, fact_key, knower_type, knower_id, source=source, certainty=certainty)
+
+    fact = db.query(KnowledgeFact).filter(KnowledgeFact.campaign_id == campaign_id, KnowledgeFact.fact_key == fact_key).one()
+    knower = (
+        db.query(KnowledgeKnower)
+        .filter(
+            KnowledgeKnower.fact_id == fact.id,
+            KnowledgeKnower.knower_type == knower_type.value,
+            KnowledgeKnower.knower_id == knower_id,
+        )
+        .one()
+    )
+    current_precision = GeographicPrecision(knower.precision) if knower.precision else None
+    if current_precision is None or precision_rank(precision) > precision_rank(current_precision):
+        knower.precision = precision.value
+        db.flush()
+
+
+def geographic_knowledge_precision(
+    db: Session,
+    campaign_id: str,
+    knower_type: KnowerType,
+    knower_id: str,
+    subject_kind: str,
+    entity_id: str,
+    aspect: GeographicKnowledgeAspect,
+) -> GeographicPrecision | None:
+    """None means the knower doesn't know this aspect at all (absence =
+    ignorance, same convention as everywhere else in Knowledge)."""
+    fact_key = geographic_fact_key(subject_kind, entity_id, aspect)
+    row = (
+        db.query(KnowledgeKnower.precision)
+        .join(KnowledgeFact, KnowledgeFact.id == KnowledgeKnower.fact_id)
+        .filter(
+            KnowledgeFact.campaign_id == campaign_id,
+            KnowledgeFact.fact_key == fact_key,
+            KnowledgeKnower.knower_type == knower_type.value,
+            KnowledgeKnower.knower_id == knower_id,
+        )
+        .first()
+    )
+    if row is None or row[0] is None:
+        return None
+    return GeographicPrecision(row[0])
 
 
 def knows_geographic_aspect(

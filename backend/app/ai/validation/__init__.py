@@ -18,6 +18,7 @@ from app.ai.validation import spatial  # noqa: F401 — Phase 19H
 from app.ai.validation import capability  # noqa: F401 — Phase 19I
 from app.ai.validation import currency  # noqa: F401 — Phase 19J
 from app.ai.validation import npc_state  # noqa: F401 — Phase 19K
+from app.ai.validation import organizations  # noqa: F401 — Phase 19L
 
 __all__ = [
     "NarrativeProposal",

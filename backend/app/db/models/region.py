@@ -26,3 +26,9 @@ class Region(Base):
     # already-persisted worlds (see CURRENT_REGION_GENERATION_VERSION).
     generation_seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     generation_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+
+    # Phase 15B — macro identity, generated from generation_seed alongside
+    # (never instead of) the hand-authored `description` above.
+    climate_summary: Mapped[str] = mapped_column(String, default="")
+    cultural_summary: Mapped[str] = mapped_column(String, default="")
+    historical_summary: Mapped[str] = mapped_column(String, default="")

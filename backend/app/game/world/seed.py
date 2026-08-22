@@ -19,6 +19,7 @@ from app.db.models.npc import NPC
 from app.db.models.region import Region
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
+from app.game.world.generator import generate_region_identity
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
 
@@ -57,13 +58,20 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         # Self-heal saves created before Phase 15A introduced world_seed.
         campaign.world_seed = random.SystemRandom().getrandbits(63)
 
+    region_seed = derive_seed(campaign.world_seed, "region:0")
+    identity_rng = random.Random(derive_seed(region_seed, "identity"))
+    climate_summary, cultural_summary, historical_summary = generate_region_identity(identity_rng)
+
     region = Region(
         campaign_id=campaign_id,
         name=REGION_NAME,
         description=REGION_DESCRIPTION,
         discovery_status=DiscoveryStatus.DISCOVERED,
-        generation_seed=derive_seed(campaign.world_seed, "region:0"),
+        generation_seed=region_seed,
         generation_version=CURRENT_REGION_GENERATION_VERSION,
+        climate_summary=climate_summary,
+        cultural_summary=cultural_summary,
+        historical_summary=historical_summary,
     )
     db.add(region)
     db.flush()

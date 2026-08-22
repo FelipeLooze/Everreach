@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { getMapView } from "@/api/map";
 import type { MapViewData } from "@/types/game";
 import { InteractiveMap } from "@/features/map/InteractiveMap";
-import { discoveryStatusLabel, locationTypeLabel } from "@/utils/labels";
+import { connectionTypeLabel, discoveryStatusLabel, locationTypeLabel } from "@/utils/labels";
 
 export function MapPanel({
   campaignId,
@@ -43,6 +43,11 @@ export function MapPanel({
     );
   }
 
+  const locationName = (locationId: string) => {
+    const location = map.locations.find((item) => item.id === locationId);
+    return location?.name ?? "Local desconhecido";
+  };
+
   return (
     <div className="exploration-map">
       {map.regions.map((region) => {
@@ -61,7 +66,7 @@ export function MapPanel({
             <div className="map-section">
               <h5>Mapa espacial</h5>
 
-              <InteractiveMap locations={regionLocations} />
+              <InteractiveMap locations={regionLocations} routes={map.routes} />
 
               {regionLocations.some(
                 (location) =>
@@ -108,6 +113,43 @@ export function MapPanel({
           </section>
         );
       })}
+
+      <section className="map-section map-routes">
+        <h4>Rotas conhecidas</h4>
+
+        {map.routes.length === 0 ? (
+          <p className="panel-empty">
+            Nenhuma rota conhecida.
+          </p>
+        ) : (
+          <ul className="map-route-list">
+            {map.routes.map((route, index) => {
+              const fromName = locationName(route.from_location_id);
+              const toName = locationName(route.to_location_id);
+              const direction = route.direction ? `${route.direction} →` : "→";
+
+              return (
+                <li
+                  key={`${route.from_location_id}-${route.to_location_id}-${index}`}
+                  className="map-route-item"
+                >
+                  <div className="map-route-path">
+                    <span>{fromName}</span>
+                    <span className="map-route-direction">{direction}</span>
+                    <span>{toName}</span>
+                  </div>
+
+                  <div className="map-route-meta">
+                    {connectionTypeLabel(route.connection_type)}
+                    {" · distância "}
+                    {route.distance}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

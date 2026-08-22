@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 
-import type { MapViewLocation } from "@/types/game";
+import type { MapViewLocation, MapViewRoute } from "@/types/game";
 import {
   discoveryStatusLabel,
   geographicPrecisionLabel,
@@ -11,9 +11,7 @@ import {
  * Phase 20B — Interactive Map Foundation.
  *
  * Renders one region's known locations inside a pannable/zoomable SVG
- * viewport. Deliberately locations-only for now: known routes (20F)
- * are a separate future layer, added on top of this same viewBox
- * mechanism rather than by rebuilding it.
+ * viewport.
  *
  * World-space coordinates (Location.x/y) are normalized once into a
  * fixed 0-100 display space (deterministic — same character knowledge
@@ -33,6 +31,15 @@ import {
  * uncertainty circle with a "?" glyph, sized by precision tier. This is
  * a UI affordance, not a claim about position: it never encodes real
  * geography, so it cannot leak any.
+ *
+ * Phase 20F — Known Routes & Connections.
+ *
+ * Routes the backend already gated (app.game.map.view — a route only
+ * ever ships if both endpoints are visible) are drawn as lines between
+ * their placed positions, whichever kind those are (a certain pin or
+ * an uncertainty ring) — never a claim about the *geometry* of the
+ * road itself, just that a known connection exists between two known
+ * places.
  */
 
 const DISPLAY_SIZE = 100;
@@ -115,15 +122,21 @@ function clampViewBox(viewBox: ViewBox): ViewBox {
 
 export function InteractiveMap({
   locations,
+  routes = [],
   onSelect,
 }: {
   locations: MapViewLocation[];
+  routes?: MapViewRoute[];
   onSelect?: (locationId: string | null) => void;
 }) {
   const placed = useMemo(() => placeLocations(locations), [locations]);
   const placedById = useMemo(
     () => Object.fromEntries(placed.map((location) => [location.id, location])),
     [placed],
+  );
+  const drawableRoutes = useMemo(
+    () => routes.filter((route) => placedById[route.from_location_id] && placedById[route.to_location_id]),
+    [routes, placedById],
   );
 
   const [viewBox, setViewBox] = useState<ViewBox>({ x: 0, y: 0, w: DISPLAY_SIZE, h: DISPLAY_SIZE });
@@ -228,6 +241,24 @@ export function InteractiveMap({
         onWheel={handleWheel}
         onClick={() => select(null)}
       >
+        <g className="interactive-map-routes">
+          {drawableRoutes.map((route, index) => {
+            const from = placedById[route.from_location_id];
+            const to = placedById[route.to_location_id];
+            return (
+              <line
+                key={`${route.from_location_id}-${route.to_location_id}-${index}`}
+                data-testid={`map-edge-${route.from_location_id}-${route.to_location_id}`}
+                x1={from.displayX}
+                y1={from.displayY}
+                x2={to.displayX}
+                y2={to.displayY}
+                className="map-route-line"
+              />
+            );
+          })}
+        </g>
+
         {placed.map((location) => {
           const precisionClass = (location.precision ?? "unknown").toLowerCase();
           const uncertaintyRadius: number = location.precision

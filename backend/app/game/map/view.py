@@ -62,6 +62,20 @@ concern from filtering this same flat knowledge-gated list). An
 unrecognized or not-yet-known scope target returns empty data rather
 than falling back to the unscoped view — silently ignoring an invalid
 scope would let a caller accidentally see more than requested.
+
+Phase 20F — Known Routes & Connections.
+
+"Knowing two places does not imply knowing the route between them" is
+already real in this codebase: CharacterConnectionDiscovery (gating
+app.game.travel.service.move_character itself) is tracked completely
+independently from CharacterLocationDiscovery/location Knowledge —
+known_map's own connections query already requires it. routes below
+just surfaces that existing, already-correct gate through the Map View
+contract instead of re-deriving anything. A route is only ever
+included once BOTH its endpoints survive the current scope — so
+scoping to one Region or Subregion (20E) automatically scopes routes
+too, and the "world" scope (no location detail) yields no routes
+either, with zero extra logic.
 """
 from dataclasses import dataclass, field
 
@@ -117,20 +131,33 @@ class MapViewRegion:
 
 
 @dataclass(frozen=True)
+class MapViewRoute:
+    from_location_id: str
+    to_location_id: str
+    direction: str | None
+    connection_type: str
+    distance: float
+    danger: int
+
+
+@dataclass(frozen=True)
 class MapViewData:
     """Deliberately the smallest extensible shape for 20A — a future
-    subphase adds fields (routes, rumors, physical-map sources, player
+    subphase adds fields (rumors, physical-map sources, player
     annotations, LOD/viewport scoping), not restructures this one.
 
     20B adds `regions` — grouping metadata the interactive frontend needs
     to render locations by region, gated by the same
-    explicitly_knows_name convention the old /map route already used."""
+    explicitly_knows_name convention the old /map route already used.
+
+    20F adds `routes` — see module docstring."""
 
     campaign_id: str
     character_id: str
     scope: str | None
     regions: list[MapViewRegion] = field(default_factory=list)
     locations: list[MapViewLocation] = field(default_factory=list)
+    routes: list[MapViewRoute] = field(default_factory=list)
 
 
 def _knows_name_aspect(
@@ -316,10 +343,26 @@ def get_map_view(
 
     regions, locations = _apply_scope(regions, locations, scope)
 
+    visible_location_ids = {location.id for location in locations}
+    routes = [
+        MapViewRoute(
+            from_location_id=connection.from_location_id,
+            to_location_id=connection.to_location_id,
+            direction=connection.direction,
+            connection_type=connection.connection_type,
+            distance=connection.distance,
+            danger=connection.danger,
+        )
+        for connection in data["connections"]
+        if connection.from_location_id in visible_location_ids
+        and connection.to_location_id in visible_location_ids
+    ]
+
     return MapViewData(
         campaign_id=campaign_id,
         character_id=character_id,
         scope=scope,
         regions=regions,
         locations=locations,
+        routes=routes,
     )

@@ -26,9 +26,19 @@ class MapViewLocationSchema(BaseModel):
     known_aspects: list[str]
 
 
+class MapViewRouteSchema(BaseModel):
+    from_location_id: str
+    to_location_id: str
+    direction: str | None
+    connection_type: str
+    distance: float
+    danger: int
+
+
 class MapViewDataSchema(BaseModel):
     campaign_id: str
     character_id: str
     scope: str | None
     regions: list[MapViewRegionSchema]
     locations: list[MapViewLocationSchema]
+    routes: list[MapViewRouteSchema]

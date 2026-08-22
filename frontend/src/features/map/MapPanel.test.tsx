@@ -40,6 +40,7 @@ describe("MapPanel", () => {
           discovery_status: "VISITED",
         },
       ],
+      routes: [],
     });
   });
 
@@ -99,6 +100,16 @@ describe("MapPanel", () => {
           discovery_status: "DISCOVERED",
         },
       ],
+      routes: [
+        {
+          from_location_id: "location_1",
+          to_location_id: "location_2",
+          direction: "noroeste",
+          connection_type: "PATH",
+          distance: 1,
+          danger: 1,
+        },
+      ],
     });
 
     render(
@@ -110,6 +121,13 @@ describe("MapPanel", () => {
 
     expect(
       await screen.findByText("Vale Verdejante"),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Rotas conhecidas")).toBeInTheDocument();
+    expect(screen.getByText("noroeste →")).toBeInTheDocument();
+    expect(screen.getByText("trilha · distância 1")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("map-edge-location_1-location_2"),
     ).toBeInTheDocument();
 
     expect(screen.getAllByText("Cardal").length).toBeGreaterThan(0);
@@ -160,6 +178,7 @@ describe("MapPanel", () => {
           discovery_status: "RUMORED",
         },
       ],
+      routes: [],
     });
 
     render(

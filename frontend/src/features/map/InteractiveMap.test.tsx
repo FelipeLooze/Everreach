@@ -2,13 +2,14 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { InteractiveMap } from "@/features/map/InteractiveMap";
-import type { MapViewLocation } from "@/types/game";
+import type { MapViewLocation, MapViewRoute } from "@/types/game";
 
 const locations: MapViewLocation[] = [
   {
     id: "location_1",
     region_id: "region_1",
     subregion_id: null,
+    known_aspects: ["EXISTENCE"],
     type: "village",
     name: "Cardal",
     precision: "PRECISE",
@@ -20,6 +21,7 @@ const locations: MapViewLocation[] = [
     id: "location_2",
     region_id: "region_1",
     subregion_id: null,
+    known_aspects: ["EXISTENCE"],
     type: "forest",
     name: "Bosque",
     precision: "APPROXIMATE",
@@ -32,6 +34,40 @@ const locations: MapViewLocation[] = [
 describe("InteractiveMap", () => {
   afterEach(cleanup);
 
+  it("draws a line for a route whose endpoints are both visible", () => {
+    const routes: MapViewRoute[] = [
+      {
+        from_location_id: "location_1",
+        to_location_id: "location_2",
+        direction: "leste",
+        connection_type: "PATH",
+        distance: 3,
+        danger: 0,
+      },
+    ];
+
+    render(<InteractiveMap locations={locations} routes={routes} />);
+
+    expect(screen.getByTestId("map-edge-location_1-location_2")).toBeInTheDocument();
+  });
+
+  it("omits a route whose endpoint is not among the visible locations", () => {
+    const routes: MapViewRoute[] = [
+      {
+        from_location_id: "location_1",
+        to_location_id: "location_never_shown",
+        direction: null,
+        connection_type: "PATH",
+        distance: 3,
+        danger: 0,
+      },
+    ];
+
+    render(<InteractiveMap locations={locations} routes={routes} />);
+
+    expect(screen.queryByTestId("map-edge-location_1-location_never_shown")).not.toBeInTheDocument();
+  });
+
   it("renders a node for every location, positioned or not", () => {
     render(
       <InteractiveMap
@@ -41,6 +77,7 @@ describe("InteractiveMap", () => {
             id: "location_3",
             region_id: "region_1",
             subregion_id: null,
+            known_aspects: ["EXISTENCE"],
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -66,6 +103,7 @@ describe("InteractiveMap", () => {
             id: "location_3",
             region_id: "region_1",
             subregion_id: null,
+            known_aspects: ["EXISTENCE"],
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -89,6 +127,7 @@ describe("InteractiveMap", () => {
             id: "location_3",
             region_id: "region_1",
             subregion_id: null,
+            known_aspects: ["EXISTENCE"],
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -164,6 +203,7 @@ describe("InteractiveMap", () => {
             id: "location_3",
             region_id: "region_1",
             subregion_id: null,
+            known_aspects: ["EXISTENCE"],
             type: "generic",
             name: null,
             precision: "VAGUE",

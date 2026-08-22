@@ -14,6 +14,7 @@ from app.core.enums import (
     CombatActorType,
     DiscoveryStatus,
     KnowerType,
+    KnowledgeDocumentType,
     MemoryOwnerType,
     NoticeStatus,
     OrganizationMembershipStatus,
@@ -22,6 +23,10 @@ from app.core.enums import (
     SimulatedPlayerStatus,
 )
 from app.core.logging import get_logger
+from app.ai.retrieval.access import knowledge_aware_documents
+from app.ai.retrieval.budget import fit_to_budget, format_ranked_documents
+from app.ai.retrieval.ranking import rank_documents
+from app.ai.retrieval.semantic import ScoredDocument
 from app.db.models.location import (
     CharacterConnectionDiscovery,
     CharacterLocationDiscovery,
@@ -64,6 +69,10 @@ MAX_ACTIVE_QUESTS = 6
 MAX_FACT_CHARS = 320
 MAX_DESCRIPTION_CHARS = 600
 MAX_RELEVANT_MEMORIES = 4
+# Phase 18N — the OPTIONAL retrieved long-term knowledge tail (priority
+# level 9); small on purpose relative to the direct-query sections above,
+# which stay mandatory and unbounded by this budget.
+RETRIEVED_CONTEXT_CHAR_BUDGET = 2000
 
 
 class HistoryEntry(Protocol):
@@ -684,6 +693,67 @@ def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
     )
 
 
+_RETRIEVED_LONG_TERM_DOCUMENT_TYPES = [
+    KnowledgeDocumentType.IMPORTANT_HISTORY,
+    KnowledgeDocumentType.RELATIONSHIP,
+]
+
+
+def _retrieved_long_term_context(
+    db: Session,
+    state: GameStateSnapshot,
+    active_npc: NPC | None,
+    scene_subjects: Sequence[str],
+) -> str:
+    """Phase 18N — Context Builder Integration.
+
+    The OPTIONAL retrieved tail (priority level 9: relevant long-term
+    history) appended AFTER the existing direct-query NPC/PLAYER memory
+    sections above — this never replaces them, per the spec's explicit
+    "do not replace the Context Builder with RAG". Every candidate comes
+    from knowledge_aware_documents (Phase 18I), so nothing a knower
+    lacks access to can appear here regardless of how it ranks.
+
+    No LLMService is threaded through build_context — that would be a
+    much larger, separate integration than this subphase's scope — so
+    the semantic-similarity component of ranking (Phase 18H) stays
+    neutral (0.0) here; entity-match/recency/importance (Phase 18K)
+    still meaningfully order the result. A consumer that does have an
+    LLMService (Phase 18O's Narrator retrieval) may build a richer,
+    semantically-ranked query on the same pipeline.
+
+    Ranked per-knower (player, then the active NPC) before merging: a
+    single hard-filter pass in app.ai.retrieval.ranking.rank_documents
+    only ever checks one knower at a time, so combining two knowers'
+    candidates before ranking would incorrectly drop the NPC's own
+    accessible documents against the player's access rules.
+    """
+    current_world_minute = state.world_time.total_minutes()
+
+    def _ranked_for(knower_type: KnowerType, knower_id: str):
+        candidates = knowledge_aware_documents(
+            db, state.campaign_id, knower_type, knower_id,
+            document_types=_RETRIEVED_LONG_TERM_DOCUMENT_TYPES,
+        )
+        return rank_documents(
+            db, state.campaign_id,
+            [ScoredDocument(document, 0.0) for document in candidates],
+            knower_type, knower_id,
+            current_world_minute=current_world_minute,
+            scene_subjects=scene_subjects,
+        )
+
+    merged = _ranked_for(KnowerType.PLAYER, state.character.id)
+    if active_npc is not None:
+        merged = merged + _ranked_for(KnowerType.NPC, active_npc.id)
+    merged.sort(key=lambda ranked: ranked.score, reverse=True)
+
+    budgeted = fit_to_budget(merged, max_chars=RETRIEVED_CONTEXT_CHAR_BUDGET)
+    if not budgeted.included:
+        return "RELEVANT LONG-TERM KNOWLEDGE\n- none recalled"
+    return format_ranked_documents(budgeted.included)
+
+
 def build_context(
     db: Session,
     state: GameStateSnapshot,
@@ -1232,6 +1302,7 @@ def build_context(
         player_knowledge_section,
         npc_memory_section,
         player_memory_section,
+        _retrieved_long_term_context(db, state, active_npc, scene_subjects),
         "\n".join(input_canon_lines),
         "\n".join(quest_lines),
         "\n".join(technique_lines),

@@ -543,6 +543,17 @@ class KnowledgeCertainty(StrEnum):
     CONFIRMED = "CONFIRMED"
 
 
+class NavigationRisk(StrEnum):
+    """Phase 17K — how likely a character is to get lost trying to reach
+    somewhere, derived from actual route/direction knowledge (17A/17E),
+    never a flat context-free chance (spec explicitly rejects "random
+    10% chance to get lost")."""
+
+    LOW = "LOW"
+    MODERATE = "MODERATE"
+    HIGH = "HIGH"
+
+
 class ExpeditionStatus(StrEnum):
     """Phase 17I — a planned journey's lifecycle. Terminal states mirror
     the spec's own list of possible outcomes (success/partial success/
@@ -938,6 +949,7 @@ class EventType(StrEnum):
     REGION_MATERIALIZATION_FULFILLED = "REGION_MATERIALIZATION_FULFILLED"
     REGION_MATERIALIZATION_REJECTED = "REGION_MATERIALIZATION_REJECTED"
     EXPLORATION_ATTEMPTED = "EXPLORATION_ATTEMPTED"
+    NAVIGATION_HAZARD_ENCOUNTERED = "NAVIGATION_HAZARD_ENCOUNTERED"
 
 class TravelPace(StrEnum):
     SLOW = "SLOW"

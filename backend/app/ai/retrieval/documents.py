@@ -89,6 +89,31 @@ def documents_for_source(
     return query.order_by(IndexedKnowledgeDocument.document_type).all()
 
 
+def documents_with_source_prefix(
+    db: Session,
+    campaign_id: str,
+    source_type: KnowledgeSourceType,
+    source_id_prefix: str,
+    *,
+    document_types: list[KnowledgeDocumentType] | None = None,
+) -> list[IndexedKnowledgeDocument]:
+    """For compound source_ids (Phase 18D's "{npc_id}:{character_id}"
+    relationship pairing, Phase 18F's "{organization_id}:{action_id}"
+    per-action institutional records) where callers need every document
+    under one entity's id, not one exact compound key."""
+    query = db.query(IndexedKnowledgeDocument).filter(
+        IndexedKnowledgeDocument.campaign_id == campaign_id,
+        IndexedKnowledgeDocument.source_type == source_type.value,
+        IndexedKnowledgeDocument.source_id.like(f"{source_id_prefix}:%"),
+        IndexedKnowledgeDocument.is_current.is_(True),
+    )
+    if document_types:
+        query = query.filter(
+            IndexedKnowledgeDocument.document_type.in_([t.value for t in document_types])
+        )
+    return query.order_by(IndexedKnowledgeDocument.generated_at.desc()).all()
+
+
 def current_documents(
     db: Session,
     campaign_id: str,

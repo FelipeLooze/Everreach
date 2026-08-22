@@ -72,14 +72,26 @@ class MapViewLocation:
 
 
 @dataclass(frozen=True)
+class MapViewRegion:
+    id: str
+    name: str | None
+    discovery_status: str
+
+
+@dataclass(frozen=True)
 class MapViewData:
     """Deliberately the smallest extensible shape for 20A — a future
     subphase adds fields (routes, rumors, physical-map sources, player
-    annotations, LOD/viewport scoping), not restructures this one."""
+    annotations, LOD/viewport scoping), not restructures this one.
+
+    20B adds `regions` — grouping metadata the interactive frontend needs
+    to render locations by region, gated by the same
+    explicitly_knows_name convention the old /map route already used."""
 
     campaign_id: str
     character_id: str
     scope: str | None
+    regions: list[MapViewRegion] = field(default_factory=list)
     locations: list[MapViewLocation] = field(default_factory=list)
 
 
@@ -140,9 +152,23 @@ def get_map_view(
             )
         )
 
+    regions = []
+    for region in data["regions"]:
+        name_known = explicitly_knows_name(
+            db, campaign_id, KnowerType.PLAYER, character_id, region.name
+        )
+        regions.append(
+            MapViewRegion(
+                id=region.id,
+                name=region.name if name_known else None,
+                discovery_status=region.discovery_status,
+            )
+        )
+
     return MapViewData(
         campaign_id=campaign_id,
         character_id=character_id,
         scope=scope,
+        regions=regions,
         locations=locations,
     )

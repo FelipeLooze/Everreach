@@ -31,6 +31,13 @@ const DISCOVERY_STATUS_LABELS: Record<string, string> = {
   MAPPED: "mapeado",
 };
 
+const GEOGRAPHIC_PRECISION_LABELS: Record<string, string> = {
+  VAGUE: "vago",
+  APPROXIMATE: "aproximado",
+  GOOD: "bom",
+  PRECISE: "preciso",
+};
+
 const NPC_ACTIVITY_LABELS: Record<string, string> = {
   RESTING: "descansando",
   WORKING: "trabalhando",
@@ -141,6 +148,7 @@ export const locationTypeLabel = (type: string) => translate(LOCATION_TYPE_LABEL
 const CONNECTION_TYPE_LABELS: Record<string, string> = {PATH: "trilha",ROAD: "estrada",};
 export const characterAttributeLabel = (key: string) => translate(CHARACTER_ATTRIBUTE_LABELS, key);
 export const discoveryStatusLabel = (status: string) => translate(DISCOVERY_STATUS_LABELS, status);
+export const geographicPrecisionLabel = (precision: string) => translate(GEOGRAPHIC_PRECISION_LABELS, precision);
 export const npcActivityLabel = (activity: string) => translate(NPC_ACTIVITY_LABELS, activity);
 export const questStatusLabel = (status: string) => translate(QUEST_STATUS_LABELS, status);
 export const techniqueTypeLabel = (type: string) => translate(TECHNIQUE_TYPE_LABELS, type);

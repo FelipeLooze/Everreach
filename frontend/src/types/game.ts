@@ -394,6 +394,36 @@ export interface MapData {
   connections: MapConnection[];
 }
 
+// Phase 20A/20B — the character-specific Map View projection
+// (app.game.map.view.MapViewData). Deliberately a different, smaller
+// shape than MapData above: no connections yet (20F), precision is
+// always present (never a raw discovery-status inference the frontend
+// has to redo).
+export interface MapViewRegion {
+  id: string;
+  name: string | null;
+  discovery_status: string;
+}
+
+export interface MapViewLocation {
+  id: string;
+  region_id: string;
+  type: string;
+  name: string | null;
+  precision: string | null;
+  x: number | null;
+  y: number | null;
+  discovery_status: string;
+}
+
+export interface MapViewData {
+  campaign_id: string;
+  character_id: string;
+  scope: string | null;
+  regions: MapViewRegion[];
+  locations: MapViewLocation[];
+}
+
 export interface JournalEvent {
   id: string;
   event_type: string;

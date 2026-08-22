@@ -4,12 +4,41 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.game.map.service import known_map
+from app.game.map.view import get_map_view
 from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
+from app.schemas.map_view import MapViewDataSchema
 from app.core.enums import DiscoveryStatus, KnowerType
 from app.db.models.character import Character
 from app.game.knowledge.service import explicitly_knows_name
 
 router = APIRouter(prefix="/api/campaigns", tags=["map"])
+
+
+def _load_character(db: Session, campaign_id: str, character_id: str) -> Character:
+    if db.get(Campaign, campaign_id) is None:
+        raise HTTPException(status_code=404, detail="Campanha não encontrada")
+
+    character = db.get(Character, character_id)
+    if character is None or character.campaign_id != campaign_id:
+        raise HTTPException(status_code=404, detail="Personagem não encontrado nesta campanha")
+
+    return character
+
+
+@router.get("/{campaign_id}/map-view", response_model=MapViewDataSchema)
+def get_player_map_view(
+    campaign_id: str,
+    character_id: str,
+    scope: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Phase 20A/20B — the character-specific Map View projection, the
+    contract the interactive frontend map (20B onward) consumes. Unlike
+    /map (Phase 1, kept for backward compatibility), this always applies
+    Phase 17B precision so vague/approximate Knowledge never leaks exact
+    authoritative coordinates."""
+    _load_character(db, campaign_id, character_id)
+    return get_map_view(db, campaign_id, character_id, scope=scope)
 
 @router.get("/{campaign_id}/map", response_model=MapResponse)
 def get_map(
@@ -17,19 +46,7 @@ def get_map(
     character_id: str,
     db: Session = Depends(get_db),
 ):
-    if db.get(Campaign, campaign_id) is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Campanha não encontrada",
-        )
-
-    character = db.get(Character, character_id)
-
-    if character is None or character.campaign_id != campaign_id:
-        raise HTTPException(
-            status_code=404,
-            detail="Personagem não encontrado nesta campanha",
-        )
+    character = _load_character(db, campaign_id, character_id)
 
     data = known_map(
         db,

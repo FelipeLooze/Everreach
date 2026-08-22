@@ -7,6 +7,7 @@ from app.core.enums import CharacterStatus, CombatActorType, EventType, Recovery
 from app.db.models.character import Character
 from app.db.models.recovery import CharacterRecovery
 from app.game.combat.encounters import get_active_encounter_for_actor
+from app.game.survival.service import stamina_recovery_multiplier
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
 
@@ -86,12 +87,14 @@ def recover_character(
         "mana": float(character.mana_current),
         "stamina": float(character.stamina_current),
     }
+    ratios = dict(_RECOVERY_RATIOS)
+    ratios["stamina"] *= stamina_recovery_multiplier(character)
     after = {
         key: min(
             float(getattr(character, f"{key}_max")),
             value
             + round(
-                float(getattr(character, f"{key}_max")) * _RECOVERY_RATIOS[key],
+                float(getattr(character, f"{key}_max")) * ratios[key],
                 1,
             ),
         )

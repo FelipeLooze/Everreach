@@ -40,6 +40,7 @@ from app.game.skills.technique_experimentation import (
     TECHNIQUE_EXPERIMENT_MINUTES,
     resolve_technique_experiment,
 )
+from app.game.survival import service as survival_service
 from app.game.skills.techniques import (
     TECHNIQUE_ACTION_MINUTES,
     resolve_named_technique,
@@ -269,6 +270,7 @@ def resolve_action(
                 campaign_id,
                 minutes,
             )
+            survival_service.apply_survival_decay(db, campaign_id, character)
 
         world_simulation.tick(
             db,

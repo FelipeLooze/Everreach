@@ -42,6 +42,20 @@ class Character(Base):
     stamina_current: Mapped[float] = mapped_column(Float, default=20)
     stamina_max: Mapped[float] = mapped_column(Float, default=20)
 
+    # Survival (fome/sede): deliberately slow-draining — see
+    # app.game.survival.service for the decay rates and the ENDURANCE-scaled
+    # max formula. hunger_max/thirst_max start at the ENDURANCE=10 baseline
+    # and get recalculated lazily (never eagerly on every attribute change)
+    # by recalculate_survival_max. survival_updated_at_minute stays NULL
+    # until the first time apply_survival_decay actually runs for this
+    # character — a character that never has time advance for them (most
+    # tests) never silently drains.
+    hunger_current: Mapped[float] = mapped_column(Float, nullable=False, default=100.0, server_default="100.0")
+    hunger_max: Mapped[float] = mapped_column(Float, nullable=False, default=100.0, server_default="100.0")
+    thirst_current: Mapped[float] = mapped_column(Float, nullable=False, default=100.0, server_default="100.0")
+    thirst_max: Mapped[float] = mapped_column(Float, nullable=False, default=100.0, server_default="100.0")
+    survival_updated_at_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     status: Mapped[str] = mapped_column(String, default=CharacterStatus.ALIVE)
 
     region_id: Mapped[str | None] = mapped_column(ForeignKey("regions.id"), nullable=True)

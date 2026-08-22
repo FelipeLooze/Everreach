@@ -45,6 +45,7 @@ from app.db.models.location import (
     LocationFeature,
 )
 from app.db.models.memory import Memory
+from app.db.models.map import Map
 from app.db.models.material import MaterialDefinition
 from app.db.models.notice import Notice
 from app.db.models.organization import (
@@ -175,6 +176,7 @@ __all__ = [
     "LocationConnection",
     "LocationFeature",
     "Memory",
+    "Map",
     "MaterialDefinition",
     "Notice",
     "Organization",

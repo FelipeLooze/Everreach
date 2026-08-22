@@ -46,6 +46,7 @@ def get_or_create_item(
             ItemType.TOOL,
             ItemType.CONTAINER,
             ItemType.QUEST,
+            ItemType.MAP,
         }
         else ItemInstanceMode.STACKABLE
     )

@@ -132,6 +132,7 @@ class ItemType(StrEnum):
     TOOL = "TOOL"
     CONTAINER = "CONTAINER"
     QUEST = "QUEST"
+    MAP = "MAP"
 
 
 class ItemInstanceMode(StrEnum):

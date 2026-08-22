@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "hermes3:8b-llama3.1-q4_K_M"
     ollama_timeout_seconds: float = 180.0
+    # Phase 18H — a small dedicated embedding model, separate from the
+    # narration/intent model above. None disables semantic retrieval
+    # gracefully (app.ai.retrieval.semantic degrades to no candidates)
+    # rather than requiring every local setup to have one pulled.
+    ollama_embedding_model: str | None = "nomic-embed-text"
 
     log_level: str = "INFO"
 

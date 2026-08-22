@@ -17,6 +17,7 @@ from app.db.models.knowledge import (
     KnowledgeKnower,
 )
 from app.db.models.location import Location, LocationConnection
+from app.game.world.materialization import ensure_location_materialized
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.simulated_player_routine import (
     SimulatedPlayerRoutine,
@@ -945,6 +946,15 @@ def _complete_travel_if_due(
         player.travel_connection_id
     )
     connection = db.get(LocationConnection, connection_id) if connection_id else None
+
+    # Phase 15P — Content-on-Demand: the protagonist is not the only
+    # trigger. A simulated player arriving somewhere Logan has never been
+    # deep-materializes that place too, the same way real travel does
+    # (app.game.travel.service.move_character) — same primitive, same
+    # idempotent no-op for anything already Tier 1.
+    destination_location = db.get(Location, destination_id)
+    if destination_location is not None:
+        ensure_location_materialized(db, destination_location)
 
     player.location_id = destination_id
 

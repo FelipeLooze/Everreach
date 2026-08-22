@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.retrieval.access import is_document_accessible_to
 from app.ai.retrieval.semantic import ScoredDocument
+from app.ai.retrieval.trace import log_retrieval_trace
 from app.core.enums import KnowerType, KnowledgeDocumentType
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 
@@ -82,12 +83,15 @@ def rank_documents(
     scene_subjects: Sequence[str] | None = None,
     weights: dict[str, float] | None = None,
     limit: int = 10,
+    query_description: str = "",
 ) -> list[RankedDocument]:
     weights = weights or DEFAULT_WEIGHTS
     ranked = []
+    filtered_out_ids: set[str] = set()
     for scored in scored_candidates:
         document = scored.document
         if not is_document_accessible_to(db, campaign_id, document, knower_type, knower_id):
+            filtered_out_ids.add(document.id)
             continue
         semantic_score = max(0.0, min(1.0, scored.score))
         entity_match = _entity_match(document, scene_subjects)
@@ -103,4 +107,13 @@ def rank_documents(
             RankedDocument(document, total, semantic_score, entity_match, recency_score, importance_score)
         )
     ranked.sort(key=lambda item: item.score, reverse=True)
-    return ranked[:limit]
+    limited = ranked[:limit]
+
+    # Phase 18S — a single trace call here covers every consumer that
+    # already goes through this one chokepoint (Phase 18N's Context
+    # Builder integration, and the new 18P/18Q/18R consumer functions)
+    # without each needing its own logging.
+    log_retrieval_trace(
+        query_description, knower_type, knower_id, scored_candidates, filtered_out_ids, limited
+    )
+    return limited

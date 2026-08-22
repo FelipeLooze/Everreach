@@ -772,6 +772,7 @@ def _retrieved_long_term_context(
             knower_type, knower_id,
             current_world_minute=current_world_minute,
             scene_subjects=scene_subjects,
+            query_description="Context Builder: retrieved long-term knowledge (18N/18O)",
         )
 
     def _ranked_for(knower_type: KnowerType, knower_id: str):

@@ -89,6 +89,56 @@ def documents_for_source(
     return query.order_by(IndexedKnowledgeDocument.document_type).all()
 
 
+def supersede_document(
+    db: Session,
+    campaign_id: str,
+    source_type: KnowledgeSourceType,
+    source_id: str,
+    document_type: KnowledgeDocumentType,
+    new_text: str,
+    *,
+    occurred_world_minute: int | None = None,
+    source_version: str | None = None,
+) -> IndexedKnowledgeDocument:
+    """Phase 18M — unlike upsert_document (refresh in place, for a
+    cosmetic re-derivation of the same fact), this preserves the old
+    version as historical (is_current=False) and creates a new current
+    row, for a fact that genuinely superseded its predecessor (a role
+    changed, a status changed, a structure was destroyed). No-ops
+    (returns the existing row unchanged) when new_text is identical to
+    what is already current — a no-op re-index must never manufacture a
+    fake historical version just because it ran."""
+    existing = (
+        db.query(IndexedKnowledgeDocument)
+        .filter(
+            IndexedKnowledgeDocument.campaign_id == campaign_id,
+            IndexedKnowledgeDocument.source_type == source_type.value,
+            IndexedKnowledgeDocument.source_id == source_id,
+            IndexedKnowledgeDocument.document_type == document_type.value,
+            IndexedKnowledgeDocument.is_current.is_(True),
+        )
+        .one_or_none()
+    )
+    if existing is not None:
+        if existing.text == new_text:
+            return existing
+        existing.is_current = False
+        db.flush()
+
+    document = IndexedKnowledgeDocument(
+        campaign_id=campaign_id,
+        source_type=source_type.value,
+        source_id=source_id,
+        document_type=document_type.value,
+        text=new_text,
+        occurred_world_minute=occurred_world_minute,
+        source_version=source_version,
+    )
+    db.add(document)
+    db.flush()
+    return document
+
+
 def documents_with_source_prefix(
     db: Session,
     campaign_id: str,

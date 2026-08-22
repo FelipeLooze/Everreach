@@ -178,6 +178,20 @@ def log_event(
 
         remember_important_event(db, event)
         index_historical_event(db, event)
+
+    if event_type == EventType.ORGANIZATION_STATUS_CHANGED:
+        # Phase 18M — event-driven index update: an organization's
+        # current-state document must stop surfacing its old status the
+        # moment the status actually changes, not just whenever
+        # something happens to re-index it. Independent of the
+        # importance check above (a re-index need is not an importance
+        # judgment).
+        from app.ai.retrieval.organizations import reindex_organization_current_state
+        from app.db.models.organization import Organization
+
+        organization = db.get(Organization, event.actor_id)
+        if organization is not None:
+            reindex_organization_current_state(db, organization, occurred_world_minute=event.world_minute)
     logger.info("event %s campaign=%s actor=%s:%s", event_type.value, campaign_id, actor_type, actor_id)
     return event
 

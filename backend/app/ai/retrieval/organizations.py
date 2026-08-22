@@ -11,7 +11,7 @@ never by a member's own personal Memory rows.
 """
 from sqlalchemy.orm import Session
 
-from app.ai.retrieval.documents import documents_with_source_prefix, upsert_document
+from app.ai.retrieval.documents import documents_with_source_prefix, supersede_document, upsert_document
 from app.core.enums import (
     CombatActorType,
     KnowledgeDocumentType,
@@ -34,6 +34,25 @@ def index_organization_action(db: Session, action: OrganizationAction) -> Indexe
         KnowledgeDocumentType.IMPORTANT_HISTORY,
         action.description,
         occurred_world_minute=action.world_minute,
+    )
+
+
+def reindex_organization_current_state(
+    db: Session, organization: Organization, *, occurred_world_minute: int
+) -> IndexedKnowledgeDocument:
+    """Phase 18M — status/visibility genuinely supersede their
+    predecessor (an organization ceasing to be ACTIVE must stop being
+    surfaced as active), unlike IDENTITY (Phase 18B, a plain refresh via
+    upsert_document since name/type/description rarely change and
+    carry no meaningful "was true then" distinction)."""
+    return supersede_document(
+        db,
+        organization.campaign_id,
+        KnowledgeSourceType.ORGANIZATION,
+        organization.id,
+        KnowledgeDocumentType.CURRENT_STATE,
+        f"{organization.name}: status {organization.status}, visibilidade {organization.visibility}.",
+        occurred_world_minute=occurred_world_minute,
     )
 
 

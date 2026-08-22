@@ -318,6 +318,19 @@ EXPORT_GOOD_BY_SETTLEMENT_TYPE = {
     "ISOLATED_SETTLEMENT": None,
 }
 
+# Phase 15L — Regional Threats, Wildlife & Ecology. Population/habitat
+# abstraction (threat_type, description) — never individual creatures.
+THREAT_POOL = [
+    ("WOLVES", "Uma alcateia de lobos ronda a área, especialmente à noite."),
+    ("BOARS", "Javalis selvagens são comuns nos arredores, ocasionalmente invadindo plantações próximas."),
+    ("BANDITS", "Grupos de bandidos usam o terreno para emboscar viajantes desavisados."),
+    ("MONSTERS", "Criaturas incomuns foram avistadas nesta área, cuja natureza exata poucos conseguem descrever."),
+    ("HAZARDOUS_TERRAIN", "O próprio terreno representa um perigo — quedas, gelo instável ou terreno traiçoeiro."),
+    ("MAGICAL_ANOMALY", "Fenômenos que desafiam explicação comum ocorrem ocasionalmente nesta área."),
+]
+
+ANCHOR_THREAT = ("BOARS", "Javalis selvagens vêm do Bosque da Beira do Vale e, de vez em quando, invadem plantações próximas a Cardal.")
+
 SUBREGION_ECONOMY_SUMMARIES = [
     "A economia local depende quase inteiramente da agricultura de subsistência.",
     "Pequenas operações de extração (madeira, pedra ou minério) sustentam a maior parte do comércio.",

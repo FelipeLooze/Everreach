@@ -619,6 +619,25 @@ class SettlementType(StrEnum):
     TRADE_SETTLEMENT = "TRADE_SETTLEMENT"
 
 
+class ThreatType(StrEnum):
+    """Phase 15L — broad ecology/threat category for a subregion.
+    Population/habitat abstraction, never individual creature instances
+    (spec: do not generate every animal at save creation)."""
+
+    WOLVES = "WOLVES"
+    BOARS = "BOARS"
+    BANDITS = "BANDITS"
+    MONSTERS = "MONSTERS"
+    HAZARDOUS_TERRAIN = "HAZARDOUS_TERRAIN"
+    MAGICAL_ANOMALY = "MAGICAL_ANOMALY"
+
+
+class ThreatIntensity(StrEnum):
+    LOW = "LOW"
+    MODERATE = "MODERATE"
+    HIGH = "HIGH"
+
+
 class PopulationDensity(StrEnum):
     """Phase 15D — how densely a subregion is settled, independent of any
     single settlement's own size (see Phase 15F)."""

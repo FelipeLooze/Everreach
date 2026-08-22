@@ -19,9 +19,10 @@ stage later never shifts the RNG stream consumed by unrelated stages.
 
 import random
 
-from app.core.enums import DangerLevel, PopulationDensity, SubregionBiome
+from app.core.enums import DangerLevel, PopulationDensity, SubregionBiome, ThreatIntensity
 from app.game.world.content_pools import (
     ANCHOR_SUBREGION_NAME,
+    ANCHOR_THREAT,
     CITY_DISTRICTS,
     CLIMATE_SUMMARIES,
     CULTURAL_SUMMARIES,
@@ -46,8 +47,17 @@ from app.game.world.content_pools import (
     SUBREGION_CULTURE_SUMMARIES,
     SUBREGION_ECONOMY_SUMMARIES,
     SUBREGION_NAME_POOL,
+    THREAT_POOL,
     WEALTH_BAND_BY_SETTLEMENT_TYPE,
 )
+
+DANGER_LEVEL_TO_THREAT_INTENSITY = {
+    "SAFE": ThreatIntensity.LOW,
+    "LOW": ThreatIntensity.LOW,
+    "MODERATE": ThreatIntensity.MODERATE,
+    "HIGH": ThreatIntensity.HIGH,
+    "SEVERE": ThreatIntensity.HIGH,
+}
 
 EXPORT_SUPPLY_BONUS = 80
 
@@ -191,6 +201,29 @@ def wealth_band_for_settlement(settlement_type: str) -> str:
 
 def export_good_for_settlement(settlement_type: str) -> str | None:
     return EXPORT_GOOD_BY_SETTLEMENT_TYPE[str(settlement_type)]
+
+
+# Phase 15L — Regional Threats, Wildlife & Ecology.
+def threat_intensity_for_danger_level(danger_level: str) -> str:
+    """Derived from the subregion's own DangerLevel (Phase 15D) — never
+    an independent roll — so a subregion's ecology stays consistent with
+    how dangerous it was already established to be."""
+    return DANGER_LEVEL_TO_THREAT_INTENSITY[str(danger_level)]
+
+
+def generate_threat(rng: random.Random) -> tuple[str, str]:
+    """Picks one (threat_type, description) for a subregion. Deliberately
+    just one per subregion — a population/habitat abstraction, not
+    individual creature instances (spec)."""
+    return rng.choice(THREAT_POOL)
+
+
+def anchor_threat() -> tuple[str, str]:
+    """The anchor subregion's threat is fixed, not rolled — boars from
+    the already-existing Bosque da Beira do Vale occasionally raiding
+    farmland near Cardal, mirroring the spec's own worked example
+    (Whispering Woods boars -> Cardal farmland -> Notice)."""
+    return ANCHOR_THREAT
 
 MINOR_SETTLEMENTS_PER_SUBREGION = (1, 3)
 

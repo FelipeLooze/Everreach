@@ -24,6 +24,7 @@ from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location, LocationConnection, LocationFeature
 from app.db.models.npc import NPC
 from app.db.models.region import Region
+from app.db.models.regional_threat import RegionalThreat
 from app.db.models.settlement import Settlement
 from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.subregion import Subregion
@@ -34,6 +35,7 @@ from app.game.organizations.roles import create_role, join_organization
 from app.game.organizations.service import create_organization
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
+    anchor_threat,
     choose_major_settlement_type,
     choose_minor_settlement_type,
     city_districts,
@@ -49,6 +51,7 @@ from app.game.world.generator import (
     generate_subregion_identity,
     generate_subregion_names,
     generate_pois,
+    generate_threat,
     is_city_scale,
     leader_title_for_organization,
     minor_settlement_count,
@@ -61,6 +64,7 @@ from app.game.world.generator import (
     roll_poi_distance,
     settlement_population_tier,
     settlement_profile,
+    threat_intensity_for_danger_level,
     travel_time_modifier_for_biome,
     wealth_band_for_settlement,
 )
@@ -597,6 +601,32 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
                 db, supply_level, EXPORT_SUPPLY_BONUS,
                 reason=f"{major_location.name} produz {export_good_name.lower()} localmente em abundância.",
             )
+
+    # Phase 15L — Regional Threats, Wildlife & Ecology. Population/habitat
+    # abstraction only (one row per subregion, never individual
+    # creatures) — gives future world simulation something real to
+    # reference (e.g. "boars leave the forest, crops get damaged").
+    anchor_threat_type, anchor_threat_description = anchor_threat()
+    db.add(
+        RegionalThreat(
+            subregion_id=anchor_subregion.id,
+            threat_type=anchor_threat_type,
+            intensity=threat_intensity_for_danger_level(anchor_subregion.danger_level),
+            description=anchor_threat_description,
+        )
+    )
+    for subregion in subregions[1:]:
+        threat_rng = random.Random(derive_seed(subregion.generation_seed, "threat"))
+        threat_type, threat_description = generate_threat(threat_rng)
+        db.add(
+            RegionalThreat(
+                subregion_id=subregion.id,
+                threat_type=threat_type,
+                intensity=threat_intensity_for_danger_level(subregion.danger_level),
+                description=threat_description,
+            )
+        )
+    db.flush()
 
     canonical_facts = [
         KnowledgeFact(

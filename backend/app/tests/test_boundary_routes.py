@@ -1,5 +1,6 @@
 """Phase 16D — Cross-Region Routes."""
 
+from app.core.enums import KnowerType
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.game.world.boundaries import create_regional_boundary, get_boundary_routes
 from app.game.world.seed import create_campaign, seed_initial_region
@@ -58,7 +59,10 @@ def test_hidden_routes_are_marked_not_publicly_known_and_secret(db_session):
     assert found_hidden
 
 
-def test_no_knower_is_granted_route_knowledge_at_generation_time(db_session):
+def test_no_player_is_granted_route_knowledge_at_generation_time(db_session):
+    """16G later grants the anchor settlement's own NPC leader knowledge
+    of publicly known routes (a real, honest local-knowledge source) —
+    but no PLAYER ever knows a route automatically, hidden or not."""
     campaign = create_campaign(db_session, "Ninguem Sabe Ainda", world_seed=12)
     region, _village = seed_initial_region(db_session, campaign.id)
 
@@ -67,8 +71,15 @@ def test_no_knower_is_granted_route_knowledge_at_generation_time(db_session):
 
     for route in routes:
         fact = db_session.query(KnowledgeFact).filter(KnowledgeFact.fact_key == route.knowledge_fact_key).one()
-        knowers = db_session.query(KnowledgeKnower).filter(KnowledgeKnower.fact_id == fact.id).all()
-        assert knowers == []
+        player_knowers = (
+            db_session.query(KnowledgeKnower)
+            .filter(
+                KnowledgeKnower.fact_id == fact.id,
+                KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
+            )
+            .all()
+        )
+        assert player_knowers == []
 
 
 def test_boundary_routes_are_deterministic_per_seed(db_session):

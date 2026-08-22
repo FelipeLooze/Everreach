@@ -30,6 +30,7 @@ from app.db.models.settlement import Settlement
 from app.db.models.subregion import Subregion
 from app.game.time.clock import current_season
 from app.game.world.content_pools import BOUNDARY_NAME_POOL_BY_BIOME
+from app.game.world.route_discovery import grant_local_leader_knowledge_of_boundary
 from app.game.world.generation import derive_seed
 from app.game.world.generator import (
     POI_DISTANCE_RANGE,
@@ -196,6 +197,7 @@ def create_regional_boundary(
     db.flush()
 
     used_names = {row[0] for row in db.query(Location.name).filter(Location.region_id == source_region_id).all()}
+    created_routes: list[BoundaryRoute] = []
     for route_data in generate_boundary_routes(rng, subregion.biome, used_names):
         route = BoundaryRoute(
             boundary_id=boundary.id,
@@ -205,10 +207,11 @@ def create_regional_boundary(
         db.add(route)
         db.flush()
 
-        # World truth always exists the moment a route is generated; who
-        # (if anyone) actually knows about it is a separate question left
-        # to 16G — nobody is granted this fact here, not even a publicly
-        # known route.
+        # World truth always exists the moment a route is generated. Who
+        # actually knows about it is a separate question (16G) — nobody
+        # is granted this fact here directly; it's granted below, only
+        # to the one NPC who plausibly already would (the anchor
+        # settlement's own leader), and only for publicly known routes.
         route.knowledge_fact_key = f"boundary_route_exists:{route.id}"
         db.add(
             KnowledgeFact(
@@ -219,7 +222,10 @@ def create_regional_boundary(
                 is_secret=not route.is_publicly_known,
             )
         )
+        created_routes.append(route)
     db.flush()
+
+    grant_local_leader_knowledge_of_boundary(db, campaign_id, anchor_location.id, created_routes)
 
     return boundary
 

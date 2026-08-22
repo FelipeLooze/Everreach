@@ -471,7 +471,15 @@ def resolve_action(
         narrator_unavailable=narrator_unavailable,
         mechanical_summary=mechanical_summary,
         intent_type=intent.type.value,
-        warnings=[*mechanical_warnings, *validation.warnings, *narrative_validation.violations],
+        # Phase 19S — narrative_validation.violations are internal
+        # validator reasoning (e.g. "'Logan sorri...' atribui uma ação
+        # voluntária..."), never player-facing: schemas/action.py
+        # returns `warnings` verbatim over the public /actions API, and
+        # the spec explicitly forbids surfacing claim-level rejection
+        # reasons to the player. That information now goes through
+        # app.ai.validation.trace's DEBUG-only log instead (called
+        # inside validate_narrative_proposal).
+        warnings=[*mechanical_warnings, *validation.warnings],
     )
 
 

@@ -65,6 +65,7 @@ from sqlalchemy.orm import Session
 from app.ai.narrator import NarrationMode
 from app.ai.validation.claims import ClaimCategory, NarrativeClaim, extract_claims
 from app.ai.validation.fallback import safe_fallback_narration
+from app.ai.validation.trace import log_validation_trace
 
 # Phase 19Q — below this length, a repaired narration is treated as
 # incoherent fragments rather than a standalone scene beat, and Phase
@@ -172,6 +173,8 @@ def validate_narrative_proposal(
     violations: list[Violation] = []
     for validator in _VALIDATORS:
         violations.extend(validator(db, campaign_id, proposal, claims))
+
+    log_validation_trace(proposal, claims, violations)
 
     if not violations:
         return NarrativeValidationResult(valid=True, final_text=proposal.text, violations=[])

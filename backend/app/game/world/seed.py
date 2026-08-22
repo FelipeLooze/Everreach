@@ -33,6 +33,10 @@ from app.game.economy.supply_demand import adjust_supply, get_or_create_supply_l
 from app.game.inventory.service import get_or_create_item
 from app.game.organizations.roles import create_role, join_organization
 from app.game.organizations.service import create_organization
+from app.game.players.service import (
+    set_simulated_player_arrival_location_enabled,
+    set_simulated_player_arrival_policy,
+)
 from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.generator import (
@@ -829,6 +833,31 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     ]
     db.add_all(simulated_players)
     db.flush()
+
+    # Phase 15 follow-up — Primeira Chegada keeps happening after world
+    # start: transported people should keep arriving elsewhere over time
+    # (Phase 7's ScheduledSimulatedPlayerArrival machinery), but neither
+    # an arrival policy nor any eligible location was ever configured for
+    # a real campaign before this — set_simulated_player_arrival_policy
+    # and set_simulated_player_arrival_location_enabled were only ever
+    # called from tests, so the whole mechanism sat unplugged. Every
+    # major settlement (Tier 1, including the starting village) becomes
+    # an eligible arrival point; selection is weighted by
+    # Settlement.population_tier (see
+    # app.game.players.service.select_simulated_player_arrival_location)
+    # so most new arrivals land in bigger settlements — small villages
+    # still get some, just proportionally fewer.
+    set_simulated_player_arrival_policy(
+        db, campaign_id,
+        enabled=True,
+        min_delay_minutes=60 * 24 * 3,
+        max_delay_minutes=60 * 24 * 21,
+        min_group_size=1,
+        max_group_size=6,
+    )
+    set_simulated_player_arrival_location_enabled(db, campaign_id, village.id, enabled=True)
+    for _subregion, major_location, _settlement in major_settlement_rows:
+        set_simulated_player_arrival_location_enabled(db, campaign_id, major_location.id, enabled=True)
 
     # Phase 15Q — Region Validation & Persistence. An independent
     # consistency pass over what was just generated — not trusting the

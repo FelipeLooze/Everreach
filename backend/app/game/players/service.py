@@ -21,6 +21,7 @@ from app.db.models.character import Character
 from app.db.models.event import WorldEvent
 from app.db.models.location import Location
 from app.db.models.region import Region
+from app.db.models.settlement import Settlement
 from app.db.models.simulated_player import (
     SimulatedPlayer,
     SimulatedPlayerPopulation,
@@ -1157,6 +1158,26 @@ def simulated_player_arrival_locations(
         .all()
     )
 
+def _arrival_location_weight(
+    db: Session,
+    location_id: str,
+) -> int:
+    """
+    Larger settlements draw proportionally more transported people —
+    weight is the location's own Settlement.population_tier (Phase 15F:
+    1 for a hamlet up to 5 for a major city). A location with no
+    Settlement row at all (e.g. explicitly enabled by hand in a test)
+    falls back to weight 1 rather than being unreachable.
+    """
+
+    settlement = (
+        db.query(Settlement)
+        .filter(Settlement.location_id == location_id)
+        .first()
+    )
+
+    return settlement.population_tier if settlement is not None else 1
+
 def select_simulated_player_arrival_location(
     db: Session,
     campaign_id: str,
@@ -1164,6 +1185,11 @@ def select_simulated_player_arrival_location(
 ) -> Location | None:
     """
     Select one explicitly enabled arrival location.
+
+    Selection is weighted by settlement size (see
+    _arrival_location_weight) — most transported people end up in
+    bigger settlements, small villages receive few, but every enabled
+    location stays reachable.
 
     If the campaign has no enabled arrival locations, return None.
     Never fall back to arbitrary world locations.
@@ -1179,7 +1205,12 @@ def select_simulated_player_arrival_location(
 
     random_source = rng or random.Random()
 
-    return random_source.choice(locations)
+    weights = [
+        _arrival_location_weight(db, location.id)
+        for location in locations
+    ]
+
+    return random_source.choices(locations, weights=weights, k=1)[0]
 
 def ensure_automatic_simulated_player_world_arrival_scheduled(
     db: Session,

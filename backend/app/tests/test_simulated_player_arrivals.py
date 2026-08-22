@@ -28,9 +28,25 @@ from app.game.world.seed import (
 )
 from app.db.models.simulated_player_arrival import (
     ScheduledSimulatedPlayerArrival,
+    SimulatedPlayerArrivalLocation,
+    SimulatedPlayerArrivalPolicy,
 )
 from app.game.time.clock import advance_world_time
 from app.simulation import world_simulation
+
+
+def _clear_seeded_arrival_configuration(db):
+    """
+    seed_initial_region now configures a default arrival policy and
+    enables every major settlement as an arrival location (Phase 15
+    follow-up — weighted-by-size Primeira Chegada). The tests that call
+    this helper exercise the blank-slate behaviour on purpose, so they
+    wipe that default configuration first and set up their own
+    tightly-controlled policy/locations instead.
+    """
+    db.query(SimulatedPlayerArrivalLocation).delete()
+    db.query(SimulatedPlayerArrivalPolicy).delete()
+    db.flush()
 
 def test_world_arrival_adds_to_abstract_population_and_logs_event(
     db_session,
@@ -447,6 +463,8 @@ def test_missing_arrival_policy_schedules_nothing(
         campaign.id,
     )
 
+    _clear_seeded_arrival_configuration(db_session)
+
     arrival = (
         schedule_simulated_player_world_arrival_from_policy(
             db_session,
@@ -542,6 +560,8 @@ def test_only_explicitly_enabled_locations_are_valid_for_automatic_arrivals(
     db_session.add(other_location)
     db_session.flush()
 
+    _clear_seeded_arrival_configuration(db_session)
+
     assert (
         simulated_player_arrival_locations(
             db_session,
@@ -614,6 +634,8 @@ def test_arrival_location_selector_uses_only_explicitly_enabled_locations(
     )
     db_session.flush()
 
+    _clear_seeded_arrival_configuration(db_session)
+
     assert (
         select_simulated_player_arrival_location(
             db_session,
@@ -663,6 +685,8 @@ def test_automatic_arrival_scheduler_combines_policy_location_and_pending_guard(
         db_session,
         campaign.id,
     )
+
+    _clear_seeded_arrival_configuration(db_session)
 
     set_simulated_player_arrival_policy(
         db_session,
@@ -835,6 +859,8 @@ def test_large_tick_catches_up_entire_automatic_arrival_chain(
         campaign.id,
     )
 
+    _clear_seeded_arrival_configuration(db_session)
+
     start_world_minute = get_world_time(
         db_session,
         campaign.id,
@@ -935,6 +961,8 @@ def test_world_tick_bootstraps_first_automatic_arrival_without_manual_schedule(
         db_session,
         campaign.id,
     )
+
+    _clear_seeded_arrival_configuration(db_session)
 
     start_world_minute = get_world_time(
         db_session,

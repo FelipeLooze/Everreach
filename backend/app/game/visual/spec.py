@@ -130,10 +130,12 @@ def set_current_visual_state(
 
 def resolve_visual_layers(*layers: dict) -> dict:
     """The one shared inheritance primitive every concrete entity
-    resolver (21E NPC, 21G Location, ...) reuses: a plain, ordered,
-    shallow merge — later layers override earlier ones key-by-key.
-    "Do not create an uncontrolled style-resolution engine" (spec,
-    mandatory): this is the whole engine, on purpose.
+    resolver (21E NPC, 21G Location, 21H Settlement, 21I Subregion, ...)
+    reuses: a plain, ordered, shallow merge — later layers override
+    earlier ones key-by-key. "Do not create an uncontrolled style-
+    resolution engine" (spec, mandatory): this is the whole engine, on
+    purpose — Phase 21M audited every existing resolver and confirmed
+    none of them reach for anything else.
 
     A key present in a later layer but mapped to None does NOT
     override an earlier layer's value for that key — "regional
@@ -142,6 +144,48 @@ def resolve_visual_layers(*layers: dict) -> dict:
     override. Callers represent "no opinion at this layer" as a
     missing key or an explicit None, never an empty string standing in
     for "unset."
+
+    Phase 21M — canonical layer order per entity kind (broadest first,
+    most specific/current last; every resolver below calls this
+    function with its own layers already in this exact order — this
+    comment is the one place documenting the whole set together, so a
+    future subphase does not have to reverse-engineer it from five
+    separate files):
+
+      NPC (app.game.visual.npc.resolve_npc_appearance):
+        region.stable -> npc.stable -> npc.current
+
+      Location (app.game.visual.location.resolve_location_visual):
+        region.stable -> subregion.stable -> location.stable -> location.current
+
+      Settlement (app.game.visual.settlement.resolve_settlement_visual):
+        resolve_location_visual(location) -> {settlement_scale, population_tier}
+        -> settlement.stable -> settlement.current
+
+      Subregion (app.game.visual.region.resolve_subregion_visual):
+        region.stable -> subregion.stable -> subregion.current
+
+      Regional threat / creature population
+      (app.game.visual.creature.resolve_regional_threat_visual):
+        threat_species.stable -> regional_threat.stable -> regional_threat.current
+
+      Organization and Item do not have a resolve_*_visual function:
+      an Item's spec (21D) is a flat read-derivation from Phase 10 Canon
+      plus one optional signature_ornamentation trait — there is no
+      broader-to-narrower chain to resolve. An Organization's heraldry
+      (21J) is deliberately never blended with a broader default either
+      — a "Global Style + Regional + Cultural + Organization" NPC-style
+      chain has no Canon analogue for what an organization's emblem
+      should default to; its stable/current traits are read directly.
+
+      No entity kind currently has a real "Global Style" layer (the
+      spec's own broadest tier): nothing in this codebase has
+      established default appearance traits that should apply to every
+      NPC/Location/Settlement before Region does. Adding an empty,
+      unused layer to every resolver "for completeness" would be
+      exactly the over-abstraction the spec warns against; a real
+      global layer can be added to each resolver's own layer list the
+      day some system actually needs to set one.
     """
     result: dict = {}
     for layer in layers:

@@ -124,6 +124,45 @@ def build_npc_portrait_prompt(resolved_appearance: dict) -> str:
     return sentence + _NPC_PORTRAIT_STYLE_SUFFIX
 
 
+def build_npc_identity_edit_prompt(stable: dict, current: dict) -> str:
+    """Phase 23D-R.1 — the prompt for an identity-preserving edit
+    (EVERREACH_NPC_IDENTITY): PRESERVE the stable identity traits,
+    DEPICT the current visual state — the same split
+    resolve_npc_stable_and_current already keeps apart. Deliberately a
+    different shape from build_npc_portrait_prompt's flat descriptor
+    list: an image-edit model needs an explicit "keep X unchanged"
+    instruction to actually preserve identity (matches the real,
+    human-calibrated EVERREACH_NPC_IDENTITY_V1 test prompts from Phase
+    23C, which used this same "same person, keep X unchanged, change
+    to Y" structure) — a bare trait list alone does not carry that
+    intent. No style suffix appended: the approved 23C baseline prompts
+    don't use one for the edit workflow either.
+
+    Never analyzes the reference image itself — every trait named here
+    still comes only from resolved Canon, the same way
+    build_npc_portrait_prompt's do."""
+    if not stable and not current:
+        raise VisualPromptBuilderError(
+            "Cannot build an NPC identity-edit prompt from empty stable/current appearance."
+        )
+
+    stable_descriptors = ", ".join(str(value) for _key, value in sorted(stable.items()) if value)
+    current_descriptors = ", ".join(str(value) for _key, value in sorted(current.items()) if value)
+
+    sentence = "Same person, keep their exact facial identity and face shape unchanged"
+    if stable_descriptors:
+        sentence += f", including: {stable_descriptors}"
+    sentence += "."
+    if current_descriptors:
+        sentence += f" Depict them now with: {current_descriptors}."
+    sentence += (
+        " Keep the same pose and framing, waist-up portrait, complete head and "
+        "shoulders visible, no hands obscuring face, only one person, no text, "
+        "no watermark, no logo."
+    )
+    return sentence
+
+
 def extract_model_identifier(graph: dict) -> str | None:
     """Best-effort provenance for VisualAsset.model_identifier: the
     diffusion model file every registered workflow's node "10"

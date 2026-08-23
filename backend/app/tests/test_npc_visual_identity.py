@@ -5,6 +5,7 @@ from app.game.visual.npc import (
     NPCVisualIdentityError,
     get_npc_visual_spec,
     resolve_npc_appearance,
+    resolve_npc_stable_and_current,
     set_npc_current_appearance,
     set_npc_stable_identity,
 )
@@ -99,3 +100,37 @@ def test_raises_for_a_nonexistent_npc(db_session):
 
     with pytest.raises(NPCVisualIdentityError):
         resolve_npc_appearance(db_session, campaign.id, "npc_nao_existe")
+
+
+def test_resolve_npc_stable_and_current_keeps_the_two_halves_separate(db_session):
+    campaign = create_campaign(db_session, "NPC Visual Stable Current Separado", world_seed=8)
+    region, village = seed_initial_region(db_session, campaign.id)
+    npc = _npc(db_session, campaign.id, region.id, village.id)
+    set_npc_stable_identity(db_session, campaign.id, npc.id, {"hair_color": "silver"})
+    set_npc_current_appearance(db_session, campaign.id, npc.id, {"clothing": "travel cloak"})
+
+    stable, current = resolve_npc_stable_and_current(db_session, campaign.id, npc.id)
+
+    assert stable == {"hair_color": "silver"}
+    assert current == {"clothing": "travel cloak"}
+
+
+def test_resolve_npc_stable_and_current_includes_regional_tendency_in_stable(db_session):
+    campaign = create_campaign(db_session, "NPC Visual Stable Regional", world_seed=9)
+    region, village = seed_initial_region(db_session, campaign.id)
+    npc = _npc(db_session, campaign.id, region.id, village.id)
+    set_stable_visual_traits(
+        db_session, "region", region.id, {"clothing_material": "wool and linen"}, campaign_id=campaign.id,
+    )
+
+    stable, current = resolve_npc_stable_and_current(db_session, campaign.id, npc.id)
+
+    assert stable["clothing_material"] == "wool and linen"
+    assert current == {}
+
+
+def test_resolve_npc_stable_and_current_raises_for_a_nonexistent_npc(db_session):
+    campaign = create_campaign(db_session, "NPC Visual Stable Current Inexistente", world_seed=10)
+
+    with pytest.raises(NPCVisualIdentityError):
+        resolve_npc_stable_and_current(db_session, campaign.id, "npc_nao_existe")

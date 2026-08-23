@@ -1,4 +1,4 @@
-"""Phase 23D-N/23D-O — Visual Asset Service API.
+"""Phase 23D-N/23D-O/23D-R.1 — Visual Asset Service API.
 
 "Frontend -> Backend -> VisualAssetService -> ComfyUIClient -> ComfyUI"
 (spec, mandatory): this is the ONLY HTTP surface for visual generation
@@ -36,6 +36,7 @@ from app.game.visual.entity_prompt import (
 )
 from app.game.visual.item import ItemVisualIdentityError
 from app.game.visual.npc import NPCVisualIdentityError
+from app.game.visual.npc_reference import NPCReferenceError
 from app.game.visual.prompt_builder import VisualPromptBuilderError
 from app.game.visual.retry_policy import RetryNotAllowedError, retry_visual_asset_request
 from app.game.visual.service import request_visual_asset
@@ -104,11 +105,13 @@ def generate_visual_asset(
 ):
     _require_campaign(db, campaign_id)
     try:
-        workflow_key, workflow_version, prompt_text, seed = resolve_generation_inputs(
+        workflow_key, workflow_version, prompt_text, seed, reference_image = resolve_generation_inputs(
             db, campaign_id, body.entity_type, body.entity_id, body.asset_type
         )
     except (UnsupportedGenerationTargetError, VisualPromptBuilderError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except NPCReferenceError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except (NPCVisualIdentityError, ItemVisualIdentityError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -123,6 +126,7 @@ def generate_visual_asset(
         prompt_text=prompt_text,
         seed=seed,
         campaign_id=campaign_id,
+        reference_image=reference_image,
     )
     return _request_response(request)
 
@@ -151,17 +155,20 @@ def retry_visual_generation_request(
     failed_request = _get_request_or_404(db, campaign_id, request_id)
 
     try:
-        _workflow_key, _workflow_version, prompt_text, _seed = resolve_generation_inputs(
+        _workflow_key, _workflow_version, prompt_text, _seed, reference_image = resolve_generation_inputs(
             db, campaign_id, failed_request.entity_type, failed_request.entity_id, failed_request.asset_type
         )
     except VisualPromptBuilderError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except NPCReferenceError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except (UnsupportedGenerationTargetError, NPCVisualIdentityError, ItemVisualIdentityError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     try:
         retried = retry_visual_asset_request(
             db, comfyui_client, failed_request.id, prompt_text=prompt_text,
+            reference_image=reference_image,
         )
     except RetryNotAllowedError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

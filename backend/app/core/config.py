@@ -52,6 +52,16 @@ class Settings(BaseSettings):
     # into <this root>/<campaign or "global">/<entity_type>/<entity_id>/
     # <asset_type>/<asset_id><ext> and never anywhere else.
     comfyui_asset_root: str = ""
+    # Phase 23D-R.1 — ComfyUI's own LoadImage node resolves an "image"
+    # value with no [input]/[output]/[temp] suffix against ITS OWN input
+    # directory only (confirmed by reading ComfyUI's folder_paths.py:
+    # get_annotated_filepath defaults to get_input_directory(), and its
+    # own is_within_directory traversal guard means an absolute Everreach
+    # asset path can never resolve there directly). A canonical NPC
+    # reference must be staged (copied) into this directory before a
+    # reference-based generation can use it — see
+    # app.game.visual.asset_storage.stage_reference_image.
+    comfyui_input_root: str = ""
 
 
 @lru_cache

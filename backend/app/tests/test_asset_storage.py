@@ -7,6 +7,7 @@ from app.game.visual.asset_storage import (
     build_asset_directory,
     persist_generated_asset,
     resolve_asset_path,
+    stage_reference_image,
 )
 
 
@@ -119,3 +120,58 @@ def test_resolve_asset_path_requires_configured_root():
 
     with pytest.raises(VisualAssetStorageError):
         resolve_asset_path("campaign_1/npc/npc_mira/NPC_PORTRAIT/vasset_abc123.png", settings=settings)
+
+
+def _input_settings(tmp_path) -> Settings:
+    return Settings(comfyui_input_root=str(tmp_path / "comfy_input"))
+
+
+def test_stage_reference_image_copies_into_the_input_root_id_only(tmp_path):
+    settings = _input_settings(tmp_path)
+    source = tmp_path / "source.png"
+    source.write_bytes(b"reference-bytes")
+
+    relative = stage_reference_image(source, asset_id="vasset_ref001", settings=settings)
+
+    assert relative == "everreach_reference/vasset_ref001.png"
+    staged = tmp_path / "comfy_input" / relative
+    assert staged.is_file()
+    assert staged.read_bytes() == b"reference-bytes"
+    assert not staged.with_suffix(staged.suffix + ".tmp").exists()
+
+
+def test_stage_reference_image_overwrites_a_stale_previous_copy(tmp_path):
+    settings = _input_settings(tmp_path)
+    source = tmp_path / "source.png"
+    source.write_bytes(b"first-version")
+    stage_reference_image(source, asset_id="vasset_ref001", settings=settings)
+
+    source.write_bytes(b"second-version")
+    relative = stage_reference_image(source, asset_id="vasset_ref001", settings=settings)
+
+    assert (tmp_path / "comfy_input" / relative).read_bytes() == b"second-version"
+
+
+def test_stage_reference_image_raises_when_source_is_missing(tmp_path):
+    settings = _input_settings(tmp_path)
+
+    with pytest.raises(VisualAssetStorageError):
+        stage_reference_image(tmp_path / "does_not_exist.png", asset_id="vasset_ref001", settings=settings)
+
+
+def test_stage_reference_image_rejects_an_unsafe_asset_id(tmp_path):
+    settings = _input_settings(tmp_path)
+    source = tmp_path / "source.png"
+    source.write_bytes(b"data")
+
+    with pytest.raises(VisualAssetStorageError):
+        stage_reference_image(source, asset_id="../escape", settings=settings)
+
+
+def test_stage_reference_image_requires_configured_input_root(tmp_path):
+    settings = Settings(comfyui_input_root="")
+    source = tmp_path / "source.png"
+    source.write_bytes(b"data")
+
+    with pytest.raises(VisualAssetStorageError):
+        stage_reference_image(source, asset_id="vasset_ref001", settings=settings)

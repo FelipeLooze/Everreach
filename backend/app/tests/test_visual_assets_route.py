@@ -14,6 +14,7 @@ be a 200 response, never a 5xx ("COMFYUI FAILURE != GAMEPLAY FAILURE",
 spec) — that is exactly what these assert.
 """
 import pytest
+from PIL import Image
 
 from app.api.dependencies.comfyui import set_comfyui_client_override
 from app.db.models.npc import NPC
@@ -392,3 +393,187 @@ def test_current_asset_response_includes_a_servable_url(client, db_session):
     )
 
     assert response.json()["url"] == f"/api/campaigns/{campaign.id}/visual-assets/{asset.id}/file"
+
+
+# --- Phase 23D-R.1: reference-aware NPC dispatch, fully mocked end-to-end ---
+
+class _RecordingSuccessClient(ComfyUIClient):
+    """Always succeeds, and records the exact graph handed to
+    submit_workflow so tests can assert on what actually reached
+    "ComfyUI" (mocked) rather than trusting the dispatch logic blindly."""
+
+    def __init__(self, output_path):
+        self._output_path = output_path
+        self.submitted_graphs = []
+
+    def is_available(self) -> bool:
+        return True
+
+    def system_stats(self) -> dict:
+        return {}
+
+    def submit_workflow(self, graph, client_id):
+        self.submitted_graphs.append(graph)
+        return f"prompt_{len(self.submitted_graphs)}"
+
+    def get_queue(self) -> dict:
+        return {}
+
+    def get_history(self, prompt_id):
+        return {"outputs": {"41": {"images": [{"subfolder": "x", "filename": "y.png"}]}}}
+
+    def wait_for_completion(self, prompt_id, timeout_seconds=None):
+        return self.get_history(prompt_id)
+
+    def resolve_output_path(self, subfolder, filename):
+        return self._output_path
+
+
+def _setup_real_workflow_files(tmp_path, monkeypatch):
+    """Real-shaped (not tiny synthetic) fixtures for both NPC workflows,
+    monkeypatched onto workflow_registry/asset_storage's own
+    get_settings (each module bound its own local name at import time,
+    so app.core.config.get_settings itself must NOT be patched -- see
+    the earlier 23D-O tests for the same pattern)."""
+    import json
+
+    import app.game.visual.asset_storage as asset_storage_module
+    import app.game.visual.workflow_registry as workflow_registry_module
+    from app.core.config import Settings
+
+    workflow_root = tmp_path / "workflows"
+    workflow_root.mkdir()
+    portrait_graph = {
+        "10": {"class_type": "UNETLoader", "inputs": {"unet_name": "flux-2-klein-4b.safetensors"}},
+        "20": {"class_type": "CLIPTextEncode", "inputs": {"text": "placeholder"}},
+        "31": {"class_type": "RandomNoise", "inputs": {"noise_seed": 1}},
+        "41": {"class_type": "SaveImage", "inputs": {"filename_prefix": "placeholder"}},
+    }
+    identity_graph = dict(portrait_graph)
+    identity_graph["50"] = {"class_type": "LoadImage", "inputs": {"image": "placeholder.png"}}
+    (workflow_root / "EVERREACH_NPC_PORTRAIT_V1_API.json").write_text(json.dumps(portrait_graph), encoding="utf-8")
+    (workflow_root / "EVERREACH_NPC_IDENTITY_V1_API.json").write_text(json.dumps(identity_graph), encoding="utf-8")
+
+    asset_root = tmp_path / "assets"
+    input_root = tmp_path / "comfy_input"
+    settings = Settings(
+        comfyui_workflow_root=str(workflow_root),
+        comfyui_asset_root=str(asset_root),
+        comfyui_input_root=str(input_root),
+    )
+    monkeypatch.setattr(workflow_registry_module, "get_settings", lambda: settings)
+    monkeypatch.setattr(asset_storage_module, "get_settings", lambda: settings)
+    return settings, asset_root, input_root
+
+
+def test_generate_without_reference_uses_portrait_workflow(client, db_session, tmp_path, monkeypatch):
+    _settings, _asset_root, _input_root = _setup_real_workflow_files(tmp_path, monkeypatch)
+    campaign = create_campaign(db_session, "Route Dispatch No Reference", world_seed=1201)
+    region, village = seed_initial_region(db_session, campaign.id)
+    npc = NPC(campaign_id=campaign.id, region_id=region.id, location_id=village.id, name="Serel", role="scout")
+    db_session.add(npc)
+    db_session.flush()
+    set_npc_stable_identity(db_session, campaign.id, npc.id, {"hair_color": "silver"})
+    db_session.commit()
+
+    raw_output = tmp_path / "raw_output.png"
+    Image.new("RGB", (32, 32)).save(raw_output)
+    fake_client = _RecordingSuccessClient(raw_output)
+    set_comfyui_client_override(fake_client)
+
+    response = client.post(
+        f"/api/campaigns/{campaign.id}/visual-assets/generate",
+        json={"entity_type": "npc", "entity_id": npc.id, "asset_type": "NPC_PORTRAIT"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "COMPLETED"
+    assert body["workflow_key"] == "EVERREACH_NPC_PORTRAIT"
+    graph = fake_client.submitted_graphs[0]
+    assert "50" not in graph
+
+
+def test_generate_with_canonical_reference_uses_identity_workflow(client, db_session, tmp_path, monkeypatch):
+    _settings, asset_root, input_root = _setup_real_workflow_files(tmp_path, monkeypatch)
+    campaign = create_campaign(db_session, "Route Dispatch With Reference", world_seed=1202)
+    region, village = seed_initial_region(db_session, campaign.id)
+    npc = NPC(campaign_id=campaign.id, region_id=region.id, location_id=village.id, name="Serel", role="scout")
+    db_session.add(npc)
+    db_session.flush()
+    set_npc_stable_identity(db_session, campaign.id, npc.id, {"hair_color": "silver"})
+    from app.game.visual.npc import set_npc_current_appearance
+    set_npc_current_appearance(db_session, campaign.id, npc.id, {"clothing": "travel cloak"})
+
+    reference_dir = asset_root / campaign.id / "npc" / npc.id / "NPC_PORTRAIT"
+    reference_dir.mkdir(parents=True)
+    reference_asset_id = "vasset_ref9999"
+    Image.new("RGB", (64, 64), color="blue").save(reference_dir / f"{reference_asset_id}.png")
+    reference_asset = VisualAsset(
+        id=reference_asset_id, campaign_id=campaign.id, entity_type="npc", entity_id=npc.id,
+        asset_type="NPC_PORTRAIT",
+        storage_path=f"{campaign.id}/npc/{npc.id}/NPC_PORTRAIT/{reference_asset_id}.png",
+        mime_type="image/png", width=64, height=64, workflow_key="EVERREACH_NPC_PORTRAIT",
+        workflow_version="V1", model_identifier="flux-2-klein-4b", seed=1,
+    )
+    db_session.add(reference_asset)
+    db_session.commit()
+    from app.game.visual.npc_reference import get_canonical_reference, set_canonical_reference
+    set_canonical_reference(db_session, campaign.id, npc.id, reference_asset_id)
+    db_session.commit()
+
+    raw_output = tmp_path / "raw_output.png"
+    Image.new("RGB", (32, 32)).save(raw_output)
+    fake_client = _RecordingSuccessClient(raw_output)
+    set_comfyui_client_override(fake_client)
+
+    response = client.post(
+        f"/api/campaigns/{campaign.id}/visual-assets/generate",
+        json={"entity_type": "npc", "entity_id": npc.id, "asset_type": "NPC_PORTRAIT"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "COMPLETED"
+    assert body["workflow_key"] == "EVERREACH_NPC_IDENTITY"
+    graph = fake_client.submitted_graphs[0]
+    assert graph["50"]["inputs"]["image"] == f"everreach_reference/{reference_asset_id}.png"
+    staged_file = input_root / "everreach_reference" / f"{reference_asset_id}.png"
+    assert staged_file.is_file()
+
+    still_canonical = get_canonical_reference(db_session, campaign.id, npc.id)
+    assert still_canonical.id == reference_asset_id
+
+
+def test_generate_request_body_ignores_extra_prompt_and_workflow_fields(client, db_session, tmp_path, monkeypatch):
+    """TEST 7 -- even if a caller tries to smuggle a raw prompt/workflow/
+    reference path into the request body, the API schema only reads
+    entity_type/entity_id/asset_type; nothing else can reach ComfyUI."""
+    _settings, _asset_root, _input_root = _setup_real_workflow_files(tmp_path, monkeypatch)
+    campaign = create_campaign(db_session, "Route Dispatch Ignores Extra Fields", world_seed=1203)
+    region, village = seed_initial_region(db_session, campaign.id)
+    npc = NPC(campaign_id=campaign.id, region_id=region.id, location_id=village.id, name="Serel", role="scout")
+    db_session.add(npc)
+    db_session.flush()
+    set_npc_stable_identity(db_session, campaign.id, npc.id, {"hair_color": "silver"})
+    db_session.commit()
+
+    raw_output = tmp_path / "raw_output.png"
+    Image.new("RGB", (32, 32)).save(raw_output)
+    fake_client = _RecordingSuccessClient(raw_output)
+    set_comfyui_client_override(fake_client)
+
+    response = client.post(
+        f"/api/campaigns/{campaign.id}/visual-assets/generate",
+        json={
+            "entity_type": "npc", "entity_id": npc.id, "asset_type": "NPC_PORTRAIT",
+            "prompt_text": "ATTACKER-SUPPLIED PROMPT SHOULD NEVER REACH COMFYUI",
+            "workflow_key": "SOME_OTHER_WORKFLOW",
+            "reference_image": "../../etc/passwd",
+        },
+    )
+
+    assert response.status_code == 200
+    graph = fake_client.submitted_graphs[0]
+    assert "ATTACKER-SUPPLIED" not in graph["20"]["inputs"]["text"]
+    assert "50" not in graph

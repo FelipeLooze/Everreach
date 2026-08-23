@@ -116,3 +116,50 @@ def resolve_asset_path(storage_path: str, *, settings: Settings | None = None) -
             f"Refusing to resolve asset path outside asset root: {candidate}"
         )
     return candidate
+
+
+def _input_root(settings: Settings | None = None) -> Path:
+    settings = settings or get_settings()
+    if not settings.comfyui_input_root:
+        raise VisualAssetStorageError("comfyui_input_root is not configured.")
+    return Path(settings.comfyui_input_root)
+
+
+def stage_reference_image(
+    source_path: Path, *, asset_id: str, settings: Settings | None = None
+) -> str:
+    """Phase 23D-R.1 — copy an already-resolved, trusted local file (a
+    canonical NPC reference's own asset file, already validated by
+    resolve_asset_path) into ComfyUI's OWN input directory, and return
+    the value its LoadImage node's "image" input should be set to.
+
+    ComfyUI's LoadImage resolves an "image" value with no [input]/
+    [output]/[temp] suffix against its own input directory ONLY
+    (confirmed by reading ComfyUI's folder_paths.get_annotated_filepath)
+    — an absolute Everreach asset path can never reach it directly, and
+    ComfyUI's own traversal guard (is_within_directory) would reject one
+    anyway. The staged filename is always ID-based
+    (everreach_reference/<asset_id><ext>) — never derived from an NPC
+    name or anything else caller-controlled — mirroring
+    persist_generated_asset's own "IDs only" filename discipline.
+
+    Always copies fresh (no "already staged" shortcut): these are small
+    PNGs, and a stale copy from a since-superseded reference would be a
+    much worse failure mode than a redundant copy.
+    """
+    settings = settings or get_settings()
+    if not source_path.is_file():
+        raise VisualAssetStorageError(f"Reference source file not found: {source_path}")
+    _validate_path_segment(asset_id)
+
+    directory = _input_root(settings) / "everreach_reference"
+    directory.mkdir(parents=True, exist_ok=True)
+
+    extension = source_path.suffix
+    final_path = directory / f"{asset_id}{extension}"
+    temp_path = directory / f"{asset_id}{extension}.tmp"
+
+    shutil.copyfile(source_path, temp_path)
+    os.replace(temp_path, final_path)
+
+    return f"everreach_reference/{asset_id}{extension}"

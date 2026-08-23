@@ -56,15 +56,34 @@ def get_npc_visual_spec(db: Session, campaign_id: str, npc_id: str) -> VisualSpe
     return get_visual_spec(db, "npc", npc_id, campaign_id=campaign_id)
 
 
-def resolve_npc_appearance(db: Session, campaign_id: str, npc_id: str) -> dict:
-    """Regional tendency, then this NPC's own stable identity, then
-    their current state — each layer only overrides what it actually
-    has an opinion about (resolve_visual_layers skips None values)."""
+def _resolve_npc_layers(db: Session, campaign_id: str, npc_id: str) -> tuple[dict, VisualSpec]:
     npc = db.get(NPC, npc_id)
     if npc is None:
         raise NPCVisualIdentityError(f"NPC {npc_id} does not exist.")
 
     regional = get_visual_spec(db, "region", npc.region_id, campaign_id=campaign_id).stable
     personal = get_visual_spec(db, "npc", npc_id, campaign_id=campaign_id)
+    return regional, personal
 
+
+def resolve_npc_appearance(db: Session, campaign_id: str, npc_id: str) -> dict:
+    """Regional tendency, then this NPC's own stable identity, then
+    their current state — each layer only overrides what it actually
+    has an opinion about (resolve_visual_layers skips None values)."""
+    regional, personal = _resolve_npc_layers(db, campaign_id, npc_id)
     return resolve_visual_layers(regional, personal.stable, personal.current)
+
+
+def resolve_npc_stable_and_current(
+    db: Session, campaign_id: str, npc_id: str
+) -> tuple[dict, dict]:
+    """Phase 23D-R.1 — same layer composition as resolve_npc_appearance,
+    but kept as two SEPARATE dicts instead of flattened into one.
+    Needed by the identity-editing prompt (app.game.visual.
+    prompt_builder.build_npc_identity_edit_prompt), which must phrase
+    "keep X unchanged, now show Y" rather than one flat descriptor list
+    — resolve_npc_appearance's own merge would lose exactly the
+    distinction that prompt needs to draw."""
+    regional, personal = _resolve_npc_layers(db, campaign_id, npc_id)
+    stable = resolve_visual_layers(regional, personal.stable)
+    return stable, personal.current

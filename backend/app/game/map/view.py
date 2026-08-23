@@ -181,6 +181,25 @@ is None (the character's current location never made it into their
 own Map View at all — should not normally happen, but is handled
 rather than assumed impossible), the map correctly shows no exact
 marker instead of lying.
+
+Phase 20N — Cartography & Exploration Integration.
+
+`provenance` on MapViewLocation is the spec's "PERSONAL CONFIRMATION"
+distinction (HEARD ABOUT/MAP-DERIVED/PERSONALLY OBSERVED/PERSONALLY
+TRAVELED/SURVEYED) — reusing raw material that already exists and is
+already rich: KnowledgeKnower.source, a free-text field every existing
+grant call site already populates meaningfully ("exploração ativa",
+"expedição", "percepção direta", f"revelado por {npc.name}", ...). No
+new provenance vocabulary is invented; this module just reads that
+field back for the exact EXISTENCE grant behind each location (the
+canonical one for source="knowledge", the ":rumor:" one for
+source="rumor") and surfaces it. source="discovery" locations have no
+KnowledgeKnower row at all (ordinary travel never writes an explicit
+EXISTENCE fact — see the top-of-file docstring), so provenance is the
+one literal constant here ("presença física" — they were physically
+there); source="map" locations get "mapa físico" (a physical map is
+its own, separate provenance channel, 17G/20G's domain, not a
+KnowledgeKnower grant at all).
 """
 from dataclasses import dataclass, field
 
@@ -234,6 +253,7 @@ class MapViewLocation:
     discovery_status: str
     source: str = "discovery"
     stale: bool = False
+    provenance: str | None = None
     known_aspects: list[str] = field(default_factory=list)
 
 
@@ -343,12 +363,14 @@ def _phase17_known_location_ids(db: Session, campaign_id: str, character_id: str
     return ids
 
 
-def _phase17_rumored_location_ids(db: Session, campaign_id: str, character_id: str) -> set[str]:
+def _phase17_rumored_location_ids(db: Session, campaign_id: str, character_id: str) -> dict[str, str]:
     """Locations the character has only ever heard a RUMORED EXISTENCE
     claim about (app.game.knowledge.rumors' ":rumor:" fact_key
     namespace) — distinct from _phase17_known_location_ids, which only
     ever matches the canonical (confirmed) fact_key. See module
-    docstring."""
+    docstring. Maps location_id -> the matching rumor fact_key (the
+    first one found), so 20N's provenance lookup can reuse it directly
+    rather than re-deriving which rumor grant applies."""
     prefix = "location:"
     marker = f":{GeographicKnowledgeAspect.EXISTENCE.value.lower()}:rumor:"
     rows = (
@@ -362,12 +384,31 @@ def _phase17_rumored_location_ids(db: Session, campaign_id: str, character_id: s
         )
         .all()
     )
-    ids = set()
+    by_location: dict[str, str] = {}
     for (fact_key,) in rows:
         if not fact_key.startswith(prefix) or marker not in fact_key:
             continue
-        ids.add(fact_key[len(prefix):].split(marker, 1)[0])
-    return ids
+        location_id = fact_key[len(prefix):].split(marker, 1)[0]
+        by_location.setdefault(location_id, fact_key)
+    return by_location
+
+
+def _grant_source(db: Session, campaign_id: str, character_id: str, fact_key: str) -> str | None:
+    """The free-text KnowledgeKnower.source behind one exact fact_key
+    grant to this character — the raw provenance text every existing
+    grant call site already populates (see module docstring)."""
+    row = (
+        db.query(KnowledgeKnower.source)
+        .join(KnowledgeFact, KnowledgeFact.id == KnowledgeKnower.fact_id)
+        .filter(
+            KnowledgeFact.campaign_id == campaign_id,
+            KnowledgeFact.fact_key == fact_key,
+            KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
+            KnowledgeKnower.knower_id == character_id,
+        )
+        .first()
+    )
+    return row[0] if row is not None else None
 
 
 def _owned_maps_by_location(db: Session, character_id: str) -> dict[str, list[Map]]:
@@ -428,6 +469,7 @@ def _build_map_view_location_from_maps(
         discovery_status=discovery_status.value,
         source="map",
         stale=stale,
+        provenance="mapa físico",
         known_aspects=sorted(known_aspect_values),
     )
 
@@ -440,6 +482,7 @@ def _build_map_view_location(
     discovery_status: DiscoveryStatus,
     *,
     source: str = "discovery",
+    provenance: str | None = None,
 ) -> MapViewLocation:
     precision = _best_known_precision(db, campaign_id, character_id, location, discovery_status)
     name_known = _knows_name_aspect(
@@ -472,6 +515,7 @@ def _build_map_view_location(
         y=location.y if exact_position_known else None,
         discovery_status=discovery_status.value,
         source=source,
+        provenance=provenance,
         known_aspects=sorted(known_aspects),
     )
 
@@ -537,7 +581,11 @@ def get_map_view(
     seen_location_ids: set[str] = set()
     for location in data["locations"]:
         discovery_status = DiscoveryStatus(data["location_discovery"][location.id])
-        locations.append(_build_map_view_location(db, campaign_id, character_id, location, discovery_status))
+        locations.append(
+            _build_map_view_location(
+                db, campaign_id, character_id, location, discovery_status, provenance="presença física"
+            )
+        )
         seen_location_ids.add(location.id)
 
     regions_by_id = {region.id: region for region in data["regions"]}
@@ -555,9 +603,14 @@ def get_map_view(
             # No CharacterLocationDiscovery row exists for this location —
             # RUMORED is the closest existing status to "aware it exists,
             # never physically encountered it".
+            existence_fact_key = geographic_fact_key(
+                "location", location.id, GeographicKnowledgeAspect.EXISTENCE
+            )
             locations.append(
                 _build_map_view_location(
-                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED, source="knowledge"
+                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED,
+                    source="knowledge",
+                    provenance=_grant_source(db, campaign_id, character_id, existence_fact_key),
                 )
             )
             if location.region_id not in regions_by_id:
@@ -588,19 +641,27 @@ def get_map_view(
                     regions_by_id[region.id] = region
 
     included_location_ids = {location.id for location in locations}
-    rumored_only_ids = _phase17_rumored_location_ids(db, campaign_id, character_id) - included_location_ids
-    if rumored_only_ids:
+    rumor_fact_key_by_location = {
+        location_id: fact_key
+        for location_id, fact_key in _phase17_rumored_location_ids(db, campaign_id, character_id).items()
+        if location_id not in included_location_ids
+    }
+    if rumor_fact_key_by_location:
         rumored_locations = (
             db.query(Location)
             .join(Region, Region.id == Location.region_id)
-            .filter(Location.id.in_(rumored_only_ids), Region.campaign_id == campaign_id)
+            .filter(Location.id.in_(rumor_fact_key_by_location.keys()), Region.campaign_id == campaign_id)
             .order_by(Location.name)
             .all()
         )
         for location in rumored_locations:
             locations.append(
                 _build_map_view_location(
-                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED, source="rumor"
+                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED,
+                    source="rumor",
+                    provenance=_grant_source(
+                        db, campaign_id, character_id, rumor_fact_key_by_location[location.id]
+                    ),
                 )
             )
             if location.region_id not in regions_by_id:

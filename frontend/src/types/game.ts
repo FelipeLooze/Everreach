@@ -417,6 +417,7 @@ export interface MapViewLocation {
   discovery_status: string;
   source: string;
   stale: boolean;
+  provenance: string | null;
   known_aspects: string[];
 }
 

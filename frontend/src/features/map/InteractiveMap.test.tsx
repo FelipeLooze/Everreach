@@ -13,6 +13,7 @@ const locations: MapViewLocation[] = [
     known_aspects: ["EXISTENCE"],
     source: "discovery",
     stale: false,
+    provenance: null,
     type: "village",
     name: "Cardal",
     precision: "PRECISE",
@@ -28,6 +29,7 @@ const locations: MapViewLocation[] = [
     known_aspects: ["EXISTENCE"],
     source: "discovery",
     stale: false,
+    provenance: null,
     type: "forest",
     name: "Bosque",
     precision: "APPROXIMATE",
@@ -89,6 +91,7 @@ describe("InteractiveMap", () => {
             known_aspects: ["EXISTENCE"],
             source: "discovery",
             stale: false,
+            provenance: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -118,6 +121,7 @@ describe("InteractiveMap", () => {
             known_aspects: ["EXISTENCE"],
             source: "discovery",
             stale: false,
+            provenance: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -145,6 +149,7 @@ describe("InteractiveMap", () => {
             known_aspects: ["EXISTENCE"],
             source: "discovery",
             stale: false,
+            provenance: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -224,6 +229,7 @@ describe("InteractiveMap", () => {
             known_aspects: ["EXISTENCE"],
             source: "discovery",
             stale: false,
+            provenance: null,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -426,5 +432,25 @@ describe("InteractiveMap", () => {
     fireEvent.click(screen.getByTestId("map-node-location_2"));
 
     expect(screen.getByTestId("map-route-plan-result")).toHaveTextContent("Nenhuma rota conhecida");
+  });
+
+  it("shows the location's knowledge provenance when present", () => {
+    render(
+      <InteractiveMap
+        locations={[{ ...locations[0], provenance: "revelado por Mira" }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+
+    expect(screen.getByTestId("map-selected-provenance")).toHaveTextContent("revelado por Mira");
+  });
+
+  it("does not show a provenance line when none is known", () => {
+    render(<InteractiveMap locations={locations} />);
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+
+    expect(screen.queryByTestId("map-selected-provenance")).not.toBeInTheDocument();
   });
 });

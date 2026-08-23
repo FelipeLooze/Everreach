@@ -388,6 +388,7 @@ export function InteractiveMap({
           {selected.precision && <p>Precisão: {geographicPrecisionLabel(selected.precision)}</p>}
           {!selected.positionKnown && <p>Posição exata desconhecida.</p>}
           <p>Fonte: {mapLocationSourceLabel(selected.source)}</p>
+          {selected.provenance && <p data-testid="map-selected-provenance">Origem: {selected.provenance}</p>}
           {selected.stale && (
             <p className="interactive-map-stale-note" data-testid="map-selected-stale">
               Este mapa pode estar desatualizado.

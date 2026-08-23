@@ -9,6 +9,7 @@ CATEGORIES = [
     "narration",
     "context",
     "api",
+    "visual",
 ]
 
 

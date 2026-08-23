@@ -73,12 +73,20 @@ def test_context_builder_sends_only_current_player_context(db_session):
     assert "NPCs do not know it automatically" in context
     assert "main_boss" not in context
     assert "WORLD_STARTED" not in context
-def test_only_llm_service_contains_ollama_transport_code():
+def test_only_designated_transport_files_contain_raw_httpx_calls():
+    """Each optional local external integration (Ollama, ComfyUI, ...) gets
+    exactly ONE file that actually opens an HTTP connection to it — every
+    other caller goes through that file's typed client/service, never a
+    fresh ad-hoc `import httpx`. Phase 23D-B added ComfyUI as a second,
+    deliberate transport owner alongside the original Ollama one."""
     app_root = Path(__file__).parents[1]
-    transport_owner = app_root / "ai" / "llm_service.py"
+    transport_owners = {
+        app_root / "ai" / "llm_service.py",
+        app_root / "game" / "visual" / "comfyui_client.py",
+    }
 
     for source_path in app_root.rglob("*.py"):
-        if "tests" in source_path.parts or source_path == transport_owner:
+        if "tests" in source_path.parts or source_path in transport_owners:
             continue
         source = source_path.read_text(encoding="utf-8")
         assert "import httpx" not in source

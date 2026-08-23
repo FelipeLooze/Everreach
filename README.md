@@ -183,6 +183,16 @@ npm test
 npm run build
 ```
 
+## Desenvolvimento / Inicialização local em um clique
+
+`scripts/start-everreach.ps1` sobe a pilha local inteira (Ollama, ComfyUI, backend, frontend) e abre o jogo no navegador padrão. Ele detecta o que já está rodando (via os próprios health checks de cada serviço), inicia só o que falta, evita duplicar processos e nunca derruba nem reinicia um serviço que já existia antes dele. ComfyUI e Ollama são serviços locais opcionais: uma falha em qualquer um dos dois é reportada claramente, mas não impede o jogo de abrir.
+
+1. Execute uma vez: `powershell -ExecutionPolicy Bypass -File scripts\create-everreach-shortcuts.ps1` — cria os atalhos **Everreach** e **Stop Everreach** na Área de Trabalho.
+2. Depois, dê duplo clique em **Everreach** sempre que quiser jogar.
+3. Use **Stop Everreach** para encerrar apenas os serviços que o launcher iniciou.
+
+Detalhes de implementação, rastreamento de processos e como reportar problemas de inicialização estão comentados diretamente em `scripts/start-everreach.ps1`, `scripts/stop-everreach.ps1` e `scripts/lib/common.ps1`.
+
 ## Fluxo atual
 
 1. A tela inicial lista campanhas persistidas e permite continuar ou excluir um save.

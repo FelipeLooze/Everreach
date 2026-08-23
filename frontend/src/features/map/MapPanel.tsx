@@ -96,6 +96,7 @@ export function MapPanel({
                 locations={regionLocations}
                 routes={map.routes}
                 annotations={map.annotations}
+                currentLocationId={map.position_location_id}
                 onCreateAnnotation={handleCreateAnnotation}
                 onDeleteAnnotation={handleDeleteAnnotation}
               />

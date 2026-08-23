@@ -63,3 +63,5 @@ class MapViewDataSchema(BaseModel):
     locations: list[MapViewLocationSchema]
     routes: list[MapViewRouteSchema]
     annotations: list[MapViewAnnotationSchema]
+    position_location_id: str | None
+    position_precision: str | None

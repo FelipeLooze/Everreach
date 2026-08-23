@@ -331,4 +331,17 @@ describe("InteractiveMap", () => {
 
     expect(screen.queryByTestId("map-selected-stale")).not.toBeInTheDocument();
   });
+
+  it("marks the character's current location with a position ring", () => {
+    render(<InteractiveMap locations={locations} currentLocationId="location_1" />);
+
+    expect(screen.getByTestId("map-node-location_1")).toHaveAttribute("data-current-position", "true");
+    expect(screen.getByTestId("map-current-position-marker")).toBeInTheDocument();
+  });
+
+  it("shows no position ring when currentLocationId is not among the visible locations", () => {
+    render(<InteractiveMap locations={locations} currentLocationId="location_never_shown" />);
+
+    expect(screen.queryByTestId("map-current-position-marker")).not.toBeInTheDocument();
+  });
 });

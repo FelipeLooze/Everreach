@@ -447,6 +447,8 @@ export interface MapViewData {
   locations: MapViewLocation[];
   routes: MapViewRoute[];
   annotations: MapViewAnnotation[];
+  position_location_id: string | null;
+  position_precision: string | null;
 }
 
 export interface JournalEvent {

@@ -160,12 +160,34 @@ without needing anything new here. Only the ONE narrow exception
 used exactly for the physical-map-staleness scenario 17H built) needed
 surfacing — and only for maps, since only maps freeze a comparable
 past snapshot to diff against.
+
+Phase 20L — Character Position & Navigation State.
+
+"Reuse existing Navigation/Knowledge systems rather than adding
+arbitrary state" (spec) — position_precision is deliberately the exact
+same value already computed for every other location's precision
+(_best_known_precision over the character's own current
+CharacterLocationDiscovery/Phase 17 grants for their OWN location),
+never a parallel PRECISE/APPROXIMATE/UNCERTAIN/LOST vocabulary of its
+own. Ordinary travel (app.game.travel.service.move_character) always
+sets VISITED on arrival, which the existing DiscoveryStatus fallback
+already maps to PRECISE — matching the spec's own "inside familiar
+Cardal: precise position" example for free, with zero new mechanic.
+No system in this codebase currently downgrades that (no storm/
+navigation-failure/lost mechanic exists yet) — spec's "storm + nav
+failure -> uncertain" and "lost -> no exact marker" examples describe
+gameplay mechanics Phase 20 does not own; when position_location_id
+is None (the character's current location never made it into their
+own Map View at all — should not normally happen, but is handled
+rather than assumed impossible), the map correctly shows no exact
+marker instead of lying.
 """
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
 from app.core.enums import DiscoveryStatus, GeographicKnowledgeAspect, GeographicPrecision, KnowerType
+from app.db.models.character import Character
 from app.db.models.item import ItemInstance
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location
@@ -252,7 +274,11 @@ class MapViewData:
 
     20F adds `routes` — see module docstring.
 
-    20J adds `annotations` — see module docstring."""
+    20J adds `annotations` — see module docstring.
+
+    20L adds `position_location_id`/`position_precision` — the
+    character's own current position, never more certain than their
+    Map View already allows it to be for any other location."""
 
     campaign_id: str
     character_id: str
@@ -261,6 +287,8 @@ class MapViewData:
     locations: list[MapViewLocation] = field(default_factory=list)
     routes: list[MapViewRoute] = field(default_factory=list)
     annotations: list[MapViewAnnotation] = field(default_factory=list)
+    position_location_id: str | None = None
+    position_precision: str | None = None
 
 
 def _knows_name_aspect(
@@ -579,6 +607,17 @@ def get_map_view(
                 if region is not None:
                     regions_by_id[region.id] = region
 
+    position_location_id: str | None = None
+    position_precision: str | None = None
+    character = db.get(Character, character_id)
+    if character is not None and character.location_id is not None:
+        current_location_entry = next(
+            (location for location in locations if location.id == character.location_id), None
+        )
+        if current_location_entry is not None:
+            position_location_id = current_location_entry.id
+            position_precision = current_location_entry.precision
+
     regions = []
     for region in regions_by_id.values():
         name_known = explicitly_knows_name(
@@ -635,4 +674,6 @@ def get_map_view(
         locations=locations,
         routes=routes,
         annotations=annotations,
+        position_location_id=position_location_id,
+        position_precision=position_precision,
     )

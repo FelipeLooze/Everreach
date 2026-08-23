@@ -46,6 +46,8 @@ describe("MapPanel", () => {
       ],
       routes: [],
       annotations: [],
+      position_location_id: null,
+      position_precision: null,
     });
   });
 
@@ -116,6 +118,8 @@ describe("MapPanel", () => {
         },
       ],
       annotations: [],
+      position_location_id: null,
+      position_precision: null,
     });
 
     render(
@@ -186,6 +190,8 @@ describe("MapPanel", () => {
       ],
       routes: [],
       annotations: [],
+      position_location_id: null,
+      position_precision: null,
     });
 
     render(

@@ -134,6 +134,7 @@ export function InteractiveMap({
   locations,
   routes = [],
   annotations = [],
+  currentLocationId = null,
   onSelect,
   onCreateAnnotation,
   onDeleteAnnotation,
@@ -141,6 +142,7 @@ export function InteractiveMap({
   locations: MapViewLocation[];
   routes?: MapViewRoute[];
   annotations?: MapViewAnnotation[];
+  currentLocationId?: string | null;
   onSelect?: (locationId: string | null) => void;
   onCreateAnnotation?: (locationId: string, text: string) => void;
   onDeleteAnnotation?: (annotationId: string) => void;
@@ -304,6 +306,7 @@ export function InteractiveMap({
               data-position-known={location.positionKnown}
               data-source={location.source}
               data-stale={location.stale}
+              data-current-position={location.id === currentLocationId}
               transform={`translate(${location.displayX}, ${location.displayY})`}
               onClick={(event) => {
                 event.stopPropagation();
@@ -312,6 +315,13 @@ export function InteractiveMap({
               onMouseEnter={() => setHoveredId(location.id)}
               onMouseLeave={() => setHoveredId((current) => (current === location.id ? null : current))}
             >
+              {location.id === currentLocationId && (
+                <circle
+                  data-testid="map-current-position-marker"
+                  r={location.positionKnown ? 3.6 : uncertaintyRadius + 1.2}
+                  className="map-current-position-ring"
+                />
+              )}
               {location.positionKnown ? (
                 <circle
                   r={location.id === selectedId ? 2.6 : 1.8}

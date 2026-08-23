@@ -1,4 +1,6 @@
 """Phase 23D-L — Asset Versioning."""
+from datetime import UTC, datetime, timedelta
+
 from app.db.models.visual_asset import VisualAsset
 from app.game.visual.versioning import (
     get_current_asset,
@@ -80,11 +82,14 @@ def test_get_current_asset_returns_the_only_current_row_after_supersession(db_se
 
 
 def test_list_asset_history_returns_current_and_superseded_newest_first(db_session):
+    """Explicit created_at values: on Windows, datetime.now()'s tick
+    resolution (~15ms) can make two rapid inserts tie, making "newest
+    first" ambiguous by accident rather than by a real ordering bug."""
     campaign = create_campaign(db_session, "Versioning History", world_seed=805)
-    old = _asset(campaign.id)
+    now = datetime.now(UTC).replace(tzinfo=None)
+    old = _asset(campaign.id, created_at=now - timedelta(seconds=1))
     db_session.add(old)
-    db_session.commit()
-    new = _asset(campaign.id)
+    new = _asset(campaign.id, created_at=now)
     db_session.add(new)
     db_session.commit()
     supersede_current_assets(

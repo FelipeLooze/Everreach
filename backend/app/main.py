@@ -1,7 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import actions, campaigns, character, inventory, journal, map as map_routes, quests, state, story
+from app.api.routes import (
+    actions,
+    campaigns,
+    character,
+    inventory,
+    journal,
+    map as map_routes,
+    quests,
+    state,
+    story,
+    visual_assets,
+)
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -27,6 +38,7 @@ app.include_router(character.router)
 app.include_router(quests.router)
 app.include_router(journal.router)
 app.include_router(story.router)
+app.include_router(visual_assets.router)
 
 
 @app.get("/api/health")

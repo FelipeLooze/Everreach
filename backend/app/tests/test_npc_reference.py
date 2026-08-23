@@ -1,4 +1,6 @@
 """Phase 23D-H — NPC Canonical Reference Support."""
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from app.db.models.visual_asset import VisualAsset
@@ -93,11 +95,14 @@ def test_set_canonical_reference_rejects_an_asset_from_another_campaign(db_sessi
 
 
 def test_get_current_portrait_returns_the_most_recent_npc_portrait(db_session):
+    """Explicit created_at values, not two back-to-back commits: on
+    Windows, datetime.now()'s tick resolution (~15ms) can make two
+    rapid inserts tie, making "most recent" ambiguous by accident."""
     campaign = create_campaign(db_session, "NPC Portrait Atual", world_seed=408)
-    older = _asset(campaign.id, seed=1)
+    now = datetime.now(UTC).replace(tzinfo=None)
+    older = _asset(campaign.id, seed=1, created_at=now - timedelta(seconds=1))
     db_session.add(older)
-    db_session.commit()
-    newer = _asset(campaign.id, seed=2)
+    newer = _asset(campaign.id, seed=2, created_at=now)
     db_session.add(newer)
     db_session.commit()
 

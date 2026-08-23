@@ -1353,3 +1353,16 @@ class KnowledgeDocumentType(StrEnum):
     GEOGRAPHY = "GEOGRAPHY"
     ORGANIZATION_CONTEXT = "ORGANIZATION_CONTEXT"
     HISTORICAL_EVENT = "HISTORICAL_EVENT"
+
+
+class VisualGenerationRequestStatus(StrEnum):
+    """Phase 23D-D — an attempt to materialize a visual asset through
+    ComfyUI. "REQUEST IS NOT ASSET" (spec, mandatory): this status never
+    describes the asset itself, only the attempt. COMPLETED requests
+    carry a result_asset_id; FAILED ones carry error_code/error_message.
+    See app.db.models.visual_generation_request.VisualGenerationRequest."""
+
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"

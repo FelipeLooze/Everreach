@@ -15,6 +15,7 @@ describe("Panel", () => {
     );
 
     expect(screen.getByRole("dialog")).toHaveClass("panel-wide");
+    expect(screen.getByRole("dialog")).toHaveClass("everreach-frame");
     fireEvent.click(screen.getByRole("button", { name: "Conteúdo" }));
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Fechar" }));

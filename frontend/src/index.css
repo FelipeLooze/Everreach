@@ -48,39 +48,44 @@
      everywhere, exactly matching this phase's "use bright accents
      sparingly" rule.
 
-   CURRENT FOUNDATION COLOR (audited, not yet the target — see below)
-   --bg / --bg-panel are today a near-neutral warm-dark gray, not blue.
-   Everything else (gold accents, Cinzel, panel borders) already fits
-   the desired identity; only the base hue does not yet read as "dark
-   blue foundation." Phase 21A intentionally leaves this value
-   unchanged (spec: "do not change existing appearance unnecessarily,"
-   "prefer incremental refactoring over destructive rewrite") — a
-   visible hue shift on an already-cohesive, live screen deserves its
-   own deliberate pass with the token consolidation, not a silent
-   side-effect of an audit subphase. Target for that later pass: shift
-   --bg/--bg-panel toward a restrained, desaturated dark blue (not
-   bright/neon) while preserving the existing gold accent, borders and
-   typography untouched.
+   FOUNDATION COLOR (Phase 21A audited; Phase 21B applied)
+   --bg/--bg-panel were a near-neutral warm-dark gray, not blue. 21A
+   deliberately left this unchanged (documentation-only subphase); 21B
+   is the token-consolidation subphase, so it carries out the shift
+   21A only documented — restrained, desaturated dark blue, not
+   bright/neon, with the existing gold accent/borders/typography left
+   exactly as they were (see the token block below for the values).
 
-   TOKEN MAP (current variables, annotated with the role they play in
-   Phase 21B's target vocabulary — 21B may rename/extend these, it must
-   not invent a second, parallel set):
-   --bg        -> BACKGROUND
-   --bg-panel  -> PANEL_BACKGROUND
-   --border    -> BORDER
-   --text      -> PRIMARY_TEXT
-   --text-dim  -> SECONDARY_TEXT / MUTED_TEXT (today one token covers
-                  both meanings — 21B should decide whether they need
-                  to split)
-   --accent    -> SYSTEM_ACCENT (also standing in for MAGICAL_ACCENT
-                  today — no separate magical-accent token exists yet)
-   --danger    -> DANGER
+   TOKEN MAP (current variables and the role they play in the spec's
+   target vocabulary):
+   --bg                 -> BACKGROUND
+   --bg-panel           -> PANEL_BACKGROUND
+   --bg-elevated         -> PANEL_BACKGROUND_ELEVATED (21B)
+   --border              -> BORDER
+   --border-decorative   -> DECORATIVE_BORDER (21B)
+   --text                -> PRIMARY_TEXT
+   --text-dim            -> SECONDARY_TEXT
+   --text-muted          -> MUTED_TEXT (21B)
+   --accent              -> SYSTEM_ACCENT
+   --magic               -> MAGICAL_ACCENT (21B)
+   --danger               -> DANGER
+   --warning              -> WARNING (21B)
+   --success              -> SUCCESS (21B)
+   --unknown              -> UNKNOWN_INFORMATION (21B)
+   --uncertain            -> UNCERTAIN_INFORMATION (21B)
    --hp/--mp/--sp are resource-bar colors (Character/StatusBar-specific,
    not general-purpose semantic tokens — keep them named for their
    resource, do not fold them into DANGER/WARNING/SUCCESS).
-   No WARNING, SUCCESS, DECORATIVE_BORDER, PANEL_BACKGROUND_ELEVATED,
-   UNKNOWN_INFORMATION or UNCERTAIN_INFORMATION token exists yet — real
-   work for 21B, not invented here.
+
+   21B intentionally did NOT retroactively rewrite every existing
+   rgba(180,145,90,*) / near-black literal across .panel/.status-bar/
+   .action-bar/narrative styling to reference the new tokens — that is
+   a much larger, purely-mechanical consolidation with real regression
+   risk across every screen, not "the smallest coherent
+   implementation" this subphase asked for. New shared components
+   (.everreach-frame below) reference the tokens; existing, already-
+   working literals are left alone, matching 21A/21B's own "prefer
+   incremental refactoring over destructive rewrite" instruction.
 
    VISUAL SPEC / FUTURE COMFYUI INDEPENDENCE
    Nothing in this file, or anywhere in Phase 21, should encode an
@@ -93,16 +98,59 @@
 
 :root {
   color-scheme: dark;
-  --bg: #202124;
-  --bg-panel: #18191a;
+
+  /* Foundation surfaces — BACKGROUND / PANEL_BACKGROUND /
+     PANEL_BACKGROUND_ELEVATED. Phase 21B: shifted from the previous
+     near-neutral warm-dark-gray (#202124/#18191a) to a restrained,
+     desaturated dark blue, per 21A's documented target — deliberately
+     subtle (not bright/neon), and every other existing token (gold
+     accent, borders, typography) is left exactly as it was. */
+  --bg: #171b23;
+  --bg-panel: #12151b;
+  --bg-elevated: #1d2229;
+
   --border: #4d4741;
+  /* DECORATIVE_BORDER — the gold-bronze frame/ornament tone already
+     used ad hoc as rgba(180, 145, 90, *) throughout .panel/.status-bar/
+     .action-bar. This token exists for NEW shared components (see
+     .everreach-frame below) to reference at a representative alpha;
+     it does not retroactively replace every existing literal — that
+     is a larger consolidation left for later, deliberate passes. */
+  --border-decorative: rgba(180, 145, 90, 0.3);
+
   --text: #f0e9de;
   --text-dim: #a99c88;
+  /* MUTED_TEXT — dimmer than --text-dim (SECONDARY_TEXT), for the
+     least prominent text (placeholders, disabled captions). */
+  --text-muted: #7d7566;
+
+  /* SYSTEM_ACCENT — the established warm gold/bronze accent. */
   --accent: #a77c3b;
+  /* MAGICAL_ACCENT — a restrained, cool pale accent reserved for
+     meaningful focus states (selection, System notifications, subtle
+     magical cues) — never a default border color, never "everything
+     glows." */
+  --magic: #bcd9f0;
+
   --hp: #8a2f2f;
   --mp: #2f5c8a;
   --sp: #3f7a3f;
   --danger: #c94f4f;
+  /* WARNING/SUCCESS — new semantic states; no consumer yet, added so
+     future work references a token instead of inventing another
+     one-off hex. */
+  --warning: #c9a227;
+  --success: #4f8f5b;
+
+  /* UNKNOWN_INFORMATION / UNCERTAIN_INFORMATION — Phase 17/20's
+     knowledge-uncertainty concepts, given real tokens instead of
+     inline literals. --uncertain reuses the exact gold-amber already
+     used for rumor map markers (Phase 20H); --unknown reuses
+     --text-muted (an unlabeled placeholder is not a "warning", just
+     absent information). */
+  --unknown: var(--text-muted);
+  --uncertain: #b98b3e;
+
   font-family: "DM Sans", system-ui, sans-serif;
 }
 
@@ -744,19 +792,21 @@ select {
   z-index: 10;
 }
 
-.panel {
+/* Phase 21B — the shared Everreach decorative frame: a bronze double
+   border with a small "◆" corner glyph. Originally only .panel's own
+   rules; Phase 20 then hand-duplicated an identical copy for
+   .interactive-map (see below). Consolidated here as one reusable
+   class so a THIRD screen never has to copy these six rules again —
+   apply "everreach-frame" alongside a component's own sizing class. */
+.everreach-frame {
   position: relative;
-  width: min(92vw, 1050px);
-  max-height: 86vh;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
   border: 1px solid #8f7042;
   background: linear-gradient(145deg, rgba(9, 13, 14, 0.98), rgba(4, 8, 8, 0.98));
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(180, 145, 80, 0.025);
 }
 
-.panel::before {
+.everreach-frame::before {
   content: "";
   position: absolute;
   inset: 6px;
@@ -765,7 +815,7 @@ select {
   pointer-events: none;
 }
 
-.panel::after {
+.everreach-frame::after {
   content: "◆";
   position: absolute;
   right: 10px;
@@ -774,6 +824,13 @@ select {
   color: rgba(208, 180, 119, 0.45);
   font-size: 0.55rem;
   pointer-events: none;
+}
+
+.panel {
+  width: min(92vw, 1050px);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-wide { width: min(94vw, 1150px); }
@@ -1236,35 +1293,13 @@ select {
   margin-top: 0.3rem;
 }
 
+/* Phase 21B: border/gradient/corner-glyph now come from the shared
+   .everreach-frame class (applied in InteractiveMap.tsx) instead of a
+   second hand-copied set of rules — this component only adds its own
+   sizing. */
 .interactive-map {
-  position: relative;
   width: 100%;
   height: 320px;
-  overflow: hidden;
-
-  border: 1px solid #8f7042;
-  background: linear-gradient(145deg, rgba(9, 13, 14, 0.98), rgba(4, 8, 8, 0.98));
-  box-shadow: inset 0 0 30px rgba(180, 145, 80, 0.025);
-}
-
-.interactive-map::before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  z-index: 0;
-  border: 1px solid rgba(180, 145, 80, 0.16);
-  pointer-events: none;
-}
-
-.interactive-map::after {
-  content: "◆";
-  position: absolute;
-  right: 7px;
-  bottom: 4px;
-  z-index: 1;
-  color: rgba(208, 180, 119, 0.4);
-  font-size: 0.5rem;
-  pointer-events: none;
 }
 
 .interactive-map-canvas {

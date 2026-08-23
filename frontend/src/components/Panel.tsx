@@ -11,7 +11,7 @@ export function Panel({ title, onClose, children, size = "default" }: PanelProps
   return (
     <div className="panel-overlay" onClick={onClose}>
       <div
-        className={`panel ${size === "wide" ? "panel-wide" : ""}`}
+        className={`panel everreach-frame ${size === "wide" ? "panel-wide" : ""}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

@@ -44,6 +44,12 @@ const locations: MapViewLocation[] = [
 describe("InteractiveMap", () => {
   afterEach(cleanup);
 
+  it("uses the shared Everreach decorative frame", () => {
+    render(<InteractiveMap locations={locations} />);
+
+    expect(screen.getByTestId("map-interactive")).toHaveClass("everreach-frame");
+  });
+
   it("draws a line for a route whose endpoints are both visible", () => {
     const routes: MapViewRoute[] = [
       {

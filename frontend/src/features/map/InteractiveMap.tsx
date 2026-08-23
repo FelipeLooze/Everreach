@@ -268,7 +268,7 @@ export function InteractiveMap({
   const selected = selectedId ? placedById[selectedId] : null;
 
   return (
-    <div className="interactive-map" data-testid="map-interactive">
+    <div className="interactive-map everreach-frame" data-testid="map-interactive">
       <div className="interactive-map-controls">
         <button
           type="button"

@@ -230,6 +230,10 @@ export interface InventoryItem {
   // only for named/special items; null for the overwhelming majority
   // of ordinary items ("ordinary items should look ordinary").
   signature_ornamentation?: string | null;
+  // Phase 21Q — opaque reference to a FUTURE ITEM_ILLUSTRATION asset;
+  // null until a later generation phase sets one. Render a fallback
+  // placeholder (AssetSlot) whenever this is null.
+  asset_ref?: string | null;
 }
 
 export interface SystemInventoryItem {

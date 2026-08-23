@@ -9,7 +9,7 @@ from app.db.models.weapon import ItemWeaponProfile
 from app.game.character.service import create_character
 from app.game.inventory.service import add_item, get_or_create_item
 from app.game.visual.item import ItemVisualIdentityError, build_item_visual_spec
-from app.game.visual.spec import set_stable_visual_traits
+from app.game.visual.spec import set_stable_visual_traits, set_visual_asset_reference
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -133,3 +133,28 @@ def test_signature_ornamentation_is_shared_by_every_instance_of_the_same_definit
 def test_raises_for_a_nonexistent_item_instance(db_session):
     with pytest.raises(ItemVisualIdentityError):
         build_item_visual_spec(db_session, "item_instance_nao_existe")
+
+
+def test_ordinary_item_has_no_asset_ref_by_default(db_session):
+    """Phase 21Q — fallback-first: no future asset has been generated,
+    so the frontend must fall back to a placeholder."""
+    _campaign, character = _character(db_session)
+    get_or_create_item(db_session, "Espada de Ferro Comum 2", item_type="weapon")
+    instance = add_item(db_session, character.id, "Espada de Ferro Comum 2")
+
+    spec = build_item_visual_spec(db_session, instance.id)
+
+    assert spec.asset_ref is None
+
+
+def test_asset_ref_surfaces_once_a_future_illustration_is_recorded(db_session):
+    _campaign, character = _character(db_session)
+    definition = get_or_create_item(db_session, "Machado Ilustrado", item_type="weapon")
+    instance = add_item(db_session, character.id, "Machado Ilustrado")
+    set_visual_asset_reference(
+        db_session, "item_definition", definition.id, "ITEM_ILLUSTRATION", "asset_abc123",
+    )
+
+    spec = build_item_visual_spec(db_session, instance.id)
+
+    assert spec.asset_ref == "asset_abc123"

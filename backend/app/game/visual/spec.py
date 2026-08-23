@@ -28,6 +28,27 @@ from sqlalchemy.orm import Session
 
 from app.db.models.visual_identity import VisualIdentity
 
+# Phase 21Q — the exact, closed set of future generated-asset kinds the
+# spec names. This list exists ONLY to validate `asset_kind` on write
+# (a typo'd kind should fail loudly, not silently create a new bucket
+# no one will ever read) — it is never interpreted, never turned into
+# a file path, and no code anywhere builds a ComfyUI prompt from it.
+FUTURE_ASSET_KINDS = (
+    "NPC_PORTRAIT",
+    "NPC_FULL_BODY",
+    "ITEM_ILLUSTRATION",
+    "CREATURE_ILLUSTRATION",
+    "LOCATION_SCENE",
+    "SETTLEMENT_SCENE",
+    "REGION_ART",
+    "ORGANIZATION_EMBLEM",
+    "MAP_ASSET",
+)
+
+
+class FutureAssetKindError(ValueError):
+    pass
+
 
 @dataclass(frozen=True)
 class VisualSpec:
@@ -35,6 +56,7 @@ class VisualSpec:
     subject_id: str
     stable: dict = field(default_factory=dict)
     current: dict = field(default_factory=dict)
+    assets: dict = field(default_factory=dict)
 
 
 def _get_row(
@@ -69,6 +91,7 @@ def get_visual_spec(
         subject_id=subject_id,
         stable=json.loads(row.stable_json),
         current=json.loads(row.current_json),
+        assets=json.loads(row.asset_refs_json),
     )
 
 
@@ -84,6 +107,7 @@ def _get_or_create_row(
         subject_id=subject_id,
         stable_json="{}",
         current_json="{}",
+        asset_refs_json="{}",
     )
     db.add(row)
     db.flush()
@@ -106,6 +130,7 @@ def set_stable_visual_traits(
     return VisualSpec(
         subject_kind=subject_kind, subject_id=subject_id,
         stable=stable, current=json.loads(row.current_json),
+        assets=json.loads(row.asset_refs_json),
     )
 
 
@@ -125,6 +150,42 @@ def set_current_visual_state(
     return VisualSpec(
         subject_kind=subject_kind, subject_id=subject_id,
         stable=json.loads(row.stable_json), current=current,
+        assets=json.loads(row.asset_refs_json),
+    )
+
+
+def set_visual_asset_reference(
+    db: Session,
+    subject_kind: str,
+    subject_id: str,
+    asset_kind: str,
+    reference: str | None,
+    *,
+    campaign_id: str | None = None,
+) -> VisualSpec:
+    """Phase 21Q — records where a FUTURE generated asset lives, once
+    one exists. `reference` is an opaque string this module never
+    parses or builds (a future local asset id, most likely) — no
+    ComfyUI path/URL shape is assumed or hardcoded here. Passing
+    `reference=None` clears a previously-set reference (e.g. Canon
+    changed enough that a stale asset must not be shown until
+    regenerated), never leaves it dangling.
+    """
+    if asset_kind not in FUTURE_ASSET_KINDS:
+        raise FutureAssetKindError(f"Unknown future asset kind: {asset_kind!r}")
+
+    row = _get_or_create_row(db, subject_kind, subject_id, campaign_id)
+    assets = json.loads(row.asset_refs_json)
+    if reference is None:
+        assets.pop(asset_kind, None)
+    else:
+        assets[asset_kind] = reference
+    row.asset_refs_json = json.dumps(assets)
+    db.flush()
+    return VisualSpec(
+        subject_kind=subject_kind, subject_id=subject_id,
+        stable=json.loads(row.stable_json), current=json.loads(row.current_json),
+        assets=assets,
     )
 
 

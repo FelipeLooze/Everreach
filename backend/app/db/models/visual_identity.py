@@ -54,6 +54,13 @@ class VisualIdentity(Base):
     stable_json: Mapped[str] = mapped_column(String, nullable=False, default="{}")
     current_json: Mapped[str] = mapped_column(String, nullable=False, default="{}")
 
+    # Phase 21Q — generic optional slot for a FUTURE generated asset
+    # reference (see app.game.visual.spec.FUTURE_ASSET_KINDS). Always
+    # an opaque string keyed by asset kind, never a ComfyUI path/URL
+    # shape decided here; every subject_kind reuses this one column
+    # rather than each getting its own asset-reference field.
+    asset_refs_json: Mapped[str] = mapped_column(String, nullable=False, default="{}")
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None),
         onupdate=lambda: datetime.now(UTC).replace(tzinfo=None),

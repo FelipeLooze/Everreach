@@ -52,6 +52,11 @@ class ItemVisualSpec:
     condition: str | None
     equipped_slot: str | None
     signature_ornamentation: str | None
+    # Phase 21Q — opaque reference to a FUTURE ITEM_ILLUSTRATION asset,
+    # always None until a later generation phase actually sets one via
+    # app.game.visual.spec.set_visual_asset_reference. The frontend
+    # must render a placeholder whenever this is None.
+    asset_ref: str | None
 
 
 def build_item_visual_spec(db: Session, item_instance_id: str) -> ItemVisualSpec:
@@ -72,7 +77,7 @@ def build_item_visual_spec(db: Session, item_instance_id: str) -> ItemVisualSpec
     condition = get_item_condition(instance)
     material_name = instance.material.name if instance.material is not None else None
 
-    stable = get_visual_spec(db, "item_definition", definition.id).stable
+    definition_visual = get_visual_spec(db, "item_definition", definition.id)
 
     return ItemVisualSpec(
         item_instance_id=instance.id,
@@ -84,5 +89,6 @@ def build_item_visual_spec(db: Session, item_instance_id: str) -> ItemVisualSpec
         quality=instance.quality,
         condition=condition.value if condition is not None else None,
         equipped_slot=instance.equipped_slot,
-        signature_ornamentation=stable.get("signature_ornamentation"),
+        signature_ornamentation=definition_visual.stable.get("signature_ornamentation"),
+        asset_ref=definition_visual.assets.get("ITEM_ILLUSTRATION"),
     )

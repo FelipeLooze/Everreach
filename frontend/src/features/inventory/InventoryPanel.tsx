@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getInventory } from "@/api/inventory";
+import { AssetSlot } from "@/components/AssetSlot";
 import { StateBadge, type StateTone } from "@/components/StateBadge";
 import type { Inventory, InventoryItem } from "@/types/game";
 
@@ -58,6 +59,22 @@ const conditionTone: Record<keyof typeof conditionLabels, StateTone> = {
   DAMAGED: "warning",
   CRITICAL: "danger",
   BROKEN: "danger",
+};
+
+// Phase 21Q — placeholder glyph shown in an item's AssetSlot until a
+// future generation phase records a real ITEM_ILLUSTRATION asset_ref.
+const itemTypeGlyphs: Record<string, string> = {
+  MISC: "◆",
+  MATERIAL: "▲",
+  CURRENCY: "○",
+  AMMUNITION: "➶",
+  CONSUMABLE: "❀",
+  WEAPON: "⚔",
+  ARMOR: "🛡",
+  TOOL: "⚒",
+  CONTAINER: "▤",
+  QUEST: "❖",
+  MAP: "❏",
 };
 
 const weaponFamilyLabels = {
@@ -125,7 +142,14 @@ function ItemCard({ item }: { item: InventoryItem }) {
   return (
     <article className="fantasy-content-card inventory-item-card">
       <div className="inventory-item-heading">
-        <strong>{item.name}</strong>
+        <div className="inventory-item-identity">
+          <AssetSlot
+            assetUrl={item.asset_ref}
+            placeholderGlyph={itemTypeGlyphs[item.type] ?? "◆"}
+            label={item.name}
+          />
+          <strong>{item.name}</strong>
+        </div>
         {item.quantity > 1 && <span className="inventory-item-qty">× {item.quantity}</span>}
       </div>
 

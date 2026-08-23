@@ -67,6 +67,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
             else None
         )
         unit_weight = item.base_weight * material_weight_factor(material)
+        item_visual = build_item_visual_spec(db, entry.id)
         items.append(
             InventoryItemResponse(
                 item_instance_id=entry.id,
@@ -139,7 +140,8 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                     if tool_profile is not None
                     else None
                 ),
-                signature_ornamentation=build_item_visual_spec(db, entry.id).signature_ornamentation,
+                signature_ornamentation=item_visual.signature_ornamentation,
+                asset_ref=item_visual.asset_ref,
             )
         )
     encumbrance = get_character_encumbrance(db, character_id)

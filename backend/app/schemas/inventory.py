@@ -68,6 +68,10 @@ class InventoryItemResponse(BaseModel):
     # exposed here). None for the overwhelming majority of ordinary
     # items — see app.game.visual.item's own docstring.
     signature_ornamentation: str | None = None
+    # Phase 21Q — opaque reference to a FUTURE ITEM_ILLUSTRATION asset;
+    # None until a later generation phase sets one. The frontend must
+    # render a placeholder whenever this is None (fallback-first).
+    asset_ref: str | None = None
 
 
 class InventoryResponse(BaseModel):

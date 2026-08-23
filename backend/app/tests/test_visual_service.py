@@ -196,6 +196,24 @@ def test_request_visual_asset_fails_on_comfyui_rejection(db_session, tmp_path):
     assert request.error_code == "COMFYUI_REJECTED_WORKFLOW"
 
 
+def test_request_visual_asset_classifies_a_missing_model_rejection_distinctly(db_session, tmp_path):
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service Model Missing", world_seed=510)
+    client = FakeComfyUIClient(
+        submit_error=ComfyUIClientError(
+            "ComfyUI rejected the workflow: Value not in list: unet_name: "
+            "'flux-2-klein-4b.safetensors' not in [...]"
+        )
+    )
+
+    request = request_visual_asset(
+        db_session, client, campaign_id=campaign.id, settings=settings, **_request()
+    )
+
+    assert request.status == VisualGenerationRequestStatus.FAILED
+    assert request.error_code == "MODEL_MISSING"
+
+
 def test_request_visual_asset_fails_on_timeout(db_session, tmp_path):
     settings = _settings(tmp_path)
     campaign = create_campaign(db_session, "Visual Service Timeout", world_seed=506)

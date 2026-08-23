@@ -25,11 +25,16 @@ def create_request(
     workflow_version: str,
     campaign_id: str | None = None,
     seed: int | None = None,
+    attempt_count: int = 1,
 ) -> VisualGenerationRequest:
     """Create a new PENDING request. Does not deduplicate against an
     existing in-flight request for the same entity/asset_type — that
     check belongs to 23D-K, which decides what "in-flight" means for a
-    given caller; this function only ever creates."""
+    given caller; this function only ever creates.
+
+    attempt_count defaults to 1 (a first attempt); app.game.visual.
+    retry_policy passes a higher value when this request is itself a
+    retry of an earlier FAILED one."""
     if asset_type not in FUTURE_ASSET_KINDS:
         raise FutureAssetKindError(f"Unknown future asset kind: {asset_type!r}")
 
@@ -41,6 +46,7 @@ def create_request(
         workflow_key=workflow_key,
         workflow_version=workflow_version,
         seed=seed,
+        attempt_count=attempt_count,
         status=VisualGenerationRequestStatus.PENDING,
     )
     db.add(request)

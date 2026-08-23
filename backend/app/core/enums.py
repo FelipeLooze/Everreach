@@ -1378,3 +1378,22 @@ class VisualAssetValidationStatus(StrEnum):
     UNREVIEWED = "UNREVIEWED"
     VALID = "VALID"
     INVALID = "INVALID"
+
+
+class VisualGenerationErrorCode(StrEnum):
+    """Phase 23D-J — the closed set of reasons a VisualGenerationRequest
+    can FAIL. See app.game.visual.service._classify_comfyui_error for
+    how a raw ComfyUIClientError maps to one of these, and
+    app.game.visual.retry_policy for which of these are considered
+    plausibly transient (worth a bounded automatic retry) versus a real
+    configuration/Canon problem that needs a human, not a retry."""
+
+    COMFYUI_OFFLINE = "COMFYUI_OFFLINE"
+    WORKFLOW_NOT_FOUND = "WORKFLOW_NOT_FOUND"
+    MODEL_MISSING = "MODEL_MISSING"
+    GENERATION_TIMEOUT = "GENERATION_TIMEOUT"
+    COMFYUI_REJECTED_WORKFLOW = "COMFYUI_REJECTED_WORKFLOW"
+    OUTPUT_NOT_FOUND = "OUTPUT_NOT_FOUND"
+    FILE_COPY_FAILED = "FILE_COPY_FAILED"
+    INVALID_OUTPUT = "INVALID_OUTPUT"
+    UNKNOWN_ERROR = "UNKNOWN_ERROR"

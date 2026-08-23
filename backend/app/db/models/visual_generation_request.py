@@ -54,6 +54,13 @@ class VisualGenerationRequest(Base):
     workflow_version: Mapped[str] = mapped_column(String, nullable=False)
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Phase 23D-J — this request's own ordinal within its retry chain (1
+    # for a first attempt). Each retry is still its own, separate row
+    # (REQUEST IS NOT ASSET: an attempt record is never rewritten into a
+    # different attempt) — this only lets app.game.visual.retry_policy
+    # enforce a bounded number of attempts across that chain.
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+
     status: Mapped[str] = mapped_column(
         String,
         nullable=False,

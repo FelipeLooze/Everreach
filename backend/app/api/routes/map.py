@@ -3,10 +3,16 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models.campaign import Campaign
+from app.game.map.annotations import AnnotationError, create_annotation, delete_annotation
 from app.game.map.service import known_map
 from app.game.map.view import get_map_view
 from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
-from app.schemas.map_view import MapViewDataSchema
+from app.schemas.map_view import (
+    CreateMapAnnotationRequest,
+    DeleteMapAnnotationResponse,
+    MapViewAnnotationSchema,
+    MapViewDataSchema,
+)
 from app.core.enums import DiscoveryStatus, KnowerType
 from app.db.models.character import Character
 from app.game.knowledge.service import explicitly_knows_name
@@ -39,6 +45,45 @@ def get_player_map_view(
     authoritative coordinates."""
     _load_character(db, campaign_id, character_id)
     return get_map_view(db, campaign_id, character_id, scope=scope)
+
+
+@router.post("/{campaign_id}/map-annotations", response_model=MapViewAnnotationSchema, status_code=201)
+def post_map_annotation(
+    campaign_id: str,
+    payload: CreateMapAnnotationRequest,
+    db: Session = Depends(get_db),
+):
+    """Phase 20J — "PLAYER NOTE != WORLD TRUTH": create_annotation
+    requires the target location to already be visible on the
+    character's own Map View, so an annotation can never be pinned to
+    something they have no legitimate reason to know about."""
+    _load_character(db, campaign_id, payload.character_id)
+    try:
+        annotation = create_annotation(db, campaign_id, payload.character_id, payload.location_id, payload.text)
+    except AnnotationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    db.commit()
+    return MapViewAnnotationSchema(
+        id=annotation.id,
+        location_id=annotation.location_id,
+        text=annotation.text,
+        created_at=annotation.created_at.isoformat(),
+    )
+
+
+@router.delete("/{campaign_id}/map-annotations/{annotation_id}", response_model=DeleteMapAnnotationResponse)
+def delete_map_annotation_route(
+    campaign_id: str,
+    annotation_id: str,
+    character_id: str,
+    db: Session = Depends(get_db),
+):
+    _load_character(db, campaign_id, character_id)
+    if not delete_annotation(db, character_id, annotation_id):
+        raise HTTPException(status_code=404, detail="Anotação não encontrada")
+    db.commit()
+    return DeleteMapAnnotationResponse(deleted=True)
+
 
 @router.get("/{campaign_id}/map", response_model=MapResponse)
 def get_map(

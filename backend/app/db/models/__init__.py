@@ -48,6 +48,7 @@ from app.db.models.location import (
 )
 from app.db.models.memory import Memory
 from app.db.models.map import Map
+from app.db.models.map_annotation import MapAnnotation
 from app.db.models.material import MaterialDefinition
 from app.db.models.notice import Notice
 from app.db.models.organization import (
@@ -238,4 +239,5 @@ __all__ = [
     "WorldDevelopment",
     "ItemWeaponProfile",
     "ItemToolProfile",
+    "MapAnnotation",
 ]

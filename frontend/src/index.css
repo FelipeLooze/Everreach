@@ -1282,6 +1282,72 @@ select {
   font-size: 0.8rem;
 }
 
+.map-node-annotation-dot {
+  fill: var(--accent);
+  pointer-events: none;
+}
+
+.interactive-map-annotations {
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.interactive-map-annotation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.4rem;
+
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.interactive-map-annotation-item button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.interactive-map-annotation-item button:hover {
+  color: var(--accent);
+}
+
+.interactive-map-annotation-form {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.interactive-map-annotation-form input {
+  flex: 1;
+  min-width: 0;
+
+  padding: 0.2rem 0.4rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.interactive-map-annotation-form button {
+  padding: 0.2rem 0.5rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
 .map-position-note {
   margin: 0;
 

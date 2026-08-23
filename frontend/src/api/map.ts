@@ -1,5 +1,5 @@
 import { api } from "@/api/client";
-import type { MapData, MapViewData } from "@/types/game";
+import type { MapData, MapViewAnnotation, MapViewData } from "@/types/game";
 
 export const getMap = (
   campaignId: string,
@@ -22,3 +22,24 @@ export const getMapView = (
     `/campaigns/${campaignId}/map-view?${params.toString()}`
   );
 };
+
+export const createMapAnnotation = (
+  campaignId: string,
+  characterId: string,
+  locationId: string,
+  text: string,
+) =>
+  api.post<MapViewAnnotation>(`/campaigns/${campaignId}/map-annotations`, {
+    character_id: characterId,
+    location_id: locationId,
+    text,
+  });
+
+export const deleteMapAnnotation = (
+  campaignId: string,
+  characterId: string,
+  annotationId: string,
+) =>
+  api.delete<{ deleted: boolean }>(
+    `/campaigns/${campaignId}/map-annotations/${annotationId}?character_id=${encodeURIComponent(characterId)}`,
+  );

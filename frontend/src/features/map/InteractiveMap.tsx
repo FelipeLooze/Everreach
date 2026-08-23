@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 
-import type { MapViewLocation, MapViewRoute } from "@/types/game";
+import type { MapViewAnnotation, MapViewLocation, MapViewRoute } from "@/types/game";
 import {
   discoveryStatusLabel,
   geographicPrecisionLabel,
@@ -41,6 +41,15 @@ import {
  * an uncertainty ring) — never a claim about the *geometry* of the
  * road itself, just that a known connection exists between two known
  * places.
+ *
+ * Phase 20J — Player Map Annotations.
+ *
+ * Purely presentational here too: a location with at least one
+ * annotation gets a small marker dot, and selecting it lists its notes
+ * with a delete button plus a form to add a new one. This component
+ * never talks to the API itself — MapPanel owns the annotation data
+ * and the create/delete callbacks, matching how selection already
+ * flows (onSelect) rather than adding a second, parallel data path.
  */
 
 const DISPLAY_SIZE = 100;
@@ -124,11 +133,17 @@ function clampViewBox(viewBox: ViewBox): ViewBox {
 export function InteractiveMap({
   locations,
   routes = [],
+  annotations = [],
   onSelect,
+  onCreateAnnotation,
+  onDeleteAnnotation,
 }: {
   locations: MapViewLocation[];
   routes?: MapViewRoute[];
+  annotations?: MapViewAnnotation[];
   onSelect?: (locationId: string | null) => void;
+  onCreateAnnotation?: (locationId: string, text: string) => void;
+  onDeleteAnnotation?: (annotationId: string) => void;
 }) {
   const placed = useMemo(() => placeLocations(locations), [locations]);
   const placedById = useMemo(
@@ -139,15 +154,29 @@ export function InteractiveMap({
     () => routes.filter((route) => placedById[route.from_location_id] && placedById[route.to_location_id]),
     [routes, placedById],
   );
+  const annotationsByLocation = useMemo(() => {
+    const map = new Map<string, MapViewAnnotation[]>();
+    for (const annotation of annotations) {
+      const existing = map.get(annotation.location_id);
+      if (existing) {
+        existing.push(annotation);
+      } else {
+        map.set(annotation.location_id, [annotation]);
+      }
+    }
+    return map;
+  }, [annotations]);
 
   const [viewBox, setViewBox] = useState<ViewBox>({ x: 0, y: 0, w: DISPLAY_SIZE, h: DISPLAY_SIZE });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragState = useRef<{ startClientX: number; startClientY: number; startViewBox: ViewBox } | null>(null);
 
   const select = (locationId: string | null) => {
     setSelectedId(locationId);
+    setNoteDraft("");
     onSelect?.(locationId);
   };
 
@@ -305,6 +334,15 @@ export function InteractiveMap({
               >
                 {location.name ?? "?"}
               </text>
+              {annotationsByLocation.has(location.id) && (
+                <circle
+                  data-testid={`map-node-annotation-dot-${location.id}`}
+                  cx={location.positionKnown ? 1.6 : uncertaintyRadius * 0.7}
+                  cy={location.positionKnown ? -1.6 : -uncertaintyRadius * 0.7}
+                  r="0.7"
+                  className="map-node-annotation-dot"
+                />
+              )}
             </g>
           );
         })}
@@ -324,6 +362,49 @@ export function InteractiveMap({
           {selected.precision && <p>Precisão: {geographicPrecisionLabel(selected.precision)}</p>}
           {!selected.positionKnown && <p>Posição exata desconhecida.</p>}
           <p>Fonte: {mapLocationSourceLabel(selected.source)}</p>
+
+          <div className="interactive-map-annotations">
+            {(annotationsByLocation.get(selected.id) ?? []).map((annotation) => (
+              <div
+                key={annotation.id}
+                className="interactive-map-annotation-item"
+                data-testid={`map-annotation-${annotation.id}`}
+              >
+                <span>{annotation.text}</span>
+                {onDeleteAnnotation && (
+                  <button
+                    type="button"
+                    aria-label="Apagar anotação"
+                    onClick={() => onDeleteAnnotation(annotation.id)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {onCreateAnnotation && (
+              <form
+                className="interactive-map-annotation-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const text = noteDraft.trim();
+                  if (!text) return;
+                  onCreateAnnotation(selected.id, text);
+                  setNoteDraft("");
+                }}
+              >
+                <input
+                  type="text"
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                  placeholder="Adicionar nota…"
+                  aria-label="Nova anotação"
+                />
+                <button type="submit">Salvar</button>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>

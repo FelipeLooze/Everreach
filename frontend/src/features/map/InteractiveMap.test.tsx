@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { InteractiveMap } from "@/features/map/InteractiveMap";
-import type { MapViewLocation, MapViewRoute } from "@/types/game";
+import type { MapViewAnnotation, MapViewLocation, MapViewRoute } from "@/types/game";
 
 const locations: MapViewLocation[] = [
   {
@@ -229,5 +229,77 @@ describe("InteractiveMap", () => {
 
     expect(screen.getByTestId("map-interactive")).toBeInTheDocument();
     expect(screen.getByTestId("map-node-location_3")).toBeInTheDocument();
+  });
+
+  it("shows a dot on a location that has an annotation", () => {
+    const annotations: MapViewAnnotation[] = [
+      { id: "annotation_1", location_id: "location_1", text: "Bom poço.", created_at: "2026-01-01T00:00:00" },
+    ];
+
+    render(<InteractiveMap locations={locations} annotations={annotations} />);
+
+    expect(screen.getByTestId("map-node-annotation-dot-location_1")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-node-annotation-dot-location_2")).not.toBeInTheDocument();
+  });
+
+  it("lists a selected location's annotations with a delete button", () => {
+    const annotations: MapViewAnnotation[] = [
+      { id: "annotation_1", location_id: "location_1", text: "Bom poço.", created_at: "2026-01-01T00:00:00" },
+    ];
+    let deletedId: string | null = null;
+
+    render(
+      <InteractiveMap
+        locations={locations}
+        annotations={annotations}
+        onDeleteAnnotation={(id) => {
+          deletedId = id;
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+
+    expect(screen.getByTestId("map-annotation-annotation_1")).toHaveTextContent("Bom poço.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Apagar anotação" }));
+    expect(deletedId).toBe("annotation_1");
+  });
+
+  it("submits a new annotation for the selected location", () => {
+    let created: { locationId: string; text: string } | null = null;
+
+    render(
+      <InteractiveMap
+        locations={locations}
+        onCreateAnnotation={(locationId, text) => {
+          created = { locationId, text };
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_2"));
+    fireEvent.change(screen.getByLabelText("Nova anotação"), { target: { value: "Cuidado com lobos." } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+
+    expect(created).toEqual({ locationId: "location_2", text: "Cuidado com lobos." });
+  });
+
+  it("does not submit an empty annotation", () => {
+    let called = false;
+
+    render(
+      <InteractiveMap
+        locations={locations}
+        onCreateAnnotation={() => {
+          called = true;
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+
+    expect(called).toBe(false);
   });
 });

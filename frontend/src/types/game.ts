@@ -428,6 +428,16 @@ export interface MapViewRoute {
   danger: number;
 }
 
+// Phase 20J — a player-owned note pinned to a known location. Never
+// world truth: purely user-authored text the System organizes but
+// never acts on.
+export interface MapViewAnnotation {
+  id: string;
+  location_id: string;
+  text: string;
+  created_at: string;
+}
+
 export interface MapViewData {
   campaign_id: string;
   character_id: string;
@@ -435,6 +445,7 @@ export interface MapViewData {
   regions: MapViewRegion[];
   locations: MapViewLocation[];
   routes: MapViewRoute[];
+  annotations: MapViewAnnotation[];
 }
 
 export interface JournalEvent {

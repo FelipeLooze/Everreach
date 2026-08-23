@@ -1,14 +1,18 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MapPanel } from "@/features/map/MapPanel";
 
 const mocks = vi.hoisted(() => ({
   getMapView: vi.fn(),
+  createMapAnnotation: vi.fn(),
+  deleteMapAnnotation: vi.fn(),
 }));
 
 vi.mock("@/api/map", () => ({
   getMapView: mocks.getMapView,
+  createMapAnnotation: mocks.createMapAnnotation,
+  deleteMapAnnotation: mocks.deleteMapAnnotation,
 }));
 
 describe("MapPanel", () => {
@@ -41,6 +45,7 @@ describe("MapPanel", () => {
         },
       ],
       routes: [],
+      annotations: [],
     });
   });
 
@@ -110,6 +115,7 @@ describe("MapPanel", () => {
           danger: 1,
         },
       ],
+      annotations: [],
     });
 
     render(
@@ -179,6 +185,7 @@ describe("MapPanel", () => {
         },
       ],
       routes: [],
+      annotations: [],
     });
 
     render(
@@ -209,5 +216,38 @@ describe("MapPanel", () => {
         "Alguns locais conhecidos ainda não possuem posição precisa.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("creates and then deletes an annotation through the API", async () => {
+    mocks.createMapAnnotation.mockResolvedValue({
+      id: "annotation_1",
+      location_id: "location_1",
+      text: "Bom poço.",
+      created_at: "2026-01-01T00:00:00",
+    });
+    mocks.deleteMapAnnotation.mockResolvedValue({ deleted: true });
+
+    render(
+      <MapPanel
+        campaignId="campaign_1"
+        characterId="char_1"
+      />,
+    );
+
+    fireEvent.click(await screen.findByTestId("map-node-location_1"));
+    fireEvent.change(screen.getByLabelText("Nova anotação"), { target: { value: "Bom poço." } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+
+    expect(mocks.createMapAnnotation).toHaveBeenCalledWith(
+      "campaign_1", "char_1", "location_1", "Bom poço.",
+    );
+    expect(await screen.findByTestId("map-annotation-annotation_1")).toHaveTextContent("Bom poço.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Apagar anotação" }));
+
+    expect(mocks.deleteMapAnnotation).toHaveBeenCalledWith("campaign_1", "char_1", "annotation_1");
+    await waitFor(() =>
+      expect(screen.queryByTestId("map-annotation-annotation_1")).not.toBeInTheDocument(),
+    );
   });
 });

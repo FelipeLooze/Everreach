@@ -37,6 +37,23 @@ class MapViewRouteSchema(BaseModel):
     danger: int
 
 
+class MapViewAnnotationSchema(BaseModel):
+    id: str
+    location_id: str
+    text: str
+    created_at: str
+
+
+class CreateMapAnnotationRequest(BaseModel):
+    character_id: str
+    location_id: str
+    text: str
+
+
+class DeleteMapAnnotationResponse(BaseModel):
+    deleted: bool
+
+
 class MapViewDataSchema(BaseModel):
     campaign_id: str
     character_id: str
@@ -44,3 +61,4 @@ class MapViewDataSchema(BaseModel):
     regions: list[MapViewRegionSchema]
     locations: list[MapViewLocationSchema]
     routes: list[MapViewRouteSchema]
+    annotations: list[MapViewAnnotationSchema]

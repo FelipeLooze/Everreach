@@ -127,6 +127,19 @@ fixing there. What 20I adds is the missing scope LEVEL to view it: a
 "settlement:{location_id}" scope (extending 20E's world/region/
 subregion) filters to the known child locations of one settlement —
 parent_location_id, exposed on MapViewLocation for exactly this.
+
+Phase 20J — Player Map Annotations.
+
+app.db.models.map_annotation.MapAnnotation is a plain, Knowledge-free
+table: writing "Dragon nest." here never creates a dragon nest ("PLAYER
+NOTE != WORLD TRUTH", spec, mandatory). app.game.map.annotations is the
+only writer, and it requires the target Location to already be visible
+on this exact function's own (unscoped) output before allowing a note
+to attach to it. Reading them back here is a plain, unconditional
+filter: an annotation only ever ships in the view if its target
+location survives the CURRENT scope — an annotation on a location that
+scope excludes disappears from the response along with it (it is not
+deleted; requesting the right scope, or none, brings it back).
 """
 from dataclasses import dataclass, field
 
@@ -137,6 +150,7 @@ from app.db.models.item import ItemInstance
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location
 from app.db.models.map import Map
+from app.db.models.map_annotation import MapAnnotation
 from app.db.models.region import Region
 from app.game.knowledge.geography import (
     geographic_fact_key,
@@ -197,16 +211,26 @@ class MapViewRoute:
 
 
 @dataclass(frozen=True)
+class MapViewAnnotation:
+    id: str
+    location_id: str
+    text: str
+    created_at: str
+
+
+@dataclass(frozen=True)
 class MapViewData:
     """Deliberately the smallest extensible shape for 20A — a future
-    subphase adds fields (rumors, physical-map sources, player
-    annotations, LOD/viewport scoping), not restructures this one.
+    subphase adds fields (LOD/viewport scoping), not restructures this
+    one.
 
     20B adds `regions` — grouping metadata the interactive frontend needs
     to render locations by region, gated by the same
     explicitly_knows_name convention the old /map route already used.
 
-    20F adds `routes` — see module docstring."""
+    20F adds `routes` — see module docstring.
+
+    20J adds `annotations` — see module docstring."""
 
     campaign_id: str
     character_id: str
@@ -214,6 +238,7 @@ class MapViewData:
     regions: list[MapViewRegion] = field(default_factory=list)
     locations: list[MapViewLocation] = field(default_factory=list)
     routes: list[MapViewRoute] = field(default_factory=list)
+    annotations: list[MapViewAnnotation] = field(default_factory=list)
 
 
 def _knows_name_aspect(
@@ -558,6 +583,23 @@ def get_map_view(
         and connection.to_location_id in visible_location_ids
     ]
 
+    annotation_rows = (
+        db.query(MapAnnotation)
+        .filter(
+            MapAnnotation.campaign_id == campaign_id,
+            MapAnnotation.character_id == character_id,
+            MapAnnotation.location_id.in_(visible_location_ids),
+        )
+        .order_by(MapAnnotation.created_at)
+        .all()
+    ) if visible_location_ids else []
+    annotations = [
+        MapViewAnnotation(
+            id=row.id, location_id=row.location_id, text=row.text, created_at=row.created_at.isoformat()
+        )
+        for row in annotation_rows
+    ]
+
     return MapViewData(
         campaign_id=campaign_id,
         character_id=character_id,
@@ -565,4 +607,5 @@ def get_map_view(
         regions=regions,
         locations=locations,
         routes=routes,
+        annotations=annotations,
     )

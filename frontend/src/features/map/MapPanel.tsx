@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getMapView } from "@/api/map";
+import { createMapAnnotation, deleteMapAnnotation, getMapView } from "@/api/map";
 import type { MapViewData } from "@/types/game";
 import { InteractiveMap } from "@/features/map/InteractiveMap";
 import { connectionTypeLabel, discoveryStatusLabel, locationTypeLabel } from "@/utils/labels";
@@ -48,6 +48,32 @@ export function MapPanel({
     return location?.name ?? "Local desconhecido";
   };
 
+  const handleCreateAnnotation = (locationId: string, text: string) => {
+    createMapAnnotation(campaignId, characterId, locationId, text)
+      .then((annotation) => {
+        setMap((current) =>
+          current ? { ...current, annotations: [...current.annotations, annotation] } : current,
+        );
+      })
+      .catch(() => {
+        // Falha silenciosa: a nota simplesmente não aparece; o jogador pode tentar de novo.
+      });
+  };
+
+  const handleDeleteAnnotation = (annotationId: string) => {
+    deleteMapAnnotation(campaignId, characterId, annotationId)
+      .then(() => {
+        setMap((current) =>
+          current
+            ? { ...current, annotations: current.annotations.filter((item) => item.id !== annotationId) }
+            : current,
+        );
+      })
+      .catch(() => {
+        // Falha silenciosa: a nota permanece visível; o jogador pode tentar de novo.
+      });
+  };
+
   return (
     <div className="exploration-map">
       {map.regions.map((region) => {
@@ -66,7 +92,13 @@ export function MapPanel({
             <div className="map-section">
               <h5>Mapa espacial</h5>
 
-              <InteractiveMap locations={regionLocations} routes={map.routes} />
+              <InteractiveMap
+                locations={regionLocations}
+                routes={map.routes}
+                annotations={map.annotations}
+                onCreateAnnotation={handleCreateAnnotation}
+                onDeleteAnnotation={handleDeleteAnnotation}
+              />
 
               {regionLocations.some(
                 (location) =>

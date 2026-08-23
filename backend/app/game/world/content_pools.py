@@ -313,6 +313,26 @@ NPC_FAMILY_NAME_POOL = [
     "Draven", "Wystan", "Corrin", "Hallow", "Brennig", "Sowerby", "Quill",
 ]
 
+# A baseline stable visual identity (app.game.visual.npc.set_npc_stable_identity)
+# every procedurally-generated NPC gets at creation — without it,
+# resolve_npc_appearance() returns an empty dict and
+# build_npc_portrait_prompt() hard-fails with "Cannot build an NPC
+# portrait prompt from an empty resolved appearance", meaning NPC
+# portrait generation could never work for a single real, normally-
+# generated NPC (only for hand-built test fixtures that set traits
+# explicitly). Deliberately just 2 generic, tasteful traits — enough
+# for a real prompt, not a full appearance system; anything more
+# specific belongs in a future dedicated subphase. Values are
+# self-contained English phrases (not bare color words) since
+# build_npc_portrait_prompt joins values only, discarding trait keys.
+NPC_HAIR_COLOR_POOL = [
+    "black hair", "dark brown hair", "brown hair", "auburn hair",
+    "blonde hair", "grey hair", "silver hair", "red hair",
+]
+NPC_EYE_COLOR_POOL = [
+    "brown eyes", "blue eyes", "green eyes", "hazel eyes", "grey eyes", "amber eyes",
+]
+
 LEADER_PERSONALITY_POOL = [
     "Ponderado e cauteloso, prefere ouvir antes de decidir.",
     "Direto e prático, tem pouca paciência para formalidades.",

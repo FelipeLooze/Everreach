@@ -37,6 +37,7 @@ from app.game.players.service import (
     set_simulated_player_arrival_location_enabled,
     set_simulated_player_arrival_policy,
 )
+from app.game.visual.npc import set_npc_stable_identity
 from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.region_content import connect_locations, generate_region_settlements_and_infrastructure
@@ -52,6 +53,7 @@ from app.game.world.generator import (
     generate_elder_flavor,
     generate_innkeeper_flavor,
     generate_leader_flavor,
+    generate_npc_appearance_traits,
     generate_npc_name,
     generate_region_identity,
     generate_region_name,
@@ -341,6 +343,17 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     )
     db.add_all([elder, blacksmith, innkeeper])
     db.flush()
+
+    # A baseline stable visual identity — without this, NPC portrait
+    # generation (Phase 23D) hard-fails for every one of these 3 NPCs:
+    # resolve_npc_appearance() has nothing to resolve and
+    # build_npc_portrait_prompt() raises rather than build an empty
+    # prompt. See NPC_HAIR_COLOR_POOL/NPC_EYE_COLOR_POOL in
+    # content_pools.py.
+    for npc in (elder, blacksmith, innkeeper):
+        set_npc_stable_identity(
+            db, campaign_id, npc.id, generate_npc_appearance_traits(starting_npc_rng)
+        )
 
     # Phase 15 follow-up — settlement parity: the starting village used to
     # be the only VILLAGE-type settlement in the whole region without a

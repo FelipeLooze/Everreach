@@ -87,6 +87,9 @@ from app.db.models.skill import (
 )
 from app.db.models.profession import CharacterProfession
 from app.db.models.progression_outcome import AppliedProgressionOutcome
+from app.db.models.visual_asset import VisualAsset
+from app.db.models.visual_generation_request import VisualGenerationRequest
+from app.db.models.visual_identity import VisualIdentity
 from app.db.models.world_development import WorldDevelopment
 
 def delete_campaign(db: Session, campaign_id: str) -> bool:
@@ -393,6 +396,25 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     )
     db.query(Subregion).filter(Subregion.region_id.in_(region_ids)).delete(synchronize_session=False)
     db.query(Region).filter(Region.id.in_(region_ids)).delete(synchronize_session=False)
+
+    # Phase 23D — VisualIdentity/VisualAsset/VisualGenerationRequest all
+    # carry an FK'd (but nullable, since some subjects are campaign-
+    # global) campaign_id. Same class of pre-existing gap as
+    # Organization/LocationEconomy above: dormant until a seeded
+    # campaign's NPCs started getting a real stable visual identity at
+    # creation time (see app.game.world.seed/region_content), which is
+    # the first thing that made this FK violation reachable through the
+    # ordinary seed-a-campaign-then-delete-it path rather than only a
+    # hand-built test fixture.
+    db.query(VisualIdentity).filter(VisualIdentity.campaign_id == campaign_id).delete(
+        synchronize_session=False
+    )
+    db.query(VisualAsset).filter(VisualAsset.campaign_id == campaign_id).delete(
+        synchronize_session=False
+    )
+    db.query(VisualGenerationRequest).filter(VisualGenerationRequest.campaign_id == campaign_id).delete(
+        synchronize_session=False
+    )
 
     db.query(WorldTime).filter(WorldTime.campaign_id == campaign_id).delete(synchronize_session=False)
     db.delete(campaign)

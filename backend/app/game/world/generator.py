@@ -49,10 +49,12 @@ from app.game.world.content_pools import (
     LEADER_TITLE_BY_ORG_TYPE,
     LEADER_TITLE_GENDER_BY_ORG_TYPE,
     MINOR_SETTLEMENT_DESCRIPTIONS,
+    NPC_EYE_COLOR_POOL,
     NPC_FAMILY_NAME_POOL,
     NPC_GIVEN_NAME_POOL,
     NPC_GIVEN_NAME_POOL_FEM,
     NPC_GIVEN_NAME_POOL_MASC,
+    NPC_HAIR_COLOR_POOL,
     ORG_NAME_TEMPLATE_BY_TYPE,
     ORG_TYPE_BY_SETTLEMENT_TYPE,
     POI_POOL,
@@ -235,6 +237,17 @@ def generate_npc_name(
         name = f"{base} {suffix}"
     used_names.add(name)
     return name
+
+
+def generate_npc_appearance_traits(rng: random.Random) -> dict:
+    """A baseline stable visual identity for a freshly-created NPC — see
+    NPC_HAIR_COLOR_POOL/NPC_EYE_COLOR_POOL in content_pools.py for why
+    this exists at all. Callers pass this straight to
+    app.game.visual.npc.set_npc_stable_identity."""
+    return {
+        "hair_color": rng.choice(NPC_HAIR_COLOR_POOL),
+        "eye_color": rng.choice(NPC_EYE_COLOR_POOL),
+    }
 
 
 def generate_leader_flavor(rng: random.Random) -> tuple[str, str]:

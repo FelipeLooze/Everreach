@@ -40,6 +40,7 @@ from app.game.economy.supply_demand import adjust_supply, get_or_create_supply_l
 from app.game.inventory.service import get_or_create_item
 from app.game.organizations.roles import create_role, join_organization
 from app.game.organizations.service import create_organization
+from app.game.visual.npc import set_npc_stable_identity
 from app.game.world.generation import derive_seed
 from app.game.world.generator import (
     EXPORT_SUPPLY_BONUS,
@@ -49,6 +50,7 @@ from app.game.world.generator import (
     danger_level_to_connection_danger,
     export_good_for_settlement,
     generate_leader_flavor,
+    generate_npc_appearance_traits,
     generate_npc_name,
     generate_pois,
     generate_settlement_name,
@@ -364,6 +366,9 @@ def generate_region_settlements_and_infrastructure(
         )
         db.add(leader_npc)
         db.flush()
+        set_npc_stable_identity(
+            db, campaign_id, leader_npc.id, generate_npc_appearance_traits(org_rng)
+        )
 
         organization = create_organization(
             db, campaign_id,

@@ -107,6 +107,7 @@ from app.db.models.simulated_player_routine import (
 )
 from app.db.models.regional_threat import RegionalThreat
 from app.db.models.settlement import Settlement
+from app.db.models.visual_identity import VisualIdentity
 from app.db.models.subregion import Subregion
 from app.db.models.technique_evidence import (
     CharacterTechniquePatternEvidence,
@@ -240,4 +241,5 @@ __all__ = [
     "ItemWeaponProfile",
     "ItemToolProfile",
     "MapAnnotation",
+    "VisualIdentity",
 ]

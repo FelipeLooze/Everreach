@@ -156,7 +156,47 @@ describe("InventoryPanel", () => {
     const card = (await screen.findByText("Picareta")).closest(".inventory-item-card");
     expect(card).toHaveTextContent("ferramenta para martelar, minerar");
     expect(card).toHaveTextContent("qualidade obra-prima");
-    expect(card).toHaveTextContent("condição danificada");
     expect(card).toHaveTextContent("material Ferro");
+    expect(card?.querySelector(".state-badge-warning")).toHaveTextContent("danificada");
+  });
+
+  it("mostra a condição como um StateBadge com tom de acordo com a severidade", async () => {
+    mocks.getInventory.mockResolvedValue({
+      items: [{
+        item_instance_id: "instance_5", item_id: "item_5", name: "Escudo Rachado",
+        type: "ARMOR", quantity: 1, equipped: false, unit_weight: 3,
+        quality: "STANDARD",
+        condition: "BROKEN",
+        material: null,
+        total_weight: 3, equipped_slot: null, accessibility: "STOWED",
+        allowed_slots: [], weapon: null, armor: null, tool: null,
+      }],
+      total_weight: 3, carrying_capacity: 25, load_ratio: 0.12, encumbrance: "NORMAL",
+    });
+
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+    const card = (await screen.findByText("Escudo Rachado")).closest(".inventory-item-card");
+
+    expect(card?.querySelector(".state-badge-danger")).toHaveTextContent("quebrada");
+  });
+
+  it("mostra a nota de ornamentação de assinatura quando o item tem uma", async () => {
+    mocks.getInventory.mockResolvedValue({
+      items: [{
+        item_instance_id: "instance_6", item_id: "item_6", name: "Lâmina do Lobo",
+        type: "WEAPON", quantity: 1, equipped: false, unit_weight: 2,
+        quality: "GOOD",
+        condition: null,
+        material: null,
+        total_weight: 2, equipped_slot: null, accessibility: "STOWED",
+        allowed_slots: [], weapon: null, armor: null, tool: null,
+        signature_ornamentation: "punho em formato de cabeça de lobo",
+      }],
+      total_weight: 2, carrying_capacity: 25, load_ratio: 0.08, encumbrance: "NORMAL",
+    });
+
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+
+    expect(await screen.findByText("punho em formato de cabeça de lobo")).toBeInTheDocument();
   });
 });

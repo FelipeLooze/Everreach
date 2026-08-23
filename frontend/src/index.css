@@ -1181,6 +1181,17 @@ select {
 .inventory-tag-slot { border-color: rgba(180, 145, 80, 0.6); color: #d0b477; }
 .inventory-item-detail { margin: 0; color: #8d8271; font-size: 0.78rem; font-style: italic; }
 
+/* Phase 21O/21P — real, per-item Canon flavor (signature_ornamentation),
+   set only for named/special items; styled like narrative text
+   (Cormorant Garamond) rather than a mechanical stat line. */
+.inventory-item-ornamentation {
+  margin: 0;
+  color: var(--accent);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 /* Combat */
 .combat-participant-card { display: flex; flex-direction: column; gap: 10px; }
 .combat-participant-active { border-color: rgba(208, 180, 119, 0.75); box-shadow: 0 0 14px rgba(180, 145, 80, 0.22); }

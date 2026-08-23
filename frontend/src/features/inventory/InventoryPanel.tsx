@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getInventory } from "@/api/inventory";
+import { StateBadge, type StateTone } from "@/components/StateBadge";
 import type { Inventory, InventoryItem } from "@/types/game";
 
 const formatWeight = (value: number) =>
@@ -45,6 +46,18 @@ const conditionLabels = {
   DAMAGED: "danificada",
   CRITICAL: "crítica",
   BROKEN: "quebrada",
+};
+
+// Phase 21L/21P — condition is real backend state (durability), never
+// MMO rarity: the tone reflects how urgent the wear is, not how
+// "special" the item is.
+const conditionTone: Record<keyof typeof conditionLabels, StateTone> = {
+  EXCELLENT: "success",
+  GOOD: "success",
+  WORN: "warning",
+  DAMAGED: "warning",
+  CRITICAL: "danger",
+  BROKEN: "danger",
 };
 
 const weaponFamilyLabels = {
@@ -118,18 +131,24 @@ function ItemCard({ item }: { item: InventoryItem }) {
 
       <p className="inventory-item-meta">
         {formatWeight(item.total_weight)} de peso — qualidade {qualityLabels[item.quality]}
-        {item.condition && ` — condição ${conditionLabels[item.condition]}`}
         {item.material && ` — material ${item.material.name}`}
         {item.contained_in_name && ` — dentro de ${item.contained_in_name}`}
         {item.container &&
           ` — recipiente ${formatWeight(item.container.content_weight)} / ${formatWeight(item.container.weight_capacity)} de peso`}
       </p>
 
+      {item.signature_ornamentation && (
+        <p className="inventory-item-ornamentation">{item.signature_ornamentation}</p>
+      )}
+
       <div className="inventory-item-tags">
         {item.equipped_slot && (
           <span className="inventory-tag inventory-tag-slot">{equipmentSlotLabels[item.equipped_slot]}</span>
         )}
         <span className="inventory-tag">{accessibilityLabels[item.accessibility]}</span>
+        {item.condition && (
+          <StateBadge tone={conditionTone[item.condition]} label={conditionLabels[item.condition]} />
+        )}
       </div>
 
       {item.weapon && (

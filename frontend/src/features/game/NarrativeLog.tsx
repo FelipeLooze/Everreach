@@ -4,15 +4,28 @@ export interface NarrativeEntry {
   text: string;
 }
 
-export function NarrativeLog({ entries }: { entries: NarrativeEntry[] }) {
+export function NarrativeLog({
+  entries,
+  pending = false,
+}: {
+  entries: NarrativeEntry[];
+  pending?: boolean;
+}) {
   return (
     <div className="narrative-log">
-      {entries.length === 0 && <p className="narrative-empty">A história ainda não começou.</p>}
+      {entries.length === 0 && !pending && <p className="narrative-empty">A história ainda não começou.</p>}
       {entries.map((entry) => (
         <p key={entry.id} className={`narrative-entry narrative-${entry.kind}`}>
           {entry.kind === "player" ? <strong>&gt; {entry.text}</strong> : entry.text}
         </p>
       ))}
+      {pending && (
+        <p className="narrative-entry narrative-thinking" role="status" aria-label="O narrador está respondendo">
+          <span className="thinking-dot" />
+          <span className="thinking-dot" />
+          <span className="thinking-dot" />
+        </p>
+      )}
     </div>
   );
 }

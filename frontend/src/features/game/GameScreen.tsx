@@ -130,7 +130,7 @@ export function GameScreen() {
         <section className="game-main">
           {loading && !state && <p className="game-feedback">Carregando o mundo…</p>}
           {error && <p className="panel-error game-feedback">{error}</p>}
-          <NarrativeLog entries={entries} />
+          <NarrativeLog entries={entries} pending={submitting || startingWorld} />
           {actionError && <p className="panel-error action-error">{actionError}</p>}
           {state && !worldStarted && (
             <div className="world-start">

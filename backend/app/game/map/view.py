@@ -113,6 +113,20 @@ canonical aspect grant exists for them, precision naturally falls back
 to DiscoveryStatus.RUMORED's own VAGUE mapping and known_aspects stays
 {EXISTENCE} — an honest reflection of "a claim was heard", nothing
 more, without needing to parse rumor precision/aspects separately.
+
+Phase 20I — Settlement & City Maps.
+
+"Knowing Arven exists does NOT mean knowing its internal layout"
+(spec) already holds structurally: every inclusion path in this module
+(discovery/knowledge/map/rumor) is per-location, keyed by that exact
+Location's own id — a district Location (Phase 15G's
+parent_location_id, the same hierarchy Region>Subregion>Settlement>
+District>Location>Sublocation>Interior reuses at every level) never
+rides in just because its parent settlement is known. Nothing needed
+fixing there. What 20I adds is the missing scope LEVEL to view it: a
+"settlement:{location_id}" scope (extending 20E's world/region/
+subregion) filters to the known child locations of one settlement —
+parent_location_id, exposed on MapViewLocation for exactly this.
 """
 from dataclasses import dataclass, field
 
@@ -154,6 +168,7 @@ class MapViewLocation:
     id: str
     region_id: str
     subregion_id: str | None
+    parent_location_id: str | None
     type: str
     name: str | None
     precision: str | None
@@ -324,6 +339,7 @@ def _build_map_view_location_from_maps(
         id=location.id,
         region_id=location.region_id,
         subregion_id=location.subregion_id,
+        parent_location_id=location.parent_location_id,
         type=location.type,
         name=location.name if name_known else None,
         precision=best_precision.value if best_precision is not None else None,
@@ -367,6 +383,7 @@ def _build_map_view_location(
         id=location.id,
         region_id=location.region_id,
         subregion_id=location.subregion_id,
+        parent_location_id=location.parent_location_id,
         type=location.type,
         name=location.name if name_known else None,
         precision=precision.value if precision is not None else None,
@@ -405,6 +422,17 @@ def _apply_scope(
             if target_id not in known_subregion_ids:
                 return [], []
             scoped_locations = [location for location in locations if location.subregion_id == target_id]
+            scoped_region_ids = {location.region_id for location in scoped_locations}
+            return (
+                [region for region in regions if region.id in scoped_region_ids],
+                scoped_locations,
+            )
+        if level == "settlement":
+            scoped_locations = [
+                location for location in locations if location.parent_location_id == target_id
+            ]
+            if not scoped_locations:
+                return [], []
             scoped_region_ids = {location.region_id for location in scoped_locations}
             return (
                 [region for region in regions if region.id in scoped_region_ids],

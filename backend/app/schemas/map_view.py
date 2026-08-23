@@ -17,6 +17,7 @@ class MapViewLocationSchema(BaseModel):
     id: str
     region_id: str
     subregion_id: str | None
+    parent_location_id: str | None
     type: str
     name: str | None
     precision: str | None

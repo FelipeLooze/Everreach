@@ -31,7 +31,10 @@ pipeline: an already in-flight request for the same entity/asset_type
 is returned as-is (no duplicate GPU work from a player reopening a UI
 panel), and a fingerprint match against the current asset skips
 ComfyUI entirely, completing the new request against the EXISTING
-asset instead of generating a new one.
+asset instead of generating a new one. When a NEW asset is actually
+materialized, app.game.visual.versioning.supersede_current_assets
+(23D-L) demotes whatever was previously current for that entity/
+asset_type — never overwritten in place, only superseded.
 """
 from sqlalchemy.orm import Session
 
@@ -45,6 +48,7 @@ from app.game.visual.asset_storage import VisualAssetStorageError, persist_gener
 from app.game.visual.comfyui_client import ComfyUIClient, ComfyUIClientError
 from app.game.visual.dedup import compute_spec_fingerprint, find_in_flight_request, find_reusable_asset
 from app.game.visual.generation_request import create_request, mark_completed, mark_failed, mark_in_progress
+from app.game.visual.versioning import supersede_current_assets
 from app.game.visual.prompt_builder import (
     VisualPromptBuilderError,
     extract_model_identifier,
@@ -238,6 +242,7 @@ def request_visual_asset(
     )
     db.add(asset)
     db.flush()
+    supersede_current_assets(db, campaign_id, entity_type, entity_id, asset_type, keep_current_id=asset.id)
 
     completed_request = mark_completed(db, request.id, asset.id)
     db.commit()

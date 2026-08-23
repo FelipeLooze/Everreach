@@ -16,12 +16,14 @@ future identity-preserving edit's reference image.
 
 Only VisualAsset.is_canonical_reference is managed here. is_current's
 general current-vs-superseded semantics for a (entity, asset_type) pair
-belong to 23D-L (Asset Versioning), not yet built — this subphase does
-not depend on it and does not touch it.
+belong to app.game.visual.versioning (23D-L) — get_current_portrait
+below is a thin, NPC_PORTRAIT-scoped wrapper over that module's own
+get_current_asset rather than a second copy of the same query.
 """
 from sqlalchemy.orm import Session
 
 from app.db.models.visual_asset import VisualAsset
+from app.game.visual.versioning import get_current_asset
 
 
 class NPCReferenceError(ValueError):
@@ -75,17 +77,6 @@ def get_current_portrait(
     db: Session, campaign_id: str | None, npc_id: str
 ) -> VisualAsset | None:
     """Whatever NPC_PORTRAIT asset is presently shown to the player —
-    the most recently created is_current one, distinct from the
-    canonical identity-anchor reference above."""
-    return (
-        db.query(VisualAsset)
-        .filter(
-            VisualAsset.campaign_id == campaign_id,
-            VisualAsset.entity_type == "npc",
-            VisualAsset.entity_id == npc_id,
-            VisualAsset.asset_type == "NPC_PORTRAIT",
-            VisualAsset.is_current.is_(True),
-        )
-        .order_by(VisualAsset.created_at.desc())
-        .first()
-    )
+    the current one, distinct from the canonical identity-anchor
+    reference above."""
+    return get_current_asset(db, campaign_id, "npc", npc_id, "NPC_PORTRAIT")

@@ -371,3 +371,38 @@ def test_request_visual_asset_does_not_reuse_an_asset_with_a_different_fingerpri
 
     assert result.status == VisualGenerationRequestStatus.COMPLETED
     assert result.result_asset_id != existing_asset.id
+
+
+def test_request_visual_asset_supersedes_the_previous_current_asset(db_session, tmp_path):
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service Versioning", world_seed=514)
+    raw_image_1 = _raw_output_image(tmp_path)
+
+    first = request_visual_asset(
+        db_session,
+        FakeComfyUIClient(
+            history_entry={"outputs": {"41": {"images": [{"subfolder": "x", "filename": "a.png"}]}}},
+            output_path=raw_image_1,
+        ),
+        campaign_id=campaign.id, settings=settings,
+        **_request(entity_id="item_versioned", prompt_text="first version"),
+    )
+    old_asset = db_session.get(VisualAsset, first.result_asset_id)
+    raw_image_2 = tmp_path / "raw_output" / "second.png"
+    Image.new("RGB", (32, 32), color="green").save(raw_image_2)
+
+    second = request_visual_asset(
+        db_session,
+        FakeComfyUIClient(
+            history_entry={"outputs": {"41": {"images": [{"subfolder": "x", "filename": "b.png"}]}}},
+            output_path=raw_image_2,
+        ),
+        campaign_id=campaign.id, settings=settings,
+        **_request(entity_id="item_versioned", prompt_text="second version"),
+    )
+    new_asset = db_session.get(VisualAsset, second.result_asset_id)
+
+    db_session.refresh(old_asset)
+    assert old_asset.id != new_asset.id
+    assert old_asset.is_current is False
+    assert new_asset.is_current is True

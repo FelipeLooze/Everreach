@@ -115,6 +115,40 @@ def test_apply_intent_talk_resolves_npc_by_role_when_target_is_not_a_name(db_ses
     assert minutes >= 0
 
 
+def test_apply_intent_talk_ignores_llm_target_not_present_in_player_text(db_session):
+    # Regression: the Intent Parser LLM can infer a plausible-looking
+    # `target` (e.g. a nearby NPC's role) from broader scene context even
+    # when the player named no one — this must never be trusted for who
+    # gets talked to. Reproduces a real bug report: the starting village
+    # seeds an "ancião da vila" and an "estalajadeiro" at the SAME
+    # location, the player greeted "senhor" with no name, and the wrong
+    # NPC ended up as the interlocutor because the engine trusted an
+    # LLM-guessed target the player never actually wrote.
+    campaign, region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target="estalajadeiro",
+        raw_text='"Olá, bom dia, senhor. Como está?"',
+    )
+    summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
+
+    assert "Há mais de uma pessoa aqui" in summary
+    assert minutes == 0
+
+
+def test_apply_intent_talk_reports_ambiguity_with_multiple_nearby_and_no_target(db_session):
+    campaign, region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(type=ActionIntentType.TALK, target=None, raw_text='"Bom dia!"')
+    summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
+
+    assert "Há mais de uma pessoa aqui" in summary
+    assert minutes == 0
+
+
 def test_apply_intent_talk_completes_matching_quest_objective(db_session):
     campaign, region, village, character = _setup(db_session)
 

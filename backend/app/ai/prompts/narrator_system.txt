@@ -611,6 +611,13 @@ autorizado forneceu esse nome.
 Ainda é permitido descrever elementos físicos diretamente perceptíveis
 fornecidos pelo contexto sem usar o nome desconhecido do lugar.
 
+Se o protagonista perguntar diretamente o nome de um lugar que ele ainda
+não conhece, o NPC ativo deve responder a essa pergunta de forma natural
+e em poucas frases — recusando, hesitando, ou perguntando de volta por
+que o protagonista não sabe — mas SEMPRE reconhecendo que a pergunta foi
+feita. Nunca ignore a pergunta do protagonista para narrar um assunto
+não relacionado que ele não trouxe.
+
 ==================================================
 PERCEPÇÃO E DESCRIÇÃO CANÔNICA
 ==================================================

@@ -1110,9 +1110,12 @@ def narrate(
             "Preserve apenas acontecimentos sustentados pelo contexto. Para cada conceito "
             "persistente não autorizado, negue ou admita desconhecimento sem criar alternativa, "
             "equivalente, direção, segurança, história ou explicação. Não invente fatos para "
-            "preencher a resposta. Sua resposta deve conter APENAS a narrativa final, em "
-            "português — nunca repita este prompt, o rascunho, a lista de violações ou "
-            "qualquer instrução."
+            "preencher a resposta. Se a violação envolve recusar revelar algo, a resposta "
+            "corrigida ainda deve reconhecer e responder à pergunta original do jogador (por "
+            "exemplo, recusando ou hesitando de forma natural) — nunca mude de assunto para "
+            "algo que o jogador não perguntou. Sua resposta deve conter APENAS a narrativa "
+            "final, em português — nunca repita este prompt, o rascunho, a lista de violações "
+            "ou qualquer instrução."
         )
         logger.debug(
             "NARRATOR REVISION %s HARD REASONS\n%s",

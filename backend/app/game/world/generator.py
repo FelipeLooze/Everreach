@@ -47,9 +47,12 @@ from app.game.world.content_pools import (
     LEADER_PERSONALITY_POOL,
     REGION_NAME_POOL,
     LEADER_TITLE_BY_ORG_TYPE,
+    LEADER_TITLE_GENDER_BY_ORG_TYPE,
     MINOR_SETTLEMENT_DESCRIPTIONS,
     NPC_FAMILY_NAME_POOL,
     NPC_GIVEN_NAME_POOL,
+    NPC_GIVEN_NAME_POOL_FEM,
+    NPC_GIVEN_NAME_POOL_MASC,
     ORG_NAME_TEMPLATE_BY_TYPE,
     ORG_TYPE_BY_SETTLEMENT_TYPE,
     POI_POOL,
@@ -186,17 +189,46 @@ def leader_title_for_organization(organization_type: str) -> str:
     return LEADER_TITLE_BY_ORG_TYPE[str(organization_type)]
 
 
-def generate_npc_name(rng: random.Random, used_names: set[str], max_attempts: int = 30) -> str:
+def leader_gender_for_organization(organization_type: str) -> str | None:
+    """None means the title is gender-neutral in Portuguese ("líder",
+    "comandante") and any name pool is fine; only a title with no
+    neutral form used in this codebase (e.g. "sumo sacerdote") pins one."""
+    return LEADER_TITLE_GENDER_BY_ORG_TYPE.get(str(organization_type))
+
+
+def _given_name_pool_for_gender(gender: str | None) -> list[str]:
+    if gender == "M":
+        return NPC_GIVEN_NAME_POOL_MASC
+    if gender == "F":
+        return NPC_GIVEN_NAME_POOL_FEM
+    return NPC_GIVEN_NAME_POOL
+
+
+def generate_npc_name(
+    rng: random.Random,
+    used_names: set[str],
+    max_attempts: int = 30,
+    gender: str | None = None,
+) -> str:
     """Combines given+family name pools, retrying on collision — same
     discipline as generate_settlement_name, distinct pools so NPCs never
-    read like place names."""
+    read like place names.
+
+    `gender` ("M"/"F"/None) picks which given-name pool to draw from, so
+    a role with a fixed grammatical gender (e.g. "ancião da vila") gets a
+    name that agrees with it instead of an unrelated random pick — see
+    NPC_GIVEN_NAME_POOL_MASC/_FEM in content_pools.py for why this exists.
+    None (the default) draws from the combined pool, unchanged from
+    before this parameter existed.
+    """
+    given_pool = _given_name_pool_for_gender(gender)
     for _ in range(max_attempts):
-        name = f"{rng.choice(NPC_GIVEN_NAME_POOL)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
+        name = f"{rng.choice(given_pool)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
         if name not in used_names:
             used_names.add(name)
             return name
     suffix = 2
-    base = f"{rng.choice(NPC_GIVEN_NAME_POOL)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
+    base = f"{rng.choice(given_pool)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
     name = f"{base} {suffix}"
     while name in used_names:
         suffix += 1

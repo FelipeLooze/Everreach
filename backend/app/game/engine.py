@@ -719,8 +719,27 @@ def _handle_talk(
     npc = None
     simulated_player = None
 
+    # Only trust the Intent Parser's `target` when at least one whole
+    # word of it was actually typed by the player. The parser is an LLM
+    # and can infer a plausible-sounding target (e.g. a nearby NPC's
+    # role, or a full canonical name normalized from context) even when
+    # the player named no one — trusting a target with ZERO connection
+    # to the player's own words is exactly the class of mechanical
+    # decision this project keeps out of LLM hands. A partial name
+    # ("Falo com Osgar" -> target "Osgar Kessler") is still legitimate
+    # and stays trusted, since "Osgar" itself was typed; a target the
+    # player wrote nothing of at all ("Como está?" -> target
+    # "estalajadeiro") falls through to the deterministic nearby-count
+    # logic below, same as if no target had been given.
+    literal_target = None
     if intent.target:
-        target_lower = intent.target.casefold()
+        raw_lower = intent.raw_text.casefold()
+        target_words = [word for word in intent.target.split() if len(word) >= 3]
+        if any(word.casefold() in raw_lower for word in target_words):
+            literal_target = intent.target
+
+    if literal_target:
+        target_lower = literal_target.casefold()
 
         npc_matches = [
             candidate
@@ -774,6 +793,11 @@ def _handle_talk(
                 npc = person
             else:
                 simulated_player = person
+        elif len(nearby_people) > 1:
+            return (
+                "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
+                0,
+            )
 
     if npc is None and simulated_player is None:
         return (

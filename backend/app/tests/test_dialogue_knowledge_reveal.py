@@ -59,9 +59,10 @@ def test_npc_revealing_the_village_name_in_dialogue_teaches_the_player(db_sessio
     assert to_game_state_response(db_session, state).location.name is None
 
     llm = NarratingLLM(f"— Isto aqui é {village.name}, uma vila tranquila do {region.name}.", elder.name)
+    elder_first_name = elder.name.split()[0]
     engine.resolve_action(
         db_session, llm, campaign.id, character.id,
-        "— Com licença, como se chama este lugar?",
+        f"— Com licença, {elder_first_name}, como se chama este lugar?",
     )
 
     # No extra LLM call: still just intent-parse + narration.
@@ -78,8 +79,9 @@ def test_npc_not_mentioning_the_name_does_not_teach_it(db_session):
     campaign, character, village, region, elder = _cardal_scene(db_session)
 
     llm = NarratingLLM("— Bom dia. Em que posso ajudar?", elder.name)
+    elder_first_name = elder.name.split()[0]
     engine.resolve_action(
-        db_session, llm, campaign.id, character.id, "— Bom dia.",
+        db_session, llm, campaign.id, character.id, f"— Bom dia, {elder_first_name}.",
     )
 
     assert "cardal_is_village" not in _player_fact_keys(db_session, character.id)
@@ -92,11 +94,12 @@ def test_repeated_reveals_across_turns_stay_idempotent(db_session):
     campaign, character, village, region, elder = _cardal_scene(db_session)
 
     llm = NarratingLLM(f"— Isto aqui é {village.name}, uma vila tranquila do {region.name}.", elder.name)
+    elder_first_name = elder.name.split()[0]
     engine.resolve_action(
-        db_session, llm, campaign.id, character.id, "— Onde estou?",
+        db_session, llm, campaign.id, character.id, f"— Onde estou, {elder_first_name}?",
     )
     engine.resolve_action(
-        db_session, llm, campaign.id, character.id, "— E qual o nome deste lugar mesmo?",
+        db_session, llm, campaign.id, character.id, f"— E qual o nome deste lugar mesmo, {elder_first_name}?",
     )
 
     keys = [

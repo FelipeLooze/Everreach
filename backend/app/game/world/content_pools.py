@@ -281,6 +281,15 @@ LEADER_TITLE_BY_ORG_TYPE = {
     "RELIGIOUS": "sumo sacerdote",
 }
 
+# Most leader titles above are grammatically gender-neutral in Portuguese
+# ("líder", "comandante", "mestre" is treated as common-gender here) and
+# draw names from any pool. "sumo sacerdote" has no neutral form used in
+# this codebase, so it is pinned masculine — see generate_npc_name's
+# `gender` parameter and its callers in seed.py/region_content.py.
+LEADER_TITLE_GENDER_BY_ORG_TYPE = {
+    "RELIGIOUS": "M",
+}
+
 # Deliberately excludes "Corren"/"Dessa"/"Bram" and "Ashvale"/"Marrow"/
 # "Holt": those are the fixed given/family names of the 3 SimulatedPlayers
 # (Phase 7) always placed at the starting village — a generated NPC name
@@ -288,10 +297,17 @@ LEADER_TITLE_BY_ORG_TYPE = {
 # substring-based TALK-target resolution genuinely ambiguous (both an NPC
 # and a SimulatedPlayer would match), a real bug caught by
 # test_apply_intent_talk_completes_matching_quest_objective flaking.
-NPC_GIVEN_NAME_POOL = [
-    "Ilya", "Thane", "Rowan", "Sable", "Perrin",
-    "Wren", "Colm", "Astra", "Dorian", "Lena", "Garrick", "Nessa", "Aldric",
-]
+#
+# Split by the gender the name conventionally reads as in Portuguese, so
+# a role with a fixed grammatical gender (e.g. "ancião da vila", "ferreira")
+# can be given a name that agrees with it instead of an unrelated random
+# pick — a real bug: a role hardcoded masculine ("ancião") once landed on
+# a name read as feminine ("Astra"), and the narrator, seeing only the
+# masculine role noun, described the NPC as "um homem". See
+# generate_npc_name's `gender` parameter.
+NPC_GIVEN_NAME_POOL_MASC = ["Thane", "Rowan", "Colm", "Dorian", "Garrick", "Aldric", "Perrin"]
+NPC_GIVEN_NAME_POOL_FEM = ["Ilya", "Sable", "Wren", "Astra", "Lena", "Nessa"]
+NPC_GIVEN_NAME_POOL = NPC_GIVEN_NAME_POOL_MASC + NPC_GIVEN_NAME_POOL_FEM
 NPC_FAMILY_NAME_POOL = [
     "Sernn", "Talbrook", "Ferrow", "Kessler",
     "Draven", "Wystan", "Corrin", "Hallow", "Brennig", "Sowerby", "Quill",

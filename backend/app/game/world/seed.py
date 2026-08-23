@@ -310,7 +310,12 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # campaign now, same as every other NPC Phase 15 creates.
     starting_npc_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "starting_npcs"))
 
-    elder_name = generate_npc_name(starting_npc_rng, used_npc_names)
+    # Each of these 3 fixed roles is a fixed grammatical gender in
+    # Portuguese ("ancião"/"estalajadeiro" masculine, "ferreira"
+    # feminine) — gender= picks a matching given name so the narrator's
+    # "um homem"/"uma mulher" agrees with it, instead of an unrelated
+    # random pick from the combined pool.
+    elder_name = generate_npc_name(starting_npc_rng, used_npc_names, gender="M")
     elder_personality, elder_backstory = generate_elder_flavor(starting_npc_rng, village.name)
     elder = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,
@@ -318,7 +323,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         personality=elder_personality,
         backstory=elder_backstory,
     )
-    blacksmith_name = generate_npc_name(starting_npc_rng, used_npc_names)
+    blacksmith_name = generate_npc_name(starting_npc_rng, used_npc_names, gender="F")
     blacksmith_personality, blacksmith_backstory = generate_blacksmith_flavor(starting_npc_rng)
     blacksmith = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,
@@ -326,7 +331,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         personality=blacksmith_personality,
         backstory=blacksmith_backstory,
     )
-    innkeeper_name = generate_npc_name(starting_npc_rng, used_npc_names)
+    innkeeper_name = generate_npc_name(starting_npc_rng, used_npc_names, gender="M")
     innkeeper_personality, innkeeper_backstory = generate_innkeeper_flavor(starting_npc_rng, village.name)
     innkeeper = NPC(
         campaign_id=campaign_id, region_id=region.id, location_id=village.id,

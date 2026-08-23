@@ -56,6 +56,7 @@ from app.game.world.generator import (
     generate_subregion_geography,
     generate_threat,
     is_city_scale,
+    leader_gender_for_organization,
     leader_title_for_organization,
     minor_settlement_count,
     organization_name_for_settlement,
@@ -350,9 +351,11 @@ def generate_region_settlements_and_infrastructure(
     for subregion, major_location, _settlement in major_settlement_rows:
         org_rng = random.Random(derive_seed(subregion.generation_seed, "organization"))
 
-        leader_name = generate_npc_name(org_rng, used_npc_names)
         organization_type = organization_type_for_settlement(_settlement.settlement_type)
         leader_title = leader_title_for_organization(organization_type)
+        leader_name = generate_npc_name(
+            org_rng, used_npc_names, gender=leader_gender_for_organization(organization_type)
+        )
         personality, backstory = generate_leader_flavor(org_rng)
         leader_npc = NPC(
             campaign_id=campaign_id, region_id=region.id, location_id=major_location.id,

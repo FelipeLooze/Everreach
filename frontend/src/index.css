@@ -8,6 +8,89 @@
   font-display: swap;
 }
 
+/* ======================================================================
+   PHASE 21A — GLOBAL EVERREACH VISUAL IDENTITY
+
+   This block is the single documented statement of Everreach's visual
+   identity. It does not change any existing appearance (Phase 21A is
+   audit + foundation only — see the 21A commit/report for the full
+   audit). Read this before adding any new screen or component style.
+
+   PHILOSOPHY
+   Everreach should read as: mystery, discovery, age, craftsmanship,
+   fantasy, calm atmosphere, world depth. Restrained and atmospheric,
+   never flashy — a premium RPG "in-world System" interface, not a
+   modern desktop placed inside a fantasy world, not a generic MMO HUD,
+   not a neon sci-fi panel, not a mobile-gacha interface.
+
+   VISUAL HIERARCHY (never inverted)
+   1. readability  2. game information  3. atmosphere  4. ornamentation
+   Decorative borders frame information; they never compete with it.
+
+   WHAT ALREADY MATCHES THIS IDENTITY (established, keep reusing — do
+   not duplicate):
+   - The main game screen (.status-bar, .action-bar, .narrative-log,
+     .game-sidebar) and the shared modal frame every panel screen reuses
+     (src/components/Panel.tsx: overlay > .panel with a bronze double
+     border + corner ornaments > .panel-header > .panel-body). This is
+     Everreach's de facto EverreachPanel/SystemWindow component —
+     Character, Inventory, Quests, Journal, Map, Settings and Combat
+     all already render through it. Reuse Panel.tsx for any new screen;
+     never hand-roll another modal frame.
+   - Typography split: "Cinzel" (uppercase, letter-spaced) for System
+     headers/titles/labels; "Cormorant Garamond"/Georgia serif for long
+     readable text (narrative, item/quest descriptions); "DM Sans" as
+     the plain UI/body sans default. Never put Cinzel on long text.
+   - The dark-near-black + warm gold/bronze accent palette (the current
+     --accent family, seen as rgba(180,145,90,*) / rgba(167,124,59,*)
+     across .panel, .status-bar, .action-bar, narrative styling) is the
+     established "restrained magical accent" — sparse, not glowing
+     everywhere, exactly matching this phase's "use bright accents
+     sparingly" rule.
+
+   CURRENT FOUNDATION COLOR (audited, not yet the target — see below)
+   --bg / --bg-panel are today a near-neutral warm-dark gray, not blue.
+   Everything else (gold accents, Cinzel, panel borders) already fits
+   the desired identity; only the base hue does not yet read as "dark
+   blue foundation." Phase 21A intentionally leaves this value
+   unchanged (spec: "do not change existing appearance unnecessarily,"
+   "prefer incremental refactoring over destructive rewrite") — a
+   visible hue shift on an already-cohesive, live screen deserves its
+   own deliberate pass with the token consolidation, not a silent
+   side-effect of an audit subphase. Target for that later pass: shift
+   --bg/--bg-panel toward a restrained, desaturated dark blue (not
+   bright/neon) while preserving the existing gold accent, borders and
+   typography untouched.
+
+   TOKEN MAP (current variables, annotated with the role they play in
+   Phase 21B's target vocabulary — 21B may rename/extend these, it must
+   not invent a second, parallel set):
+   --bg        -> BACKGROUND
+   --bg-panel  -> PANEL_BACKGROUND
+   --border    -> BORDER
+   --text      -> PRIMARY_TEXT
+   --text-dim  -> SECONDARY_TEXT / MUTED_TEXT (today one token covers
+                  both meanings — 21B should decide whether they need
+                  to split)
+   --accent    -> SYSTEM_ACCENT (also standing in for MAGICAL_ACCENT
+                  today — no separate magical-accent token exists yet)
+   --danger    -> DANGER
+   --hp/--mp/--sp are resource-bar colors (Character/StatusBar-specific,
+   not general-purpose semantic tokens — keep them named for their
+   resource, do not fold them into DANGER/WARNING/SUCCESS).
+   No WARNING, SUCCESS, DECORATIVE_BORDER, PANEL_BACKGROUND_ELEVATED,
+   UNKNOWN_INFORMATION or UNCERTAIN_INFORMATION token exists yet — real
+   work for 21B, not invented here.
+
+   VISUAL SPEC / FUTURE COMFYUI INDEPENDENCE
+   Nothing in this file, or anywhere in Phase 21, should encode an
+   image-generation prompt. Any future structured visual spec (Phase
+   21C+) is canonical data about what something looks like; a prompt
+   builder is a separate, later, disposable translation step that reads
+   the spec — the spec must never be shaped around any one generator's
+   syntax.
+   ====================================================================== */
+
 :root {
   color-scheme: dark;
   --bg: #202124;

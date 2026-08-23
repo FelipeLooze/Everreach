@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { InteractiveMap } from "@/features/map/InteractiveMap";
-import type { MapViewAnnotation, MapViewLocation, MapViewRoute } from "@/types/game";
+import type { MapViewAnnotation, MapViewLocation, MapViewRoute, RoutePlan } from "@/types/game";
 
 const locations: MapViewLocation[] = [
   {
@@ -49,6 +49,7 @@ describe("InteractiveMap", () => {
         connection_type: "PATH",
         distance: 3,
         danger: 0,
+        travel_time_modifier: 1,
       },
     ];
 
@@ -66,6 +67,7 @@ describe("InteractiveMap", () => {
         connection_type: "PATH",
         distance: 3,
         danger: 0,
+        travel_time_modifier: 1,
       },
     ];
 
@@ -343,5 +345,86 @@ describe("InteractiveMap", () => {
     render(<InteractiveMap locations={locations} currentLocationId="location_never_shown" />);
 
     expect(screen.queryByTestId("map-current-position-marker")).not.toBeInTheDocument();
+  });
+
+  it("offers to plan a route from the character's current position to a different selected location", () => {
+    let requestedTo: string | null = null;
+
+    render(
+      <InteractiveMap
+        locations={locations}
+        currentLocationId="location_1"
+        onRequestRoutePlan={(toLocationId) => {
+          requestedTo = toLocationId;
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_2"));
+    fireEvent.click(screen.getByTestId("map-plan-route"));
+
+    expect(requestedTo).toBe("location_2");
+  });
+
+  it("does not offer to plan a route to the character's own current location", () => {
+    render(
+      <InteractiveMap locations={locations} currentLocationId="location_1" onRequestRoutePlan={() => {}} />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+
+    expect(screen.queryByTestId("map-plan-route")).not.toBeInTheDocument();
+  });
+
+  it("shows the fetched route plan for the selected destination", () => {
+    const routePlan: RoutePlan = {
+      known: true,
+      from_location_id: "location_1",
+      to_location_id: "location_2",
+      segments: [
+        { from_location_id: "location_1", to_location_id: "location_2", direction: "leste", connection_type: "PATH", distance: 3, danger: 0 },
+      ],
+      total_distance: 3,
+      estimated_minutes: 45,
+      max_danger: 0,
+    };
+
+    render(
+      <InteractiveMap
+        locations={locations}
+        currentLocationId="location_1"
+        routePlan={routePlan}
+        onRequestRoutePlan={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_2"));
+
+    expect(screen.getByTestId("map-route-plan-result")).toHaveTextContent("Tempo estimado: 45 min");
+  });
+
+  it("shows 'no known route' when the fetched plan says the route is unknown", () => {
+    const routePlan: RoutePlan = {
+      known: false,
+      from_location_id: "location_1",
+      to_location_id: "location_2",
+      segments: [],
+      total_distance: 0,
+      estimated_minutes: 0,
+      max_danger: 0,
+    };
+
+    render(
+      <InteractiveMap
+        locations={locations}
+        currentLocationId="location_1"
+        routePlan={routePlan}
+        onRequestRoutePlan={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_2"));
+
+    expect(screen.getByTestId("map-route-plan-result")).toHaveTextContent("Nenhuma rota conhecida");
   });
 });

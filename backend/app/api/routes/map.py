@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.game.map.annotations import AnnotationError, create_annotation, delete_annotation
+from app.game.map.planning import plan_known_route
 from app.game.map.service import known_map
 from app.game.map.view import get_map_view
 from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
@@ -12,6 +13,8 @@ from app.schemas.map_view import (
     DeleteMapAnnotationResponse,
     MapViewAnnotationSchema,
     MapViewDataSchema,
+    RoutePlanSchema,
+    RoutePlanSegmentSchema,
 )
 from app.core.enums import DiscoveryStatus, KnowerType
 from app.db.models.character import Character
@@ -45,6 +48,51 @@ def get_player_map_view(
     authoritative coordinates."""
     _load_character(db, campaign_id, character_id)
     return get_map_view(db, campaign_id, character_id, scope=scope)
+
+
+@router.get("/{campaign_id}/route-plan", response_model=RoutePlanSchema)
+def get_route_plan(
+    campaign_id: str,
+    character_id: str,
+    from_location_id: str,
+    to_location_id: str,
+    db: Session = Depends(get_db),
+):
+    """Phase 20M — Travel Planning Integration. Pathfinding restricted
+    to the character's own known routes (see app.game.map.planning);
+    `known=False` is the spec's own required "No known route" answer,
+    not an error — this never falls back to the authoritative graph."""
+    _load_character(db, campaign_id, character_id)
+    plan = plan_known_route(db, campaign_id, character_id, from_location_id, to_location_id)
+    if plan is None:
+        return RoutePlanSchema(
+            known=False,
+            from_location_id=from_location_id,
+            to_location_id=to_location_id,
+            segments=[],
+            total_distance=0.0,
+            estimated_minutes=0,
+            max_danger=0,
+        )
+    return RoutePlanSchema(
+        known=True,
+        from_location_id=plan.from_location_id,
+        to_location_id=plan.to_location_id,
+        segments=[
+            RoutePlanSegmentSchema(
+                from_location_id=segment.from_location_id,
+                to_location_id=segment.to_location_id,
+                direction=segment.direction,
+                connection_type=segment.connection_type,
+                distance=segment.distance,
+                danger=segment.danger,
+            )
+            for segment in plan.segments
+        ],
+        total_distance=plan.total_distance,
+        estimated_minutes=plan.estimated_minutes,
+        max_danger=plan.max_danger,
+    )
 
 
 @router.post("/{campaign_id}/map-annotations", response_model=MapViewAnnotationSchema, status_code=201)

@@ -252,6 +252,7 @@ class MapViewRoute:
     connection_type: str
     distance: float
     danger: int
+    travel_time_modifier: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -643,6 +644,7 @@ def get_map_view(
             connection_type=connection.connection_type,
             distance=connection.distance,
             danger=connection.danger,
+            travel_time_modifier=connection.travel_time_modifier,
         )
         for connection in data["connections"]
         if connection.from_location_id in visible_location_ids

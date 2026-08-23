@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { createMapAnnotation, deleteMapAnnotation, getMapView } from "@/api/map";
-import type { MapViewData } from "@/types/game";
+import { createMapAnnotation, deleteMapAnnotation, getMapView, getRoutePlan } from "@/api/map";
+import type { MapViewData, RoutePlan } from "@/types/game";
 import { InteractiveMap } from "@/features/map/InteractiveMap";
 import { connectionTypeLabel, discoveryStatusLabel, locationTypeLabel } from "@/utils/labels";
 
@@ -14,6 +14,7 @@ export function MapPanel({
 }) {
   const [map, setMap] = useState<MapViewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [routePlan, setRoutePlan] = useState<RoutePlan | null>(null);
 
   useEffect(() => {
     getMapView(campaignId, characterId)
@@ -74,6 +75,15 @@ export function MapPanel({
       });
   };
 
+  const handleRequestRoutePlan = (toLocationId: string) => {
+    if (!map.position_location_id) return;
+    getRoutePlan(campaignId, characterId, map.position_location_id, toLocationId)
+      .then(setRoutePlan)
+      .catch(() => {
+        // Falha silenciosa: o botão "Planejar viagem" continua disponível para nova tentativa.
+      });
+  };
+
   return (
     <div className="exploration-map">
       {map.regions.map((region) => {
@@ -97,8 +107,10 @@ export function MapPanel({
                 routes={map.routes}
                 annotations={map.annotations}
                 currentLocationId={map.position_location_id}
+                routePlan={routePlan}
                 onCreateAnnotation={handleCreateAnnotation}
                 onDeleteAnnotation={handleDeleteAnnotation}
+                onRequestRoutePlan={handleRequestRoutePlan}
               />
 
               {regionLocations.some(

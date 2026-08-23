@@ -427,6 +427,29 @@ export interface MapViewRoute {
   connection_type: string;
   distance: number;
   danger: number;
+  travel_time_modifier: number;
+}
+
+// Phase 20M — a planned path over the character's OWN known routes
+// only; `known: false` is a legitimate answer ("no known route"), not
+// an error, and never falls back to computing over unknown geography.
+export interface RoutePlanSegment {
+  from_location_id: string;
+  to_location_id: string;
+  direction: string | null;
+  connection_type: string;
+  distance: number;
+  danger: number;
+}
+
+export interface RoutePlan {
+  known: boolean;
+  from_location_id: string;
+  to_location_id: string;
+  segments: RoutePlanSegment[];
+  total_distance: number;
+  estimated_minutes: number;
+  max_danger: number;
 }
 
 // Phase 20J — a player-owned note pinned to a known location. Never

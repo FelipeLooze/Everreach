@@ -1366,6 +1366,34 @@ select {
   cursor: pointer;
 }
 
+.interactive-map-route-plan {
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.interactive-map-route-plan button {
+  padding: 0.25rem 0.55rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.interactive-map-route-plan p,
+.interactive-map-route-plan li {
+  margin: 0.2rem 0;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.interactive-map-route-plan ul {
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+}
+
 .map-position-note {
   margin: 0;
 

@@ -7,12 +7,14 @@ const mocks = vi.hoisted(() => ({
   getMapView: vi.fn(),
   createMapAnnotation: vi.fn(),
   deleteMapAnnotation: vi.fn(),
+  getRoutePlan: vi.fn(),
 }));
 
 vi.mock("@/api/map", () => ({
   getMapView: mocks.getMapView,
   createMapAnnotation: mocks.createMapAnnotation,
   deleteMapAnnotation: mocks.deleteMapAnnotation,
+  getRoutePlan: mocks.getRoutePlan,
 }));
 
 describe("MapPanel", () => {
@@ -255,5 +257,52 @@ describe("MapPanel", () => {
     await waitFor(() =>
       expect(screen.queryByTestId("map-annotation-annotation_1")).not.toBeInTheDocument(),
     );
+  });
+
+  it("plans a route from the character's current position through the API", async () => {
+    mocks.getMapView.mockResolvedValue({
+      campaign_id: "campaign_1",
+      character_id: "char_1",
+      scope: null,
+      regions: [{ id: "region_1", name: "Vale Verdejante", discovery_status: "DISCOVERED" }],
+      locations: [
+        {
+          id: "location_1", region_id: "region_1", type: "village", name: "Cardal",
+          precision: "PRECISE", x: 0, y: 0, discovery_status: "VISITED",
+        },
+        {
+          id: "location_2", region_id: "region_1", type: "settlement", name: "Arven",
+          precision: "PRECISE", x: 5, y: 5, discovery_status: "VISITED",
+        },
+      ],
+      routes: [],
+      annotations: [],
+      position_location_id: "location_1",
+      position_precision: "PRECISE",
+    });
+    mocks.getRoutePlan.mockResolvedValue({
+      known: true,
+      from_location_id: "location_1",
+      to_location_id: "location_2",
+      segments: [
+        { from_location_id: "location_1", to_location_id: "location_2", direction: "sul", connection_type: "PATH", distance: 4, danger: 0 },
+      ],
+      total_distance: 4,
+      estimated_minutes: 60,
+      max_danger: 0,
+    });
+
+    render(
+      <MapPanel
+        campaignId="campaign_1"
+        characterId="char_1"
+      />,
+    );
+
+    fireEvent.click(await screen.findByTestId("map-node-location_2"));
+    fireEvent.click(screen.getByTestId("map-plan-route"));
+
+    expect(mocks.getRoutePlan).toHaveBeenCalledWith("campaign_1", "char_1", "location_1", "location_2");
+    expect(await screen.findByTestId("map-route-plan-result")).toHaveTextContent("Tempo estimado: 60 min");
   });
 });

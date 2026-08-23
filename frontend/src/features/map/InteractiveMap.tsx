@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 
-import type { MapViewAnnotation, MapViewLocation, MapViewRoute } from "@/types/game";
+import type { MapViewAnnotation, MapViewLocation, MapViewRoute, RoutePlan } from "@/types/game";
 import {
+  connectionTypeLabel,
   discoveryStatusLabel,
   geographicPrecisionLabel,
   locationTypeLabel,
@@ -50,6 +51,16 @@ import {
  * never talks to the API itself — MapPanel owns the annotation data
  * and the create/delete callbacks, matching how selection already
  * flows (onSelect) rather than adding a second, parallel data path.
+ *
+ * Phase 20M — Travel Planning Integration.
+ *
+ * Same pattern again: this component never runs pathfinding or calls
+ * the API — it only offers a "Planejar viagem" button (shown from the
+ * character's own current position, via currentLocationId) and renders
+ * whatever RoutePlan MapPanel already fetched. `routePlan.known ===
+ * false` renders literally as "no known route", never a silently
+ * empty or misleading result — and nothing here ever moves the
+ * character; planning is presentation only.
  */
 
 const DISPLAY_SIZE = 100;
@@ -135,17 +146,21 @@ export function InteractiveMap({
   routes = [],
   annotations = [],
   currentLocationId = null,
+  routePlan = null,
   onSelect,
   onCreateAnnotation,
   onDeleteAnnotation,
+  onRequestRoutePlan,
 }: {
   locations: MapViewLocation[];
   routes?: MapViewRoute[];
   annotations?: MapViewAnnotation[];
   currentLocationId?: string | null;
+  routePlan?: RoutePlan | null;
   onSelect?: (locationId: string | null) => void;
   onCreateAnnotation?: (locationId: string, text: string) => void;
   onDeleteAnnotation?: (annotationId: string) => void;
+  onRequestRoutePlan?: (toLocationId: string) => void;
 }) {
   const placed = useMemo(() => placeLocations(locations), [locations]);
   const placedById = useMemo(
@@ -421,6 +436,42 @@ export function InteractiveMap({
               </form>
             )}
           </div>
+
+          {onRequestRoutePlan && currentLocationId && selected.id !== currentLocationId && (
+            <div className="interactive-map-route-plan">
+              <button
+                type="button"
+                data-testid="map-plan-route"
+                onClick={() => onRequestRoutePlan(selected.id)}
+              >
+                Planejar viagem
+              </button>
+
+              {routePlan && routePlan.to_location_id === selected.id && (
+                <div data-testid="map-route-plan-result">
+                  {routePlan.known ? (
+                    <>
+                      <p>
+                        {routePlan.segments.length} trecho(s) · distância total {routePlan.total_distance}
+                      </p>
+                      <p>Tempo estimado: {routePlan.estimated_minutes} min</p>
+                      {routePlan.max_danger > 0 && <p>Perigo máximo conhecido: {routePlan.max_danger}</p>}
+                      <ul>
+                        {routePlan.segments.map((segment, index) => (
+                          <li key={`${segment.from_location_id}-${segment.to_location_id}-${index}`}>
+                            {connectionTypeLabel(segment.connection_type)}
+                            {segment.direction ? ` · ${segment.direction}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <p>Nenhuma rota conhecida até este local.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { api } from "@/api/client";
-import type { MapData, MapViewAnnotation, MapViewData } from "@/types/game";
+import type { MapData, MapViewAnnotation, MapViewData, RoutePlan } from "@/types/game";
 
 export const getMap = (
   campaignId: string,
@@ -43,3 +43,17 @@ export const deleteMapAnnotation = (
   api.delete<{ deleted: boolean }>(
     `/campaigns/${campaignId}/map-annotations/${annotationId}?character_id=${encodeURIComponent(characterId)}`,
   );
+
+export const getRoutePlan = (
+  campaignId: string,
+  characterId: string,
+  fromLocationId: string,
+  toLocationId: string,
+) => {
+  const params = new URLSearchParams({
+    character_id: characterId,
+    from_location_id: fromLocationId,
+    to_location_id: toLocationId,
+  });
+  return api.get<RoutePlan>(`/campaigns/${campaignId}/route-plan?${params.toString()}`);
+};

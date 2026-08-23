@@ -36,6 +36,7 @@ class MapViewRouteSchema(BaseModel):
     connection_type: str
     distance: float
     danger: int
+    travel_time_modifier: float
 
 
 class MapViewAnnotationSchema(BaseModel):
@@ -53,6 +54,25 @@ class CreateMapAnnotationRequest(BaseModel):
 
 class DeleteMapAnnotationResponse(BaseModel):
     deleted: bool
+
+
+class RoutePlanSegmentSchema(BaseModel):
+    from_location_id: str
+    to_location_id: str
+    direction: str | None
+    connection_type: str
+    distance: float
+    danger: int
+
+
+class RoutePlanSchema(BaseModel):
+    known: bool
+    from_location_id: str
+    to_location_id: str
+    segments: list[RoutePlanSegmentSchema]
+    total_distance: float
+    estimated_minutes: int
+    max_danger: int
 
 
 class MapViewDataSchema(BaseModel):

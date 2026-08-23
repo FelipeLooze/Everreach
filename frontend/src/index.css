@@ -1144,91 +1144,142 @@ select {
   margin-top: 0.3rem;
 }
 
-.map-canvas {
+.interactive-map {
   position: relative;
   width: 100%;
   height: 320px;
-  overflow: hidden;
 
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 5px;
 }
 
-.map-canvas::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  background-image:
-    linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.035) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.035) 1px,
-      transparent 1px
-    );
-
-  background-size: 40px 40px;
-  pointer-events: none;
-}
-
-.map-edges {
-  position: absolute;
-  inset: 0;
-
+.interactive-map-canvas {
+  display: block;
   width: 100%;
   height: 100%;
 
-  overflow: visible;
-  pointer-events: none;
+  cursor: grab;
+  touch-action: none;
 }
 
-.map-edges line {
-  stroke: var(--border);
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
+.interactive-map-canvas:active {
+  cursor: grabbing;
 }
 
-.map-node {
+.interactive-map-controls {
   position: absolute;
-  transform: translate(-50%, -50%);
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
 
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
+}
 
-  max-width: 120px;
-  text-align: center;
+.interactive-map-controls button {
+  width: 1.8rem;
+  height: 1.8rem;
 
-  pointer-events: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.interactive-map-controls button:hover {
+  border-color: var(--accent);
+}
+
+.map-route-line {
+  stroke: var(--border);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
 }
 
 .map-node-marker {
-  display: block;
+  fill: var(--bg-panel);
+  stroke: var(--accent);
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+}
 
-  width: 14px;
-  height: 14px;
+.map-node-uncertainty-ring {
+  fill: rgba(255, 255, 255, 0.04);
+  stroke: var(--text-dim);
+  stroke-width: 0.4;
+  stroke-dasharray: 1.5 1;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+}
 
-  background: var(--bg-panel);
-  border: 2px solid var(--accent);
-  border-radius: 50%;
+.map-node-uncertainty-ring.source-rumor {
+  stroke: #b98b3e;
+  stroke-dasharray: 0.8 0.8;
+}
+
+.map-node-marker.source-rumor {
+  stroke: #b98b3e;
+}
+
+.map-node-uncertainty-glyph {
+  fill: var(--text-dim);
+  font-size: 3px;
+  pointer-events: none;
 }
 
 .map-node-label {
-  max-width: 120px;
-  padding: 0.15rem 0.35rem;
+  fill: var(--text);
+  font-size: 3px;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 0.6px;
+  stroke-linejoin: round;
+}
+
+.interactive-map-tooltip {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+
+  padding: 0.3rem 0.55rem;
 
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 3px;
 
-  font-size: 0.72rem;
-  line-height: 1.2;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.interactive-map-info {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  max-width: 60%;
+
+  padding: 0.5rem 0.7rem;
+
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.interactive-map-info h5 {
+  margin: 0 0 0.3rem;
+}
+
+.interactive-map-info p {
+  margin: 0.15rem 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
 }
 
 .map-position-note {

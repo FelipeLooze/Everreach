@@ -273,6 +273,7 @@ export function InteractiveMap({
               data-status={location.discovery_status}
               data-selected={location.id === selectedId}
               data-position-known={location.positionKnown}
+              data-source={location.source}
               transform={`translate(${location.displayX}, ${location.displayY})`}
               onClick={(event) => {
                 event.stopPropagation();
@@ -284,13 +285,13 @@ export function InteractiveMap({
               {location.positionKnown ? (
                 <circle
                   r={location.id === selectedId ? 2.6 : 1.8}
-                  className={`map-node-marker precision-${precisionClass}`}
+                  className={`map-node-marker precision-${precisionClass} source-${location.source}`}
                 />
               ) : (
                 <>
                   <circle
                     r={uncertaintyRadius}
-                    className={`map-node-uncertainty-ring precision-${precisionClass}`}
+                    className={`map-node-uncertainty-ring precision-${precisionClass} source-${location.source}`}
                   />
                   <text textAnchor="middle" dominantBaseline="central" className="map-node-uncertainty-glyph">
                     ?

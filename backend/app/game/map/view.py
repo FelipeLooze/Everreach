@@ -89,12 +89,30 @@ live geography lookups every other path uses; this is the concrete
 mechanism behind "MAP DATA != CURRENT WORLD TRUTH" (spec): if the
 character's live knowledge is later revoked or the world changes, the
 owned map's info does not, because it was never wired to either.
-`source` on MapViewLocation ("discovery" / "knowledge" / "map")
+`source` on MapViewLocation ("discovery" / "knowledge" / "map" / "rumor")
 is the minimal provenance signal the spec's "MAP SOURCE PROVENANCE"
 section asks for; a location known through more than one channel keeps
-whichever live signal already included it (discovery/knowledge take
+whichever live signal already included it (discovery/knowledge/map take
 precedence — a live signal is always at least as good as a frozen
-snapshot of past knowledge).
+snapshot of past knowledge, and any of those is stronger than a rumor).
+
+Phase 20H — Rumors & Unconfirmed Locations.
+
+Reuses Phase 17C in full: app.game.knowledge.rumors stores a rumor as
+its OWN KnowledgeFact under the ":rumor:{rumor_key}" fact_key
+namespace, deliberately never overwriting the canonical aspect fact
+for the same (entity, aspect) — "LOGAN HAS HEARD THIS CLAIM" is never
+conflated with "THE THING DEFINITELY EXISTS". A location known ONLY
+through a rumored EXISTENCE (no canonical Phase 17 grant, no
+discovery, no owned map) previously never surfaced at all, because
+neither _phase17_known_location_ids' suffix match nor known_map's
+discovery join ever look inside the ":rumor:" namespace.
+source="rumor" locations deliberately reuse _build_map_view_location's
+ordinary live-lookup path rather than a rumor-specific one: since no
+canonical aspect grant exists for them, precision naturally falls back
+to DiscoveryStatus.RUMORED's own VAGUE mapping and known_aspects stays
+{EXISTENCE} — an honest reflection of "a claim was heard", nothing
+more, without needing to parse rumor precision/aspects separately.
 """
 from dataclasses import dataclass, field
 
@@ -231,6 +249,33 @@ def _phase17_known_location_ids(db: Session, campaign_id: str, character_id: str
         if not fact_key.startswith(prefix) or not fact_key.endswith(suffix):
             continue
         ids.add(fact_key[len(prefix):-len(suffix)])
+    return ids
+
+
+def _phase17_rumored_location_ids(db: Session, campaign_id: str, character_id: str) -> set[str]:
+    """Locations the character has only ever heard a RUMORED EXISTENCE
+    claim about (app.game.knowledge.rumors' ":rumor:" fact_key
+    namespace) — distinct from _phase17_known_location_ids, which only
+    ever matches the canonical (confirmed) fact_key. See module
+    docstring."""
+    prefix = "location:"
+    marker = f":{GeographicKnowledgeAspect.EXISTENCE.value.lower()}:rumor:"
+    rows = (
+        db.query(KnowledgeFact.fact_key)
+        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
+        .filter(
+            KnowledgeFact.campaign_id == campaign_id,
+            KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
+            KnowledgeKnower.knower_id == character_id,
+            KnowledgeFact.fact_key.like(f"{prefix}%{marker}%"),
+        )
+        .all()
+    )
+    ids = set()
+    for (fact_key,) in rows:
+        if not fact_key.startswith(prefix) or marker not in fact_key:
+            continue
+        ids.add(fact_key[len(prefix):].split(marker, 1)[0])
     return ids
 
 
@@ -426,6 +471,27 @@ def get_map_view(
             locations.append(
                 _build_map_view_location_from_maps(
                     location, DiscoveryStatus.RUMORED, map_contents_by_location[location.id]
+                )
+            )
+            if location.region_id not in regions_by_id:
+                region = db.get(Region, location.region_id)
+                if region is not None:
+                    regions_by_id[region.id] = region
+
+    included_location_ids = {location.id for location in locations}
+    rumored_only_ids = _phase17_rumored_location_ids(db, campaign_id, character_id) - included_location_ids
+    if rumored_only_ids:
+        rumored_locations = (
+            db.query(Location)
+            .join(Region, Region.id == Location.region_id)
+            .filter(Location.id.in_(rumored_only_ids), Region.campaign_id == campaign_id)
+            .order_by(Location.name)
+            .all()
+        )
+        for location in rumored_locations:
+            locations.append(
+                _build_map_view_location(
+                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED, source="rumor"
                 )
             )
             if location.region_id not in regions_by_id:

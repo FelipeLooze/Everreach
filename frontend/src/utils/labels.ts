@@ -42,6 +42,7 @@ const MAP_LOCATION_SOURCE_LABELS: Record<string, string> = {
   discovery: "descoberta pessoal",
   knowledge: "conhecimento pessoal",
   map: "mapa possuído",
+  rumor: "rumor não confirmado",
 };
 
 const NPC_ACTIVITY_LABELS: Record<string, string> = {

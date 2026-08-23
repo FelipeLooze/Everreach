@@ -124,6 +124,21 @@ def build_npc_portrait_prompt(resolved_appearance: dict) -> str:
     return sentence + _NPC_PORTRAIT_STYLE_SUFFIX
 
 
+def extract_model_identifier(graph: dict) -> str | None:
+    """Best-effort provenance for VisualAsset.model_identifier: the
+    diffusion model file every registered workflow's node "10"
+    (UNETLoader) declares (see e.g. EVERREACH_ITEM_V3_API.json's own
+    "flux-2-klein-4b.safetensors"). Reads the graph rather than asking a
+    caller to separately track this, so there is only one place the
+    model name can drift from what a workflow file actually uses. Never
+    raises — this is optional provenance, not a trust gate — a graph
+    that does not follow the convention just yields None."""
+    node = graph.get("10")
+    if node is None or node.get("class_type") != "UNETLoader":
+        return None
+    return node.get("inputs", {}).get("unet_name")
+
+
 def _require_node(graph: dict, node_id: str, expected_class_type: str) -> dict:
     node = graph.get(node_id)
     if node is None or node.get("class_type") != expected_class_type:

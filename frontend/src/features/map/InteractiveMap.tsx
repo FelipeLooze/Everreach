@@ -61,6 +61,17 @@ import {
  * false` renders literally as "no known route", never a silently
  * empty or misleading result — and nothing here ever moves the
  * character; planning is presentation only.
+ *
+ * Phase 20P — Map UI & Everreach System Integration.
+ *
+ * Visual treatment now matches the rest of Everreach's in-world System
+ * chrome (Cinzel headers, gold/parchment accents, the same bordered
+ * frame every other .panel uses) rather than a generic dark box — see
+ * index.css. One real, working layer toggle (annotations) stands in
+ * for the spec's "Map Filters/Layers" section: routes/rumors/
+ * organization data are not independent toggleable layers yet because
+ * there is nothing meaningfully different to hide behind them today
+ * (spec's own "do not implement every layer immediately").
  */
 
 const DISPLAY_SIZE = 100;
@@ -188,6 +199,7 @@ export function InteractiveMap({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [showAnnotations, setShowAnnotations] = useState(true);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragState = useRef<{ startClientX: number; startClientY: number; startViewBox: ViewBox } | null>(null);
 
@@ -274,6 +286,15 @@ export function InteractiveMap({
         >
           −
         </button>
+        <label className="interactive-map-layer-toggle">
+          <input
+            type="checkbox"
+            data-testid="map-toggle-annotations"
+            checked={showAnnotations}
+            onChange={(event) => setShowAnnotations(event.target.checked)}
+          />
+          Notas
+        </label>
       </div>
 
       <svg
@@ -360,7 +381,7 @@ export function InteractiveMap({
               >
                 {location.name ?? "?"}
               </text>
-              {annotationsByLocation.has(location.id) && (
+              {showAnnotations && annotationsByLocation.has(location.id) && (
                 <circle
                   data-testid={`map-node-annotation-dot-${location.id}`}
                   cx={location.positionKnown ? 1.6 : uncertaintyRadius * 0.7}

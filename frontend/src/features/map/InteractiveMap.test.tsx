@@ -459,4 +459,18 @@ describe("InteractiveMap", () => {
 
     expect(screen.queryByTestId("map-selected-provenance")).not.toBeInTheDocument();
   });
+
+  it("hides annotation dots on the map when the annotations layer is toggled off", () => {
+    const annotations: MapViewAnnotation[] = [
+      { id: "annotation_1", location_id: "location_1", text: "Bom poço.", created_at: "2026-01-01T00:00:00" },
+    ];
+
+    render(<InteractiveMap locations={locations} annotations={annotations} />);
+
+    expect(screen.getByTestId("map-node-annotation-dot-location_1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("map-toggle-annotations"));
+
+    expect(screen.queryByTestId("map-node-annotation-dot-location_1")).not.toBeInTheDocument();
+  });
 });

@@ -354,6 +354,13 @@ _NPC_ENTRANCE_VERBS = re.compile(
 
 
 def _unauthorized_speaker_message(name: str) -> str:
+    if name == _UNRESOLVED_TURN_SENTINEL:
+        return (
+            "a resposta narra mais de uma fala/turno de diálogo sem interlocutor "
+            "autorizado; escreva no máximo a primeira fala de quem se aproxima e "
+            "pare — não invente uma troca inteira, nem uma resposta do protagonista, "
+            "sem que o jogador tenha escrito outra ação"
+        )
     return (
         f"'{name}' recebe fala atribuída sem ser o interlocutor ativo nem ter sido "
         "apresentado entrando na cena; um NPC apenas visível é espectador — só pode "
@@ -364,16 +371,27 @@ def _unauthorized_speaker_message(name: str) -> str:
 _QUOTE_MARK = re.compile(r'["“]')
 
 
+def _paragraph_has_spoken_dialogue(paragraph: str) -> bool:
+    """True for a quote-mark paragraph ("Nome disse, '...'") OR the
+    dash-led screenplay style this codebase's own dialogue convention
+    actually uses ("— fala — verbo") — _is_dialogue_paragraph already
+    recognizes the dash-prefixed and colon-attributed shapes; this adds
+    the inline-quote-mark shape _paragraph_speaker_among's stricter
+    patterns miss."""
+    return _is_dialogue_paragraph(paragraph) or bool(_QUOTE_MARK.search(paragraph))
+
+
 def _single_unattributed_quoted_speaker(paragraph: str, visible_npcs: list[str]) -> str | None:
     """Fallback for real dialogue this local model writes in a shape
     _paragraph_speaker_among's stricter patterns don't recognize — e.g.
     "Aldric Draven assente, ... 'Sim, temos...'", where the speech verb
     ("assente") isn't in _SPEECH_VERBS and isn't adjacent to the name.
     Deliberately narrow: only fires when the paragraph actually contains
-    a quote AND exactly one visible NPC's name appears in it at all — an
-    ambiguous multi-name paragraph is left to the stricter checks rather
-    than guessed at, same caution as every other Phase 19 validator."""
-    if not _QUOTE_MARK.search(paragraph):
+    spoken dialogue AND exactly one visible NPC's name appears in it at
+    all — an ambiguous multi-name paragraph is left to the stricter
+    checks rather than guessed at, same caution as every other Phase 19
+    validator."""
+    if not _paragraph_has_spoken_dialogue(paragraph):
         return None
     mentioned = [
         name
@@ -383,13 +401,36 @@ def _single_unattributed_quoted_speaker(paragraph: str, visible_npcs: list[str])
     return mentioned[0] if len(mentioned) == 1 else None
 
 
+_UNRESOLVED_TURN_SENTINEL = "(diálogo adicional não atribuível)"
+
+
 def _scan_unauthorized_speakers(
     paragraphs: list[str], visible_npcs: list[str], active_interlocutor_name: str
 ):
     """Yield (paragraph, unauthorized_speaker) for each paragraph, tracking NPC
     entrances as they're narrated so a later paragraph may legitimately voice
-    an NPC who was just explicitly introduced joining the scene."""
+    an NPC who was just explicitly introduced joining the scene.
+
+    When no interlocutor was ever mechanically authorized (the multi-NPC
+    ambiguity case — see engine._handle_talk), a scene may still
+    legitimately OPEN with one NPC's unattributed greeting/offer (nobody
+    has been resolved as a target yet, but someone approaching and
+    speaking first is normal). What is never legitimate is a SECOND
+    quoted exchange nobody can be named for in the same draft — that is
+    the model writing a whole back-and-forth (routinely including a
+    fabricated protagonist reply attributed only by pronoun, "admitiu
+    ele"/"disse ela", a shape none of the name-based checks recognize)
+    with no player input driving the later turns. So exactly one
+    unattributable quoted paragraph is tolerated per draft; any further
+    one is flagged, regardless of whose voice it's meant to be.
+    """
     authorized = {active_interlocutor_name} if active_interlocutor_name else set()
+    # The budget rule below only ever applies with NO active interlocutor.
+    # When one exists, an unresolved speaker on a dialogue paragraph is
+    # assumed to be them continuing (unattributed follow-up paragraphs
+    # from the same ongoing speaker are normal prose, not a new turn) —
+    # exactly the pre-existing behavior, unchanged here.
+    unattributed_quote_budget = 1
     for paragraph in paragraphs:
         if not _is_dialogue_paragraph(paragraph):
             normalized = _normalized(paragraph)
@@ -400,11 +441,23 @@ def _scan_unauthorized_speakers(
                 if re.search(rf"\b{first}\b", normalized) and _NPC_ENTRANCE_VERBS.search(normalized):
                     authorized.add(name)
             speaker = _single_unattributed_quoted_speaker(paragraph, visible_npcs)
+            if speaker is None and not active_interlocutor_name and _QUOTE_MARK.search(paragraph):
+                if unattributed_quote_budget > 0:
+                    unattributed_quote_budget -= 1
+                else:
+                    yield paragraph, _UNRESOLVED_TURN_SENTINEL
+                    continue
             yield paragraph, (speaker if speaker and speaker not in authorized else None)
             continue
         speaker = _paragraph_speaker_among(paragraph, visible_npcs)
         if speaker is None:
             speaker = _single_unattributed_quoted_speaker(paragraph, visible_npcs)
+        if speaker is None and not active_interlocutor_name:
+            if unattributed_quote_budget > 0:
+                unattributed_quote_budget -= 1
+            else:
+                yield paragraph, _UNRESOLVED_TURN_SENTINEL
+                continue
         yield paragraph, (speaker if speaker and speaker not in authorized else None)
 
 

@@ -1153,6 +1153,41 @@ def test_narrator_allows_a_bystander_npc_to_speak_after_being_explicitly_introdu
     assert len(llm.calls) == 1
 
 
+def test_narrator_catches_a_whole_fabricated_back_and_forth_with_no_interlocutor():
+    # Real bug report: with no interlocutor authorized, the narrator wrote
+    # a FULL multi-turn exchange in one response — a fabricated
+    # protagonist line attributed only by pronoun ("admitiu ele", no name
+    # at all — a shape neither the name-based nor the self-identification
+    # check catches), then fabricated NPC dialogue answering questions the
+    # player never asked, including inventing the NPC's own name/identity
+    # ("Sou Sable Kessler..."). One unattributable quoted line (a scene
+    # legitimately opening with an NPC's own greeting) is tolerated by
+    # design — this asserts the SECOND one (the fabricated identity
+    # reveal, the more damaging half) is caught, not that every trace of
+    # the first one is necessarily gone too.
+    llm = StubbornLLM(
+        "Olhando em torno, Logan percebeu que estava em uma pequena vila.\n\n"
+        "— Eu... não tenho certeza sobre onde estou — admitiu ele, sentindo-se "
+        "um pouco perdido. — Este é o nome desta aldeia?\n\n"
+        "A mulher morena sorriu, aparentando paciência.\n\n"
+        "—Sou Sable Kessler, uma ferreira. Minha família vive aqui há gerações."
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Sable Kessler (ferreira; activity=WORKING)\n"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
+        context,
+        "Bom dia, senhora. Saberia me dizer onde estou?",
+        "(sem histórico)",
+    )
+
+    assert "Sable Kessler" not in result
+
+
 def test_narrator_drops_fabricated_npc_dialogue_when_no_interlocutor_was_authorized():
     # Real bug report: the mechanical layer correctly refused to pick an
     # interlocutor (multiple NPCs nearby, player named no one), so there is

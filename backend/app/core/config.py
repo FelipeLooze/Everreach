@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     # scripts). The registry's own allowlist decides which filenames are
     # ever loaded from here — this path alone does not grant trust.
     comfyui_workflow_root: str = ""
+    # Phase 23D-F — root of the PERSISTENT Everreach asset store (never
+    # ComfyUI's own raw output directory, comfyui_raw_output_root above).
+    # app.game.visual.asset_storage copies an accepted raw generation
+    # into <this root>/<campaign or "global">/<entity_type>/<entity_id>/
+    # <asset_type>/<asset_id><ext> and never anywhere else.
+    comfyui_asset_root: str = ""
 
 
 @lru_cache

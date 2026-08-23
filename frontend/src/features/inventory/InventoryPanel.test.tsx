@@ -1,14 +1,20 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "@/api/client";
 import { InventoryPanel } from "@/features/inventory/InventoryPanel";
 
 const mocks = vi.hoisted(() => ({
   getInventory: vi.fn(),
+  getCurrentVisualAsset: vi.fn(),
 }));
 
 vi.mock("@/api/inventory", () => ({
   getInventory: mocks.getInventory,
+}));
+
+vi.mock("@/api/visual", () => ({
+  getCurrentVisualAsset: mocks.getCurrentVisualAsset,
 }));
 
 describe("InventoryPanel", () => {
@@ -16,6 +22,7 @@ describe("InventoryPanel", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getCurrentVisualAsset.mockRejectedValue(new ApiError(404, "not found"));
     mocks.getInventory.mockResolvedValue({
       items: [
         {

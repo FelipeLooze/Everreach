@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getInventory } from "@/api/inventory";
-import { AssetSlot } from "@/components/AssetSlot";
+import { EntityVisual } from "@/components/EntityVisual";
 import { StateBadge, type StateTone } from "@/components/StateBadge";
 import type { Inventory, InventoryItem } from "@/types/game";
 
@@ -138,15 +138,20 @@ const encumbranceLabels = {
   OVERLOADED: "Carga excessiva",
 };
 
-function ItemCard({ item }: { item: InventoryItem }) {
+function ItemCard({ item, campaignId }: { item: InventoryItem; campaignId: string }) {
   return (
     <article className="fantasy-content-card inventory-item-card">
       <div className="inventory-item-heading">
         <div className="inventory-item-identity">
-          <AssetSlot
-            assetUrl={item.asset_ref}
+          <EntityVisual
+            campaignId={campaignId}
+            entityType="item_instance"
+            entityId={item.item_instance_id}
+            assetType="ITEM_ILLUSTRATION"
             placeholderGlyph={itemTypeGlyphs[item.type] ?? "◆"}
-            label={item.name}
+            label={`Ilustração de ${item.name}`}
+            generateLabel="Gerar ilustração"
+            regenerateLabel="Regenerar ilustração"
           />
           <strong>{item.name}</strong>
         </div>
@@ -231,7 +236,7 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
         ) : (
           <div className="inventory-item-grid">
             {equipped.map((item) => (
-              <ItemCard key={item.item_instance_id} item={item} />
+              <ItemCard key={item.item_instance_id} item={item} campaignId={campaignId} />
             ))}
           </div>
         )}
@@ -244,7 +249,7 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
         ) : (
           <div className="inventory-item-grid">
             {bag.map((item) => (
-              <ItemCard key={item.item_instance_id} item={item} />
+              <ItemCard key={item.item_instance_id} item={item} campaignId={campaignId} />
             ))}
           </div>
         )}

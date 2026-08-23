@@ -1,3 +1,4 @@
+import { EntityVisual } from "@/components/EntityVisual";
 import type { GameState } from "@/types/game";
 import { npcActivityLabel } from "@/utils/labels";
 
@@ -8,7 +9,7 @@ function formatTime(state: GameState) {
   ).padStart(2, "0")}`;
 }
 
-export function GameSidebar({ state }: { state: GameState }) {
+export function GameSidebar({ state, campaignId }: { state: GameState; campaignId: string }) {
   const { location, nearby_npcs, nearby_simulated_players, active_encounter } = state;
   const activeQuest = state.active_quests[0] ?? null;
   const currentTurnParticipant = active_encounter?.participants.find(
@@ -56,9 +57,21 @@ export function GameSidebar({ state }: { state: GameState }) {
 
           {nearby_npcs.map((npc) => (
             <div className="person-row" key={npc.id}>
-              <div className="person-name">
-                <span className="presence-dot" />
-                <span>{npc.name}</span>
+              <div className="person-identity">
+                <EntityVisual
+                  campaignId={campaignId}
+                  entityType="npc"
+                  entityId={npc.id}
+                  assetType="NPC_PORTRAIT"
+                  placeholderGlyph="☺"
+                  label={`Retrato de ${npc.name}`}
+                  generateLabel="Gerar retrato"
+                  regenerateLabel="Regenerar retrato"
+                />
+                <div className="person-name">
+                  <span className="presence-dot" />
+                  <span>{npc.name}</span>
+                </div>
               </div>
               <span className="person-role">
                 {npc.role} · {npcActivityLabel(npc.activity)}

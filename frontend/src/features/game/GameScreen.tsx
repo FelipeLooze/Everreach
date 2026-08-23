@@ -148,7 +148,7 @@ export function GameScreen() {
             />
           )}
         </section>
-        {state && <GameSidebar state={state} />}
+        {state && <GameSidebar state={state} campaignId={campaignId} />}
       </main>
 
       <nav className="action-bar" aria-label="Menu do jogo">

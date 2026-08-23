@@ -1,8 +1,17 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GameSidebar } from "@/features/game/GameSidebar";
 import type { GameState } from "@/types/game";
+import { ApiError } from "@/api/client";
+
+const mocks = vi.hoisted(() => ({
+  getCurrentVisualAsset: vi.fn(),
+}));
+
+vi.mock("@/api/visual", () => ({
+  getCurrentVisualAsset: mocks.getCurrentVisualAsset,
+}));
 
 const state: GameState = {
   character: {
@@ -32,8 +41,13 @@ const state: GameState = {
 describe("GameSidebar", () => {
   afterEach(cleanup);
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getCurrentVisualAsset.mockRejectedValue(new ApiError(404, "not found"));
+  });
+
   it("mostra somente os dados canônicos disponíveis no GameState", () => {
-    render(<GameSidebar state={state} />);
+    render(<GameSidebar state={state} campaignId="campaign_1" />);
 
     expect(screen.getByText("Cardal")).toBeInTheDocument();
     expect(screen.getByText("Uma vila de mercado.")).toBeInTheDocument();
@@ -47,6 +61,7 @@ describe("GameSidebar", () => {
   it("trata listas vazias sem inventar informações", () => {
     render(
       <GameSidebar
+        campaignId="campaign_1"
         state={{
           ...state,
           nearby_npcs: [],

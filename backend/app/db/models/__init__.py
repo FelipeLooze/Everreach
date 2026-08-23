@@ -109,6 +109,7 @@ from app.db.models.regional_threat import RegionalThreat
 from app.db.models.settlement import Settlement
 from app.db.models.visual_identity import VisualIdentity
 from app.db.models.visual_generation_request import VisualGenerationRequest
+from app.db.models.visual_asset import VisualAsset
 from app.db.models.subregion import Subregion
 from app.db.models.technique_evidence import (
     CharacterTechniquePatternEvidence,
@@ -244,4 +245,5 @@ __all__ = [
     "MapAnnotation",
     "VisualIdentity",
     "VisualGenerationRequest",
+    "VisualAsset",
 ]

@@ -1366,3 +1366,15 @@ class VisualGenerationRequestStatus(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+
+
+class VisualAssetValidationStatus(StrEnum):
+    """Phase 23D-E — whether a human has reviewed a generated VisualAsset.
+    Distinct from VisualGenerationRequestStatus: a request can COMPLETE
+    successfully and still produce an asset nobody has looked at yet.
+    The actual review setter is 23D-M's job; this subphase only defines
+    the column and its default (every new asset starts UNREVIEWED)."""
+
+    UNREVIEWED = "UNREVIEWED"
+    VALID = "VALID"
+    INVALID = "INVALID"

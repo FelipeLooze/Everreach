@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     # HTTP (GET /view) — this is where ComfyUI's own SaveImage nodes
     # write to (see E:\RPG\start_comfyui.bat's --base-directory).
     comfyui_raw_output_root: str = ""
+    # Phase 23D-C — where app.game.visual.workflow_registry reads the
+    # trusted, hand-approved API-format workflow JSON files from (the
+    # E:\RPG\Workflows\api output of Phase 23B/23C's own generation
+    # scripts). The registry's own allowlist decides which filenames are
+    # ever loaded from here — this path alone does not grant trust.
+    comfyui_workflow_root: str = ""
 
 
 @lru_cache

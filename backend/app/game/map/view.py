@@ -200,6 +200,27 @@ one literal constant here ("presença física" — they were physically
 there); source="map" locations get "mapa físico" (a physical map is
 its own, separate provenance channel, 17G/20G's domain, not a
 KnowledgeKnower grant at all).
+
+Phase 20O — Large-World Rendering / Level of Detail.
+
+Two additive, independent filters — never a second geometry system,
+never professional GIS complexity. `detail_level="far"` reuses Phase
+15F's own materialization_tier (1 = macro/fully-materialized, 2 = a
+named stub — minor settlements/POIs filled in only on demand): the
+FAR-ZOOM tier the spec describes ("Region boundaries, major cities")
+already exists as real generation data, so "far" simply keeps tier-1
+locations and drops tier-2 stubs, no new importance ranking invented.
+`viewport=(min_x, min_y, max_x, max_y)` keeps only PRECISE-positioned
+locations whose x/y falls inside those bounds — a location whose exact
+position isn't known (drawn on the frontend's deterministic uncertainty
+ring, never a real coordinate) has no position to test against a
+viewport at all, so it is never excluded by one. Both filters run
+after scope (20E) and before routes/annotations/position are computed
+from the final visible set, so a route or note pinned to an
+LOD-filtered-out location correctly disappears with it (same "gate
+visibility once, everything else follows" rule 20F/20J already use for
+scope) — recoverable the same way scope exclusions are, by asking for
+a wider viewport or a closer detail level, never a data loss.
 """
 from dataclasses import dataclass, field
 
@@ -254,6 +275,7 @@ class MapViewLocation:
     source: str = "discovery"
     stale: bool = False
     provenance: str | None = None
+    materialization_tier: int = 1
     known_aspects: list[str] = field(default_factory=list)
 
 
@@ -470,6 +492,7 @@ def _build_map_view_location_from_maps(
         source="map",
         stale=stale,
         provenance="mapa físico",
+        materialization_tier=location.materialization_tier,
         known_aspects=sorted(known_aspect_values),
     )
 
@@ -516,6 +539,7 @@ def _build_map_view_location(
         discovery_status=discovery_status.value,
         source=source,
         provenance=provenance,
+        materialization_tier=location.materialization_tier,
         known_aspects=sorted(known_aspects),
     )
 
@@ -568,12 +592,34 @@ def _apply_scope(
     return [], []
 
 
+def _apply_lod(
+    locations: list[MapViewLocation],
+    detail_level: str | None,
+    viewport: tuple[float, float, float, float] | None,
+) -> list[MapViewLocation]:
+    result = locations
+    if detail_level == "far":
+        result = [location for location in result if location.materialization_tier <= 1]
+    if viewport is not None:
+        min_x, min_y, max_x, max_y = viewport
+        result = [
+            location
+            for location in result
+            if location.x is None
+            or location.y is None
+            or (min_x <= location.x <= max_x and min_y <= location.y <= max_y)
+        ]
+    return result
+
+
 def get_map_view(
     db: Session,
     campaign_id: str,
     character_id: str,
     *,
     scope: str | None = None,
+    detail_level: str | None = None,
+    viewport: tuple[float, float, float, float] | None = None,
 ) -> MapViewData:
     data = known_map(db, campaign_id, character_id)
 
@@ -695,6 +741,7 @@ def get_map_view(
     regions.sort(key=lambda region: region.id)
 
     regions, locations = _apply_scope(regions, locations, scope)
+    locations = _apply_lod(locations, detail_level, viewport)
 
     visible_location_ids = {location.id for location in locations}
     routes = [

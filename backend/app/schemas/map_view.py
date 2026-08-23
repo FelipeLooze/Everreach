@@ -27,6 +27,7 @@ class MapViewLocationSchema(BaseModel):
     source: str
     stale: bool
     provenance: str | None
+    materialization_tier: int
     known_aspects: list[str]
 
 

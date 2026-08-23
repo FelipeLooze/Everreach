@@ -418,6 +418,7 @@ export interface MapViewLocation {
   source: string;
   stale: boolean;
   provenance: string | null;
+  materialization_tier: number;
   known_aspects: string[];
 }
 

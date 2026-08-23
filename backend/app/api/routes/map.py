@@ -39,15 +39,29 @@ def get_player_map_view(
     campaign_id: str,
     character_id: str,
     scope: str | None = None,
+    detail_level: str | None = None,
+    min_x: float | None = None,
+    min_y: float | None = None,
+    max_x: float | None = None,
+    max_y: float | None = None,
     db: Session = Depends(get_db),
 ):
     """Phase 20A/20B — the character-specific Map View projection, the
     contract the interactive frontend map (20B onward) consumes. Unlike
     /map (Phase 1, kept for backward compatibility), this always applies
     Phase 17B precision so vague/approximate Knowledge never leaks exact
-    authoritative coordinates."""
+    authoritative coordinates.
+
+    Phase 20O — detail_level/min_x/min_y/max_x/max_y are optional LOD
+    filters (see app.game.map.view's 20O docstring); all four bounds
+    must be given together or the viewport filter is skipped entirely."""
     _load_character(db, campaign_id, character_id)
-    return get_map_view(db, campaign_id, character_id, scope=scope)
+    viewport = None
+    if None not in (min_x, min_y, max_x, max_y):
+        viewport = (min_x, min_y, max_x, max_y)
+    return get_map_view(
+        db, campaign_id, character_id, scope=scope, detail_level=detail_level, viewport=viewport
+    )
 
 
 @router.get("/{campaign_id}/route-plan", response_model=RoutePlanSchema)

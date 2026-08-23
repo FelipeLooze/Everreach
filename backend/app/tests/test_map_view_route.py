@@ -94,3 +94,30 @@ def test_map_view_endpoint_404s_for_unknown_campaign(client, db_session):
     )
 
     assert response.status_code == 404
+
+
+def test_map_view_endpoint_applies_viewport_bounds(client, db_session):
+    from app.db.models.location import Location
+
+    campaign = create_campaign(db_session, "Rota Mapa Viewport", world_seed=5)
+    region, village = seed_initial_region(db_session, campaign.id)
+    character = create_character(db_session, campaign.id, "Logan", region.id, village.id)
+    far_away = Location(region_id=region.id, name="Bem Longe", type="settlement", x=9999, y=9999)
+    db_session.add(far_away)
+    db_session.flush()
+    set_location_discovery(db_session, character.id, village.id, DiscoveryStatus.VISITED)
+    set_location_discovery(db_session, character.id, far_away.id, DiscoveryStatus.VISITED)
+    db_session.commit()
+
+    response = client.get(
+        f"/api/campaigns/{campaign.id}/map-view",
+        params={
+            "character_id": character.id,
+            "min_x": -10, "min_y": -10, "max_x": 10, "max_y": 10,
+        },
+    )
+
+    body = response.json()
+    location_ids = {loc["id"] for loc in body["locations"]}
+    assert village.id in location_ids
+    assert far_away.id not in location_ids

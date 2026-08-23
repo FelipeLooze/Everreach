@@ -226,6 +226,10 @@ export interface InventoryItem {
   weapon: WeaponProfile | null;
   armor: ArmorProfile | null;
   tool: ToolProfile | null;
+  // Phase 21O — real per-definition Canon (app.game.visual.item), set
+  // only for named/special items; null for the overwhelming majority
+  // of ordinary items ("ordinary items should look ordinary").
+  signature_ornamentation?: string | null;
 }
 
 export interface SystemInventoryItem {

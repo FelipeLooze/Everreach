@@ -218,6 +218,7 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "weapon": None,
             "armor": None,
             "tool": None,
+            "signature_ornamentation": None,
         }
     ]
     assert response.json()["total_weight"] == 0.0

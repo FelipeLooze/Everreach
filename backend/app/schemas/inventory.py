@@ -62,6 +62,12 @@ class InventoryItemResponse(BaseModel):
     weapon: WeaponProfileResponse | None
     armor: ArmorProfileResponse | None
     tool: ToolProfileResponse | None
+    # Phase 21O — the one piece of app.game.visual.item.ItemVisualSpec
+    # not already covered by the fields above (material/quality/
+    # condition/weapon family were all real Phase 10 Canon already
+    # exposed here). None for the overwhelming majority of ordinary
+    # items — see app.game.visual.item's own docstring.
+    signature_ornamentation: str | None = None
 
 
 class InventoryResponse(BaseModel):

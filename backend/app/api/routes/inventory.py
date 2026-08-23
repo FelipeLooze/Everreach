@@ -22,6 +22,7 @@ from app.game.items.equipment import (
 from app.game.items.materials import material_weight_factor
 from app.game.items.tools import get_tool_capabilities
 from app.game.items.weapons import get_weapon_damage_profiles
+from app.game.visual.item import build_item_visual_spec
 from app.schemas.inventory import (
     ArmorProfileResponse,
     ContainerProfileResponse,
@@ -138,6 +139,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                     if tool_profile is not None
                     else None
                 ),
+                signature_ornamentation=build_item_visual_spec(db, entry.id).signature_ornamentation,
             )
         )
     encumbrance = get_character_encumbrance(db, character_id)

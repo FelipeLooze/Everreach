@@ -1153,6 +1153,36 @@ def test_narrator_allows_a_bystander_npc_to_speak_after_being_explicitly_introdu
     assert len(llm.calls) == 1
 
 
+def test_narrator_drops_fabricated_npc_dialogue_when_no_interlocutor_was_authorized():
+    # Real bug report: the mechanical layer correctly refused to pick an
+    # interlocutor (multiple NPCs nearby, player named no one), so there is
+    # no "ACTIVE NPC CONTEXT" at all — yet a small local model wrote a full,
+    # specific NPC reply anyway, in the narration-prose-then-inline-quote
+    # shape this model actually uses ("Nome verbo, ... 'fala'"), which
+    # neither of _paragraph_speaker_among's stricter patterns recognized
+    # (no colon-led screenplay line, no speech verb adjacent to the name).
+    llm = StubbornLLM(
+        "Aldric Draven sorri calorosamente ao ouvir a saudação de Logan.\n\n"
+        'Aldric Draven assente, parecendo satisfeito. '
+        '"Sim, temos tudo o que você precisa aqui."'
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Aldric Draven (ancião da vila; activity=IDLE)\n"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
+        context,
+        "Olá, bom dia senhor. Qual o seu nome?",
+        "(sem histórico)",
+    )
+
+    assert '"Sim, temos tudo' not in result
+    assert "Aldric Draven sorri calorosamente ao ouvir a saudação de Logan." in result
+
+
 def test_narrator_catches_protagonist_agency_violation_in_screenplay_colon_format():
     llm = StubbornLLM(
         "Osgar Vell aguarda pacientemente.\n\n"

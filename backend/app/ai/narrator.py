@@ -361,6 +361,28 @@ def _unauthorized_speaker_message(name: str) -> str:
     )
 
 
+_QUOTE_MARK = re.compile(r'["“]')
+
+
+def _single_unattributed_quoted_speaker(paragraph: str, visible_npcs: list[str]) -> str | None:
+    """Fallback for real dialogue this local model writes in a shape
+    _paragraph_speaker_among's stricter patterns don't recognize — e.g.
+    "Aldric Draven assente, ... 'Sim, temos...'", where the speech verb
+    ("assente") isn't in _SPEECH_VERBS and isn't adjacent to the name.
+    Deliberately narrow: only fires when the paragraph actually contains
+    a quote AND exactly one visible NPC's name appears in it at all — an
+    ambiguous multi-name paragraph is left to the stricter checks rather
+    than guessed at, same caution as every other Phase 19 validator."""
+    if not _QUOTE_MARK.search(paragraph):
+        return None
+    mentioned = [
+        name
+        for name in visible_npcs
+        if name and re.search(rf"\b{re.escape(name.split()[0])}\b", paragraph)
+    ]
+    return mentioned[0] if len(mentioned) == 1 else None
+
+
 def _scan_unauthorized_speakers(
     paragraphs: list[str], visible_npcs: list[str], active_interlocutor_name: str
 ):
@@ -377,9 +399,12 @@ def _scan_unauthorized_speakers(
                 first = re.escape(_normalized(name.split()[0]))
                 if re.search(rf"\b{first}\b", normalized) and _NPC_ENTRANCE_VERBS.search(normalized):
                     authorized.add(name)
-            yield paragraph, None
+            speaker = _single_unattributed_quoted_speaker(paragraph, visible_npcs)
+            yield paragraph, (speaker if speaker and speaker not in authorized else None)
             continue
         speaker = _paragraph_speaker_among(paragraph, visible_npcs)
+        if speaker is None:
+            speaker = _single_unattributed_quoted_speaker(paragraph, visible_npcs)
         yield paragraph, (speaker if speaker and speaker not in authorized else None)
 
 

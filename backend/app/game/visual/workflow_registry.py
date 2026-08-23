@@ -113,10 +113,23 @@ def get_current_workflow_definition(key: str) -> WorkflowDefinition:
 def load_workflow_graph(key: str, version: str, *, settings: Settings | None = None) -> dict:
     """Return the parsed ComfyUI API-format node graph for (key, version).
     This is the ONLY sanctioned way to obtain a graph to pass to
-    ComfyUIClient.submit_workflow."""
+    ComfyUIClient.submit_workflow.
+
+    Strips "_everreach_meta" — every one of these files carries that
+    key as human-readable provenance (which phase/version, what
+    changed, why), never a real node. ComfyUI's own /prompt endpoint
+    treats every top-level key as a node id and rejects anything
+    without a class_type, so a caller submitting this dict verbatim
+    would get a 400 "missing_node_type" the moment a real server
+    actually validated it — exactly what the calibration scripts under
+    E:\\RPG\\Workflows\\api already do by hand (graph.pop("_everreach_meta",
+    None)) before every submission; this makes that step impossible to
+    forget by doing it once, here, for every caller."""
     definition = get_workflow_definition(key, version)
     path = _root(settings) / definition.filename
     if not path.is_file():
         raise WorkflowFileMissingError(f"Workflow file not found on disk: {path}")
     with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+        graph = json.load(handle)
+    graph.pop("_everreach_meta", None)
+    return graph

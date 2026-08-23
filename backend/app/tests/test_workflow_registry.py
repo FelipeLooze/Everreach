@@ -70,6 +70,27 @@ def test_load_workflow_graph_reads_and_parses_the_file(tmp_path):
     assert loaded == graph
 
 
+def test_load_workflow_graph_strips_everreach_meta(tmp_path):
+    """Regression: every real workflow file under E:\\RPG\\Workflows\\api
+    carries an "_everreach_meta" documentation key. ComfyUI's own
+    /prompt endpoint treats every top-level key as a node id and 400s
+    on one with no class_type — submitting the raw file verbatim would
+    fail against a real server (confirmed live during 23D-Q.2's
+    residency check), even though every mocked test here used fixture
+    graphs that never had the key and so never caught it."""
+    graph = {
+        "_everreach_meta": {"workflow_name": "EVERREACH_ITEM", "note": "docs only"},
+        "1": {"class_type": "SaveImage", "inputs": {}},
+    }
+    (tmp_path / "EVERREACH_ITEM_V3_API.json").write_text(json.dumps(graph), encoding="utf-8")
+    settings = Settings(comfyui_workflow_root=str(tmp_path))
+
+    loaded = load_workflow_graph("EVERREACH_ITEM", "V3", settings=settings)
+
+    assert "_everreach_meta" not in loaded
+    assert loaded == {"1": {"class_type": "SaveImage", "inputs": {}}}
+
+
 def test_load_workflow_graph_raises_when_file_is_missing_on_disk(tmp_path):
     settings = Settings(comfyui_workflow_root=str(tmp_path))
 

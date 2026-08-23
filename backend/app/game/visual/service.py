@@ -35,25 +35,35 @@ asset instead of generating a new one. When a NEW asset is actually
 materialized, app.game.visual.versioning.supersede_current_assets
 (23D-L) demotes whatever was previously current for that entity/
 asset_type — never overwritten in place, only superseded.
+
+23D-P — every transition below logs one structured line via
+app.game.visual.observability.log_generation_event, threading the same
+field names (generation_request_id, campaign_id, entity_type,
+entity_id, asset_type, workflow/workflow_version, prompt_id, duration,
+status, error_code/error_message, asset_id) through the whole
+pipeline, so a real generation's full lifecycle can be reconstructed
+from the log alone without attaching a debugger.
 """
+import time
+
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.enums import VisualGenerationErrorCode
 from app.core.ids import generate_id
-from app.core.logging import get_logger
 from app.db.models.visual_asset import VisualAsset
 from app.db.models.visual_generation_request import VisualGenerationRequest
 from app.game.visual.asset_storage import VisualAssetStorageError, persist_generated_asset
 from app.game.visual.comfyui_client import ComfyUIClient, ComfyUIClientError
 from app.game.visual.dedup import compute_spec_fingerprint, find_in_flight_request, find_reusable_asset
 from app.game.visual.generation_request import create_request, mark_completed, mark_failed, mark_in_progress
-from app.game.visual.versioning import supersede_current_assets
+from app.game.visual.observability import log_generation_event
 from app.game.visual.prompt_builder import (
     VisualPromptBuilderError,
     extract_model_identifier,
     inject_workflow_parameters,
 )
+from app.game.visual.versioning import supersede_current_assets
 from app.game.visual.workflow_registry import (
     VisualWorkflowRegistryError,
     get_workflow_definition,
@@ -61,8 +71,6 @@ from app.game.visual.workflow_registry import (
 )
 
 from PIL import Image, UnidentifiedImageError
-
-logger = get_logger("visual")
 
 
 def _classify_comfyui_error(exc: ComfyUIClientError) -> str:
@@ -92,9 +100,56 @@ def _first_output_image(history_entry: dict) -> dict | None:
     return None
 
 
-def _fail(db: Session, request_id: str, error_code: str, error_message: str) -> VisualGenerationRequest:
-    logger.warning(
-        "Visual generation request %s failed: %s - %s", request_id, error_code, error_message
+class _LogContext:
+    """Bundles the fields that stay constant across one
+    request_visual_asset call so every log_generation_event call below
+    does not have to repeat them by hand."""
+
+    def __init__(
+        self,
+        *,
+        campaign_id: str | None,
+        entity_type: str,
+        entity_id: str,
+        asset_type: str,
+        workflow_key: str,
+        workflow_version: str,
+    ) -> None:
+        self.campaign_id = campaign_id
+        self.entity_type = entity_type
+        self.entity_id = entity_id
+        self.asset_type = asset_type
+        self.workflow_key = workflow_key
+        self.workflow_version = workflow_version
+        self.start_time = time.monotonic()
+
+    def elapsed(self) -> float:
+        return time.monotonic() - self.start_time
+
+    def emit(self, event: str, *, request_id: str | None = None, **extra) -> None:
+        log_generation_event(
+            event,
+            request_id=request_id,
+            campaign_id=self.campaign_id,
+            entity_type=self.entity_type,
+            entity_id=self.entity_id,
+            asset_type=self.asset_type,
+            workflow_key=self.workflow_key,
+            workflow_version=self.workflow_version,
+            **extra,
+        )
+
+
+def _fail(
+    db: Session, request_id: str, error_code: str, error_message: str, ctx: "_LogContext"
+) -> VisualGenerationRequest:
+    ctx.emit(
+        "failed",
+        request_id=request_id,
+        status="FAILED",
+        error_code=error_code,
+        error_message=error_message,
+        duration_seconds=ctx.elapsed(),
     )
     request = mark_failed(db, request_id, error_code, error_message)
     db.commit()
@@ -121,8 +176,14 @@ def request_visual_asset(
     # row, since no attempt is actually being made.
     get_workflow_definition(workflow_key, workflow_version)
 
+    ctx = _LogContext(
+        campaign_id=campaign_id, entity_type=entity_type, entity_id=entity_id,
+        asset_type=asset_type, workflow_key=workflow_key, workflow_version=workflow_version,
+    )
+
     in_flight = find_in_flight_request(db, campaign_id, entity_type, entity_id, asset_type)
     if in_flight is not None:
+        ctx.emit("in_flight_dedup_hit", request_id=in_flight.id, status=in_flight.status)
         return in_flight
 
     spec_fingerprint = compute_spec_fingerprint(
@@ -145,6 +206,7 @@ def request_visual_asset(
         attempt_count=attempt_count,
     )
     db.commit()
+    ctx.emit("request_created", request_id=request.id, status="PENDING")
 
     reusable_asset = find_reusable_asset(
         db, campaign_id, entity_type, entity_id, asset_type, spec_fingerprint
@@ -152,21 +214,26 @@ def request_visual_asset(
     if reusable_asset is not None:
         completed_request = mark_completed(db, request.id, reusable_asset.id)
         db.commit()
+        ctx.emit(
+            "content_dedup_reused", request_id=request.id, asset_id=reusable_asset.id,
+            status="COMPLETED", duration_seconds=ctx.elapsed(),
+        )
         return completed_request
 
     if not comfyui_client.is_available():
         return _fail(
             db, request.id, VisualGenerationErrorCode.COMFYUI_OFFLINE,
-            "ComfyUI is disabled or unreachable.",
+            "ComfyUI is disabled or unreachable.", ctx,
         )
 
     mark_in_progress(db, request.id)
     db.commit()
+    ctx.emit("in_progress", request_id=request.id, status="IN_PROGRESS")
 
     try:
         graph = load_workflow_graph(workflow_key, workflow_version, settings=settings)
     except VisualWorkflowRegistryError as exc:
-        return _fail(db, request.id, VisualGenerationErrorCode.WORKFLOW_NOT_FOUND, str(exc))
+        return _fail(db, request.id, VisualGenerationErrorCode.WORKFLOW_NOT_FOUND, str(exc), ctx)
 
     filename_prefix = f"everreach/{entity_type}/{entity_id}/{asset_type}/{request.id}"
     try:
@@ -178,27 +245,28 @@ def request_visual_asset(
             reference_image=reference_image,
         )
     except VisualPromptBuilderError as exc:
-        return _fail(db, request.id, VisualGenerationErrorCode.UNKNOWN_ERROR, str(exc))
+        return _fail(db, request.id, VisualGenerationErrorCode.UNKNOWN_ERROR, str(exc), ctx)
 
     model_identifier = extract_model_identifier(graph) or "unknown"
 
     try:
         prompt_id = comfyui_client.submit_workflow(graph, client_id=request.id)
+        ctx.emit("submitted", request_id=request.id, prompt_id=prompt_id)
         history_entry = comfyui_client.wait_for_completion(prompt_id)
     except ComfyUIClientError as exc:
-        return _fail(db, request.id, _classify_comfyui_error(exc), str(exc))
+        return _fail(db, request.id, _classify_comfyui_error(exc), str(exc), ctx)
 
     image_ref = _first_output_image(history_entry)
     if image_ref is None:
         return _fail(
             db, request.id, VisualGenerationErrorCode.OUTPUT_NOT_FOUND,
-            "ComfyUI history had no output image.",
+            "ComfyUI history had no output image.", ctx,
         )
 
     try:
         raw_path = comfyui_client.resolve_output_path(image_ref["subfolder"], image_ref["filename"])
     except ComfyUIClientError as exc:
-        return _fail(db, request.id, VisualGenerationErrorCode.OUTPUT_NOT_FOUND, str(exc))
+        return _fail(db, request.id, VisualGenerationErrorCode.OUTPUT_NOT_FOUND, str(exc), ctx)
 
     asset_id = generate_id("vasset")
     try:
@@ -212,7 +280,7 @@ def request_visual_asset(
             settings=settings,
         )
     except VisualAssetStorageError as exc:
-        return _fail(db, request.id, VisualGenerationErrorCode.FILE_COPY_FAILED, str(exc))
+        return _fail(db, request.id, VisualGenerationErrorCode.FILE_COPY_FAILED, str(exc), ctx)
 
     try:
         with Image.open(raw_path) as image:
@@ -221,7 +289,7 @@ def request_visual_asset(
     except (UnidentifiedImageError, OSError) as exc:
         return _fail(
             db, request.id, VisualGenerationErrorCode.INVALID_OUTPUT,
-            f"Could not read generated image: {exc}",
+            f"Could not read generated image: {exc}", ctx,
         )
 
     asset = VisualAsset(
@@ -246,4 +314,8 @@ def request_visual_asset(
 
     completed_request = mark_completed(db, request.id, asset.id)
     db.commit()
+    ctx.emit(
+        "completed", request_id=request.id, asset_id=asset.id,
+        status="COMPLETED", duration_seconds=ctx.elapsed(),
+    )
     return completed_request

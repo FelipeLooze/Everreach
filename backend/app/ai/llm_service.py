@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import httpx
 
 from app.core.config import Settings, get_settings
-from app.core.gpu_coordinator import gpu_heavy_operation
+from app.core.gpu_coordinator import gpu_heavy_operation, set_llm_release_hook
 from app.core.logging import get_logger
 
 logger = get_logger("llm")
@@ -31,6 +31,15 @@ class LLMService(ABC):
         semantic candidates rather than crashing, exactly like generate()
         failures already degrade the intent parser to FREEFORM."""
         raise LLMServiceError("This LLMService does not support embeddings.")
+
+    def release_gpu_residency(self) -> None:
+        """Phase 23D-Q.2 — best-effort hint that this service should give
+        up whatever GPU memory it is holding resident, if it can. Not
+        abstract, same reasoning as embed(): most LLMServices (any
+        remote/API-backed one, every test double) have nothing local to
+        release. The default is a safe no-op; only a real local-GPU-
+        backed service (OllamaLLMService below) needs a real one."""
+        return None
 
 
 class OllamaLLMService(LLMService):
@@ -116,12 +125,46 @@ class OllamaLLMService(LLMService):
             raise LLMServiceError("Ollama returned no embedding.")
         return embeddings[0]
 
+    def release_gpu_residency(self) -> None:
+        """Phase 23D-Q.2 — measured on this exact machine (RTX 4070 Ti,
+        12GB VRAM): with hermes3:8b-llama3.1-q4_K_M resident, an
+        otherwise-identical warm ComfyUI generation took ~6x longer
+        (15.97s vs 2.69s) and peak free VRAM dropped to ~378MB — real,
+        reproducible degradation, not a hypothetical one. This asks
+        Ollama to unload the model immediately (keep_alive=0) rather
+        than waiting out the normal 5-minute idle window; the next real
+        generate()/embed() call simply reloads it cold, exactly like
+        today's behavior on a fresh server start.
+
+        Deliberately does NOT use gpu_heavy_operation itself — the
+        gpu_coordinator only ever calls this while it already holds the
+        lock (see set_llm_release_hook's docstring), and threading.Lock
+        is not reentrant. Best-effort and silent: a failure here must
+        never block the visual generation that triggered it — worst
+        case the model just stays resident a little longer, exactly
+        today's pre-23D-Q.2 behavior."""
+        try:
+            httpx.post(
+                f"{self._base_url}/api/generate",
+                json={"model": self._model, "prompt": "", "keep_alive": 0},
+                timeout=self._timeout,
+            )
+        except httpx.HTTPError as exc:
+            logger.info("Could not release Ollama GPU residency: %s", exc)
+
 
 def build_llm_service(settings: Settings | None = None) -> LLMService:
     settings = settings or get_settings()
-    return OllamaLLMService(
+    service = OllamaLLMService(
         base_url=settings.ollama_base_url,
         model=settings.ollama_model,
         timeout=settings.ollama_timeout_seconds,
         embedding_model=settings.ollama_embedding_model,
     )
+    # Phase 23D-Q.2 — the coordinator calls this back right before a
+    # VISUAL_TASK runs, so ComfyUI gets the full VRAM budget instead of
+    # competing with a resident LLM. Registered generically (works for
+    # any LLMService — release_gpu_residency defaults to a no-op) so
+    # this stays correct if the concrete service ever changes.
+    set_llm_release_hook(service.release_gpu_residency)
+    return service

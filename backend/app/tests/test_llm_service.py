@@ -1,10 +1,12 @@
-"""Phase 23D-Q — GPU Resource Coordination: Ollama side."""
+"""Phase 23D-Q / 23D-Q.2 — GPU Resource Coordination: Ollama side."""
 from unittest.mock import patch
 
 import httpx
+import pytest
 
-from app.ai.llm_service import OllamaLLMService
-from app.core.gpu_coordinator import _lock
+from app.ai.llm_service import LLMService, OllamaLLMService, build_llm_service
+from app.core.config import Settings
+from app.core.gpu_coordinator import _lock, set_llm_release_hook
 
 
 def _service() -> OllamaLLMService:
@@ -56,3 +58,63 @@ def test_generate_releases_the_lock_even_when_ollama_errors():
             pass
 
     assert not _lock.locked()
+
+
+@pytest.fixture(autouse=True)
+def _reset_llm_release_hook():
+    yield
+    set_llm_release_hook(None)
+
+
+def test_base_llm_service_release_gpu_residency_defaults_to_a_safe_no_op():
+    class _Minimal(LLMService):
+        def generate(self, system: str, prompt: str) -> str:
+            return "x"
+
+    _Minimal().release_gpu_residency()  # must not raise
+
+
+def test_release_gpu_residency_sends_a_zero_keep_alive_request():
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append((url, json))
+        return _json_response({})
+
+    with patch("httpx.post", side_effect=fake_post):
+        _service().release_gpu_residency()
+
+    assert len(calls) == 1
+    url, payload = calls[0]
+    assert url == "http://127.0.0.1:11434/api/generate"
+    assert payload["model"] == "test-model"
+    assert payload["keep_alive"] == 0
+
+
+def test_release_gpu_residency_swallows_errors_silently():
+    with patch("httpx.post", side_effect=httpx.ConnectError("refused")):
+        _service().release_gpu_residency()  # must not raise
+
+
+def test_build_llm_service_registers_the_release_hook_with_the_coordinator():
+    from app.core.gpu_coordinator import gpu_heavy_operation
+
+    settings = Settings(
+        ollama_base_url="http://127.0.0.1:11434", ollama_model="test-model",
+        ollama_timeout_seconds=5.0,
+    )
+    service = build_llm_service(settings)
+
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(json)
+        return _json_response({})
+
+    with patch("httpx.post", side_effect=fake_post):
+        with gpu_heavy_operation("VISUAL_TASK"):
+            pass
+
+    assert len(calls) == 1
+    assert calls[0]["keep_alive"] == 0
+    assert isinstance(service, OllamaLLMService)

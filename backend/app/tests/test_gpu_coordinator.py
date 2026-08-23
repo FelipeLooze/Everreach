@@ -133,3 +133,75 @@ def test_gpu_heavy_operation_logs_waiting_when_contended():
     combined = "\n".join(handler.messages)
     assert "gpu_coordinator waiting task=VISUAL_TASK" in combined
     assert "gpu_coordinator acquired task=VISUAL_TASK" in combined
+
+
+@pytest.fixture(autouse=True)
+def _reset_llm_release_hook():
+    from app.core.gpu_coordinator import set_llm_release_hook
+
+    yield
+    set_llm_release_hook(None)
+
+
+def test_gpu_heavy_operation_calls_the_llm_release_hook_for_visual_task():
+    from app.core.gpu_coordinator import set_llm_release_hook
+
+    calls = []
+    set_llm_release_hook(lambda: calls.append("released"))
+
+    with gpu_heavy_operation("VISUAL_TASK"):
+        pass
+
+    assert calls == ["released"]
+
+
+def test_gpu_heavy_operation_does_not_call_the_hook_for_llm_task():
+    from app.core.gpu_coordinator import set_llm_release_hook
+
+    calls = []
+    set_llm_release_hook(lambda: calls.append("released"))
+
+    with gpu_heavy_operation("LLM_TASK"):
+        pass
+
+    assert calls == []
+
+
+def test_gpu_heavy_operation_calls_the_hook_after_the_lock_is_already_held():
+    from app.core.gpu_coordinator import set_llm_release_hook
+
+    lock_state_when_called = []
+    set_llm_release_hook(lambda: lock_state_when_called.append(_lock.locked()))
+
+    with gpu_heavy_operation("VISUAL_TASK"):
+        pass
+
+    assert lock_state_when_called == [True]
+
+
+def test_gpu_heavy_operation_swallows_a_failing_hook_and_still_runs_the_block():
+    from app.core.gpu_coordinator import set_llm_release_hook
+
+    def _boom():
+        raise RuntimeError("ollama unreachable")
+
+    set_llm_release_hook(_boom)
+    block_ran = []
+
+    with gpu_heavy_operation("VISUAL_TASK"):
+        block_ran.append(True)
+
+    assert block_ran == [True]
+    # And the lock must still have been released properly afterward.
+    acquired = _lock.acquire(timeout=2)
+    assert acquired
+    _lock.release()
+
+
+def test_gpu_heavy_operation_with_no_hook_registered_is_a_no_op_for_visual_task():
+    from app.core.gpu_coordinator import set_llm_release_hook
+
+    set_llm_release_hook(None)
+
+    with gpu_heavy_operation("VISUAL_TASK"):
+        pass  # must not raise

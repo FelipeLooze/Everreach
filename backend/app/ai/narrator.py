@@ -482,6 +482,22 @@ def _protagonist_agency_violations(
     if speaks_pattern.search(text):
         return [_AGENCY_VIOLATION_MESSAGE]
 
+    # A fabricated protagonist reply doesn't always carry an explicit
+    # "— ... — diz Logan" attribution the checks above look for — this
+    # local model commonly writes it as a plain unattributed dialogue
+    # line that self-identifies in first person instead ("— Eu... Sou
+    # Logan, se alguém..."), especially answering an NPC's own direct
+    # question. That self-identification alone is unambiguous regardless
+    # of whether any NPC name is known yet (a first-contact scene has
+    # none), so this check runs unconditionally, unlike the npc_name-
+    # gated fabricated-turn checks below.
+    self_identifies_pattern = re.compile(
+        rf"\b(?:sou|eu\s+sou|meu\s+nome\s+[ée])\s+(?:o\s+|a\s+)?{name}\b",
+        re.IGNORECASE,
+    )
+    if self_identifies_pattern.search(text):
+        return [_AGENCY_VIOLATION_MESSAGE]
+
     reacts_pattern = re.compile(
         rf"\b(?:{_REACTS_TO_DECISION_VERBS})\b[^.\n]{{0,60}}\b(?:{_DECISION_NOUNS})\s+de\s+{name}\b",
         re.IGNORECASE,

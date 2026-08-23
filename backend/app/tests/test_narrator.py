@@ -1183,6 +1183,36 @@ def test_narrator_drops_fabricated_npc_dialogue_when_no_interlocutor_was_authori
     assert "Aldric Draven sorri calorosamente ao ouvir a saudação de Logan." in result
 
 
+def test_narrator_catches_unattributed_fabricated_reply_that_self_identifies():
+    # Real bug report ("ele ignorou o que eu disse e ta conversando
+    # sozinho"): a first-contact scene, no active NPC established yet
+    # (context has no "ACTIVE NPC CONTEXT" section, matching a real
+    # first TALK turn), an NPC's question, then the narrator invented
+    # Logan's OWN reply as a plain unattributed dash line with no "diz
+    # Logan"/"Logan responde" attribution at all — just first-person
+    # self-identification ("Sou Logan"). None of the existing
+    # attribution-based checks fire on a line with no name-plus-verb
+    # shape; the self-identification itself is the unambiguous tell.
+    llm = StubbornLLM(
+        "— Bom dia, estranho! — grita alguém. Um homem se aproxima de Logan. "
+        "O que te trouxe até aqui?\n\n"
+        "— Eu... não sei realmente. Fui transportado para este lugar junto "
+        "com muita gente. Sou Logan, se alguém sabe mais do que eu sobre isso."
+    )
+    context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+
+    result = narrator.narrate(
+        llm,
+        "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
+        context,
+        "Logan se aproxima de quem falou com ele \"Ola. Quem é voce?\"",
+        "(sem histórico)",
+    )
+
+    assert "Sou Logan" not in result
+    assert len(llm.calls) == 3  # 1 initial + 2 revision attempts, both stubborn
+
+
 def test_narrator_catches_protagonist_agency_violation_in_screenplay_colon_format():
     llm = StubbornLLM(
         "Osgar Vell aguarda pacientemente.\n\n"

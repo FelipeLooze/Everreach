@@ -507,3 +507,34 @@ export interface Journal {
   events: JournalEvent[];
   memories: JournalMemory[];
 }
+
+// Phase 23D-O — mirrors backend app/schemas/visual.py. `url` is always
+// a backend-served path (app.api.routes.visual_assets' file route);
+// never construct an asset URL from any other field.
+export interface VisualAsset {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  asset_type: string;
+  mime_type: string;
+  width: number;
+  height: number;
+  validation_status: "UNREVIEWED" | "VALID" | "INVALID";
+  is_current: boolean;
+  is_canonical_reference: boolean;
+  url: string;
+}
+
+export interface VisualGenerationRequest {
+  id: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
+  entity_type: string;
+  entity_id: string;
+  asset_type: string;
+  workflow_key: string;
+  workflow_version: string;
+  attempt_count: number;
+  error_code: string | null;
+  error_message: string | null;
+  result_asset_id: string | null;
+}

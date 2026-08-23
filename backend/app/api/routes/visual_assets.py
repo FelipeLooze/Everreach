@@ -1,4 +1,4 @@
-"""Phase 23D-N — Visual Asset Service API.
+"""Phase 23D-N/23D-O — Visual Asset Service API.
 
 "Frontend -> Backend -> VisualAssetService -> ComfyUIClient -> ComfyUI"
 (spec, mandatory): this is the ONLY HTTP surface for visual generation
@@ -13,8 +13,14 @@ this layer: a failed generation is a normal 200 response carrying a
 FAILED VisualGenerationRequest, never a 5xx — only a genuinely bad
 request (unknown campaign/entity, unsupported target, bad validation
 status) is an HTTP error.
+
+23D-O adds the one place a browser is ever handed image bytes:
+GET .../{asset_id}/file streams the file this server resolves via
+app.game.visual.asset_storage.resolve_asset_path — the frontend never
+sees, and VisualAssetResponse never exposes, a raw storage_path.
 """
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.comfyui import get_comfyui_client
@@ -22,6 +28,7 @@ from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.db.models.visual_asset import VisualAsset
 from app.db.models.visual_generation_request import VisualGenerationRequest
+from app.game.visual.asset_storage import VisualAssetStorageError, resolve_asset_path
 from app.game.visual.comfyui_client import ComfyUIClient
 from app.game.visual.entity_prompt import (
     UnsupportedGenerationTargetError,
@@ -72,7 +79,7 @@ def _request_response(request: VisualGenerationRequest) -> VisualGenerationReque
     )
 
 
-def _asset_response(asset: VisualAsset) -> VisualAssetResponse:
+def _asset_response(campaign_id: str, asset: VisualAsset) -> VisualAssetResponse:
     return VisualAssetResponse(
         id=asset.id,
         entity_type=asset.entity_type,
@@ -84,6 +91,7 @@ def _asset_response(asset: VisualAsset) -> VisualAssetResponse:
         validation_status=asset.validation_status,
         is_current=asset.is_current,
         is_canonical_reference=asset.is_canonical_reference,
+        url=f"/api/campaigns/{campaign_id}/visual-assets/{asset.id}/file",
     )
 
 
@@ -173,7 +181,29 @@ def get_current_visual_asset(
     asset = get_current_asset(db, campaign_id, entity_type, entity_id, asset_type)
     if asset is None:
         raise HTTPException(status_code=404, detail="Nenhum asset visual atual para esta entidade")
-    return _asset_response(asset)
+    return _asset_response(campaign_id, asset)
+
+
+@router.get("/{campaign_id}/visual-assets/{asset_id}/file")
+def get_visual_asset_file(campaign_id: str, asset_id: str, db: Session = Depends(get_db)):
+    """The only place a browser is ever handed image bytes for a
+    VisualAsset (spec, 23D-O: "never a raw filesystem path to the
+    browser"). Frontend code should always use VisualAssetResponse.url
+    rather than constructing this path itself."""
+    _require_campaign(db, campaign_id)
+    asset = db.get(VisualAsset, asset_id)
+    if asset is None or asset.campaign_id != campaign_id:
+        raise HTTPException(status_code=404, detail="Asset visual não encontrado nesta campanha")
+
+    try:
+        file_path = resolve_asset_path(asset.storage_path)
+    except VisualAssetStorageError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Arquivo do asset visual não encontrado em disco")
+
+    return FileResponse(file_path, media_type=asset.mime_type)
 
 
 @router.post("/{campaign_id}/visual-assets/{asset_id}/validate", response_model=VisualAssetResponse)
@@ -194,4 +224,4 @@ def validate_visual_asset(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     db.commit()
-    return _asset_response(updated)
+    return _asset_response(campaign_id, updated)

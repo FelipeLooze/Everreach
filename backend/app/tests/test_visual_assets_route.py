@@ -303,3 +303,92 @@ def test_validate_visual_asset_404_for_wrong_campaign(client, db_session):
     )
 
     assert response.status_code == 404
+
+
+def test_get_visual_asset_file_serves_the_real_file(client, db_session, tmp_path, monkeypatch):
+    import app.game.visual.asset_storage as asset_storage_module
+    from app.core.config import Settings
+
+    asset_root = tmp_path / "assets"
+    file_dir = asset_root / "campaign_x" / "npc" / "npc_mira" / "NPC_PORTRAIT"
+    file_dir.mkdir(parents=True)
+    (file_dir / "vasset_x.png").write_bytes(b"\x89PNG\r\n\x1a\nfakepngbytes")
+    monkeypatch.setattr(
+        asset_storage_module, "get_settings", lambda: Settings(comfyui_asset_root=str(asset_root))
+    )
+
+    campaign = create_campaign(db_session, "Visual Route File Serve", world_seed=1118)
+    asset = _asset(
+        campaign.id, storage_path="campaign_x/npc/npc_mira/NPC_PORTRAIT/vasset_x.png"
+    )
+    db_session.add(asset)
+    db_session.commit()
+
+    response = client.get(f"/api/campaigns/{campaign.id}/visual-assets/{asset.id}/file")
+
+    assert response.status_code == 200
+    assert response.content == b"\x89PNG\r\n\x1a\nfakepngbytes"
+    assert response.headers["content-type"] == "image/png"
+
+
+def test_get_visual_asset_file_404_when_asset_root_not_configured(client, db_session):
+    campaign = create_campaign(db_session, "Visual Route File No Root", world_seed=1119)
+    asset = _asset(campaign.id)
+    db_session.add(asset)
+    db_session.commit()
+
+    response = client.get(f"/api/campaigns/{campaign.id}/visual-assets/{asset.id}/file")
+
+    assert response.status_code == 404
+
+
+def test_get_visual_asset_file_404_when_file_missing_on_disk(db_session, tmp_path, monkeypatch, client):
+    import app.game.visual.asset_storage as asset_storage_module
+    from app.core.config import Settings
+
+    monkeypatch.setattr(
+        asset_storage_module, "get_settings", lambda: Settings(comfyui_asset_root=str(tmp_path))
+    )
+    campaign = create_campaign(db_session, "Visual Route File Missing", world_seed=1120)
+    asset = _asset(campaign.id, storage_path="does/not/exist.png")
+    db_session.add(asset)
+    db_session.commit()
+
+    response = client.get(f"/api/campaigns/{campaign.id}/visual-assets/{asset.id}/file")
+
+    assert response.status_code == 404
+
+
+def test_get_visual_asset_file_404_for_unknown_asset(client, db_session):
+    campaign = create_campaign(db_session, "Visual Route File Unknown Asset", world_seed=1121)
+    db_session.commit()
+
+    response = client.get(f"/api/campaigns/{campaign.id}/visual-assets/vasset_does_not_exist/file")
+
+    assert response.status_code == 404
+
+
+def test_get_visual_asset_file_404_for_wrong_campaign(client, db_session):
+    campaign_a = create_campaign(db_session, "Visual Route File Campaign A", world_seed=1122)
+    campaign_b = create_campaign(db_session, "Visual Route File Campaign B", world_seed=1123)
+    asset = _asset(campaign_a.id)
+    db_session.add(asset)
+    db_session.commit()
+
+    response = client.get(f"/api/campaigns/{campaign_b.id}/visual-assets/{asset.id}/file")
+
+    assert response.status_code == 404
+
+
+def test_current_asset_response_includes_a_servable_url(client, db_session):
+    campaign = create_campaign(db_session, "Visual Route Current Url", world_seed=1124)
+    asset = _asset(campaign.id)
+    db_session.add(asset)
+    db_session.commit()
+
+    response = client.get(
+        f"/api/campaigns/{campaign.id}/visual-assets/current",
+        params={"entity_type": "npc", "entity_id": "npc_mira", "asset_type": "NPC_PORTRAIT"},
+    )
+
+    assert response.json()["url"] == f"/api/campaigns/{campaign.id}/visual-assets/{asset.id}/file"

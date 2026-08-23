@@ -32,9 +32,10 @@ class VisualAssetResponse(BaseModel):
     validation_status: str
     is_current: bool
     is_canonical_reference: bool
-    # No servable URL yet — 23D-O adds the frontend-safe file endpoint;
-    # until then, storage_path is a server-internal detail this schema
-    # deliberately does not expose.
+    # A backend-served URL (23D-O's file route) — never storage_path
+    # itself, which is a server-internal filesystem detail this schema
+    # deliberately never exposes.
+    url: str
 
 
 class ValidationUpdateRequest(BaseModel):

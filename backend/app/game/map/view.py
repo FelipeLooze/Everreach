@@ -140,6 +140,26 @@ filter: an annotation only ever ships in the view if its target
 location survives the CURRENT scope — an annotation on a location that
 scope excludes disappears from the response along with it (it is not
 deleted; requesting the right scope, or none, brings it back).
+
+Phase 20K — Dynamic World Changes & Stale Knowledge.
+
+Reuses Phase 17H in full: app.game.knowledge.map_reliability.
+find_outdated_map_aspects already compares a physical map's frozen
+snapshot against the CURRENT canonical KnowledgeFact for the same
+fact_key — exactly the Bridge-of-Hal staleness the spec describes. A
+source="map" MapViewLocation now carries `stale=True` whenever any of
+its owned maps' aspects have drifted from current world truth this
+way. Live (non-map) Knowledge is deliberately left alone here: it only
+ever changes when something explicitly re-grants a fact to a knower
+(teach_fact/grant_fact_with_precision), an intentional, actor-driven
+event — there is no push mechanism anywhere in this codebase that
+force-updates a knower's belief, so "the player's map does not
+automatically become omniscient" already holds for every live grant
+without needing anything new here. Only the ONE narrow exception
+(update_geographic_fact_statement mutating a canonical fact in place,
+used exactly for the physical-map-staleness scenario 17H built) needed
+surfacing — and only for maps, since only maps freeze a comparable
+past snapshot to diff against.
 """
 from dataclasses import dataclass, field
 
@@ -158,6 +178,7 @@ from app.game.knowledge.geography import (
     known_geographic_aspects,
     precision_rank,
 )
+from app.game.knowledge.map_reliability import find_outdated_map_aspects
 from app.game.knowledge.maps import map_content
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.map.service import known_map
@@ -190,6 +211,7 @@ class MapViewLocation:
     y: int | None
     discovery_status: str
     source: str = "discovery"
+    stale: bool = False
     known_aspects: list[str] = field(default_factory=list)
 
 
@@ -319,7 +341,7 @@ def _phase17_rumored_location_ids(db: Session, campaign_id: str, character_id: s
     return ids
 
 
-def _owned_map_contents_by_location(db: Session, character_id: str) -> dict[str, list[dict]]:
+def _owned_maps_by_location(db: Session, character_id: str) -> dict[str, list[Map]]:
     """Every "location"-subject physical Map the character currently
     owns, grouped by the entity it covers. A map that changed hands or
     was lost stops counting (same ItemInstance-ownership convention as
@@ -334,17 +356,21 @@ def _owned_map_contents_by_location(db: Session, character_id: str) -> dict[str,
         )
         .all()
     )
-    by_location: dict[str, list[dict]] = {}
+    by_location: dict[str, list[Map]] = {}
     for map_row in map_rows:
-        by_location.setdefault(map_row.entity_id, []).append(map_content(map_row))
+        by_location.setdefault(map_row.entity_id, []).append(map_row)
     return by_location
 
 
 def _build_map_view_location_from_maps(
+    db: Session,
+    campaign_id: str,
     location: Location,
     discovery_status: DiscoveryStatus,
-    contents: list[dict],
+    map_rows: list[Map],
 ) -> MapViewLocation:
+    contents = [map_content(map_row) for map_row in map_rows]
+    stale = any(find_outdated_map_aspects(db, campaign_id, map_row) for map_row in map_rows)
     all_aspects = [aspect for content in contents for aspect in content["aspects"]]
     known_aspect_values = {aspect["aspect"] for aspect in all_aspects}
     known_aspect_values.add(GeographicKnowledgeAspect.EXISTENCE.value)
@@ -372,6 +398,7 @@ def _build_map_view_location_from_maps(
         y=location.y if exact_position_known else None,
         discovery_status=discovery_status.value,
         source="map",
+        stale=stale,
         known_aspects=sorted(known_aspect_values),
     )
 
@@ -510,8 +537,8 @@ def get_map_view(
                     regions_by_id[region.id] = region
 
     included_location_ids = {location.id for location in locations}
-    map_contents_by_location = _owned_map_contents_by_location(db, character_id)
-    map_only_ids = set(map_contents_by_location.keys()) - included_location_ids
+    maps_by_location = _owned_maps_by_location(db, character_id)
+    map_only_ids = set(maps_by_location.keys()) - included_location_ids
     if map_only_ids:
         map_only_locations = (
             db.query(Location)
@@ -523,7 +550,7 @@ def get_map_view(
         for location in map_only_locations:
             locations.append(
                 _build_map_view_location_from_maps(
-                    location, DiscoveryStatus.RUMORED, map_contents_by_location[location.id]
+                    db, campaign_id, location, DiscoveryStatus.RUMORED, maps_by_location[location.id]
                 )
             )
             if location.region_id not in regions_by_id:

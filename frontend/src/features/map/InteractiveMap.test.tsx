@@ -12,6 +12,7 @@ const locations: MapViewLocation[] = [
     parent_location_id: null,
     known_aspects: ["EXISTENCE"],
     source: "discovery",
+    stale: false,
     type: "village",
     name: "Cardal",
     precision: "PRECISE",
@@ -26,6 +27,7 @@ const locations: MapViewLocation[] = [
     parent_location_id: null,
     known_aspects: ["EXISTENCE"],
     source: "discovery",
+    stale: false,
     type: "forest",
     name: "Bosque",
     precision: "APPROXIMATE",
@@ -84,6 +86,7 @@ describe("InteractiveMap", () => {
             parent_location_id: null,
             known_aspects: ["EXISTENCE"],
             source: "discovery",
+            stale: false,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -112,6 +115,7 @@ describe("InteractiveMap", () => {
             parent_location_id: null,
             known_aspects: ["EXISTENCE"],
             source: "discovery",
+            stale: false,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -138,6 +142,7 @@ describe("InteractiveMap", () => {
             parent_location_id: null,
             known_aspects: ["EXISTENCE"],
             source: "discovery",
+            stale: false,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -216,6 +221,7 @@ describe("InteractiveMap", () => {
             parent_location_id: null,
             known_aspects: ["EXISTENCE"],
             source: "discovery",
+            stale: false,
             type: "generic",
             name: null,
             precision: "VAGUE",
@@ -301,5 +307,28 @@ describe("InteractiveMap", () => {
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     expect(called).toBe(false);
+  });
+
+  it("shows a staleness note for a stale map-sourced location", () => {
+    render(
+      <InteractiveMap
+        locations={[
+          { ...locations[0], source: "map", stale: true },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+
+    expect(screen.getByTestId("map-selected-stale")).toBeInTheDocument();
+    expect(screen.getByTestId("map-node-location_1")).toHaveAttribute("data-stale", "true");
+  });
+
+  it("does not show a staleness note for a fresh location", () => {
+    render(<InteractiveMap locations={locations} />);
+
+    fireEvent.click(screen.getByTestId("map-node-location_1"));
+
+    expect(screen.queryByTestId("map-selected-stale")).not.toBeInTheDocument();
   });
 });

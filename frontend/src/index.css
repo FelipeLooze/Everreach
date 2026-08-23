@@ -1228,6 +1228,16 @@ select {
   stroke: #b98b3e;
 }
 
+.map-node-marker.stale,
+.map-node-uncertainty-ring.stale {
+  stroke: #8a3b3b;
+  stroke-dasharray: 1.2 0.6;
+}
+
+.interactive-map-stale-note {
+  color: #c46a6a !important;
+}
+
 .map-node-uncertainty-glyph {
   fill: var(--text-dim);
   font-size: 3px;

@@ -303,6 +303,7 @@ export function InteractiveMap({
               data-selected={location.id === selectedId}
               data-position-known={location.positionKnown}
               data-source={location.source}
+              data-stale={location.stale}
               transform={`translate(${location.displayX}, ${location.displayY})`}
               onClick={(event) => {
                 event.stopPropagation();
@@ -314,13 +315,13 @@ export function InteractiveMap({
               {location.positionKnown ? (
                 <circle
                   r={location.id === selectedId ? 2.6 : 1.8}
-                  className={`map-node-marker precision-${precisionClass} source-${location.source}`}
+                  className={`map-node-marker precision-${precisionClass} source-${location.source}${location.stale ? " stale" : ""}`}
                 />
               ) : (
                 <>
                   <circle
                     r={uncertaintyRadius}
-                    className={`map-node-uncertainty-ring precision-${precisionClass} source-${location.source}`}
+                    className={`map-node-uncertainty-ring precision-${precisionClass} source-${location.source}${location.stale ? " stale" : ""}`}
                   />
                   <text textAnchor="middle" dominantBaseline="central" className="map-node-uncertainty-glyph">
                     ?
@@ -362,6 +363,11 @@ export function InteractiveMap({
           {selected.precision && <p>Precisão: {geographicPrecisionLabel(selected.precision)}</p>}
           {!selected.positionKnown && <p>Posição exata desconhecida.</p>}
           <p>Fonte: {mapLocationSourceLabel(selected.source)}</p>
+          {selected.stale && (
+            <p className="interactive-map-stale-note" data-testid="map-selected-stale">
+              Este mapa pode estar desatualizado.
+            </p>
+          )}
 
           <div className="interactive-map-annotations">
             {(annotationsByLocation.get(selected.id) ?? []).map((annotation) => (

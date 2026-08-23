@@ -25,6 +25,7 @@ class MapViewLocationSchema(BaseModel):
     y: int | None
     discovery_status: str
     source: str
+    stale: bool
     known_aspects: list[str]
 
 

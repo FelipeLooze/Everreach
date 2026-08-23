@@ -43,6 +43,12 @@ entity_id, asset_type, workflow/workflow_version, prompt_id, duration,
 status, error_code/error_message, asset_id) through the whole
 pipeline, so a real generation's full lifecycle can be reconstructed
 from the log alone without attaching a debugger.
+
+23D-Q — the submit_workflow -> wait_for_completion span (the actual
+window ComfyUI is busy on the shared GPU) is wrapped in
+app.core.gpu_coordinator.gpu_heavy_operation, so it cannot run at the
+same time as an Ollama call (app.ai.llm_service.OllamaLLMService uses
+the same coordinator around its own network call).
 """
 import time
 
@@ -50,6 +56,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.core.enums import VisualGenerationErrorCode
+from app.core.gpu_coordinator import gpu_heavy_operation
 from app.core.ids import generate_id
 from app.db.models.visual_asset import VisualAsset
 from app.db.models.visual_generation_request import VisualGenerationRequest
@@ -250,9 +257,14 @@ def request_visual_asset(
     model_identifier = extract_model_identifier(graph) or "unknown"
 
     try:
-        prompt_id = comfyui_client.submit_workflow(graph, client_id=request.id)
-        ctx.emit("submitted", request_id=request.id, prompt_id=prompt_id)
-        history_entry = comfyui_client.wait_for_completion(prompt_id)
+        # Phase 23D-Q — Ollama and ComfyUI share one local GPU; the lock
+        # is held for the whole submit -> wait-for-completion span,
+        # exactly the window the GPU is actually busy, never before or
+        # after (never around the DB work above/below this block).
+        with gpu_heavy_operation("VISUAL_TASK"):
+            prompt_id = comfyui_client.submit_workflow(graph, client_id=request.id)
+            ctx.emit("submitted", request_id=request.id, prompt_id=prompt_id)
+            history_entry = comfyui_client.wait_for_completion(prompt_id)
     except ComfyUIClientError as exc:
         return _fail(db, request.id, _classify_comfyui_error(exc), str(exc), ctx)
 

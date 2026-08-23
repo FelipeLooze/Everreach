@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import httpx
 
 from app.core.config import Settings, get_settings
+from app.core.gpu_coordinator import gpu_heavy_operation
 from app.core.logging import get_logger
 
 logger = get_logger("llm")
@@ -51,23 +52,28 @@ class OllamaLLMService(LLMService):
 
     def generate(self, system: str, prompt: str) -> str:
         try:
-            response = httpx.post(
-                f"{self._base_url}/api/generate",
-                json={
-                    "model": self._model,
-                    "system": system,
-                    "prompt": prompt,
-                    "stream": False,
-                    # Some local models (e.g. qwen3) are "thinking" models that emit a
-                    # separate reasoning trace by default. We only want the final answer.
-                    "think": False,
-                    "options": {"temperature": 0.35},
-                    # Keep the model loaded between requests — a cold load can take
-                    # 20s+ for an 8B model, which would otherwise hit on every action.
-                    "keep_alive": "5m",
-                },
-                timeout=self._timeout,
-            )
+            # Phase 23D-Q — Ollama and ComfyUI share one local GPU;
+            # only the actual network round trip (where Ollama does the
+            # real inference) is held under the lock, never anything
+            # before/after it.
+            with gpu_heavy_operation("LLM_TASK"):
+                response = httpx.post(
+                    f"{self._base_url}/api/generate",
+                    json={
+                        "model": self._model,
+                        "system": system,
+                        "prompt": prompt,
+                        "stream": False,
+                        # Some local models (e.g. qwen3) are "thinking" models that emit a
+                        # separate reasoning trace by default. We only want the final answer.
+                        "think": False,
+                        "options": {"temperature": 0.35},
+                        # Keep the model loaded between requests — a cold load can take
+                        # 20s+ for an 8B model, which would otherwise hit on every action.
+                        "keep_alive": "5m",
+                    },
+                    timeout=self._timeout,
+                )
             response.raise_for_status()
         except httpx.ConnectError as exc:
             logger.warning("Ollama unreachable: %s", exc)
@@ -87,11 +93,12 @@ class OllamaLLMService(LLMService):
         if not self._embedding_model:
             raise LLMServiceError("No Ollama embedding model configured.")
         try:
-            response = httpx.post(
-                f"{self._base_url}/api/embed",
-                json={"model": self._embedding_model, "input": text},
-                timeout=self._timeout,
-            )
+            with gpu_heavy_operation("LLM_TASK"):
+                response = httpx.post(
+                    f"{self._base_url}/api/embed",
+                    json={"model": self._embedding_model, "input": text},
+                    timeout=self._timeout,
+                )
             response.raise_for_status()
         except httpx.ConnectError as exc:
             logger.warning("Ollama unreachable: %s", exc)

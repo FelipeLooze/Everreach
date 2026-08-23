@@ -406,3 +406,51 @@ def test_request_visual_asset_supersedes_the_previous_current_asset(db_session, 
     assert old_asset.id != new_asset.id
     assert old_asset.is_current is False
     assert new_asset.is_current is True
+
+
+def test_request_visual_asset_holds_the_gpu_coordinator_lock_during_comfyui_calls(db_session, tmp_path):
+    from app.core.gpu_coordinator import _lock
+
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service GPU Lock", world_seed=515)
+    raw_image = _raw_output_image(tmp_path)
+    locked_during_submit = []
+    locked_during_wait = []
+
+    class _LockCheckingClient(FakeComfyUIClient):
+        def submit_workflow(self, graph, client_id):
+            locked_during_submit.append(_lock.locked())
+            return super().submit_workflow(graph, client_id)
+
+        def wait_for_completion(self, prompt_id, timeout_seconds=None):
+            locked_during_wait.append(_lock.locked())
+            return super().wait_for_completion(prompt_id, timeout_seconds)
+
+    client = _LockCheckingClient(
+        history_entry={"outputs": {"41": {"images": [{"subfolder": "x", "filename": "y.png"}]}}},
+        output_path=raw_image,
+    )
+
+    result = request_visual_asset(
+        db_session, client, campaign_id=campaign.id, settings=settings, **_request()
+    )
+
+    assert result.status == VisualGenerationRequestStatus.COMPLETED
+    assert locked_during_submit == [True]
+    assert locked_during_wait == [True]
+    assert not _lock.locked()
+
+
+def test_request_visual_asset_releases_the_gpu_lock_when_comfyui_rejects_the_workflow(db_session, tmp_path):
+    from app.core.gpu_coordinator import _lock
+
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service GPU Lock Failure", world_seed=516)
+    client = FakeComfyUIClient(submit_error=ComfyUIClientError("ComfyUI rejected the workflow: bad node"))
+
+    result = request_visual_asset(
+        db_session, client, campaign_id=campaign.id, settings=settings, **_request()
+    )
+
+    assert result.status == VisualGenerationRequestStatus.FAILED
+    assert not _lock.locked()

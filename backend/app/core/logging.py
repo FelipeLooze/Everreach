@@ -10,6 +10,7 @@ CATEGORIES = [
     "context",
     "api",
     "visual",
+    "gpu",
 ]
 
 

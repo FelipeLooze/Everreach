@@ -276,3 +276,98 @@ def test_request_visual_asset_commits_in_progress_before_calling_comfyui(db_sess
     )
 
     assert request.status == VisualGenerationRequestStatus.COMPLETED
+
+
+def test_request_visual_asset_returns_an_existing_in_flight_request_instead_of_a_duplicate(
+    db_session, tmp_path
+):
+    """23D-K in-flight dedup, simulated by inserting a PENDING row
+    directly for this entity/asset_type (as if an earlier call left one
+    running) rather than actually blocking a real request mid-flight."""
+    from app.game.visual.generation_request import create_request
+
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service In Flight Dedup", world_seed=511)
+    in_flight = create_request(
+        db_session, entity_type="item_definition", entity_id="item_dup", asset_type="ITEM_ILLUSTRATION",
+        workflow_key="EVERREACH_ITEM", workflow_version="V3", campaign_id=campaign.id, seed=5001,
+    )
+    db_session.commit()
+
+    class _NeverSubmitsClient(FakeComfyUIClient):
+        def submit_workflow(self, graph, client_id):
+            raise AssertionError("should never submit while a request is already in flight")
+
+    result = request_visual_asset(
+        db_session, _NeverSubmitsClient(), campaign_id=campaign.id, settings=settings,
+        **_request(entity_id="item_dup"),
+    )
+
+    assert result.id == in_flight.id
+    assert (
+        db_session.query(VisualGenerationRequest)
+        .filter(VisualGenerationRequest.entity_id == "item_dup")
+        .count()
+        == 1
+    )
+
+
+def test_request_visual_asset_reuses_a_matching_asset_without_calling_comfyui(db_session, tmp_path):
+    from app.game.visual.dedup import compute_spec_fingerprint
+
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service Content Dedup", world_seed=512)
+    fingerprint = compute_spec_fingerprint(
+        prompt_text="a prompt", workflow_key="EVERREACH_ITEM", workflow_version="V3", seed=5001,
+    )
+    existing_asset = VisualAsset(
+        campaign_id=campaign.id, entity_type="item_definition", entity_id="item_reuse",
+        asset_type="ITEM_ILLUSTRATION", storage_path="x/y/z.png", mime_type="image/png",
+        width=1024, height=1024, workflow_key="EVERREACH_ITEM", workflow_version="V3",
+        model_identifier="flux-2-klein-4b", seed=5001, spec_fingerprint=fingerprint,
+    )
+    db_session.add(existing_asset)
+    db_session.commit()
+
+    class _NeverSubmitsClient(FakeComfyUIClient):
+        def submit_workflow(self, graph, client_id):
+            raise AssertionError("should never submit when a reusable asset already exists")
+
+    result = request_visual_asset(
+        db_session, _NeverSubmitsClient(), campaign_id=campaign.id, settings=settings,
+        **_request(entity_id="item_reuse"),
+    )
+
+    assert result.status == VisualGenerationRequestStatus.COMPLETED
+    assert result.result_asset_id == existing_asset.id
+
+
+def test_request_visual_asset_does_not_reuse_an_asset_with_a_different_fingerprint(db_session, tmp_path):
+    from app.game.visual.dedup import compute_spec_fingerprint
+
+    settings = _settings(tmp_path)
+    campaign = create_campaign(db_session, "Visual Service Content Dedup Mismatch", world_seed=513)
+    stale_fingerprint = compute_spec_fingerprint(
+        prompt_text="an old prompt", workflow_key="EVERREACH_ITEM", workflow_version="V3", seed=999,
+    )
+    existing_asset = VisualAsset(
+        campaign_id=campaign.id, entity_type="item_definition", entity_id="item_changed",
+        asset_type="ITEM_ILLUSTRATION", storage_path="x/y/z.png", mime_type="image/png",
+        width=1024, height=1024, workflow_key="EVERREACH_ITEM", workflow_version="V3",
+        model_identifier="flux-2-klein-4b", seed=999, spec_fingerprint=stale_fingerprint,
+    )
+    db_session.add(existing_asset)
+    db_session.commit()
+    raw_image = _raw_output_image(tmp_path)
+    client = FakeComfyUIClient(
+        history_entry={"outputs": {"41": {"images": [{"subfolder": "x", "filename": "y.png"}]}}},
+        output_path=raw_image,
+    )
+
+    result = request_visual_asset(
+        db_session, client, campaign_id=campaign.id, settings=settings,
+        **_request(entity_id="item_changed"),
+    )
+
+    assert result.status == VisualGenerationRequestStatus.COMPLETED
+    assert result.result_asset_id != existing_asset.id

@@ -62,6 +62,15 @@ class VisualAsset(Base):
     model_identifier: Mapped[str] = mapped_column(String, nullable=False)
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Phase 23D-K — app.game.visual.dedup.compute_spec_fingerprint's
+    # hash of exactly the inputs that determined this asset's content
+    # (prompt text, workflow identity, seed, reference image). Lets a
+    # later request for the same entity/asset_type recognize "nothing
+    # actually changed" and reuse this row instead of calling ComfyUI
+    # again. Nullable: not every asset is created through the
+    # deduplication-aware path (e.g. a manually imported test asset).
+    spec_fingerprint: Mapped[str | None] = mapped_column(String, nullable=True)
+
     validation_status: Mapped[str] = mapped_column(
         String,
         nullable=False,

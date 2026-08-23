@@ -25,6 +25,13 @@ version) — those are raised immediately, before any request row is
 even created, since no attempt was actually made. See
 app.game.visual.retry_policy for the bounded automatic retry built on
 top of this classification.
+
+Before any of that, two dedup checks (23D-K) short-circuit the whole
+pipeline: an already in-flight request for the same entity/asset_type
+is returned as-is (no duplicate GPU work from a player reopening a UI
+panel), and a fingerprint match against the current asset skips
+ComfyUI entirely, completing the new request against the EXISTING
+asset instead of generating a new one.
 """
 from sqlalchemy.orm import Session
 
@@ -36,6 +43,7 @@ from app.db.models.visual_asset import VisualAsset
 from app.db.models.visual_generation_request import VisualGenerationRequest
 from app.game.visual.asset_storage import VisualAssetStorageError, persist_generated_asset
 from app.game.visual.comfyui_client import ComfyUIClient, ComfyUIClientError
+from app.game.visual.dedup import compute_spec_fingerprint, find_in_flight_request, find_reusable_asset
 from app.game.visual.generation_request import create_request, mark_completed, mark_failed, mark_in_progress
 from app.game.visual.prompt_builder import (
     VisualPromptBuilderError,
@@ -109,6 +117,18 @@ def request_visual_asset(
     # row, since no attempt is actually being made.
     get_workflow_definition(workflow_key, workflow_version)
 
+    in_flight = find_in_flight_request(db, campaign_id, entity_type, entity_id, asset_type)
+    if in_flight is not None:
+        return in_flight
+
+    spec_fingerprint = compute_spec_fingerprint(
+        prompt_text=prompt_text,
+        workflow_key=workflow_key,
+        workflow_version=workflow_version,
+        seed=seed,
+        reference_image=reference_image,
+    )
+
     request = create_request(
         db,
         entity_type=entity_type,
@@ -121,6 +141,14 @@ def request_visual_asset(
         attempt_count=attempt_count,
     )
     db.commit()
+
+    reusable_asset = find_reusable_asset(
+        db, campaign_id, entity_type, entity_id, asset_type, spec_fingerprint
+    )
+    if reusable_asset is not None:
+        completed_request = mark_completed(db, request.id, reusable_asset.id)
+        db.commit()
+        return completed_request
 
     if not comfyui_client.is_available():
         return _fail(
@@ -206,6 +234,7 @@ def request_visual_asset(
         workflow_version=workflow_version,
         model_identifier=model_identifier,
         seed=seed,
+        spec_fingerprint=spec_fingerprint,
     )
     db.add(asset)
     db.flush()

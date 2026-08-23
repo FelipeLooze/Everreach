@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 
+import { StateBadge } from "@/components/StateBadge";
 import type { MapViewAnnotation, MapViewLocation, MapViewRoute, RoutePlan } from "@/types/game";
 import {
   connectionTypeLabel,
@@ -411,9 +412,9 @@ export function InteractiveMap({
           <p>Fonte: {mapLocationSourceLabel(selected.source)}</p>
           {selected.provenance && <p data-testid="map-selected-provenance">Origem: {selected.provenance}</p>}
           {selected.stale && (
-            <p className="interactive-map-stale-note" data-testid="map-selected-stale">
-              Este mapa pode estar desatualizado.
-            </p>
+            <div data-testid="map-selected-stale">
+              <StateBadge tone="danger" label="Este mapa pode estar desatualizado." />
+            </div>
           )}
 
           <div className="interactive-map-annotations">

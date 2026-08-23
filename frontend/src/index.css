@@ -164,6 +164,58 @@ body {
   color: var(--text);
 }
 
+/* Phase 21L — Visual State & Condition Representation. See
+   src/components/StateBadge.tsx for the full rationale: each tone
+   pairs a distinct border STYLE with its color (never color alone) so
+   the state reads even in grayscale. */
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  background: var(--bg-panel);
+
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.state-badge-glyph {
+  font-size: 0.7rem;
+}
+
+.state-badge-danger {
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.state-badge-warning {
+  border: 1px dashed var(--warning);
+  color: var(--warning);
+}
+
+.state-badge-success {
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+.state-badge-uncertain {
+  border: 1px dotted var(--uncertain);
+  color: var(--uncertain);
+}
+
+.state-badge-unknown {
+  border: 1px dotted var(--unknown);
+  color: var(--unknown);
+}
+
+.state-badge-neutral {
+  border: 1px double var(--border);
+  color: var(--text-dim);
+}
+
 button {
   font-family: inherit;
   background: var(--bg-panel);
@@ -1440,9 +1492,8 @@ select {
   stroke-dasharray: 1.2 0.6;
 }
 
-.interactive-map-stale-note {
-  color: var(--danger) !important;
-}
+/* Phase 21L: the stale-map note now renders via the shared
+   StateBadge component instead of its own one-off class. */
 
 .map-node-uncertainty-glyph {
   fill: var(--text-dim);

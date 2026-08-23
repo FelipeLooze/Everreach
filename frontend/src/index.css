@@ -1309,6 +1309,17 @@ select {
   width: 100%;
   height: 100%;
 
+  /* A restrained, dark-aged-parchment field distinct from the
+     surrounding near-black System frame (.everreach-frame) — medieval
+     cartographic feeling without a bright, jarring rectangle in an
+     otherwise atmospheric dark UI, and without any generated texture
+     asset (spec: "use CSS/SVG... initially, not generated parchment
+     textures"). Kept dark enough that the existing gold map labels
+     (#d0b477, set on .map-node-label) stay comfortably readable. */
+  background:
+    radial-gradient(ellipse at center, rgba(120, 96, 58, 0.16), rgba(10, 8, 6, 0.05) 72%),
+    linear-gradient(155deg, rgba(58, 46, 28, 0.24), rgba(8, 7, 6, 0.05));
+
   cursor: grab;
   touch-action: none;
 }
@@ -1362,6 +1373,35 @@ select {
   cursor: pointer;
 }
 
+/* ======================================================================
+   PHASE 21K — MAP VISUAL LANGUAGE
+
+   "Phase 20 owns map behavior. Phase 21 owns map appearance" (spec) —
+   every rule below is a pure presentation of a state app.game.map.view
+   (Phase 20) already computed; nothing here changes what is shown,
+   only how. Named states and their marker:
+
+   CONFIRMED LOCATION   .map-node-marker                (solid pin)
+   APPROXIMATE/VAGUE     .map-node-uncertainty-ring       (dashed ring,
+                          location LOCATION                "?" glyph — 20D)
+   RUMORED LOCATION      .map-node-uncertainty-ring
+                          .source-rumor                    (amber dashed)
+   OUTDATED MAP INFO     .map-node-marker.stale /          (red dashed —
+                          .map-node-uncertainty-ring.stale   Phase 20K)
+   KNOWN ROUTE           .map-route-line                  (Phase 20F)
+   PLAYER ANNOTATION     .map-node-annotation-dot          (Phase 20J)
+   PLAYER POSITION       .map-current-position-ring        (Phase 20L)
+
+   DISPROVEN RUMOR / APPROXIMATE ROUTE / REPORTED ROUTE / UNCONFIRMED
+   PASSAGE are spec-named states with NO backend data to visualize
+   differently yet: MapViewRoute (Phase 20F) has no route-precision
+   field, and rumor "disproven" status is deliberately backend-private
+   (RumorAccuracy is never exposed to the player — Phase 20H). Adding
+   a visual distinction here without Phase 20 first exposing the
+   underlying state would be Phase 21 inventing information Phase 20
+   does not provide — left for whenever that Phase 20 data exists.
+   ====================================================================== */
+
 .map-route-line {
   stroke: var(--border);
   stroke-width: 0.5;
@@ -1386,22 +1426,22 @@ select {
 }
 
 .map-node-uncertainty-ring.source-rumor {
-  stroke: #b98b3e;
+  stroke: var(--uncertain);
   stroke-dasharray: 0.8 0.8;
 }
 
 .map-node-marker.source-rumor {
-  stroke: #b98b3e;
+  stroke: var(--uncertain);
 }
 
 .map-node-marker.stale,
 .map-node-uncertainty-ring.stale {
-  stroke: #8a3b3b;
+  stroke: var(--danger);
   stroke-dasharray: 1.2 0.6;
 }
 
 .interactive-map-stale-note {
-  color: #c46a6a !important;
+  color: var(--danger) !important;
 }
 
 .map-node-uncertainty-glyph {

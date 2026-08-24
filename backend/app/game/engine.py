@@ -1,11 +1,15 @@
 from dataclasses import dataclass, field
+import hashlib
+import time
 
 from sqlalchemy.orm import Session
 
 from app.ai import context_builder, intent_parser, memory_manager, narrator, narrative_validator
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService, LLMServiceError
+from app.ai.observability import log_narrative_request
 from app.ai.validation import NarrativeProposal, validate_narrative_proposal
+from app.core.config import get_settings
 from app.core.enums import (
     ActionIntentType,
     CharacterStatus,
@@ -17,7 +21,7 @@ from app.core.enums import (
     ObjectiveTriggerType,
     TravelIncidentKind,
 )
-from app.core.logging import get_logger
+from app.core.logging import current_narrative_request_id, get_logger, with_narrative_request_id
 from app.core.ids import generate_id
 from app.db.models.character import Character
 from app.db.models.location import CharacterLocationDiscovery, Location, LocationFeature
@@ -78,6 +82,7 @@ class ActionResult:
     warnings: list[str] = field(default_factory=list)
 
 
+@with_narrative_request_id
 def resolve_action(
     db: Session,
     llm_service: LLMService,
@@ -88,6 +93,10 @@ def resolve_action(
     technique_id: str | None = None,
     action_key: str | None = None,
 ) -> ActionResult:
+    # Phase 24P — narrative_request_id is already set for the whole call
+    # by the decorator above; captured here only so the summary line at
+    # the end can report it and total latency alongside it.
+    _narrative_request_started_at = time.monotonic()
     character = db.get(Character, character_id)
     if character is None or character.campaign_id != campaign_id:
         raise ValueError(f"Personagem desconhecido nesta campanha: {character_id}")
@@ -472,6 +481,29 @@ def resolve_action(
         )
 
     db.commit()
+
+    # Phase 24P — one correlatable summary line per turn; every other
+    # log line emitted anywhere above already carries the same
+    # narrative_request_id automatically (app.core.logging's contextvar
+    # filter), so this is the entry point for finding them, not a
+    # duplicate of what they already contain.
+    settings = get_settings()
+    log_narrative_request(
+        narrative_request_id=current_narrative_request_id(),
+        campaign_id=campaign_id,
+        character_id=character_id,
+        active_npc_id=context_npc.id if context_npc is not None else None,
+        player_input=text,
+        model=settings.ollama_model,
+        temperature=settings.ollama_temperature,
+        num_predict=settings.ollama_num_predict,
+        context_fingerprint=hashlib.sha256(fresh_context.encode()).hexdigest()[:12],
+        context_chars=len(fresh_context),
+        estimated_tokens=len(fresh_context) // 4,
+        narrator_unavailable=narrator_unavailable,
+        final_output=narrative_validation.final_text,
+        latency_ms=(time.monotonic() - _narrative_request_started_at) * 1000,
+    )
 
     return ActionResult(
         narrative=narrative_validation.final_text,

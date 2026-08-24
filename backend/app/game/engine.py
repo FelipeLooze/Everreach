@@ -764,6 +764,100 @@ _LEAVING_CLAUSE_PATTERN = re.compile(
 )
 
 
+def _resolve_addressed_entity(
+    raw_text: str,
+    nearby_npcs,
+    nearby_simulated_players,
+) -> tuple["NPC | None", "SimulatedPlayer | None"]:
+    """Phase 24J.1/24J.2 — does the player's own RAW text unambiguously
+    name or role-reference exactly one nearby NPC or simulated player?
+    Pure resolution, no persistence side effects (callers decide whether
+    and how to record the result) — shared by both _handle_talk (when
+    the Intent Parser's own `target` isn't trustworthy — see its own
+    docstring) and _implicit_freeform_interlocutor_switch (FREEFORM/
+    APPROACH intents, which never reach _handle_talk at all).
+
+    24J.2, confirmed via live trace: restricting this resolution to only
+    the non-TALK path was itself the bug — "Logan vai em direção ao
+    velho ancião..." classified as TALK with an Intent-Parser-GUESSED
+    target ("Rowan Quill") the player never literally typed, so
+    _handle_talk's own literal-target gate correctly refused to trust it
+    (working as designed) — but nothing then tried resolving "velho
+    ancião" (a ROLE, not a name) against the raw text itself, so the
+    elder was NEVER established as active interlocutor at all, and every
+    later turn cascaded into "Há mais de uma pessoa aqui..." instead of
+    continuing with him.
+
+    "Logan se afasta de X e se aproxima de Y" legitimately names BOTH
+    the person being left AND the one being approached — confirmed live
+    as a real regression: counting every literal name as a candidate
+    made this exact, extremely natural phrasing ambiguous (2 matches),
+    so the switch to Y silently never fired. A name mentioned only
+    inside a "se afasta de ___" clause is never who the player is
+    addressing, so that clause is stripped before matching.
+
+    Diacritics are stripped but case is preserved for name matching — a
+    player very commonly types "anciao" for "ancião" (confirmed live: an
+    exact-accent role match silently failed against unaccented input, an
+    easy and common case, not an edge case), but a random character name
+    can be spelled IDENTICALLY to an ordinary Portuguese word (confirmed
+    live: the seed's own fixed simulated player "Dessa Marrow" collides
+    with "dessa", the demonstrative in "o nome DESSA vila") — no amount
+    of casefolded word-boundary matching alone can tell those apart,
+    since they're the same token, so a name match additionally requires
+    the matched word be capitalized in the player's own text (Portuguese
+    proper-noun convention; role matching stays case-insensitive since
+    players don't capitalize roles).
+
+    Only acts when EXACTLY one candidate matches across BOTH nearby NPCs
+    and nearby simulated players combined, to avoid any ambiguity risk —
+    the safe failure mode (no match) just means the caller falls back to
+    whatever it would otherwise have done, never a wrong guess.
+    """
+    search_text = _LEAVING_CLAUSE_PATTERN.sub(" ", raw_text)
+    search_text_no_accents = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", search_text)
+        if not unicodedata.combining(char)
+    )
+    raw_lower = search_text_no_accents.casefold()
+
+    def _name_mentioned(name: str) -> bool:
+        return any(
+            re.search(rf"\b{re.escape(word)}\b", search_text_no_accents) is not None
+            for word in name.split()
+            if len(word) >= 3 and word[0].isupper()
+        )
+
+    def _role_mentioned(role: str) -> bool:
+        # Only the role's HEAD word ("ancião", not "da vila") — confirmed
+        # via live trace as a real regression: a full-phrase match against
+        # "ancião da vila" never matched the player's own natural
+        # abbreviation ("o velho ancião", dropping "da vila"), so the
+        # elder was never resolved at all. The head word alone is also
+        # SAFER than matching on any word in the role: "vila" alone would
+        # spuriously match this NPC on literally any village-name
+        # question, which "ancião" never does.
+        head_word = role.split()[0] if role.split() else role
+        head_no_accents = "".join(
+            char for char in unicodedata.normalize("NFKD", head_word) if not unicodedata.combining(char)
+        )
+        return re.search(rf"\b{re.escape(head_no_accents)}\b", raw_lower) is not None
+
+    npc_matches = [
+        npc for npc in nearby_npcs if _name_mentioned(npc.name) or _role_mentioned(npc.role)
+    ]
+    simulated_player_matches = [
+        player for player in nearby_simulated_players if _name_mentioned(player.name)
+    ]
+
+    if len(npc_matches) + len(simulated_player_matches) != 1:
+        return None, None
+    if npc_matches:
+        return npc_matches[0], None
+    return None, simulated_player_matches[0]
+
+
 def _implicit_freeform_interlocutor_switch(
     db: Session,
     campaign_id: str,
@@ -779,94 +873,26 @@ def _implicit_freeform_interlocutor_switch(
     equivalent for simulated players), so the active interlocutor's
     PERSISTED state silently never advances even though the player's
     own words unambiguously name or address a specific nearby NPC or
-    transported person. Confirmed via live trace as a real regression,
-    twice over: a full turn of dialogue got voiced by an entirely
-    different, correctly-addressed NPC/simulated player while the
-    backend's own active-interlocutor state (and every validator
-    relying on it, e.g. the hidden-name guard's authorization check)
-    still pointed at whoever was last mechanically talked to — and the
-    very next follow-up turn, with no literal name to lean on, silently
-    reverted to that stale interlocutor.
+    transported person.
 
-    Mirrors _handle_talk's own "trust a name only if the player
-    literally typed at least one whole word of it" gate — never a
-    guess, only ever a name (or, for NPCs, a role — "o ancião da vila"
-    names no proper noun at all) the player actually wrote — and only
-    acts when EXACTLY one candidate matches across BOTH nearby NPCs and
-    nearby simulated players combined, to avoid any ambiguity risk.
-    Never runs for a TALK-classified intent, which already resolves
-    this itself.
+    Only handles the non-TALK case; a TALK-classified intent goes
+    through _handle_talk, which now calls _resolve_addressed_entity
+    itself (24J.2) when its own literal-target gate doesn't trust the
+    Intent Parser's guess.
     """
     if intent.type == ActionIntentType.TALK:
         return None, None
 
-    # "Logan se afasta de X e se aproxima de Y" legitimately names BOTH
-    # the person being left AND the one being approached — confirmed via
-    # live trace as a real regression: counting every literal name as a
-    # candidate made this exact, extremely natural phrasing ambiguous
-    # (2 matches, X and Y both), so the switch to Y never fired and the
-    # NPC being left silently stayed "active." A name mentioned only
-    # inside a "se afasta de ___" clause is never who the player is
-    # addressing, so that clause is stripped before matching.
-    search_text = _LEAVING_CLAUSE_PATTERN.sub(" ", intent.raw_text)
-    # Diacritics stripped but case preserved — a player very commonly
-    # types "anciao" for "ancião", "regiao" for "região", etc. (confirmed
-    # live: a role match against the exact accented role string silently
-    # failed against unaccented player input, an easy and common case,
-    # not an edge case). Case is kept because _name_mentioned still needs
-    # it below; role matching normalizes case separately.
-    search_text_no_accents = "".join(
-        char
-        for char in unicodedata.normalize("NFKD", search_text)
-        if not unicodedata.combining(char)
+    npc, player = _resolve_addressed_entity(
+        intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
     )
-    raw_lower = search_text_no_accents.casefold()
-
-    def _name_mentioned(name: str) -> bool:
-        # Word-boundary regex on the diacritics-stripped-but-case-
-        # preserved text, requiring the matched word start with an
-        # uppercase letter — not a bare substring/casefolded check. A
-        # random character name can be spelled IDENTICALLY to an ordinary
-        # Portuguese word (confirmed live: the seed's own fixed simulated
-        # player "Dessa Marrow" collides with "dessa", the extremely
-        # common demonstrative in "o nome DESSA vila" — no amount of
-        # casefolded word-boundary matching alone can tell those apart,
-        # since they're the same token). Portuguese proper nouns are
-        # capitalized and ordinary pronouns/demonstratives usually are
-        # not, so requiring a literal capital in the player's own text is
-        # a real, if imperfect, signal — and the safe failure mode (no
-        # match) just means no implicit switch happens, falling back to
-        # the prior interlocutor, never a wrong one.
-        return any(
-            re.search(rf"\b{re.escape(word)}\b", search_text_no_accents) is not None
-            for word in name.split()
-            if len(word) >= 3 and word[0].isupper()
-        )
-
-    def _role_mentioned(role: str) -> bool:
-        role_no_accents = "".join(
-            char for char in unicodedata.normalize("NFKD", role) if not unicodedata.combining(char)
-        )
-        return role_no_accents.casefold() in raw_lower
-
-    npc_matches = [
-        npc for npc in state.nearby_npcs if _name_mentioned(npc.name) or _role_mentioned(npc.role)
-    ]
-    simulated_player_matches = [
-        player for player in state.nearby_simulated_players if _name_mentioned(player.name)
-    ]
-
-    if len(npc_matches) + len(simulated_player_matches) != 1:
-        return None, None
-
-    if npc_matches:
-        npc = npc_matches[0]
+    if npc is not None:
         npcs_service.meet_npc(db, campaign_id, character.id, npc.id)
         return npc, None
-
-    player = simulated_player_matches[0]
-    players_service.meet_simulated_player(db, campaign_id, character.id, player.id)
-    return None, player
+    if player is not None:
+        players_service.meet_simulated_player(db, campaign_id, character.id, player.id)
+        return None, player
+    return None, None
 
 
 def _handle_talk(
@@ -954,36 +980,56 @@ def _handle_talk(
             else:
                 simulated_player = person
         elif len(nearby_people) > 1:
-            # No literal target and several people present — before asking
-            # for disambiguation, prefer an already-active conversation.
-            # A follow-up question need not re-name the NPC every turn
-            # (get_active_interlocutor's own docstring says as much); without
-            # this check, any crowd scene downgrades every untargeted
-            # follow-up to a disambiguation prompt and silently drops the
-            # ongoing conversation (Phase 24J.1, confirmed via live trace).
-            active_npc = npcs_service.get_active_interlocutor(
-                db, campaign_id, character.id, character.location_id
+            # No literal target and several people present. The Intent
+            # Parser's own `target` guess was already rejected above (not
+            # literally typed) — but the player's raw text may still
+            # unambiguously ROLE-reference someone ("o velho ancião")
+            # rather than name them, which `literal_target` never checks
+            # for at all. Confirmed via live trace as a real regression:
+            # without this, "Logan vai em direção ao velho ancião..."
+            # never resolved to anyone, and the elder was never
+            # established as active interlocutor for the rest of the
+            # scene (24J.2). An explicit reference in THIS turn takes
+            # priority over merely continuing an old conversation.
+            resolved_npc, resolved_player = _resolve_addressed_entity(
+                intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
             )
-            if active_npc is not None and any(
-                candidate.id == active_npc.id for candidate in state.nearby_npcs
-            ):
-                npc = active_npc
+            if resolved_npc is not None:
+                npc = resolved_npc
+            elif resolved_player is not None:
+                simulated_player = resolved_player
             else:
-                active_simulated_player = (
-                    players_service.get_active_simulated_player_interlocutor(
-                        db, campaign_id, character.id, character.location_id
-                    )
+                # No explicit reference this turn either — before asking
+                # for disambiguation, prefer an already-active
+                # conversation. A follow-up question need not re-name the
+                # NPC every turn (get_active_interlocutor's own docstring
+                # says as much); without this check, any crowd scene
+                # downgrades every untargeted follow-up to a
+                # disambiguation prompt and silently drops the ongoing
+                # conversation (Phase 24J.1, confirmed via live trace).
+                active_npc = npcs_service.get_active_interlocutor(
+                    db, campaign_id, character.id, character.location_id
                 )
-                if active_simulated_player is not None and any(
-                    candidate.id == active_simulated_player.id
-                    for candidate in state.nearby_simulated_players
+                if active_npc is not None and any(
+                    candidate.id == active_npc.id for candidate in state.nearby_npcs
                 ):
-                    simulated_player = active_simulated_player
+                    npc = active_npc
                 else:
-                    return (
-                        "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
-                        0,
+                    active_simulated_player = (
+                        players_service.get_active_simulated_player_interlocutor(
+                            db, campaign_id, character.id, character.location_id
+                        )
                     )
+                    if active_simulated_player is not None and any(
+                        candidate.id == active_simulated_player.id
+                        for candidate in state.nearby_simulated_players
+                    ):
+                        simulated_player = active_simulated_player
+                    else:
+                        return (
+                            "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
+                            0,
+                        )
 
     if npc is None and simulated_player is None:
         return (
@@ -1117,7 +1163,9 @@ def _handle_examine(
     )
 
     lines = [
-        f"{character.name} observa os arredores de {result.location_name}.",
+        f"{character.name} observa os arredores de {result.location_name}."
+        if result.location_name_known
+        else f"{character.name} observa os arredores deste lugar.",
     ]
 
     if result.features:

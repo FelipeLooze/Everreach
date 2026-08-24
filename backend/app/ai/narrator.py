@@ -91,6 +91,30 @@ _OPENING_ALLOWED_SUBJECT_VERBS = {
     "materializa",
 }
 
+# Phase 24J.2 — sensory/perceptual verbs, allowed as the protagonist's own
+# grammatical subject in ANY mode (not just OPENING). This mirrors a
+# policy _protagonist_agency_violations' own mental_state_pattern already
+# established (its docstring: "Deliberately excludes percebe/nota...
+# legitimately sensory/perceptual... SENSATION != EMOTION policy (19E)")
+# but subject_pattern below never shared it — confirmed via live trace as
+# a real regression: a plain EXAMINE action ("Olhar ao redor"), whose own
+# mechanical summary literally starts "Logan observa os arredores de
+# X...", produced narration opening the same natural way ("Logan observa
+# a praça...") and was rejected as a player-agency violation on that
+# basis alone, falling all the way to "Nada acontece de imediato." for
+# what both the narrator AND its own inputs consider proper, non-agentive
+# scene description.
+_SENSORY_PERCEPTION_VERBS = {
+    "observa",
+    "nota",
+    "percebe",
+    "repara",
+    "ve",
+    "avista",
+    "ouve",
+    "escuta",
+}
+
 _FORBIDDEN_STYLE_MARKERS = (
     "como se",
     "o ar parece",
@@ -800,6 +824,11 @@ def _protagonist_agency_violations(
         # During OPENING the protagonist may be the grammatical subject only
         # for the involuntary physical result of the transportation.
         if mode == "OPENING" and verb in _OPENING_ALLOWED_SUBJECT_VERBS:
+            continue
+
+        # Sensory/perceptual verbs are legitimate in any mode — see
+        # _SENSORY_PERCEPTION_VERBS' own docstring (24J.2).
+        if verb in _SENSORY_PERCEPTION_VERBS:
             continue
 
         return [_AGENCY_VIOLATION_MESSAGE]

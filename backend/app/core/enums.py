@@ -378,6 +378,29 @@ class ConnectionType(StrEnum):
     TRAIL = "TRAIL"
 
 
+# Phase 24J.2 — the raw English enum value used to leak straight into
+# player/LLM-facing route text ("PATH para Mata do Limiar"). The canon
+# validator's own route-kind+direction check (narrator.py,
+# _find_canon_violations) looks for the Portuguese nouns "estrada"/
+# "trilha" paired with a direction word to decide whether the model
+# invented an unauthorized geographic combination — against English
+# labels, that check could never find a match, so ANY natural Portuguese
+# translation the model produced ("estrada" for ROAD) was flagged as
+# invented, confirmed via live trace as a real regression. Translating
+# at the source keeps every consumer (perception, context_builder) and
+# the canon check itself speaking the same language.
+CONNECTION_TYPE_LABELS_PT = {
+    ConnectionType.ROAD: "estrada",
+    ConnectionType.PATH: "trilha",
+    ConnectionType.RIVER: "rio",
+    ConnectionType.TRAIL: "trilha",
+}
+
+
+def connection_type_label_pt(connection_type: str) -> str:
+    return CONNECTION_TYPE_LABELS_PT.get(connection_type, connection_type)
+
+
 class ActionIntentType(StrEnum):
     MOVE = "MOVE"
     TALK = "TALK"

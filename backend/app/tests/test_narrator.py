@@ -1641,3 +1641,82 @@ def test_persistent_concepts_new_entries_catch_the_spec_examples():
     ]
     for text in cases:
         assert narrator._find_canon_violations(text, context, ""), text
+
+
+# --- Phase 24K — Repetition & Narrative Style Quality ---
+
+
+def test_opening_only_instructions_are_excluded_from_continuation_prompt():
+    continuation_prompt = narrator._system_prompt_for("CONTINUATION")
+    opening_prompt = narrator._system_prompt_for("OPENING")
+
+    assert "PRIMEIRA CHEGADA" not in continuation_prompt
+    assert "FINAL DA ABERTURA" not in continuation_prompt
+    assert "PRIMEIRA CHEGADA" in opening_prompt
+    assert "FINAL DA ABERTURA" in opening_prompt
+    # The spec's own audit figure: ~225 lines / ~15% of the full prompt.
+    assert len(opening_prompt) - len(continuation_prompt) > 4000
+
+
+def test_opening_prompt_still_contains_every_base_instruction():
+    # The split must never drop content, only relocate it — everything
+    # in the CONTINUATION-applicable base still reaches OPENING mode too.
+    continuation_prompt = narrator._system_prompt_for("CONTINUATION")
+    opening_prompt = narrator._system_prompt_for("OPENING")
+
+    assert continuation_prompt in opening_prompt
+
+
+def test_repeated_stock_phrase_from_recent_history_is_flagged():
+    history = (
+        'Resposta de Aldric Draven anteriormente: "Aldric sorri e responde: '
+        '\\"Sou Aldric.\\""'
+    )
+    violations = narrator._find_repetition_violations(
+        "Aldric sorri e responde: \"Sim, claro que sim.\"", history
+    )
+    assert any("sorri e responde" in v for v in violations)
+
+
+def test_repeated_lead_in_from_recent_history_is_flagged():
+    history = (
+        'Resposta de Aldric Draven anteriormente: '
+        '"Aldric observa Logan com atenção antes de responder."'
+    )
+    violations = narrator._find_repetition_violations(
+        "Aldric observa Logan com atenção e sorri gentilmente.", history
+    )
+    assert any("início repetido" in v for v in violations)
+
+
+def test_ordinary_non_repeated_narration_is_not_flagged():
+    history = (
+        'Resposta de Aldric Draven anteriormente: '
+        '"Aldric observa Logan com atenção antes de responder."'
+    )
+    violations = narrator._find_repetition_violations(
+        "O vento sopra forte pela praça vazia.", history
+    )
+    assert violations == []
+
+
+def test_repetition_check_is_a_no_op_with_no_prior_history():
+    violations = narrator._find_repetition_violations(
+        "Aldric sorri e responde: \"Sim.\"", "(nenhuma troca anterior nesta cena)"
+    )
+    assert violations == []
+
+
+def test_repetition_violations_are_non_blocking_in_a_full_narrate_call():
+    # Style violations (including repetition) never trigger regeneration
+    # or fallback — the response is still returned as-is.
+    history = (
+        'Resposta de Aldric Draven anteriormente: "Aldric sorri e responde: '
+        '\\"Sou Aldric.\\""'
+    )
+    llm = CapturingLLM("Aldric sorri e responde: \"Claro, pode perguntar.\"")
+    context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+
+    result = narrator.narrate(llm, "Nenhuma mudança mecânica.", context, "Posso perguntar algo?", history)
+
+    assert result == "Aldric sorri e responde: \"Claro, pode perguntar.\""

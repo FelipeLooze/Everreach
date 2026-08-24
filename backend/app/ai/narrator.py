@@ -12,7 +12,26 @@ logger = get_logger("narration")
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "narrator_system.txt"
 _SYSTEM_PROMPT = _PROMPT_PATH.read_text(encoding="utf-8")
 
+# Phase 24K — the Phase 24A.1 audit's own finding: ~225 lines (~15% of
+# the prompt) were OPENING-only instructions ("PRIMEIRA CHEGADA" through
+# "FINAL DA ABERTURA" — first-arrival cinematics, darkness/sound,
+# transport/appearance, other transported people, natives during first
+# arrival, the interface, ending the opening) sent on every single
+# CONTINUATION turn, where none of it is ever relevant. Split out of
+# narrator_system.txt (which is now the CONTINUATION-applicable base)
+# into its own file, appended only when mode == "OPENING". Splitting
+# instead of a runtime string-search/strip keeps this a single, cheap
+# file read at import time — no per-turn parsing cost.
+_OPENING_PROMPT_PATH = Path(__file__).parent / "prompts" / "narrator_system_opening.txt"
+_OPENING_SYSTEM_PROMPT_SUFFIX = "\n\n" + _OPENING_PROMPT_PATH.read_text(encoding="utf-8")
+
 NarrationMode = Literal["OPENING", "CONTINUATION"]
+
+
+def _system_prompt_for(mode: NarrationMode) -> str:
+    if mode == "OPENING":
+        return _SYSTEM_PROMPT + _OPENING_SYSTEM_PROMPT_SUFFIX
+    return _SYSTEM_PROMPT
 
 _OPENING_ALLOWED_SUBJECT_VERBS = {
     "esta",
@@ -897,6 +916,75 @@ def _find_style_violations(text: str) -> list[str]:
     return violations
 
 
+# Phase 24K — Repetition & Narrative Style Quality. NON-BLOCKING (same
+# rule as every other style check above): flags robotic repetition for
+# the trace/log only, never triggers regeneration or drops content —
+# "do not ban reasonable recurring vocabulary" (spec) means a false
+# positive here must never cost real, valid prose. Curated stock
+# phrases + a lightweight lead-in comparison against the recent-history
+# block already passed to narrate(), per the spec's own "prefer
+# lightweight recent-history comparisons first" and "do NOT add
+# embedding calls ... unless demonstrated necessary" — no second LLM
+# call, no vector search.
+_STOCK_PHRASES = (
+    "sorri e responde",
+    "faz uma pausa",
+    "hesita por um momento",
+    "olhos se estreitam",
+    "olhos brilham",
+    "inclina a cabeça",
+    "cruza os braços",
+    "solta um suspiro",
+    "balança a cabeça",
+    "franze a testa",
+)
+
+_RECENT_NARRATOR_RESPONSE = re.compile(
+    r'Resposta (?:de [^:\n]+ anteriormente|narrada anteriormente): "(.*)"'
+)
+
+_LEAD_IN_WORDS = 5
+
+
+def _lead_in(text: str) -> str:
+    first_sentence = _split_sentences(text)[0] if _split_sentences(text) else text
+    words = re.findall(r"\w+", _normalized(first_sentence))
+    return " ".join(words[:_LEAD_IN_WORDS])
+
+
+def _recent_narrator_responses(recent_history: str) -> list[str]:
+    return _RECENT_NARRATOR_RESPONSE.findall(recent_history)
+
+
+def _find_repetition_violations(text: str, recent_history: str) -> list[str]:
+    past_responses = _recent_narrator_responses(recent_history)
+    if not past_responses:
+        return []
+
+    violations = []
+    normalized_text = _normalized(text)
+
+    current_lead_in = _lead_in(text)
+    if current_lead_in and any(
+        current_lead_in == _lead_in(past) for past in past_responses
+    ):
+        violations.append(
+            "início repetido: as mesmas primeiras palavras de um turno narrado recentemente; "
+            "varie a abertura da resposta"
+        )
+
+    for phrase in _STOCK_PHRASES:
+        if phrase in normalized_text and any(
+            phrase in _normalized(past) for past in past_responses
+        ):
+            violations.append(
+                f"frase feita repetida de um turno recente: {phrase!r}; descreva a mesma "
+                "ação/reação com outras palavras"
+            )
+
+    return violations
+
+
 def _split_paragraphs(text: str) -> list[str]:
     return [paragraph.strip() for paragraph in re.split(r"\n\s*\n", text.strip()) if paragraph.strip()]
 
@@ -1281,6 +1369,7 @@ def narrate(
     - STYLE: cosmetic prose/format issues. These are logged only and never cause
       another LLM generation by themselves.
     """
+    system_prompt = _system_prompt_for(mode)
     current_turn_block = _build_current_turn_block(player_input)
     prompt = (
         f"MODO DA CENA:\n{mode}\n\n"
@@ -1292,13 +1381,13 @@ def narrate(
         "Escreva somente o próximo momento da cena, em português do Brasil."
     )
 
-    logger.debug("NARRATOR SYSTEM PROMPT\n%s", _SYSTEM_PROMPT)
+    logger.debug("NARRATOR SYSTEM PROMPT\n%s", system_prompt)
     logger.debug("SCENE CONTEXT\n%s", context)
     logger.debug("RECENT HISTORY\n%s", recent_history)
     logger.debug("CURRENT TURN BLOCK\n%s", current_turn_block)
     logger.debug("AUTHORITATIVE FACTS\n%s", mechanical_summary)
 
-    raw_response = llm_service.generate(_SYSTEM_PROMPT, prompt)
+    raw_response = llm_service.generate(system_prompt, prompt)
     logger.debug("RAW NARRATOR RESPONSE\n%s", raw_response)
     response = _strip_prompt_leak(raw_response)
     if response != raw_response.strip():
@@ -1363,7 +1452,11 @@ def narrate(
                 simulated_player_names,
             )
         )
-        style_violations = [] if empty_violations else _find_style_violations(draft)
+        style_violations = (
+            []
+            if empty_violations
+            else _find_style_violations(draft) + _find_repetition_violations(draft, recent_history)
+        )
 
         hard_violations = (
             empty_violations
@@ -1431,7 +1524,7 @@ def narrate(
             attempt,
             "\n".join(hard_violations),
         )
-        raw_revision = llm_service.generate(_SYSTEM_PROMPT, revision_prompt)
+        raw_revision = llm_service.generate(system_prompt, revision_prompt)
         logger.debug("RAW NARRATOR RESPONSE (REVISION %s)\n%s", attempt, raw_revision)
         draft = _strip_prompt_leak(raw_revision)
         if draft != raw_revision.strip():
@@ -1464,7 +1557,7 @@ def narrate(
         )
         return safe
 
-    remaining_style = _find_style_violations(draft)
+    remaining_style = _find_style_violations(draft) + _find_repetition_violations(draft, recent_history)
     remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
     remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
     remaining_unauthorized_combatant = _find_unauthorized_combatant_violations(draft, context)

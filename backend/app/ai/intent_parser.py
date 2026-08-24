@@ -37,12 +37,15 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
     unreachable or returns something unparseable, we fall back to FREEFORM so the
     action still gets narrated instead of failing the whole request."""
     prompt = f"Contexto do mundo:\n{context}\n\nAção do jogador:\n{text}"
+    logger.debug("INTENT PARSER PROMPT\n%s", prompt)
 
     try:
         raw = llm_service.generate(_SYSTEM_PROMPT, prompt)
     except LLMServiceError:
         logger.info("intent parser: LLM unavailable, falling back to FREEFORM")
         return Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=text)
+
+    logger.debug("INTENT PARSER RAW RESPONSE\n%s", raw)
 
     (
         intent_type,

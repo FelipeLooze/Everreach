@@ -4,7 +4,7 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from app.ai.llm_service import LLMService, OllamaLLMService, build_llm_service
+from app.ai.llm_service import LLMService, LLMServiceError, OllamaLLMService, build_llm_service
 from app.core.config import Settings
 from app.core.gpu_coordinator import _lock, set_llm_release_hook
 
@@ -174,3 +174,63 @@ def test_build_llm_service_registers_the_release_hook_with_the_coordinator():
     assert len(calls) == 1
     assert calls[0]["keep_alive"] == 0
     assert isinstance(service, OllamaLLMService)
+
+
+# --- Phase 24O — Local Model Configuration & Failure Policy ---
+
+
+def _error_response(status: int, error_message: str, url="http://x") -> httpx.Response:
+    return httpx.Response(
+        status, json={"error": error_message}, request=httpx.Request("POST", url)
+    )
+
+
+def _malformed_response(url="http://x") -> httpx.Response:
+    return httpx.Response(200, content=b"not valid json", request=httpx.Request("POST", url))
+
+
+def test_generate_error_message_includes_ollama_own_error_detail():
+    # Verified live against the real Ollama server: a missing model
+    # returns HTTP 404 with {"error": "model 'x' not found"} — httpx's
+    # own exception text alone ("Client error '404 Not Found'...") never
+    # surfaces that detail, making a misconfigured OLLAMA_MODEL much
+    # harder to diagnose from logs alone.
+    response = _error_response(404, "model 'ghost-model:latest' not found")
+    with patch("httpx.post", return_value=response):
+        with pytest.raises(LLMServiceError, match="model 'ghost-model:latest' not found"):
+            _service().generate("system", "prompt")
+
+
+def test_generate_raises_llm_service_error_on_malformed_json_response():
+    with patch("httpx.post", return_value=_malformed_response()):
+        with pytest.raises(LLMServiceError):
+            _service().generate("system", "prompt")
+
+
+def test_generate_raises_llm_service_error_when_success_response_carries_an_error_field():
+    # Defensive: an "error" key inside an otherwise-200 body must never
+    # be silently treated as an empty generated response.
+    response = _json_response({"error": "generation failed mid-stream"})
+    with patch("httpx.post", return_value=response):
+        with pytest.raises(LLMServiceError, match="generation failed mid-stream"):
+            _service().generate("system", "prompt")
+
+
+def test_embed_error_message_includes_ollama_own_error_detail():
+    response = _error_response(404, "model 'test-embed-model' not found")
+    with patch("httpx.post", return_value=response):
+        with pytest.raises(LLMServiceError, match="model 'test-embed-model' not found"):
+            _service().embed("some text")
+
+
+def test_embed_raises_llm_service_error_on_malformed_json_response():
+    with patch("httpx.post", return_value=_malformed_response()):
+        with pytest.raises(LLMServiceError):
+            _service().embed("some text")
+
+
+def test_embed_raises_llm_service_error_when_success_response_carries_an_error_field():
+    response = _json_response({"error": "embedding failed"})
+    with patch("httpx.post", return_value=response):
+        with pytest.raises(LLMServiceError, match="embedding failed"):
+            _service().embed("some text")

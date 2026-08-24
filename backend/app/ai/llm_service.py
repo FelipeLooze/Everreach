@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import json
 
 import httpx
 
@@ -7,6 +8,27 @@ from app.core.gpu_coordinator import gpu_heavy_operation, set_llm_release_hook
 from app.core.logging import get_logger
 
 logger = get_logger("llm")
+
+
+def _ollama_error_detail(response: httpx.Response) -> str | None:
+    """Phase 24O — Ollama returns a JSON body ({"error": "..."}) even on
+    a non-2xx response (verified live: a missing model returns 404 with
+    {"error": "model 'x' not found"}); httpx's own exception message
+    ("Client error '404 Not Found' for url ...") never includes this,
+    so without this every HTTP-level failure — model missing, malformed
+    request, anything else Ollama itself distinguishes — collapsed into
+    the same generic, undiagnosable message. Best-effort: the body might
+    not be JSON at all (a proxy error page, a truncated response), which
+    must never itself raise out of an error-handling path."""
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, str) and error:
+            return error
+    return None
 
 
 class LLMServiceError(Exception):
@@ -105,10 +127,37 @@ class OllamaLLMService(LLMService):
             logger.warning("Ollama request timed out: %s", exc)
             raise LLMServiceError("The local model took too long to respond.") from exc
         except httpx.HTTPError as exc:
-            logger.warning("Ollama request failed: %s", exc)
-            raise LLMServiceError(f"Ollama request failed: {exc}") from exc
+            # Phase 24O — includes Ollama's own error detail when the
+            # response body has one (e.g. "model 'x' not found" on a 404
+            # from a misconfigured OLLAMA_MODEL) instead of only httpx's
+            # generic "Client error '404 Not Found'..." message.
+            detail = _ollama_error_detail(exc.response) if isinstance(exc, httpx.HTTPStatusError) else None
+            logger.warning("Ollama request failed: %s%s", exc, f" ({detail})" if detail else "")
+            raise LLMServiceError(
+                f"Ollama request failed: {detail or exc}"
+            ) from exc
 
-        data = response.json()
+        try:
+            data = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            # Phase 24O — a 200 response whose body isn't valid JSON at
+            # all (a malformed response, not a documented Ollama failure
+            # mode observed live, but never allowed to escape as a raw,
+            # untyped exception either).
+            logger.warning("Ollama returned a malformed (non-JSON) response: %s", exc)
+            raise LLMServiceError("Ollama returned a malformed response.") from exc
+
+        error_detail = data.get("error") if isinstance(data, dict) else None
+        if error_detail:
+            # Phase 24O — defensive: an error reported inside an
+            # otherwise-200 body (not observed live against this Ollama
+            # version, which uses HTTP status codes for the failures
+            # tested, but Ollama's own API is not contractually
+            # guaranteed to always do so). Must never be silently
+            # treated as an empty generated response.
+            logger.warning("Ollama reported a generation error: %s", error_detail)
+            raise LLMServiceError(f"Ollama generation failed: {error_detail}")
+
         # Phase 24B — generation result metadata, DEBUG-only. Ollama's
         # own response already carries this; nothing previously looked
         # at it. Doesn't change generate()'s return contract (still a
@@ -146,10 +195,21 @@ class OllamaLLMService(LLMService):
             logger.warning("Ollama request timed out: %s", exc)
             raise LLMServiceError("The local model took too long to respond.") from exc
         except httpx.HTTPError as exc:
-            logger.warning("Ollama embedding request failed: %s", exc)
-            raise LLMServiceError(f"Ollama embedding request failed: {exc}") from exc
+            detail = _ollama_error_detail(exc.response) if isinstance(exc, httpx.HTTPStatusError) else None
+            logger.warning("Ollama embedding request failed: %s%s", exc, f" ({detail})" if detail else "")
+            raise LLMServiceError(f"Ollama embedding request failed: {detail or exc}") from exc
 
-        data = response.json()
+        try:
+            data = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning("Ollama returned a malformed (non-JSON) embedding response: %s", exc)
+            raise LLMServiceError("Ollama returned a malformed embedding response.") from exc
+
+        error_detail = data.get("error") if isinstance(data, dict) else None
+        if error_detail:
+            logger.warning("Ollama reported an embedding error: %s", error_detail)
+            raise LLMServiceError(f"Ollama embedding failed: {error_detail}")
+
         embeddings = data.get("embeddings") or []
         if not embeddings:
             raise LLMServiceError("Ollama returned no embedding.")

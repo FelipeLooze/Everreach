@@ -12,12 +12,13 @@ Two checks, one reused (defense in depth) and one genuinely new:
    19 provides defense in depth").
 
 2. NPC speech must respect NPC Knowledge (genuinely new — narrator.py
-   has no database access to check this itself): a claim shaped like
-   the active NPC's own dialogue (starts with an em dash, matching
-   narrator.py's own _is_dialogue_paragraph convention) that names a
-   proper noun the NPC has no KnowledgeFact for is rejected — an NPC
-   stating "the king died yesterday" when nothing ever taught them that
-   fact is exactly the spec's own worked example.
+   has no database access to check this itself): a claim classified
+   NPC_DIALOGUE (Phase 24G; dash-led, colon-attributed, or quote-marked —
+   the same shapes narrator.py's own _paragraph_has_spoken_dialogue
+   already recognizes) that names a proper noun the NPC has no
+   KnowledgeFact for is rejected — an NPC stating "the king died
+   yesterday" when nothing ever taught them that fact is exactly the
+   spec's own worked example.
 """
 import re
 
@@ -32,10 +33,6 @@ from app.game.npcs.service import known_facts
 
 
 _DIALOGUE_PREFIX = re.compile(r"^[—-]\s*")
-
-
-def _is_npc_dialogue_claim(text: str) -> bool:
-    return text.strip().startswith(("—", "-"))
 
 
 def _dialogue_proper_nouns(text: str) -> set[str]:
@@ -82,7 +79,7 @@ def validate_knowledge(
         safe_names = known_names | {proposal.active_npc_name or "", proposal.character_name}
 
         for claim in claims:
-            if not _is_npc_dialogue_claim(claim.text):
+            if not claim.is_(ClaimCategory.NPC_DIALOGUE):
                 continue
             mentioned = _dialogue_proper_nouns(claim.text)
             if not mentioned:

@@ -79,6 +79,37 @@ def test_a_claim_matching_nothing_defaults_to_decorative():
     assert categories == frozenset({ClaimCategory.DECORATIVE})
 
 
+# --- Phase 24G — NPC_DIALOGUE claim category ---
+
+
+def test_dash_led_dialogue_is_classified_as_npc_dialogue():
+    categories = classify_claim("— Sou Aldric, o ancião desta vila.", character_name="Logan")
+
+    assert ClaimCategory.NPC_DIALOGUE in categories
+
+
+def test_colon_attributed_dialogue_is_classified_as_npc_dialogue():
+    # Screenplay-style attribution ("Nome: — fala") — the shape a local
+    # model sometimes uses instead of the expected dash convention;
+    # narrator.py already treats this as dialogue (_is_dialogue_paragraph),
+    # and claim classification must not disagree with it.
+    categories = classify_claim("Aldric: — Sim, é verdade.", character_name="Logan")
+
+    assert ClaimCategory.NPC_DIALOGUE in categories
+
+
+def test_quote_marked_dialogue_is_classified_as_npc_dialogue():
+    categories = classify_claim('Aldric diz "Sim, é verdade."', character_name="Logan")
+
+    assert ClaimCategory.NPC_DIALOGUE in categories
+
+
+def test_plain_narration_is_not_classified_as_npc_dialogue():
+    categories = classify_claim("A luz do fogo dança pela parede.", character_name="Logan")
+
+    assert ClaimCategory.NPC_DIALOGUE not in categories
+
+
 def test_extract_claims_classifies_each_sentence_independently():
     text = "Osgar entra na taverna. Logan sorri e o abraça."
 

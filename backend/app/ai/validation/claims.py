@@ -18,7 +18,13 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 
-from app.ai.narrator import _mentions, _normalized, _protagonist_agency_violations, _split_sentences
+from app.ai.narrator import (
+    _mentions,
+    _normalized,
+    _paragraph_has_spoken_dialogue,
+    _protagonist_agency_violations,
+    _split_sentences,
+)
 
 
 class ClaimCategory(StrEnum):
@@ -29,6 +35,13 @@ class ClaimCategory(StrEnum):
     MECHANICAL = "MECHANICAL"
     PLAYER_VOLUNTARY = "PLAYER_VOLUNTARY"
     PERSISTENT_CANON = "PERSISTENT_CANON"
+    # Phase 24G — reuses narrator.py's own _paragraph_has_spoken_dialogue
+    # (dash-led, colon-attributed, and quote-mark shapes) instead of a
+    # second, narrower per-validator heuristic. Concrete gap this closed:
+    # app.ai.validation.knowledge's own dialogue check only recognized a
+    # leading dash, silently missing the colon-attributed and quote-mark
+    # dialogue shapes narrator.py itself already treats as spoken.
+    NPC_DIALOGUE = "NPC_DIALOGUE"
 
 
 @dataclass(frozen=True)
@@ -155,6 +168,11 @@ def classify_claim(
 
     if any(name and _mentions(text, name) for name in known_names):
         categories.add(ClaimCategory.AUTHORITATIVE)
+
+    # Unnormalized `text`, not `normalized_text`: the colon-attribution
+    # shape requires an uppercase leading letter, which casefold destroys.
+    if _paragraph_has_spoken_dialogue(text):
+        categories.add(ClaimCategory.NPC_DIALOGUE)
 
     if not categories:
         categories.add(ClaimCategory.DECORATIVE)

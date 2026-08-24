@@ -93,6 +93,48 @@ def test_npc_dialogue_stating_a_fact_it_actually_knows_is_allowed(db_session):
     assert result.valid is True
 
 
+def test_colon_attributed_dialogue_fabricating_a_fact_is_also_rejected(db_session):
+    # Phase 24G — before the NPC_DIALOGUE claim category existed, this
+    # validator's own dialogue check only recognized a leading dash and
+    # silently skipped this screenplay-style ("Nome: — fala") shape,
+    # even though narrator.py itself already treats it as dialogue.
+    campaign = create_campaign(db_session, "NPC Sabe De Mais Estilo Roteiro")
+    fact = KnowledgeFact(
+        campaign_id=campaign.id, subject="npc:npc_fake", fact_key="mira_knows_nothing_yet_2",
+        statement="Mira mora em Cardal.",
+    )
+    db_session.add(fact)
+    db_session.flush()
+
+    proposal = _proposal(
+        "Mira: — O rei de Arven morreu ontem.",
+        active_npc_id="npc_fake", active_npc_name="Mira",
+    )
+
+    result = validate_narrative_proposal(db_session, campaign.id, proposal)
+
+    assert result.valid is False
+
+
+def test_quote_marked_dialogue_fabricating_a_fact_is_also_rejected(db_session):
+    campaign = create_campaign(db_session, "NPC Sabe De Mais Com Aspas")
+    fact = KnowledgeFact(
+        campaign_id=campaign.id, subject="npc:npc_fake", fact_key="mira_knows_nothing_yet_3",
+        statement="Mira mora em Cardal.",
+    )
+    db_session.add(fact)
+    db_session.flush()
+
+    proposal = _proposal(
+        'Mira diz "O rei de Arven morreu ontem."',
+        active_npc_id="npc_fake", active_npc_name="Mira",
+    )
+
+    result = validate_narrative_proposal(db_session, campaign.id, proposal)
+
+    assert result.valid is False
+
+
 def test_non_dialogue_narration_is_not_checked_against_npc_knowledge(db_session):
     """Only claims shaped like the NPC's OWN spoken dialogue are checked
     against its Knowledge — ordinary narration mentioning a name is a

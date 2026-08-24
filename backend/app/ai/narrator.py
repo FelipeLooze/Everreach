@@ -566,8 +566,20 @@ _FABRICATED_TURN_MESSAGE = (
     "jogador nem a reação a ele, mesmo sem usar o nome do protagonista"
 )
 
+# Phase 24H — "Eu vou verificar." as bare (non-dialogue) narration: the
+# narrator speaking in the protagonist's own first-person voice without
+# ever using their name. "eu" is unambiguously a subject pronoun in
+# Portuguese (unlike the name, which can legitimately appear as an
+# object — "para Logan" — so subject_pattern below needs an exclusion
+# this doesn't).
+_FIRST_PERSON_NARRATION_PATTERN = re.compile(r"(?:^|[.\n]\s*)eu\s+\w+", re.IGNORECASE)
+
 def _protagonist_agency_violations(
-    text: str, character_name: str, mode: NarrationMode = "CONTINUATION"
+    text: str,
+    character_name: str,
+    mode: NarrationMode = "CONTINUATION",
+    *,
+    dialogue_context: bool | None = None,
 ) -> list[str]:
     """Detect the narrator inventing NEW actions/dialogue for the protagonist.
 
@@ -583,6 +595,15 @@ def _protagonist_agency_violations(
     and canonical scene state, but it must not assign even a neutral position,
     awakening, materialization, posture or first action to the protagonist unless
     that state/action is explicitly present in authoritative context.
+
+    dialogue_context overrides the first-person check's own dialogue-shape
+    auto-detection (Phase 24H) for a `text` fragment that no longer carries
+    its original paragraph's dialogue marker — the one caller that needs
+    this is _drop_agency_violations, which checks one sentence at a time and
+    would otherwise see a dash-led paragraph's LATER sentences (the dash
+    isn't repeated per sentence) as bare narration. None of the other checks
+    in this function need it: they all key on the character's literal name,
+    which they already tolerate appearing inside dialogue text.
     """
     if not character_name:
         return []
@@ -617,6 +638,25 @@ def _protagonist_agency_violations(
     )
     if mental_state_pattern.search(text):
         return [_AGENCY_VIOLATION_MESSAGE]
+
+    # Phase 24H — every check above is anchored to the character's
+    # literal name; none of them catch the narrator writing "Eu vou
+    # verificar." as bare narration, which is the protagonist's voice
+    # with the name simply omitted (spec's own required regression
+    # case). Scoped to non-dialogue paragraphs only — an NPC's own
+    # first-person speech ("— Eu vou até lá primeiro.") is legitimate
+    # and must not be flagged; paragraph is the same granularity
+    # _scan_unauthorized_speakers already uses for this distinction.
+    for paragraph in _split_paragraphs(text):
+        is_dialogue = (
+            _paragraph_has_spoken_dialogue(paragraph)
+            if dialogue_context is None
+            else dialogue_context
+        )
+        if is_dialogue:
+            continue
+        if _FIRST_PERSON_NARRATION_PATTERN.search(paragraph):
+            return [_AGENCY_VIOLATION_MESSAGE]
 
     # A fabricated protagonist reply doesn't always carry an explicit
     # "— ... — diz Logan" attribution the checks above look for — this
@@ -1115,9 +1155,17 @@ def _drop_agency_violations(
 
     kept_paragraphs = []
     for paragraph in paragraphs:
+        # Computed once per paragraph (Phase 24H): _split_sentences below
+        # doesn't repeat a dash-led paragraph's opening marker on its
+        # later sentences, so the per-sentence checks below need this
+        # passed in explicitly rather than re-detecting it from a single,
+        # possibly dash-less sentence.
+        paragraph_is_dialogue = _paragraph_has_spoken_dialogue(paragraph)
         kept_sentences = []
         for sentence in _split_sentences(paragraph):
-            if _protagonist_agency_violations(sentence, character_name, mode):
+            if _protagonist_agency_violations(
+                sentence, character_name, mode, dialogue_context=paragraph_is_dialogue
+            ):
                 break
             kept_sentences.append(sentence)
         if kept_sentences:

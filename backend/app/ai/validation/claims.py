@@ -23,6 +23,7 @@ from app.ai.narrator import (
     _normalized,
     _paragraph_has_spoken_dialogue,
     _protagonist_agency_violations,
+    _split_paragraphs,
     _split_sentences,
 )
 
@@ -137,19 +138,32 @@ def classify_claim(
     *,
     character_name: str = "",
     known_names: tuple[str, ...] = (),
+    dialogue_context: bool | None = None,
 ) -> frozenset[ClaimCategory]:
+    """dialogue_context (Phase 24H): whether `text`'s PARENT PARAGRAPH is
+    spoken dialogue, when the caller already knows this. extract_claims
+    passes it explicitly because a dash-led paragraph's later sentences
+    don't repeat the dash — a single sentence checked in isolation can't
+    always tell it's still inside dialogue on its own. None (the default,
+    used by direct callers/tests passing an already-isolated sentence)
+    falls back to auto-detecting from `text` itself, same as before this
+    parameter existed."""
     categories: set[ClaimCategory] = set()
     normalized_text = _normalized(text)
 
     if _SENSORY_KEYWORDS.search(normalized_text):
         categories.add(ClaimCategory.SENSORY)
 
+    is_dialogue = _paragraph_has_spoken_dialogue(text) if dialogue_context is None else dialogue_context
+
     # Reuses app.ai.narrator's own careful subject-position detection
     # (object-preposition exclusion, etc.) instead of a second, weaker
     # "mentions the name anywhere + a voluntary verb anywhere" heuristic
     # — "Osgar sorri para Logan" must not classify as PLAYER_VOLUNTARY
     # just because Logan is named as the object, not the subject.
-    if character_name and _protagonist_agency_violations(text, character_name):
+    if character_name and _protagonist_agency_violations(
+        text, character_name, dialogue_context=is_dialogue
+    ):
         categories.add(ClaimCategory.PLAYER_VOLUNTARY)
 
     # Phase 19E — catches "Terror fills you"-shaped claims the check
@@ -169,9 +183,7 @@ def classify_claim(
     if any(name and _mentions(text, name) for name in known_names):
         categories.add(ClaimCategory.AUTHORITATIVE)
 
-    # Unnormalized `text`, not `normalized_text`: the colon-attribution
-    # shape requires an uppercase leading letter, which casefold destroys.
-    if _paragraph_has_spoken_dialogue(text):
+    if is_dialogue:
         categories.add(ClaimCategory.NPC_DIALOGUE)
 
     if not categories:
@@ -186,13 +198,29 @@ def extract_claims(
     character_name: str = "",
     known_names: tuple[str, ...] = (),
 ) -> list[NarrativeClaim]:
-    return [
-        NarrativeClaim(
-            index=index,
-            text=sentence,
-            categories=classify_claim(
-                sentence, character_name=character_name, known_names=known_names
-            ),
-        )
-        for index, sentence in enumerate(split_into_claims(text))
-    ]
+    """Phase 24H — iterates paragraphs (not the flat sentence list
+    split_into_claims would give directly) so each sentence's classification
+    can be told whether ITS PARAGRAPH is dialogue, computed once from the
+    whole paragraph rather than re-derived from a single sentence that may
+    have lost the paragraph's own leading dash. Sentence content and global
+    ordering are unchanged from the flat approach — this only threads
+    dialogue_context through, it doesn't change what text becomes a claim."""
+    claims: list[NarrativeClaim] = []
+    index = 0
+    for paragraph in _split_paragraphs(text):
+        paragraph_is_dialogue = _paragraph_has_spoken_dialogue(paragraph)
+        for sentence in split_into_claims(paragraph):
+            claims.append(
+                NarrativeClaim(
+                    index=index,
+                    text=sentence,
+                    categories=classify_claim(
+                        sentence,
+                        character_name=character_name,
+                        known_names=known_names,
+                        dialogue_context=paragraph_is_dialogue,
+                    ),
+                )
+            )
+            index += 1
+    return claims

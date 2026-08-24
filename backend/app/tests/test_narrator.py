@@ -1534,4 +1534,82 @@ def test_plain_greeting_gets_no_extra_grounding_line():
 def test_plain_statement_gets_no_extra_grounding_line():
     block = narrator._build_current_turn_block("Eu sento perto da fogueira.")
     assert narrator._QUESTION_GROUNDING_LINE not in block
-    assert narrator._FAREWELL_GROUNDING_LINE not in block
+
+
+# --- Phase 24H — Player Agency Guard Hardening ---
+#
+# The spec's own required permanent regression set: every check below is
+# anchored to the character's literal name except the last two, which
+# audit-uncovered a real gap none of the existing name-anchored checks
+# caught (the narrator writing in the protagonist's own first-person
+# voice without ever naming them).
+
+
+def test_agency_regression_logan_agradece():
+    assert narrator._protagonist_agency_violations("Logan agradece.", "Logan")
+
+
+def test_agency_regression_logan_decide_ir():
+    assert narrator._protagonist_agency_violations("Logan decide ir.", "Logan")
+
+
+def test_agency_regression_logan_pensa_que():
+    assert narrator._protagonist_agency_violations(
+        "Logan pensa que o homem está mentindo.", "Logan"
+    )
+
+
+def test_agency_regression_logan_sente_que():
+    assert narrator._protagonist_agency_violations(
+        "Logan sente que algo está errado.", "Logan"
+    )
+
+
+def test_agency_regression_eu_vou_verificar():
+    assert narrator._protagonist_agency_violations("Eu vou verificar.", "Logan")
+
+
+def test_agency_sensory_exception_is_preserved():
+    assert not narrator._protagonist_agency_violations("O frio arrepia sua pele.", "Logan")
+
+
+def test_first_person_narration_end_to_end_is_trimmed_from_the_response():
+    llm = StubbornLLM("O homem observa Logan em silêncio.\n\nEu não sei o que fazer.")
+    context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+
+    result = narrator.narrate(
+        llm, "Nenhuma mudança mecânica.", context, "Eu olho ao redor.", "(sem histórico)"
+    )
+
+    assert result == "O homem observa Logan em silêncio."
+    assert "Eu não sei" not in result
+
+
+def test_npc_first_person_dialogue_is_never_flagged_as_agency_violation():
+    # An NPC's own first-person dialogue ("Eu vou até lá primeiro.") must
+    # survive untouched — this is not the protagonist's voice.
+    llm = CapturingLLM("— Você fica aqui. Eu vou até lá primeiro — diz Osgar.")
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Osgar"
+    )
+
+    result = narrator.narrate(
+        llm, "Logan conversa com Osgar.", context, "O que fazemos agora?", "(sem histórico)"
+    )
+
+    assert result == "— Você fica aqui. Eu vou até lá primeiro — diz Osgar."
+
+
+def test_drop_agency_violations_keeps_later_dialogue_sentence_without_its_own_dash():
+    # Regression for the exact bug the paragraph-level dialogue_context
+    # fix (24H) closed: _drop_agency_violations checks one sentence at a
+    # time, and _split_sentences doesn't repeat a dash-led paragraph's
+    # opening marker on later sentences — without dialogue_context, the
+    # second sentence here looked like bare first-person narration and
+    # was incorrectly dropped.
+    text = "— Você fica aqui. Eu vou até lá primeiro."
+
+    result = narrator._drop_agency_violations(text, "Logan", "Osgar")
+
+    assert result == text

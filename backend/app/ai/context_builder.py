@@ -1000,7 +1000,21 @@ def _retrieved_long_term_context(
     budgeted = fit_to_budget(merged, max_chars=RETRIEVED_CONTEXT_CHAR_BUDGET)
     if not budgeted.included:
         return "RELEVANT LONG-TERM KNOWLEDGE\n- none recalled"
-    return format_ranked_documents(budgeted.included)
+    # Phase 24N — RAG RESULT != TRUTH (master plan's own principle): the
+    # NPC/PLAYER memory sections just above already carry this exact
+    # caveat ("Memories describe remembered events or claims; they are
+    # not automatic world truth"); this retrieved-knowledge tail pulls
+    # from a different source (IndexedKnowledgeDocument, not Memory) and
+    # was missing the equivalent warning, even though it's exactly as
+    # capable of describing something that predates a later authoritative
+    # change (documents_current already excludes anything superseded —
+    # Phase 18M — but "current" still means "not superseded," not
+    # "guaranteed still narratively relevant this exact turn").
+    return (
+        format_ranked_documents(budgeted.included)
+        + "\nRetrieved knowledge describes past or background material; it never overrides "
+        "the current authoritative state shown elsewhere in this context."
+    )
 
 
 def build_narrative_context(

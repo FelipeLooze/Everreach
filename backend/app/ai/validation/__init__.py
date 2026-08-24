@@ -23,6 +23,7 @@ from app.ai.validation import temporal  # noqa: F401 — Phase 19M
 from app.ai.validation import mechanical  # noqa: F401 — Phase 19N
 from app.ai.validation import persistent  # noqa: F401 — Phase 19O
 from app.ai.validation import contradiction  # noqa: F401 — Phase 19P
+from app.ai.validation import relevance  # noqa: F401 — Phase 24J
 
 __all__ = [
     "NarrativeProposal",

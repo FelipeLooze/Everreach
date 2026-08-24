@@ -1153,6 +1153,62 @@ def test_narrator_allows_a_bystander_npc_to_speak_after_being_explicitly_introdu
     assert len(llm.calls) == 1
 
 
+def test_narrator_uses_safe_fallback_when_a_promised_reply_never_arrives():
+    # Real bug report ("por que quase sempre a mensagem acaba no 'e
+    # responde:'"): the model repeatedly narrates right up to the NPC's
+    # line — "...e responde:", "Ela se inclina... com um ar
+    # confidencial:" — and then never actually delivers the dialogue,
+    # especially for questions with no obvious canned answer (the NPC's
+    # own name, where to find work). Nothing previously caught "this
+    # response promised speech and never gave any" — it wasn't literally
+    # an empty string, so _empty_response_violations let it through.
+    llm = StubbornLLM(
+        "A mulher idosa sorri e responde:\n\n"
+        "Ela se inclina levemente para a frente, com um ar confidencial:\n\n"
+        "A mulher espera sua resposta, esperançosa de poder estabelecer uma "
+        "conexão amigável."
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Lena Hallow (estalajadeira; activity=WORKING)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Lena Hallow"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Logan pergunta o nome da estalajadeira.",
+        context,
+        "Qual o seu nome?",
+        "(sem histórico)",
+    )
+
+    assert result == "Lena Hallow permanece em silêncio."
+    assert len(llm.calls) == 3
+
+
+def test_narrator_accepts_a_fulfilled_speech_promise():
+    llm = StubbornLLM(
+        "A mulher sorri e responde:\n\n"
+        "— Meu nome é Lena, jovem viajante."
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Lena Hallow (estalajadeira; activity=WORKING)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Lena Hallow"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Logan pergunta o nome da estalajadeira.",
+        context,
+        "Qual o seu nome?",
+        "(sem histórico)",
+    )
+
+    assert result == llm.response
+    assert len(llm.calls) == 1
+
+
 def test_narrator_catches_a_whole_fabricated_back_and_forth_with_no_interlocutor():
     # Real bug report: with no interlocutor authorized, the narrator wrote
     # a FULL multi-turn exchange in one response — a fabricated

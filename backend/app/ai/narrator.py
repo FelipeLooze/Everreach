@@ -381,6 +381,38 @@ def _paragraph_has_spoken_dialogue(paragraph: str) -> bool:
     return _is_dialogue_paragraph(paragraph) or bool(_QUOTE_MARK.search(paragraph))
 
 
+_SPEECH_PROMISE_PARAGRAPH = re.compile(
+    rf"\b(?:{_SPEECH_VERBS}|inclina(?:-se)?|estende|aponta|debru[çc]a(?:-se)?)\b[^.\n]*:\s*$",
+    re.IGNORECASE,
+)
+_UNFULFILLED_SPEECH_PROMISE_MESSAGE = (
+    "a resposta promete uma fala (termina em 'responde:', 'inclina-se... :', etc.) "
+    "mas nunca a entrega em nenhum parágrafo; ou complete a fala prometida "
+    "imediatamente, ou reescreva sem prometer uma fala que não vai vir"
+)
+
+
+def _find_unfulfilled_speech_promise_violations(text: str) -> list[str]:
+    """A distinct local-model failure mode from an outright empty response:
+    the draft narrates right up to the edge of an NPC's line — a paragraph
+    ending in a colon after a speech/gesture verb ("... e responde:",
+    "Ela se inclina... com um ar confidencial:") — and then never actually
+    delivers it anywhere in the draft, sometimes across several such
+    paragraphs in a row, leaving the player's direct question (often one
+    with no obvious canned answer, like the NPC's own name) completely
+    unanswered while reading as if a reply were coming. Only fires when
+    NO paragraph in the whole draft has any spoken dialogue at all — a
+    real reply anywhere after the promise means it was fulfilled."""
+    paragraphs = _split_paragraphs(text)
+    if not paragraphs:
+        return []
+    if any(_paragraph_has_spoken_dialogue(paragraph) for paragraph in paragraphs):
+        return []
+    if any(_SPEECH_PROMISE_PARAGRAPH.search(paragraph.strip()) for paragraph in paragraphs):
+        return [_UNFULFILLED_SPEECH_PROMISE_MESSAGE]
+    return []
+
+
 def _single_unattributed_quoted_speaker(paragraph: str, visible_npcs: list[str]) -> str | None:
     """Fallback for real dialogue this local model writes in a shape
     _paragraph_speaker_among's stricter patterns don't recognize — e.g.
@@ -1122,6 +1154,9 @@ def narrate(
     # Style violations are NEVER included in the rewrite reasons.
     for attempt in range(1, 3):
         empty_violations = _empty_response_violations(draft)
+        unfulfilled_speech_promise_violations = (
+            [] if empty_violations else _find_unfulfilled_speech_promise_violations(draft)
+        )
         canon_violations = [] if empty_violations else _find_canon_violations(
             draft, validation_context, player_input
         )
@@ -1153,6 +1188,7 @@ def narrate(
 
         hard_violations = (
             empty_violations
+            + unfulfilled_speech_promise_violations
             + canon_violations
             + meta_violations
             + agency_violations
@@ -1232,6 +1268,19 @@ def narrate(
         logger.error(
             "FALLBACK REASON: response was empty after stripping leaked prompt/instruction "
             "text on every revision attempt. Returning deterministic safe fallback.\nFALLBACK:\n%s",
+            safe,
+        )
+        return safe
+
+    remaining_unfulfilled_speech_promise = _find_unfulfilled_speech_promise_violations(draft)
+    if remaining_unfulfilled_speech_promise:
+        # Nothing to trim toward — the whole draft IS the unfulfilled
+        # promise, there is no dialogue anywhere in it to keep.
+        safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        logger.error(
+            "FALLBACK REASON: draft still promised a reply that never arrived after hard "
+            "revisions: %s\nFALLBACK:\n%s",
+            remaining_unfulfilled_speech_promise,
             safe,
         )
         return safe

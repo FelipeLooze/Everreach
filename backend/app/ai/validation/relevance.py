@@ -77,6 +77,7 @@ from sqlalchemy.orm import Session
 from app.ai.context_builder import _proper_nouns
 from app.ai.conversational_act import ConversationalAct
 from app.ai.conversational_act import ConversationalSubject
+from app.ai.conversational_act import _SERVICE_WORDS
 from app.ai.conversational_act import classify as classify_conversational_act
 from app.ai.conversational_act import classify_subject
 from app.ai.narrator import _mentions, _mentions_canonical_name, _normalized, _private_location_fields
@@ -164,7 +165,7 @@ def _gives_a_concrete_named_answer(response_text: str) -> bool:
 
 
 def _strong_signal(
-    subject: ConversationalSubject, response_text: str, active_npc_name: str, context: str
+    subject: ConversationalSubject, player_input: str, response_text: str, active_npc_name: str, context: str
 ) -> bool | None:
     """True/False if a subject-specific, data-driven acceptance signal
     applies here; None if no such signal exists for this subject/context
@@ -178,6 +179,22 @@ def _strong_signal(
         if not location_name:
             return None
         return _mentions_canonical_name(response_text, location_name)
+    if subject == ConversationalSubject.SERVICE:
+        # Phase 24J.3 — confirmed via a real playtest: "tem alguma
+        # estalagem que posso me hospedar?" answered with vague,
+        # pleasant, on-topic-sounding praise of the settlement (no
+        # mention of "estalagem" or the inn's own name at all) passed
+        # the old weak-signal check anyway, because ANY proper noun
+        # (here, the village's own already-known name) was accepted as
+        # "gave a specific answer." An existence/availability question
+        # about a service needs the specific SERVICE WORD the player
+        # actually asked about (or its own canonical name/type-label) to
+        # show up in the response — "claro, é um ótimo lugar" alone is
+        # not actually answering "does one exist."
+        service_match = _SERVICE_WORDS.search(player_input)
+        if service_match is None:
+            return None
+        return _mentions(response_text, service_match.group(0))
     return None
 
 
@@ -199,9 +216,17 @@ def classify_relevance(
         return RelevanceOutcome.EVADED
 
     subject = classify_subject(player_input)
-    strong = _strong_signal(subject, response_text, active_npc_name, context)
-    weak_signal = _term_overlap(player_input, response_text) or _gives_a_concrete_named_answer(
-        response_text
+    strong = _strong_signal(subject, player_input, response_text, active_npc_name, context)
+    # Phase 24J.3 — an existence/availability question ("tem alguma
+    # estalagem...?") must not be rescued by the generic weak signal:
+    # "any proper noun at all" is exactly what let a real playtest
+    # failure through before — a response that only names the ALREADY-
+    # KNOWN settlement ("...conhecer os moradores de Eldor") contains a
+    # proper noun, but never actually confirms, denies, or names the
+    # service asked about. Every other must-address act still gets the
+    # normal paraphrase-tolerant fallback.
+    weak_signal = subject != ConversationalSubject.SERVICE and (
+        _term_overlap(player_input, response_text) or _gives_a_concrete_named_answer(response_text)
     )
 
     if strong is True:

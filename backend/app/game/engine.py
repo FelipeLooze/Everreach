@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import hashlib
 import re
 import time
@@ -26,7 +26,12 @@ from app.core.enums import (
 from app.core.logging import current_narrative_request_id, get_logger, with_narrative_request_id
 from app.core.ids import generate_id
 from app.db.models.character import Character
-from app.db.models.location import CharacterLocationDiscovery, Location, LocationFeature
+from app.db.models.location import (
+    CharacterLocationDiscovery,
+    Location,
+    LocationConnection,
+    LocationFeature,
+)
 from app.db.models.notice import Notice
 from app.game import game_state
 from app.game.combat import bridge as combat_bridge
@@ -55,6 +60,7 @@ from app.game.skills.techniques import (
 )
 from app.game.time import clock
 from app.game.travel import service as travel_service
+from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
 from app.services.event_log import log_event
 from app.services.story_log import get_recent_story_log
 from app.simulation import world_simulation
@@ -604,8 +610,33 @@ def _apply_intent(
     *,
     action_key: str | None = None,
 ) -> tuple[str, int]:
+    if intent.type == ActionIntentType.FREEFORM:
+        # Phase 24J.3 — scoped narrowly to FREEFORM (not e.g. TALK, which
+        # already resolves its own targets and may legitimately mention a
+        # place name in passing while addressing a person): every
+        # confirmed live failure was the Intent Parser classifying clear
+        # movement phrasing as FREEFORM instead of MOVE.
+        movement_target = _resolve_movement_target(db, character, intent.raw_text)
+        if movement_target is not None:
+            intent = replace(intent, type=ActionIntentType.MOVE, target=movement_target.name)
     if intent.type == ActionIntentType.MOVE:
-        return _handle_move(db, campaign_id, character, intent)
+        summary, minutes = _handle_move(db, campaign_id, character, intent)
+        # A compound utterance ("entra na estalagem e olha dentro") both
+        # moves AND looks around in one turn — dispatching it to MOVE must
+        # not silently drop the observation, or the new location's own
+        # connections (e.g. the way back) never get discovered. Applies
+        # regardless of whether MOVE came from this FREEFORM redirect or
+        # was classified natively by the Intent Parser — confirmed via
+        # live trace (req=nr_50465e57d586 / req=nr_bc3900cabbe6) that a
+        # NATIVELY-classified MOVE for this exact phrasing bypassed the
+        # FREEFORM branch entirely, so a version of this fix scoped only
+        # to the backstop redirect still missed it: the settlement hub has
+        # no self-discovery row of its own, and the only way to
+        # (re)discover the route back is observing from the location the
+        # character is now standing in.
+        if _OBSERVATION_CUE_PATTERN.search(_strip_accents(intent.raw_text or "").casefold()):
+            perception_service.observe_surroundings(db, character)
+        return summary, minutes
     if intent.type == ActionIntentType.TALK:
         return _handle_talk(db, campaign_id, character, intent, state)
     if intent.type == ActionIntentType.EXAMINE:
@@ -690,11 +721,74 @@ def _handle_item_interaction(
     return result.summary, 0 if result.replayed else 1
 
 
-def _handle_move(db: Session, campaign_id: str, character: Character, intent: Intent) -> tuple[str, int]:
-    if not intent.target:
-        return "Nenhum destino claro foi indicado.", 0
+_LOCATION_TYPE_LABELS_PT = {
+    location_type: name for name, location_type, _description in SETTLEMENT_SERVICE_POOL.values()
+}
 
-    destination = (
+# Phase 24J.3 — SETTLEMENT_SERVICE_POOL only labels services WITHIN a
+# settlement (inn, blacksmith, ...); the settlement's own hub location
+# ("village" type) has no entry there, yet players naturally refer to it
+# generically ("praça central", "a vila") rather than by its procedurally
+# generated proper noun. Confirmed via live playtest: "Logan volta para a
+# praça central" matched zero candidates and silently stayed FREEFORM,
+# leaving the character stranded at the previous destination.
+_HUB_LOCATION_TYPE_LABELS_PT: dict[str, tuple[str, ...]] = {
+    "village": ("praca central", "centro da vila", "praca", "vila"),
+}
+
+_OBSERVATION_CUE_PATTERN = re.compile(r"\bolha\b|\bobserva\b|\bexamina\b", re.IGNORECASE)
+
+# Phase 24J.3 — a bare "sai da estalagem" (exit, no named destination)
+# names the ORIGIN, not a destination, so it can never match anything by
+# name/type-label — the Intent Parser was observed inventing a synthetic,
+# non-existent target for exactly this phrasing ("fora da estalagem"),
+# confirmed via live trace (req=nr_ae8dae921d71): the mechanical layer
+# correctly refused that fake target, but the narrator still described a
+# physical departure anyway, leaving character.location_id unchanged
+# behind prose that claimed otherwise — the exact "movement in prose only"
+# failure mode this whole phase exists to eliminate. Settlement services
+# are hub-and-spoke (a leaf location connects back to exactly one "village"
+# hub), so exiting one has an unambiguous, safe destination.
+_EXIT_PHRASE_PATTERN = re.compile(r"\bsai\b|\bsaiu\b|\bsair\b", re.IGNORECASE)
+
+_MOVEMENT_PHRASE_PATTERN = re.compile(
+    r"\bvai\b.{0,20}\b(direcao|para|ate)\b"
+    r"|\bchega\b"
+    r"|\bentra\b.{0,15}\bn[ao]\b"
+    r"|\bcaminha\b.{0,20}\b(direcao|para|ate)\b"
+    r"|\b(volta|retorna)\b.{0,20}\b(direcao|para|ate)\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_accents(text: str) -> str:
+    return "".join(char for char in unicodedata.normalize("NFKD", text) if not unicodedata.combining(char))
+
+
+def _resolve_movement_target(db: Session, character: Character, raw_text: str) -> Location | None:
+    """Phase 24J.3 — a deterministic backstop for clear movement phrasing
+    ("Logan vai em direção à estalagem", "Logan chega à estalagem",
+    "Logan entra na estalagem"), confirmed via live trace as a real
+    regression: the Intent Parser classified every one of these as
+    FREEFORM, not MOVE, across FOUR consecutive turns — so
+    travel_service.move_character() never ran, character.location_id
+    never actually changed, and (since PLAYER_MOVED never fired) the
+    active interlocutor from three turns earlier stayed "active" through
+    a departure, a walk, an arrival, and entering a different building.
+
+    Mirrors _resolve_addressed_entity's own philosophy: deterministic,
+    only acts when the raw text both (a) reads as movement phrasing and
+    (b) names — by exact location name OR by the settlement-service type
+    label a player would naturally use ("estalagem" for an "inn" —
+    SETTLEMENT_SERVICE_POOL, the same Portuguese labels the world seed
+    itself uses) — EXACTLY ONE location already known/discovered by this
+    character. The safe failure mode is no match at all, never a guess.
+    """
+    text_no_accents = _strip_accents(raw_text).casefold()
+    if not _MOVEMENT_PHRASE_PATTERN.search(text_no_accents):
+        return None
+
+    candidates = (
         db.query(Location)
         .join(
             CharacterLocationDiscovery,
@@ -710,12 +804,153 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
                 )
             ),
             Location.region_id == character.region_id,
-            Location.name.ilike(f"%{intent.target}%"),
         )
-        .first()
+        .all()
     )
+
+    def _mentioned(label: str) -> bool:
+        return re.search(rf"\b{re.escape(_strip_accents(label).casefold())}\b", text_no_accents) is not None
+
+    matches = [
+        location
+        for location in candidates
+        if _mentioned(location.name)
+        or (location.type in _LOCATION_TYPE_LABELS_PT and _mentioned(_LOCATION_TYPE_LABELS_PT[location.type]))
+        or (
+            location.type in _HUB_LOCATION_TYPE_LABELS_PT
+            and any(_mentioned(label) for label in _HUB_LOCATION_TYPE_LABELS_PT[location.type])
+        )
+    ]
+    if len(matches) != 1:
+        return None
+    return matches[0]
+
+
+def _handle_move(db: Session, campaign_id: str, character: Character, intent: Intent) -> tuple[str, int]:
+    if not intent.target:
+        return "Nenhum destino claro foi indicado.", 0
+
+    def _destination_query(name_filter):
+        return (
+            db.query(Location)
+            .filter(
+                Location.region_id == character.region_id,
+                name_filter,
+            )
+        )
+
+    def _known_destination_query(name_filter):
+        return (
+            _destination_query(name_filter)
+            .join(
+                CharacterLocationDiscovery,
+                CharacterLocationDiscovery.location_id == Location.id,
+            )
+            .filter(
+                CharacterLocationDiscovery.character_id == character.id,
+                CharacterLocationDiscovery.status.in_(
+                    (
+                        DiscoveryStatus.DISCOVERED.value,
+                        DiscoveryStatus.VISITED.value,
+                        DiscoveryStatus.MAPPED.value,
+                    )
+                ),
+            )
+            .first()
+        )
+
+    # Phase 24J.3 — settlement service locations are named "X de
+    # {village_name}" ("Estalagem de Norbrook", "Ferraria de Norbrook"...),
+    # so a bare village name ("Norbrook") is a substring of ALL of them.
+    # An exact match must be tried first, or a target that IS the precise,
+    # correct name (e.g. from the hub-label movement backstop) can resolve
+    # ambiguously to an unrelated service via the old ilike-only substring
+    # match — confirmed via live trace as the reason "Logan volta para a
+    # praça central" resolved the right target in _resolve_movement_target
+    # but then failed here with a "no path connects" error, because this
+    # query separately re-resolved the name to the wrong location.
+    destination = _known_destination_query(Location.name == intent.target)
+
+    # The Intent Parser itself sometimes classifies MOVE directly (bypassing
+    # _resolve_movement_target's backstop entirely) with a generic
+    # Portuguese label as target instead of a proper noun — e.g. target=
+    # 'praça central' for the settlement hub, or target='estalagem' for the
+    # inn. Confirmed via live trace (req=nr_f17da5eec27e): this fell
+    # straight to "nenhum lugar conhecido" and the narrator invented a
+    # plausible-sounding "no plaza found here" scene around that failure,
+    # even though the village was right there. Resolve the SAME service/hub
+    # type labels _resolve_movement_target already knows, requiring exactly
+    # one discovered candidate of that type — the same safe-failure-mode.
+    if destination is None:
+        target_normalized = _strip_accents(intent.target).casefold().strip()
+        matched_types = [
+            location_type
+            for location_type, label in _LOCATION_TYPE_LABELS_PT.items()
+            if _strip_accents(label).casefold() == target_normalized
+        ] + [
+            location_type
+            for location_type, labels in _HUB_LOCATION_TYPE_LABELS_PT.items()
+            if target_normalized in {_strip_accents(label).casefold() for label in labels}
+        ]
+        if matched_types:
+            candidates = (
+                _destination_query(Location.type.in_(matched_types))
+                .join(
+                    CharacterLocationDiscovery,
+                    CharacterLocationDiscovery.location_id == Location.id,
+                )
+                .filter(
+                    CharacterLocationDiscovery.character_id == character.id,
+                    CharacterLocationDiscovery.status.in_(
+                        (
+                            DiscoveryStatus.DISCOVERED.value,
+                            DiscoveryStatus.VISITED.value,
+                            DiscoveryStatus.MAPPED.value,
+                        )
+                    ),
+                )
+                .all()
+            )
+            if len(candidates) == 1:
+                destination = candidates[0]
+
+    if destination is None:
+        destination = _known_destination_query(Location.name.ilike(f"%{intent.target}%"))
+
+    # See _EXIT_PHRASE_PATTERN's own docstring: a departure with no
+    # resolvable named destination falls back to the single settlement
+    # hub connected to the character's current (non-hub) location.
+    if destination is None and _EXIT_PHRASE_PATTERN.search(
+        _strip_accents(intent.raw_text or "").casefold()
+    ):
+        current = db.get(Location, character.location_id)
+        if current is not None and current.type != "village":
+            hub_candidates = (
+                db.query(Location)
+                .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+                .filter(
+                    LocationConnection.from_location_id == character.location_id,
+                    LocationConnection.active.is_(True),
+                    Location.type == "village",
+                )
+                .all()
+            )
+            if len(hub_candidates) == 1:
+                destination = hub_candidates[0]
+
     if destination is None:
         return f"Nenhum lugar conhecido correspondente a '{intent.target}' pode ser alcançado a partir daqui.", 0
+
+    # Phase 24J.3 — a repeated/redundant movement call toward the
+    # location the character is already standing in (e.g. "Logan chega
+    # à estalagem" and "Logan entra na estalagem", both resolved to the
+    # same already-arrived-at destination by _resolve_movement_target)
+    # would otherwise hit travel_service's "no connection FROM here TO
+    # there" error — technically true, but a confusing thing to tell a
+    # player who is already there. A plain, grounded acknowledgment is
+    # more honest than either a scary error or narrating a second trip.
+    if destination.id == character.location_id:
+        return f"{character.name} já está em {destination.name}.", 0
 
     try:
         travel_result = travel_service.move_character(

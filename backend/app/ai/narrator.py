@@ -5,7 +5,12 @@ import re
 from typing import Literal
 import unicodedata
 
-from app.ai.conversational_act import QUESTION_ACTS, ConversationalAct, classify as classify_conversational_act
+from app.ai.conversational_act import (
+    QUESTION_ACTS,
+    ConversationalAct,
+    _SERVICE_WORDS,
+    classify as classify_conversational_act,
+)
 from app.ai.llm_service import LLMService
 from app.core.logging import get_logger
 
@@ -113,6 +118,38 @@ _SENSORY_PERCEPTION_VERBS = {
     "avista",
     "ouve",
     "escuta",
+}
+
+# Phase 24J.3 — movement-completion verbs, allowed as the protagonist's own
+# grammatical subject in ANY mode, mirroring the sensory-verb exception
+# above: narrating a MOVE action's own authoritative destination (e.g.
+# "Logan caminha... até chegar à Estalagem de Belridge") necessarily makes
+# the protagonist the grammatical subject of a movement verb, but describes
+# an ALREADY-DECIDED, backend-authoritative fact (travel_service.move_character
+# already ran and character.location_id already changed) rather than an
+# invented new decision. Without this exception every successfully-resolved
+# MOVE/arrival/entry action fell straight to the generic agency-violation
+# fallback ("Nada acontece de imediato.") — confirmed via live trace
+# (req=nr_57c43a314ed6 and five further consecutive MOVE-resolved turns in
+# the same playtest session) even though character.location_id had already,
+# correctly, changed.
+_MOVEMENT_RESULT_VERBS = {
+    "caminha",
+    "chega",
+    "entra",
+    "sai",
+    "afasta",
+    "despede",
+    "parte",
+    "segue",
+    "anda",
+    "viaja",
+    "volta",
+    "retorna",
+    "atravessa",
+    "avanca",
+    "aproxima",
+    "dirige",
 }
 
 _FORBIDDEN_STYLE_MARKERS = (
@@ -289,10 +326,27 @@ _EMPTY_OR_LEAKED_RESPONSE_MESSAGE = (
     "modelo; escreva somente a cena em português, nunca repita estas instruções"
 )
 
+# Phase 24J.3 — the base model occasionally leaks its own raw internal
+# reasoning, in Chinese, directly into player-facing output (observed
+# repeatedly in live playtests: req from this phase's own validation runs,
+# and a single earlier instance noted in the 24J.1 report). Portuguese
+# narration should never legitimately contain CJK Unified Ideographs, so
+# this is a safe, unambiguous signal to force a retry — gated through the
+# SAME early short-circuit as an empty response, since a leak this severe
+# makes every downstream check on the draft meaningless.
+_CJK_SCRIPT_PATTERN = re.compile(r"[一-鿿]")
+
+_NON_PORTUGUESE_SCRIPT_MESSAGE = (
+    "a resposta contém caracteres de escrita CJK (provavelmente raciocínio interno do "
+    "modelo vazando para a saída); escreva somente a cena em português"
+)
+
 
 def _empty_response_violations(text: str) -> list[str]:
     if not text.strip():
         return [_EMPTY_OR_LEAKED_RESPONSE_MESSAGE]
+    if _CJK_SCRIPT_PATTERN.search(text):
+        return [_NON_PORTUGUESE_SCRIPT_MESSAGE]
     return []
 
 
@@ -829,6 +883,28 @@ def _protagonist_agency_violations(
         # Sensory/perceptual verbs are legitimate in any mode — see
         # _SENSORY_PERCEPTION_VERBS' own docstring (24J.2).
         if verb in _SENSORY_PERCEPTION_VERBS:
+            continue
+
+        # Movement-completion verbs are legitimate in any mode — see
+        # _MOVEMENT_RESULT_VERBS' own docstring (24J.3).
+        if verb in _MOVEMENT_RESULT_VERBS:
+            continue
+
+        # "Logan abre/empurra a porta e entra." is the same authoritative-
+        # transit case as _MOVEMENT_RESULT_VERBS above, but these verbs
+        # alone cannot join that set — an unqualified "abre"/"empurra" is
+        # exactly how a genuinely invented action would read too ("Logan
+        # abre a bolsa e rouba...", "Logan empurra o guarda e foge").
+        # Narrowly scoped to the doorway/passage object right after the
+        # verb. "abre" confirmed via live trace (req=nr_4023e6ee9705:
+        # "Logan abre a porta da estalagem e entra."); "empurra" confirmed
+        # via a later live re-validation run (req=nr_e3c53e7eaa21: "Logan
+        # empurra a porta pesada da estalagem e entra.") — both fell to
+        # the generic PLAYER_AGENCY fallback even though the mechanical
+        # fact was an authoritative, already-resolved arrival.
+        if verb in {"abre", "empurra"} and re.search(
+            r"\bporta[s]?\b", _normalized(text[match.end(): match.end() + 25])
+        ):
             continue
 
         return [_AGENCY_VIOLATION_MESSAGE]
@@ -1507,7 +1583,56 @@ _FAREWELL_GROUNDING_LINE = (
 )
 
 
-def _build_current_turn_block(player_input: str) -> str:
+_QUOTE_CHARACTERS = ('"', "'", "“", "”", "‘", "’", "«", "»")
+
+_NO_QUOTES_GROUNDING_LINE = (
+    "Esta entrada não contém nenhuma fala entre aspas — é uma AÇÃO ou DESCRIÇÃO do "
+    "jogador, não uma fala dirigida a alguém. Não invente uma resposta falada de "
+    "nenhum NPC a algo que o jogador não disse. Se o jogador estava em conversa com "
+    "um interlocutor, trate esta ação como o personagem se afastando, se movendo ou "
+    "agindo — o interlocutor anterior não deve continuar a conversa nem ganhar uma "
+    "nova fala, a menos que a própria ação o envolva diretamente."
+)
+
+
+_VAGUE_FOLLOW_UP_PATTERN = re.compile(
+    r"^\s*[\"“']?\s*(onde\s+fica\??|quanto\s+custa\??|quem\s+trabalha\s+l[áa]\??|"
+    r"[ée]\s+longe\??|fica\s+longe\??|como\s+chego\s+l[áa]\??|onde\s+(?:é|fica)\s+isso\??)"
+    r"\s*[\"”']?\s*$",
+    re.IGNORECASE,
+)
+
+
+def _referential_continuity_hint(player_input: str, recent_history: str) -> str | None:
+    """Phase 24J.3 — confirmed via a real playtest: a vague follow-up
+    ("Onde fica?") immediately after an NPC discussed a specific service
+    ("há uma estalagem aqui") got interpreted as asking about the
+    CURRENT SETTLEMENT instead of the service just discussed. No
+    validator can catch this after the fact — the reply IS a coherent,
+    grounded, location-flavored answer, just to the wrong referent — so
+    this is corrected at the grounding level instead, the same idea as
+    DIRECT QUESTION GROUNDING (context_builder.py) but narrator-local
+    because it needs the immediately preceding turn's own text, which
+    narrator.py already receives as recent_history and context_builder
+    does not.
+    """
+    if not _VAGUE_FOLLOW_UP_PATTERN.search(player_input.strip()):
+        return None
+    past_responses = _recent_narrator_responses(recent_history)
+    if not past_responses:
+        return None
+    service_match = _SERVICE_WORDS.search(past_responses[-1])
+    if service_match is None:
+        return None
+    return (
+        "Nota de continuidade referencial: esta pergunta do jogador é vaga (não nomeia "
+        f'nada explicitamente) e muito provavelmente se refere a "{service_match.group(0)}", '
+        "mencionado na resposta imediatamente anterior — não à vila/região atual em geral. "
+        "Responda sobre esse referente específico, não sobre o local em geral."
+    )
+
+
+def _build_current_turn_block(player_input: str, recent_history: str = "") -> str:
     """Phase 24A.1 — makes the player's CURRENT turn visually/semantically
     unmistakable, instead of relying on the model to notice it somewhere
     inside a long prompt. The exact text stays verbatim (never summarized
@@ -1523,12 +1648,23 @@ def _build_current_turn_block(player_input: str) -> str:
         "Esta é a ação ou fala ATUAL do jogador. Responda a ESTE turno específico.",
         "Não responda a um turno anterior do histórico.",
         "Não gere fala, pensamentos, decisões ou ações voluntárias para o protagonista.",
+        "Convenção: texto entre aspas é FALA; texto sem aspas é AÇÃO e/ou DESCRIÇÃO.",
     ]
     act = classify_conversational_act(player_input)
     if act in _MUST_ADDRESS_ACTS:
         lines.append(_QUESTION_GROUNDING_LINE)
     elif act is ConversationalAct.FAREWELL:
         lines.append(_FAREWELL_GROUNDING_LINE)
+    # Phase 24J.3 — confirmed via live trace as a real regression: a
+    # departure/movement turn with zero quoted speech ("Logan vai em
+    # direção à estalagem", "Logan chega à estalagem") kept getting
+    # narrated as the SAME NPC continuing to speak/react, turn after
+    # turn, well past when the player had clearly moved on.
+    if not any(char in player_input for char in _QUOTE_CHARACTERS):
+        lines.append(_NO_QUOTES_GROUNDING_LINE)
+    referential_hint = _referential_continuity_hint(player_input, recent_history)
+    if referential_hint is not None:
+        lines.append(referential_hint)
     lines.append("")
     lines.append("FIM DO TURNO ATUAL DO JOGADOR")
     return "\n".join(lines)
@@ -1564,7 +1700,7 @@ def narrate(
       another LLM generation by themselves.
     """
     system_prompt = _system_prompt_for(mode)
-    current_turn_block = _build_current_turn_block(player_input)
+    current_turn_block = _build_current_turn_block(player_input, recent_history)
     prompt = (
         f"MODO DA CENA:\n{mode}\n\n"
         f"SCENE CONTEXT:\n{context}\n\n"

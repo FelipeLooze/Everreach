@@ -619,6 +619,29 @@ feita. Nunca ignore a pergunta do protagonista para narrar um assunto
 não relacionado que ele não trouxe.
 
 ==================================================
+MOEDA E PREÇOS
+==================================================
+
+A moeda de Everreach tem três denominações fixas: Bronze, Prata e Ouro.
+100 Bronze equivalem a 1 Prata. 100 Prata equivalem a 1 Ouro (10000
+Bronze).
+
+Quando um NPC cita um preço (hospedagem, refeição, item comum,
+serviço simples), a denominação deve refletir essa escala:
+- Bronze: o dia a dia comum — comida, uma noite de hospedagem simples,
+  reparos pequenos, itens baratos. A maioria dos preços do cotidiano
+  fica na casa de poucos Bronze a algumas dezenas de Bronze.
+- Prata: compras ou serviços de valor moderado — equipamento de
+  qualidade, transporte por longa distância, itens duráveis.
+- Ouro: transações grandes ou raras — propriedades, itens excepcionais,
+  somas que mudam a vida de um morador comum.
+
+Uma estalagem modesta numa vila pequena nunca cobra em Prata ou Ouro
+por uma noite comum; isso equivaleria a somas exageradas para o
+contexto. Ao inventar um preço sem valor de Canon explícito, prefira
+sempre a denominação mais baixa plausível.
+
+==================================================
 PERCEPÇÃO E DESCRIÇÃO CANÔNICA
 ==================================================
 

@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Protocol, Sequence
 import unicodedata
 
@@ -163,6 +163,89 @@ class NarrativeContext:
 
     def serialize(self) -> str:
         return "\n\n".join(self.as_sections())
+
+
+# Phase 24M — Context Priority & Token Budgeting. Distinct from every
+# existing per-field clip above (MAX_DESCRIPTION_CHARS,
+# MAX_CONTEXT_FACTS_PER_KNOWER, RETRIEVED_CONTEXT_CHAR_BUDGET, ...) and
+# from Phase 18L's own retrieval-tail budget (app.ai.retrieval.budget,
+# which already bounds priority tier 9 on its own before it ever reaches
+# NarrativeContext.retrieved_long_term) — this is the one GLOBAL ceiling
+# on context_builder's own combined output, matching the master plan's
+# own observation: "The current system only clips individual fields and
+# RAG." No real tokenizer is wired in here; chars/4 is the same rough,
+# standard estimate used industry-wide when an exact tokenizer isn't
+# available, tracked for observability only (spec's "track estimated
+# prompt size/tokens"), never used as the actual trim unit (chars are).
+#
+# Mandatory/high-priority sections — player identity, active NPC, NPC
+# knowledge, current location/scene, canon rule, the player-input canon
+# audit — are NEVER dropped by this budget; only the spec's own lowest-
+# priority tiers (9: long-term retrieval; 10: decorative/background) are
+# ever sacrificed, lowest first, same "never a shuffle" invariant Phase
+# 18L's own budget already established (a field is either kept whole or
+# dropped whole, never partially re-truncated by this mechanism — it
+# already arrived pre-clipped by its own field-level budget). "Never
+# sacrifice the current player turn to preserve stale history" (spec) is
+# respected by construction: this budget never touches narrator.py's own
+# current-turn block or recent-history parameter at all — neither is
+# part of what context_builder produces.
+MAX_CONTEXT_BUDGET_CHARS = 20000
+_CHARS_PER_TOKEN_ESTIMATE = 4
+
+
+def _estimated_tokens(text: str) -> int:
+    return len(text) // _CHARS_PER_TOKEN_ESTIMATE
+
+
+@dataclass(frozen=True)
+class ContextBudgetResult:
+    context: NarrativeContext
+    used_chars: int
+    dropped_sections: tuple[str, ...]
+
+
+# Lowest priority first — the ONLY fields this budget is ever allowed to
+# drop, in the exact order they're sacrificed.
+_DROPPABLE_FIELDS_LOWEST_PRIORITY_FIRST = (
+    "retrieved_long_term",
+    "regional",
+    "local_economy",
+    "shops",
+    "player_knowledge",
+    "player_memories",
+    "npc_memories",
+)
+
+
+def apply_context_budget(
+    ctx: NarrativeContext, *, budget_chars: int = MAX_CONTEXT_BUDGET_CHARS
+) -> ContextBudgetResult:
+    original_chars = len(ctx.serialize())
+    if original_chars <= budget_chars:
+        return ContextBudgetResult(context=ctx, used_chars=original_chars, dropped_sections=())
+
+    dropped: list[str] = []
+    used_chars = original_chars
+    for field_name in _DROPPABLE_FIELDS_LOWEST_PRIORITY_FIRST:
+        if getattr(ctx, field_name):
+            ctx = replace(ctx, **{field_name: ""})
+            dropped.append(field_name)
+            used_chars = len(ctx.serialize())
+            if used_chars <= budget_chars:
+                break
+
+    logger.warning(
+        "Context exceeded budget (%s chars, ~%s tokens, > %s char limit); dropped lowest-"
+        "priority sections: %s; now %s chars (~%s tokens)",
+        original_chars,
+        original_chars // _CHARS_PER_TOKEN_ESTIMATE,
+        budget_chars,
+        dropped or "(none droppable)",
+        used_chars,
+        used_chars // _CHARS_PER_TOKEN_ESTIMATE,
+    )
+    return ContextBudgetResult(context=ctx, used_chars=used_chars, dropped_sections=tuple(dropped))
 
 
 def _clip(text: str, limit: int) -> str:
@@ -1487,7 +1570,8 @@ def build_narrative_context(
     logger.debug("ACTIVE TRANSPORTED PERSON CONTEXT\n%s", ctx.active_transported)
     logger.debug("NPC KNOWLEDGE\n%s", ctx.npc_knowledge)
     logger.debug("PLAYER KNOWLEDGE\n%s", ctx.player_knowledge)
-    return ctx
+    budget_result = apply_context_budget(ctx)
+    return budget_result.context
 
 
 def build_context(
@@ -1500,9 +1584,11 @@ def build_context(
     """Thin wrapper over build_narrative_context() for every caller that
     only ever wanted the flat text Ollama receives — the vast majority
     of the codebase, including narrator.narrate()'s own `context: str`
-    parameter, unchanged by Phase 24C. Byte-identical to what this
-    function itself used to build directly before the structured seam
-    existed."""
+    parameter, unchanged by Phase 24C. Identical to what this function
+    itself used to build directly before the structured seam existed,
+    except when the combined context exceeds Phase 24M's global budget
+    — build_narrative_context() itself applies that trim before
+    returning, so this and NarrativeContext.serialize() always agree."""
     final_context = build_narrative_context(
         db, state, active_interlocutor, player_input, active_simulated_player
     ).serialize()

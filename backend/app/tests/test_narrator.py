@@ -1153,6 +1153,24 @@ def test_narrator_allows_a_bystander_npc_to_speak_after_being_explicitly_introdu
     assert len(llm.calls) == 1
 
 
+def test_strip_prompt_leak_cuts_off_a_self_invented_player_narrator_scaffold():
+    # Real bug report: instead of echoing the actual prompt/instruction
+    # text (what _strip_prompt_leak was built for), the model regressed
+    # into simulating a whole future exchange itself, labeling invented
+    # turns with its own shorthand for the prompt's "PLAYER INPUT:"
+    # convention — "PLAYER:"/"NARRATOR:" — and fabricating several more
+    # turns of dialogue/action nobody asked for.
+    raw = (
+        "O ancião hesita por um momento antes de continuar. "
+        "PLAYER: Logan espera ansiosamente pela resposta do ancião\n"
+        "NARRATOR: — Poderia me dizer o motivo de sua visita, senhor?"
+    )
+    stripped = narrator._strip_prompt_leak(raw)
+    assert "PLAYER:" not in stripped
+    assert "NARRATOR:" not in stripped
+    assert stripped == "O ancião hesita por um momento antes de continuar."
+
+
 def test_narrator_uses_safe_fallback_when_a_promised_reply_never_arrives():
     # Real bug report ("por que quase sempre a mensagem acaba no 'e
     # responde:'"): the model repeatedly narrates right up to the NPC's
@@ -1206,6 +1224,32 @@ def test_narrator_accepts_a_fulfilled_speech_promise():
     )
 
     assert result == llm.response
+
+
+def test_narrator_accepts_a_fulfilled_speech_promise_in_the_same_paragraph():
+    # Regression for a false positive the mid-paragraph promise check
+    # introduced: the colon-then-dash reply lives in the SAME paragraph
+    # as the promise ("... e responde: — Meu nome é Lena."), not a
+    # separate one — _paragraph_has_spoken_dialogue must still recognize
+    # it, since _is_dialogue_paragraph alone only recognizes a dash that
+    # OPENS a paragraph.
+    llm = StubbornLLM("A mulher sorri e responde: — Meu nome é Lena, jovem viajante.")
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "VISIBLE NPCS\n- Lena Hallow (estalajadeira; activity=WORKING)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Lena Hallow"
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Logan pergunta o nome da estalajadeira.",
+        context,
+        "Qual o seu nome?",
+        "(sem histórico)",
+    )
+
+    assert result == llm.response
+    assert len(llm.calls) == 1
     assert len(llm.calls) == 1
 
 

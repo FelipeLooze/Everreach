@@ -127,6 +127,14 @@ _PROMPT_LEAK_MARKERS = (
     "MODO DA CENA:",
     "Reescreva somente a narrativa corrigida",
     "Escreva somente o próximo momento da cena",
+    # Not a literal prompt echo — the model regressing into simulating a
+    # whole future exchange itself, inventing several more player/NPC
+    # turns nobody asked for, labeled with its own shorthand for the
+    # "PLAYER INPUT:"/narrator-response shape it has seen in the prompt.
+    # Just as unacceptable as an echoed instruction: everything from the
+    # first such label onward is fabricated, unauthorized turns.
+    "PLAYER:",
+    "NARRATOR:",
 )
 
 
@@ -371,34 +379,48 @@ def _unauthorized_speaker_message(name: str) -> str:
 _QUOTE_MARK = re.compile(r'["“]')
 
 
+_COLON_THEN_DASH_QUOTE = re.compile(r":\s*—")
+
+
 def _paragraph_has_spoken_dialogue(paragraph: str) -> bool:
     """True for a quote-mark paragraph ("Nome disse, '...'") OR the
     dash-led screenplay style this codebase's own dialogue convention
     actually uses ("— fala — verbo") — _is_dialogue_paragraph already
     recognizes the dash-prefixed and colon-attributed shapes; this adds
     the inline-quote-mark shape _paragraph_speaker_among's stricter
-    patterns miss."""
-    return _is_dialogue_paragraph(paragraph) or bool(_QUOTE_MARK.search(paragraph))
+    patterns miss, and a colon-then-dash mid-paragraph ("... e
+    responde: — Meu nome é Lena.") — a real, fulfilled reply, not the
+    dangling-promise shape _find_unfulfilled_speech_promise_violations
+    exists to catch, which _is_dialogue_paragraph alone would miss
+    since it only recognizes a dash that OPENS the paragraph."""
+    return (
+        _is_dialogue_paragraph(paragraph)
+        or bool(_QUOTE_MARK.search(paragraph))
+        or bool(_COLON_THEN_DASH_QUOTE.search(paragraph))
+    )
 
 
 _SPEECH_PROMISE_PARAGRAPH = re.compile(
-    rf"\b(?:{_SPEECH_VERBS}|inclina(?:-se)?|estende|aponta|debru[çc]a(?:-se)?)\b[^.\n]*:\s*$",
+    rf"\b(?:{_SPEECH_VERBS}|inclina(?:-se)?|estende|aponta|debru[çc]a(?:-se)?)\b[^.\n]*:",
     re.IGNORECASE,
 )
 _UNFULFILLED_SPEECH_PROMISE_MESSAGE = (
-    "a resposta promete uma fala (termina em 'responde:', 'inclina-se... :', etc.) "
-    "mas nunca a entrega em nenhum parágrafo; ou complete a fala prometida "
+    "a resposta promete uma fala ('responde:', 'inclina-se... :', etc.) "
+    "mas nunca a entrega em lugar nenhum do texto; ou complete a fala prometida "
     "imediatamente, ou reescreva sem prometer uma fala que não vai vir"
 )
 
 
 def _find_unfulfilled_speech_promise_violations(text: str) -> list[str]:
     """A distinct local-model failure mode from an outright empty response:
-    the draft narrates right up to the edge of an NPC's line — a paragraph
-    ending in a colon after a speech/gesture verb ("... e responde:",
-    "Ela se inclina... com um ar confidencial:") — and then never actually
-    delivers it anywhere in the draft, sometimes across several such
-    paragraphs in a row, leaving the player's direct question (often one
+    the draft narrates right up to the edge of an NPC's line — "... e
+    responde:", "Ela se inclina... com um ar confidencial:" — and then
+    never actually delivers it anywhere in the draft. The colon-promise
+    doesn't have to be the very end of its paragraph — the model just as
+    often keeps narrating past it in the same paragraph (more scene-
+    setting prose, never the promised line) as it does leaving it fully
+    dangling at the end, sometimes across several such promises in a
+    row, leaving the player's direct question (often one
     with no obvious canned answer, like the NPC's own name) completely
     unanswered while reading as if a reply were coming. Only fires when
     NO paragraph in the whole draft has any spoken dialogue at all — a

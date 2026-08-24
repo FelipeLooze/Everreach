@@ -178,6 +178,47 @@ def _format_known_fact(fact: KnownFact) -> str:
     return f"- [{fact.certainty}; fonte: {source}] {statement}"
 
 
+def _format_known_fact_without_certainty(fact: KnownFact) -> str:
+    statement = _clip(fact.statement, MAX_FACT_CHARS)
+    source = _clip(fact.source, 80)
+    return f"- [fonte: {source}] {statement}"
+
+
+# Phase 24F — certainty tiers already exist deep in the Phase 12-era
+# knowledge/rumor infrastructure (app.game.knowledge.rumors/geography,
+# KnowledgeCertainty); this only changes how they reach the narrator for
+# the active NPC's own knowledge, grouping by tier instead of an inline
+# per-line tag, so a rumor the NPC only heard secondhand can't be skimmed
+# as equally solid as a confirmed fact.
+_CERTAINTY_GROUP_ORDER = (
+    ("CONFIRMED", "CONFIRMED FACTS (the NPC treats these as certain)"),
+    ("BELIEVED", "BELIEVED (the NPC thinks this is likely true, but is not certain)"),
+    ("RUMOR", "RUMORS (the NPC only heard this secondhand; it may be wrong)"),
+)
+
+
+def _grouped_npc_knowledge_lines(facts: list[KnownFact]) -> list[str]:
+    if not facts:
+        return ["- none supplied"]
+    by_tier: dict[str, list[KnownFact]] = {}
+    for fact in facts:
+        by_tier.setdefault(fact.certainty, []).append(fact)
+    lines: list[str] = []
+    for tier_value, heading in _CERTAINTY_GROUP_ORDER:
+        tier_facts = by_tier.pop(tier_value, [])
+        if not tier_facts:
+            continue
+        lines.append(heading)
+        lines.extend(_format_known_fact_without_certainty(fact) for fact in tier_facts)
+    # Any certainty value outside the three known tiers is future-proofing
+    # only (KnowledgeCertainty is the sole writer today) — still surfaced
+    # rather than silently dropped.
+    for tier_value, tier_facts in by_tier.items():
+        lines.append(tier_value)
+        lines.extend(_format_known_fact_without_certainty(fact) for fact in tier_facts)
+    return lines
+
+
 def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> list[str]:
     """Phase 12L — the same free-text objective descriptions Phase 12G
     already locked down as the entire player-facing surface (no
@@ -1352,9 +1393,7 @@ def build_narrative_context(
             ]
         )
 
-    npc_knowledge_section = "\n".join(
-        ["NPC KNOWLEDGE", *([_format_known_fact(fact) for fact in npc_facts] or ["- none supplied"])]
-    )
+    npc_knowledge_section = "\n".join(["NPC KNOWLEDGE", *_grouped_npc_knowledge_lines(npc_facts)])
     player_knowledge_section = "\n".join(
         ["PLAYER KNOWLEDGE", *([_format_known_fact(fact) for fact in player_facts] or ["- none supplied"])]
     )

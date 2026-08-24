@@ -164,6 +164,100 @@ def test_npc_and_player_knowledge_are_filtered_independently(db_session):
     assert npc_only.statement not in player_section
 
 
+# --- Phase 24F — NPC Identity & Knowledge Grounding ---
+
+
+def test_npc_knowledge_is_grouped_by_certainty_tier(db_session):
+    # A rumor an NPC only heard secondhand must not be presentable as
+    # equally solid as a confirmed fact — 24F groups NPC KNOWLEDGE by
+    # certainty tier (confirmed/believed/rumor) instead of a flat list
+    # with only an inline tag distinguishing them.
+    campaign, _character, state, elder = _cardal_scene(db_session)
+    osgar = next(npc for npc in state.nearby_npcs if npc.id == elder.id)
+
+    confirmed = KnowledgeFact(
+        campaign_id=campaign.id,
+        subject="world:test",
+        fact_key="confirmed_fact",
+        statement="O poço da vila nunca seca no verão.",
+    )
+    believed = KnowledgeFact(
+        campaign_id=campaign.id,
+        subject="world:test",
+        fact_key="believed_fact",
+        statement="A colheita deste ano será melhor que a passada.",
+    )
+    rumor = KnowledgeFact(
+        campaign_id=campaign.id,
+        subject="world:test",
+        fact_key="rumor_fact",
+        statement="Dizem que há um tesouro enterrado perto do rio.",
+    )
+    db_session.add_all([confirmed, believed, rumor])
+    db_session.flush()
+    teach_fact(db_session, campaign.id, confirmed.fact_key, KnowerType.NPC, osgar.id)
+    teach_fact(
+        db_session, campaign.id, believed.fact_key, KnowerType.NPC, osgar.id,
+        source="observação própria", certainty=KnowledgeCertainty.BELIEVED,
+    )
+    teach_fact(
+        db_session, campaign.id, rumor.fact_key, KnowerType.NPC, osgar.id,
+        source="um viajante", certainty=KnowledgeCertainty.RUMOR,
+    )
+    db_session.commit()
+
+    context = build_context(
+        db_session,
+        state,
+        active_interlocutor=elder.name,
+        player_input="poço colheita tesouro",
+    )
+    npc_section = context.split("NPC KNOWLEDGE", 1)[1].split("PLAYER KNOWLEDGE", 1)[0]
+
+    assert "CONFIRMED FACTS" in npc_section
+    assert "BELIEVED" in npc_section
+    assert "RUMORS" in npc_section
+
+    confirmed_at = npc_section.index("CONFIRMED FACTS")
+    believed_at = npc_section.index("BELIEVED")
+    rumor_at = npc_section.index("RUMORS")
+    fact_at = npc_section.index(confirmed.statement)
+    believed_fact_at = npc_section.index(believed.statement)
+    rumor_fact_at = npc_section.index(rumor.statement)
+
+    # Tier order is fixed (confirmed, then believed, then rumor) and each
+    # fact appears after its own tier's heading.
+    assert confirmed_at < believed_at < rumor_at
+    assert confirmed_at < fact_at < believed_at
+    assert believed_at < believed_fact_at < rumor_at
+    assert rumor_at < rumor_fact_at
+
+    # No stray inline certainty tag remains on the fact lines themselves.
+    assert "[CONFIRMED; fonte:" not in npc_section
+    assert "[BELIEVED; fonte:" not in npc_section
+    assert "[RUMOR; fonte:" not in npc_section
+
+
+def test_npc_knowledge_grouping_omits_headings_for_absent_tiers(db_session):
+    # The elder's own seeded, scene-scoped geography knowledge is granted
+    # CONFIRMED by default (app.game.knowledge.geography) — with no
+    # BELIEVED/RUMOR facts taught, only the CONFIRMED heading should
+    # appear, never an empty BELIEVED/RUMORS group.
+    _campaign, _character, state, elder = _cardal_scene(db_session)
+
+    context = build_context(
+        db_session,
+        state,
+        active_interlocutor=elder.name,
+        player_input="Qualquer coisa sem relação com fatos registrados.",
+    )
+    npc_section = context.split("NPC KNOWLEDGE", 1)[1].split("PLAYER KNOWLEDGE", 1)[0]
+
+    assert "CONFIRMED FACTS" in npc_section
+    assert "BELIEVED" not in npc_section
+    assert "RUMORS" not in npc_section
+
+
 def test_player_input_is_audited_against_location_type_and_known_directions(db_session):
     _campaign, _character, state, elder = _cardal_scene(db_session)
 

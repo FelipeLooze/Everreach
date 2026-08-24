@@ -1017,8 +1017,12 @@ def test_social_opportunity_automatically_propagates_one_fact(
         if fact.statement in line
     )
 
-    assert "[BELIEVED; fonte:" in fact_line
-    assert "[CONFIRMED; fonte:" not in fact_line
+    # Phase 24F — certainty is now conveyed by which group heading the
+    # fact appears under, not an inline per-line tag.
+    assert "[fonte:" in fact_line
+    assert "BELIEVED" in npc_section
+    assert "CONFIRMED FACTS" not in npc_section
+    assert npc_section.index("BELIEVED") < npc_section.index(fact.statement)
 
     narrator.narrate(
         fake_llm,
@@ -1210,9 +1214,13 @@ def test_social_believed_fact_becomes_rumor_in_narrator_context(
         if fact.statement in line
     )
 
-    assert "[RUMOR; fonte:" in fact_line
-    assert "[BELIEVED; fonte:" not in fact_line
-    assert "[CONFIRMED; fonte:" not in fact_line
+    # Phase 24F — certainty is now conveyed by which group heading the
+    # fact appears under, not an inline per-line tag.
+    assert "[fonte:" in fact_line
+    assert "RUMORS" in npc_section
+    assert "BELIEVED" not in npc_section
+    assert "CONFIRMED FACTS" not in npc_section
+    assert npc_section.index("RUMORS") < npc_section.index(fact.statement)
 
     narrator.narrate(
         fake_llm,

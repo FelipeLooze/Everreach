@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 from typing import Protocol, Sequence
 import unicodedata
 
@@ -80,6 +81,88 @@ RETRIEVED_CONTEXT_CHAR_BUDGET = 2000
 class HistoryEntry(Protocol):
     kind: str
     text: str
+
+
+@dataclass(frozen=True)
+class NarrativeContext:
+    """Phase 24C — the same information build_context() has always
+    assembled, now named and structured instead of anonymous strings
+    joined inline. Every field here is exactly one of the pre-existing
+    section strings build_context already computed — this is
+    deliberately NOT a rewrite of what's gathered or how knowledge
+    filtering works, only a seam so a future consumer (a relevance
+    check, a token-budget trimmer) can address "the NPC knowledge
+    section" by name instead of re-parsing the final joined string.
+
+    serialize() reproduces build_context()'s exact historical section
+    order and exact conditional-inclusion rules (only inventory/
+    combat/regional/local_economy are ever omitted, when empty; every
+    other section is always present even when its own content is just
+    a header) — this changes nothing about what the narrator receives
+    today. Phase 24M (context priority & token budgeting) is where
+    that ordering itself becomes a deliberate, tunable policy instead
+    of a fixed sequence.
+    """
+
+    player: str
+    inventory: str
+    world: str
+    location: str
+    perception: str
+    known_routes: str
+    current_location_knowledge: str
+    spatial_knowledge: str
+    visible_npcs: str
+    combat: str
+    active_npc: str
+    active_transported: str
+    organizations: str
+    currency: str
+    regional: str
+    local_economy: str
+    shops: str
+    npc_knowledge: str
+    player_knowledge: str
+    npc_memories: str
+    player_memories: str
+    retrieved_long_term: str
+    input_canon_check: str
+    quests: str
+    techniques: str
+    canon_rule: str
+
+    def as_sections(self) -> list[str]:
+        return [
+            self.player,
+            *([self.inventory] if self.inventory else []),
+            self.world,
+            self.location,
+            self.perception,
+            self.known_routes,
+            self.current_location_knowledge,
+            self.spatial_knowledge,
+            self.visible_npcs,
+            *([self.combat] if self.combat else []),
+            self.active_npc,
+            self.active_transported,
+            self.organizations,
+            self.currency,
+            *([self.regional] if self.regional else []),
+            *([self.local_economy] if self.local_economy else []),
+            self.shops,
+            self.npc_knowledge,
+            self.player_knowledge,
+            self.npc_memories,
+            self.player_memories,
+            self.retrieved_long_term,
+            self.input_canon_check,
+            self.quests,
+            self.techniques,
+            self.canon_rule,
+        ]
+
+    def serialize(self) -> str:
+        return "\n\n".join(self.as_sections())
 
 
 def _clip(text: str, limit: int) -> str:
@@ -796,14 +879,20 @@ def _retrieved_long_term_context(
     return format_ranked_documents(budgeted.included)
 
 
-def build_context(
+def build_narrative_context(
     db: Session,
     state: GameStateSnapshot,
     active_interlocutor: str | None = None,
     player_input: str = "",
     active_simulated_player: str | None = None,
-) -> str:
-    """Build minimum scene context while separating truth, perception and knowledge."""
+) -> NarrativeContext:
+    """Build the structured scene context while separating truth,
+    perception and knowledge. Phase 24C — this used to be build_context()
+    itself, returning the final joined string directly; build_context()
+    below is now a thin wrapper (str = build_narrative_context(...).serialize()),
+    kept for every existing caller that only ever wanted the flat text
+    Ollama receives. Nothing about what's gathered or how knowledge
+    filtering works changed — see NarrativeContext's own docstring."""
     active_npc = _resolve_active_npc(db, state, active_interlocutor)
     active_transported = next(
         (
@@ -1322,44 +1411,62 @@ def build_context(
         player_input,
     )
 
-    sections = [
-        player_section,
-        *([inventory_context] if inventory_context else []),
-        world_section,
-        "\n".join(location_lines),
-        "\n".join(perception_lines),
-        "\n".join(known_route_lines),
-        "\n".join(current_location_knowledge_lines),
-        spatial_knowledge_section,
-        "\n".join(visible_lines),
-        *([("\n".join(combat_lines))] if combat_lines else []),
-        "\n".join(active_lines),
-        "\n".join(active_transported_lines),
-        "\n".join(organization_lines),
-        "\n".join(currency_lines),
-        *([("\n".join(regional_lines))] if regional_lines else []),
-        *([("\n".join(local_economy_lines))] if local_economy_lines else []),
-        "\n".join(shop_lines),
-        npc_knowledge_section,
-        player_knowledge_section,
-        npc_memory_section,
-        player_memory_section,
-        _retrieved_long_term_context(db, state, active_npc, scene_subjects),
-        "\n".join(input_canon_lines),
-        "\n".join(quest_lines),
-        "\n".join(technique_lines),
-        (
+    ctx = NarrativeContext(
+        player=player_section,
+        inventory=inventory_context,
+        world=world_section,
+        location="\n".join(location_lines),
+        perception="\n".join(perception_lines),
+        known_routes="\n".join(known_route_lines),
+        current_location_knowledge="\n".join(current_location_knowledge_lines),
+        spatial_knowledge=spatial_knowledge_section,
+        visible_npcs="\n".join(visible_lines),
+        combat="\n".join(combat_lines) if combat_lines else "",
+        active_npc="\n".join(active_lines),
+        active_transported="\n".join(active_transported_lines),
+        organizations="\n".join(organization_lines),
+        currency="\n".join(currency_lines),
+        regional="\n".join(regional_lines) if regional_lines else "",
+        local_economy="\n".join(local_economy_lines) if local_economy_lines else "",
+        shops="\n".join(shop_lines),
+        npc_knowledge=npc_knowledge_section,
+        player_knowledge=player_knowledge_section,
+        npc_memories=npc_memory_section,
+        player_memories=player_memory_section,
+        retrieved_long_term=_retrieved_long_term_context(db, state, active_npc, scene_subjects),
+        input_canon_check="\n".join(input_canon_lines),
+        quests="\n".join(quest_lines),
+        techniques="\n".join(technique_lines),
+        canon_rule=(
             "CANON RULE\nOnly registered structured data and supplied knowledge are persistent facts. "
             "Missing information is not permission to create geography, buildings, history, "
             "religion, safety claims, important NPCs or other canon."
         ),
-    ]
-    final_context = "\n\n".join(sections)
-    logger.debug("CANONICAL LOCATION CONTEXT\n%s", "\n".join(location_lines))
-    logger.debug("ACTIVE NPC CONTEXT\n%s", "\n".join(active_lines))
-    logger.debug("ACTIVE TRANSPORTED PERSON CONTEXT\n%s","\n".join(active_transported_lines),)
-    logger.debug("NPC KNOWLEDGE\n%s", npc_knowledge_section)
-    logger.debug("PLAYER KNOWLEDGE\n%s", player_knowledge_section)
+    )
+    logger.debug("CANONICAL LOCATION CONTEXT\n%s", ctx.location)
+    logger.debug("ACTIVE NPC CONTEXT\n%s", ctx.active_npc)
+    logger.debug("ACTIVE TRANSPORTED PERSON CONTEXT\n%s", ctx.active_transported)
+    logger.debug("NPC KNOWLEDGE\n%s", ctx.npc_knowledge)
+    logger.debug("PLAYER KNOWLEDGE\n%s", ctx.player_knowledge)
+    return ctx
+
+
+def build_context(
+    db: Session,
+    state: GameStateSnapshot,
+    active_interlocutor: str | None = None,
+    player_input: str = "",
+    active_simulated_player: str | None = None,
+) -> str:
+    """Thin wrapper over build_narrative_context() for every caller that
+    only ever wanted the flat text Ollama receives — the vast majority
+    of the codebase, including narrator.narrate()'s own `context: str`
+    parameter, unchanged by Phase 24C. Byte-identical to what this
+    function itself used to build directly before the structured seam
+    existed."""
+    final_context = build_narrative_context(
+        db, state, active_interlocutor, player_input, active_simulated_player
+    ).serialize()
     logger.debug("FINAL CONTEXT SENT TO LLM\n%s", final_context)
     return final_context
 

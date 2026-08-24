@@ -81,8 +81,14 @@ _SENSORY_KEYWORDS = re.compile(
 
 _PERSISTENT_ENTITY_KEYWORDS = re.compile(
     r"\b("
-    r"filh[oa]|irma[oo]|esposa|marido|namorad[oa]|amante|segredo\w*|"
-    r"organizaca?[oa]|guilda|taverna|loja|vila|cidade|templo|"
+    # Phase 24I — irma[oo] never matched "irmão"/"irmãos" (needed a
+    # literal "irma"+"o", but consuming the alternation's single char
+    # left no room for the second "o" before the word boundary); and
+    # organizaca?[oa] never matched "organização"/"organizações" at all
+    # (see the identical, independently-discovered bug in narrator.py's
+    # _PERSISTENT_CONCEPTS, fixed the same way there).
+    r"filh[oa]|irm(?:a|ao|as|aos)|esposa|marido|namorad[oa]|amante|segredo\w*|"
+    r"organizac(?:ao|oes)|guilda|taverna|loja|vila|cidade|templo|"
     r"casad[oa]|noiv[oa]"
     r")\b",
     re.IGNORECASE,

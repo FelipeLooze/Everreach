@@ -88,12 +88,32 @@ _PERSISTENT_CONCEPTS = {
     "castelo": r"\bcastelos?\b",
     "loja": r"\blojas?\b",
     "taverna": r"\btavernas?\b",
-    "estalagem": r"\bestalagens?\b",
+    # Phase 24I — was r"\bestalagens?\b" ("estalagen" + optional final
+    # "s"), which never matches the actual singular word "estalagem"
+    # (ends in "-gem", not "-gens"); only the plural "estalagens" ever
+    # matched. Confirmed via the spec's own "minha estalagem" example
+    # silently passing validation.
+    "estalagem": r"\bestalage(?:m|ns)\b",
     "cidade": r"\bcidades?\b",
     "vila": r"\bvilas?\b",
     "ruína": r"\bruinas?\b",
     "masmorra": r"\b(masmorras?|dungeons?)\b",
+    # Phase 24I — generic structures/institutions the spec's own examples
+    # named ("o prédio do conselho") that nothing previously covered.
+    "prédio": r"\b(predios?|edificios?)\b",
+    "conselho": r"\bconselhos?\b",
     "facção": r"\bfacc(?:ao|oes)\b",
+    # Phase 24I — "organização"/"grupo" as generic category words,
+    # matching the existing guilda/facção pattern: catches narration
+    # inventing "a organização X"/"o grupo Y" even when it doesn't use
+    # one of the more specific category words above. A wholly invented
+    # proper name with no category noun at all (no "guilda"/"facção"/
+    # "organização"/"grupo" anywhere) is a known, harder gap this
+    # keyword-based mechanism cannot close without risking false
+    # positives on ordinary capitalized names — left for a future
+    # phase, not attempted here.
+    "organização": r"\borganizac(?:ao|oes)\b",
+    "grupo": r"\bgrupos?\b",
     "religião": r"\breligi(?:ao|oes)\b",
     "prática religiosa": r"\b(fe|religios[oa]s?|cult\w*|rez\w*|sacerd\w*|orac\w*)\b",
     "história inventada": r"\b(antepassad\w*|ancestr\w*)\b",
@@ -105,6 +125,17 @@ _PERSISTENT_CONCEPTS = {
     "sul": r"\bsul\b",
     "leste": r"\bleste\b",
     "oeste": r"\boeste\b",
+    # Phase 24I — unsupported family relationships (spec's own required
+    # example). Reuses the same word set claims.py's
+    # _PERSISTENT_ENTITY_KEYWORDS already names for claim classification,
+    # but written correctly this time (see the irmã/irmão fix below) —
+    # this dict is the one that actually gates narration, unlike the
+    # claims.py list, which only affects a claim's CATEGORY label.
+    "filho(a)": r"\bfilh[oa]s?\b",
+    "irmão/irmã": r"\birm(?:a|ao|as|aos)\b",
+    "cônjuge": r"\b(esposas?|esposos?|marido\w*)\b",
+    "namorado(a)": r"\bnamorad[oa]s?\b",
+    "segredo": r"\bsegredos?\b",
 }
 
 _UNSOLICITED_OPENING_INTERACTION_MESSAGE = (

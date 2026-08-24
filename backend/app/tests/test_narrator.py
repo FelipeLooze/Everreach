@@ -1613,3 +1613,31 @@ def test_drop_agency_violations_keeps_later_dialogue_sentence_without_its_own_da
     result = narrator._drop_agency_violations(text, "Logan", "Osgar")
 
     assert result == text
+
+
+# --- Phase 24I — Canon & World-Claim Validation Hardening ---
+
+
+def test_persistent_concepts_regex_fixes_actually_match_the_real_words():
+    # Direct unit coverage for the exact regex bugs found by the 24I
+    # audit — each of these previously matched nothing at all.
+    context = "CURRENT PLAYER\nName: Logan\n"
+    cases = [
+        "Você reconhece minha estalagem ao longe.",
+        "Osgar menciona seu irmão, Talven.",
+        "Osgar menciona suas irmãs.",
+        "Essa organização controla o comércio local.",
+    ]
+    for text in cases:
+        assert narrator._find_canon_violations(text, context, ""), text
+
+
+def test_persistent_concepts_new_entries_catch_the_spec_examples():
+    context = "CURRENT PLAYER\nName: Logan\n"
+    cases = [
+        "O prédio do conselho fica na praça central.",
+        "O edifício da guarda fica perto daqui.",
+        "Aquele grupo se reúne todas as noites.",
+    ]
+    for text in cases:
+        assert narrator._find_canon_violations(text, context, ""), text

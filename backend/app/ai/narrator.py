@@ -3,6 +3,7 @@ import re
 from typing import Literal
 import unicodedata
 
+from app.ai.conversational_act import QUESTION_ACTS, ConversationalAct, classify as classify_conversational_act
 from app.ai.llm_service import LLMService
 from app.core.logging import get_logger
 
@@ -1124,26 +1125,24 @@ def _drop_agency_violations(
     return "\n\n".join(kept_paragraphs).strip()
 
 
-_QUESTION_WORDS = re.compile(
-    r"\b(qual|quais|quem|onde|como|quando|por\s*que|porque|quanto|quantos|quantas)\b",
-    re.IGNORECASE,
-)
-
-
-def _looks_like_direct_question(player_input: str) -> bool:
-    """Deterministic, cheap heuristic — Phase 24A.1 explicitly defers a
-    real conversational-act classifier (Phase 24E/24J) to later Phase 24
-    work; this only needs to catch the obvious case ("?" or a Portuguese
-    interrogative) well enough to ground the model against answering an
-    unrelated topic, without another LLM call per turn."""
-    return "?" in player_input or bool(_QUESTION_WORDS.search(player_input))
-
+# Phase 24E — acts that pose an explicit ask (a question, or a direct
+# request for help) the interlocutor must address rather than silently
+# ignore; FAREWELL gets its own, differently-shaped grounding below.
+_MUST_ADDRESS_ACTS = QUESTION_ACTS | {ConversationalAct.REQUEST_HELP}
 
 _QUESTION_GROUNDING_LINE = (
-    "O jogador fez uma pergunta direta. O interlocutor deve endereçá-la "
-    "explicitamente — respondendo, recusando, evitando de forma plausível "
-    "e grounded, ou admitindo desconhecimento — mas nunca ignorando-a "
-    "para falar de outro assunto que o jogador não trouxe."
+    "O jogador fez uma pergunta direta ou pediu algo explicitamente. O "
+    "interlocutor deve endereçá-la explicitamente — respondendo, "
+    "recusando, evitando de forma plausível e grounded, ou admitindo "
+    "desconhecimento — mas nunca ignorando-a para falar de outro assunto "
+    "que o jogador não trouxe."
+)
+
+_FAREWELL_GROUNDING_LINE = (
+    "O jogador está se despedindo ou encerrando a interação. O "
+    "interlocutor pode se despedir ou reagir brevemente à saída — não "
+    "deve iniciar um novo tópico extenso nem prender o protagonista em "
+    "uma conversa que ele está tentando encerrar."
 )
 
 
@@ -1164,8 +1163,11 @@ def _build_current_turn_block(player_input: str) -> str:
         "Não responda a um turno anterior do histórico.",
         "Não gere fala, pensamentos, decisões ou ações voluntárias para o protagonista.",
     ]
-    if _looks_like_direct_question(player_input):
+    act = classify_conversational_act(player_input)
+    if act in _MUST_ADDRESS_ACTS:
         lines.append(_QUESTION_GROUNDING_LINE)
+    elif act is ConversationalAct.FAREWELL:
+        lines.append(_FAREWELL_GROUNDING_LINE)
     lines.append("")
     lines.append("FIM DO TURNO ATUAL DO JOGADOR")
     return "\n".join(lines)

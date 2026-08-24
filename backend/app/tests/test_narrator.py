@@ -1509,3 +1509,29 @@ def test_case6_current_question_is_structurally_separated_from_stale_history():
     current_turn_text = prompt[current_turn_start:current_turn_end]
     assert '"Qual o nome dessa vila?"' in current_turn_text
     assert "estalagem" not in current_turn_text.lower()
+
+
+# --- Phase 24E — conversational act grounding in the current-turn block ---
+
+
+def test_farewell_gets_farewell_grounding_not_question_grounding():
+    block = narrator._build_current_turn_block("Tchau, até logo.")
+    assert narrator._FAREWELL_GROUNDING_LINE in block
+    assert narrator._QUESTION_GROUNDING_LINE not in block
+
+
+def test_request_help_gets_must_address_grounding():
+    block = narrator._build_current_turn_block("Preciso de ajuda, por favor.")
+    assert narrator._QUESTION_GROUNDING_LINE in block
+
+
+def test_plain_greeting_gets_no_extra_grounding_line():
+    block = narrator._build_current_turn_block("Olá, bom dia.")
+    assert narrator._QUESTION_GROUNDING_LINE not in block
+    assert narrator._FAREWELL_GROUNDING_LINE not in block
+
+
+def test_plain_statement_gets_no_extra_grounding_line():
+    block = narrator._build_current_turn_block("Eu sento perto da fogueira.")
+    assert narrator._QUESTION_GROUNDING_LINE not in block
+    assert narrator._FAREWELL_GROUNDING_LINE not in block

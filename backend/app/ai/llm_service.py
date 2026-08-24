@@ -54,15 +54,19 @@ class OllamaLLMService(LLMService):
         timeout: float,
         embedding_model: str | None = None,
         num_predict: int | None = None,
+        temperature: float = 0.35,
+        keep_alive: str = "5m",
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._model = model
         self._timeout = timeout
         self._embedding_model = embedding_model
         self._num_predict = num_predict
+        self._temperature = temperature
+        self._keep_alive = keep_alive
 
     def generate(self, system: str, prompt: str) -> str:
-        options = {"temperature": 0.35}
+        options = {"temperature": self._temperature}
         if self._num_predict is not None:
             # Phase 24A.1 — verified live against this exact server that
             # num_predict is a real, respected cap (requesting 30
@@ -89,9 +93,7 @@ class OllamaLLMService(LLMService):
                         # separate reasoning trace by default. We only want the final answer.
                         "think": False,
                         "options": options,
-                        # Keep the model loaded between requests — a cold load can take
-                        # 20s+ for an 8B model, which would otherwise hit on every action.
-                        "keep_alive": "5m",
+                        "keep_alive": self._keep_alive,
                     },
                     timeout=self._timeout,
                 )
@@ -107,6 +109,22 @@ class OllamaLLMService(LLMService):
             raise LLMServiceError(f"Ollama request failed: {exc}") from exc
 
         data = response.json()
+        # Phase 24B — generation result metadata, DEBUG-only. Ollama's
+        # own response already carries this; nothing previously looked
+        # at it. Doesn't change generate()'s return contract (still a
+        # plain string) — a future Phase 24P (narrative observability)
+        # is where this earns a real correlation ID and persisted trace;
+        # this just makes it visible today without that larger piece.
+        eval_duration_ms = data.get("eval_duration", 0) / 1_000_000
+        logger.debug(
+            "Ollama generation metadata: model=%s eval_count=%s eval_duration_ms=%.0f "
+            "prompt_eval_count=%s done_reason=%s",
+            self._model,
+            data.get("eval_count"),
+            eval_duration_ms,
+            data.get("prompt_eval_count"),
+            data.get("done_reason"),
+        )
         text = data.get("response", "")
         return text.strip()
 
@@ -173,6 +191,8 @@ def build_llm_service(settings: Settings | None = None) -> LLMService:
         timeout=settings.ollama_timeout_seconds,
         embedding_model=settings.ollama_embedding_model,
         num_predict=settings.ollama_num_predict,
+        temperature=settings.ollama_temperature,
+        keep_alive=settings.ollama_keep_alive,
     )
     # Phase 23D-Q.2 — the coordinator calls this back right before a
     # VISUAL_TASK runs, so ComfyUI gets the full VRAM budget instead of

@@ -96,6 +96,62 @@ def test_release_gpu_residency_swallows_errors_silently():
         _service().release_gpu_residency()  # must not raise
 
 
+def test_generate_uses_configured_temperature_and_keep_alive_not_hardcoded_literals():
+    # Phase 24B — both used to be literals inside generate() itself
+    # ("no generation setting scattered across callers" is the whole
+    # point of this subphase); confirms they now flow from the
+    # constructor (and, in build_llm_service, from Settings) instead.
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(json)
+        return _json_response({"response": "ok"})
+
+    service = OllamaLLMService(
+        base_url="http://127.0.0.1:11434", model="test-model", timeout=5.0,
+        temperature=0.7, keep_alive="10m",
+    )
+    with patch("httpx.post", side_effect=fake_post):
+        service.generate("system", "prompt")
+
+    assert calls[0]["options"]["temperature"] == 0.7
+    assert calls[0]["keep_alive"] == "10m"
+
+
+def test_generate_defaults_match_the_previously_hardcoded_values():
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(json)
+        return _json_response({"response": "ok"})
+
+    with patch("httpx.post", side_effect=fake_post):
+        _service().generate("system", "prompt")
+
+    assert calls[0]["options"]["temperature"] == 0.35
+    assert calls[0]["keep_alive"] == "5m"
+
+
+def test_build_llm_service_wires_temperature_and_keep_alive_from_settings():
+    settings = Settings(
+        ollama_base_url="http://127.0.0.1:11434", ollama_model="test-model",
+        ollama_timeout_seconds=5.0, ollama_temperature=0.9, ollama_keep_alive="1h",
+    )
+    service = build_llm_service(settings)
+
+    calls = []
+
+    def fake_post(url, json, timeout):
+        calls.append(json)
+        return _json_response({"response": "ok"})
+
+    with patch("httpx.post", side_effect=fake_post):
+        service.generate("system", "prompt")
+
+    assert calls[0]["options"]["temperature"] == 0.9
+    assert calls[0]["keep_alive"] == "1h"
+
+
 def test_build_llm_service_registers_the_release_hook_with_the_coordinator():
     from app.core.gpu_coordinator import gpu_heavy_operation
 

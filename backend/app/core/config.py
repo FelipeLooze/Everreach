@@ -23,6 +23,17 @@ class Settings(BaseSettings):
     # near this many tokens) while still cutting off a runaway
     # continuation well before it can simulate several more turns.
     ollama_num_predict: int = 500
+    # Phase 24B — centralized here rather than a literal inside
+    # OllamaLLMService.generate(), per the same "no generation setting
+    # scattered across callers" goal as ollama_num_predict above. Value
+    # unchanged from what generate() already hardcoded — 24B audited
+    # this and found no evidence it was ever a problem, so it stays put;
+    # only its home moved.
+    ollama_temperature: float = 0.35
+    # Keeps the model resident between requests — a cold load can take
+    # 20s+ (measured higher for the current 14B model), which would
+    # otherwise hit on every single action.
+    ollama_keep_alive: str = "5m"
     # Phase 18H — a small dedicated embedding model, separate from the
     # narration/intent model above. None disables semantic retrieval
     # gracefully (app.ai.retrieval.semantic degrades to no candidates)

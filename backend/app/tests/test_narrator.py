@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+import logging
 
 from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService
+from app.core.logging import get_logger
 
 
 @dataclass
@@ -1720,3 +1722,80 @@ def test_repetition_violations_are_non_blocking_in_a_full_narrate_call():
     result = narrator.narrate(llm, "Nenhuma mudança mecânica.", context, "Posso perguntar algo?", history)
 
     assert result == "Aldric sorri e responde: \"Claro, pode perguntar.\""
+
+
+# --- Phase 24L — Repair/Regeneration Pipeline ---
+
+
+def _capture_narration_logs():
+    """Same defensive pattern as test_narrative_trace.py's own DEBUG-level
+    capture: pytest's caplog silently sees nothing here once app startup
+    has set the "everreach" ancestor logger's propagate=False anywhere
+    earlier in the suite, and a process-wide logging.disable(...) ceiling
+    can also be left raised by an unrelated earlier test — both are
+    process-global state this must save and restore regardless."""
+    records: list[str] = []
+
+    class _ListHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record.getMessage())
+
+    logger = get_logger("narration")
+    handler = _ListHandler()
+    state = (logger.level, logger.disabled, logging.Logger.manager.disable)
+    logging.disable(logging.NOTSET)
+    logger.disabled = False
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+    return logger, handler, state, records
+
+
+def _restore_narration_logs(logger, handler, state) -> None:
+    logger.removeHandler(handler)
+    logger.setLevel(state[0])
+    logger.disabled = state[1]
+    logging.disable(state[2])
+
+
+def test_accepted_first_pass_outcome_is_logged():
+    logger, handler, state, records = _capture_narration_logs()
+    try:
+        llm = CapturingLLM("O vento sopra pela praça vazia.")
+        context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+        narrator.narrate(llm, "Nenhuma mudança mecânica.", context, "Eu olho ao redor.", "(sem histórico)")
+    finally:
+        _restore_narration_logs(logger, handler, state)
+
+    outcome_lines = [r for r in records if r.startswith("NARRATION OUTCOME:")]
+    assert len(outcome_lines) == 1
+    assert "ACCEPTED_FIRST_PASS" in outcome_lines[0]
+    assert "attempt=1" in outcome_lines[0]
+
+
+def test_agency_fallback_outcome_is_logged_with_player_agency_category():
+    logger, handler, state, records = _capture_narration_logs()
+    try:
+        llm = StubbornLLM("Logan agradece e sorri.")
+        context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+        narrator.narrate(llm, "Nenhuma mudança mecânica.", context, "Eu olho ao redor.", "(sem histórico)")
+    finally:
+        _restore_narration_logs(logger, handler, state)
+
+    outcome_lines = [r for r in records if r.startswith("NARRATION OUTCOME:")]
+    assert len(outcome_lines) == 1
+    assert "FALLBACK" in outcome_lines[0]
+    assert "PLAYER_AGENCY" in outcome_lines[0]
+
+
+def test_canon_violation_retries_are_bounded_never_infinite():
+    # Mirrors the agency-side bound already covered elsewhere in this
+    # file, but for the separate canon-repair path (Phase 24L's own
+    # "never allow infinite retries" audit target) — a persistently
+    # canon-violating draft must still stop at exactly 2 revision
+    # attempts (3 total LLM calls), never loop indefinitely.
+    llm = StubbornLLM("Há uma estalagem lendária aqui que ninguém nunca mencionou antes.")
+    context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+
+    narrator.narrate(llm, "Nenhuma mudança mecânica.", context, "Eu olho ao redor.", "(sem histórico)")
+
+    assert len(llm.calls) == 3

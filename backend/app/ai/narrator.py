@@ -1,3 +1,4 @@
+from enum import StrEnum
 from pathlib import Path
 import re
 from typing import Literal
@@ -8,6 +9,54 @@ from app.ai.llm_service import LLMService
 from app.core.logging import get_logger
 
 logger = get_logger("narration")
+
+
+# Phase 24L — Repair/Regeneration Pipeline. The spec's own named failure
+# classes ("different failure classes should communicate precise repair
+# reasons"). Not every category has a producer inside narrator.py's own
+# pipeline today (RELEVANCE is Phase 24J's separate post-hoc validator,
+# which runs after narrate() already returned and logs its own trace —
+# out of scope here) — the taxonomy still names it so a future producer
+# has a home to log into rather than inventing a seventh ad-hoc label.
+class RepairReasonCategory(StrEnum):
+    PLAYER_AGENCY = "PLAYER_AGENCY"
+    NPC_IDENTITY = "NPC_IDENTITY"
+    CANON = "CANON"
+    KNOWLEDGE = "KNOWLEDGE"
+    RELEVANCE = "RELEVANCE"
+    FORMAT = "FORMAT"
+
+
+class NarrationOutcome(StrEnum):
+    ACCEPTED_FIRST_PASS = "ACCEPTED_FIRST_PASS"
+    ACCEPTED_AFTER_REVISION = "ACCEPTED_AFTER_REVISION"
+    REPAIRED_VIA_TRIM = "REPAIRED_VIA_TRIM"
+    FALLBACK = "FALLBACK"
+
+
+def _log_narration_outcome(
+    outcome: NarrationOutcome,
+    *,
+    attempt: int,
+    category: RepairReasonCategory | None = None,
+    reason: str = "",
+) -> None:
+    """One consistent, always-on (INFO, not DEBUG) line per narrate() call
+    — the spec's own "measure: first-pass acceptance rate, repair rate,
+    fallback rate" ask is otherwise only answerable by grepping several
+    differently-shaped FALLBACK REASON/FINAL RESPONSE log messages. This
+    doesn't compute the rates itself (no metrics backend exists here to
+    aggregate into) — it makes them computable from ordinary logs without
+    needing DEBUG verbosity, matching the spec's "prefer lightweight"
+    guidance over building real metrics infrastructure for this alone.
+    """
+    logger.info(
+        "NARRATION OUTCOME: %s attempt=%s category=%s reason=%s",
+        outcome.value,
+        attempt,
+        category.value if category is not None else "NONE",
+        reason or "-",
+    )
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "narrator_system.txt"
 _SYSTEM_PROMPT = _PROMPT_PATH.read_text(encoding="utf-8")
@@ -1498,6 +1547,12 @@ def narrate(
                     style_violations,
                 )
             logger.debug("FINAL RESPONSE (accepted; no hard violations)\n%s", draft)
+            _log_narration_outcome(
+                NarrationOutcome.ACCEPTED_FIRST_PASS
+                if attempt == 1
+                else NarrationOutcome.ACCEPTED_AFTER_REVISION,
+                attempt=attempt,
+            )
             return draft
 
         revision_prompt = (
@@ -1542,6 +1597,12 @@ def narrate(
             "text on every revision attempt. Returning deterministic safe fallback.\nFALLBACK:\n%s",
             safe,
         )
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.FORMAT,
+            reason="empty response after stripping leaked prompt text",
+        )
         return safe
 
     remaining_unfulfilled_speech_promise = _find_unfulfilled_speech_promise_violations(draft)
@@ -1554,6 +1615,12 @@ def narrate(
             "revisions: %s\nFALLBACK:\n%s",
             remaining_unfulfilled_speech_promise,
             safe,
+        )
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.FORMAT,
+            reason="unfulfilled speech promise",
         )
         return safe
 
@@ -1594,6 +1661,11 @@ def narrate(
             remaining_style,
         )
 
+    # Tracks whether any deterministic trim below actually changed `draft`,
+    # so the no-remaining-canon return further down can log REPAIRED_VIA_TRIM
+    # vs ACCEPTED_AFTER_REVISION accurately (Phase 24L).
+    any_trim_applied = False
+
     # Player agency is absolute. If the model still controls the protagonist,
     # deterministically remove those parts. Never knowingly return the flawed
     # draft merely because trimming would empty it.
@@ -1607,6 +1679,7 @@ def narrate(
                 trimmed,
             )
             draft = trimmed
+            any_trim_applied = True
         else:
             safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
             logger.error(
@@ -1615,6 +1688,12 @@ def narrate(
                 "known-invalid draft: %s\nFALLBACK:\n%s",
                 remaining_agency + remaining_turn,
                 safe,
+            )
+            _log_narration_outcome(
+                NarrationOutcome.FALLBACK,
+                attempt=attempt,
+                category=RepairReasonCategory.PLAYER_AGENCY,
+                reason="agency violation could not be trimmed without emptying the response",
             )
             return safe
 
@@ -1631,6 +1710,7 @@ def narrate(
                 trimmed,
             )
             draft = trimmed
+            any_trim_applied = True
         else:
             safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
             logger.error(
@@ -1639,6 +1719,12 @@ def narrate(
                 "instead of the known-invalid draft: %s\nFALLBACK:\n%s",
                 remaining_unauthorized_combatant,
                 safe,
+            )
+            _log_narration_outcome(
+                NarrationOutcome.FALLBACK,
+                attempt=attempt,
+                category=RepairReasonCategory.NPC_IDENTITY,
+                reason="unauthorized combatant violation could not be trimmed without emptying the response",
             )
             return safe
 
@@ -1655,6 +1741,7 @@ def narrate(
                 trimmed,
             )
             draft = trimmed
+            any_trim_applied = True
         else:
             safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
             logger.error(
@@ -1663,6 +1750,12 @@ def narrate(
                 "instead of the known-invalid draft: %s\nFALLBACK:\n%s",
                 remaining_unauthorized_speaker,
                 safe,
+            )
+            _log_narration_outcome(
+                NarrationOutcome.FALLBACK,
+                attempt=attempt,
+                category=RepairReasonCategory.NPC_IDENTITY,
+                reason="unauthorized speaker violation could not be trimmed without emptying the response",
             )
             return safe
 
@@ -1678,6 +1771,7 @@ def narrate(
                 trimmed,
             )
             draft = trimmed
+            any_trim_applied = True
         else:
             safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
             logger.error(
@@ -1686,6 +1780,12 @@ def narrate(
                 "the known-invalid draft: %s\nFALLBACK:\n%s",
                 remaining_hidden_names,
                 safe,
+            )
+            _log_narration_outcome(
+                NarrationOutcome.FALLBACK,
+                attempt=attempt,
+                category=RepairReasonCategory.KNOWLEDGE,
+                reason="hidden name violation could not be trimmed without emptying the response",
             )
             return safe
 
@@ -1700,6 +1800,12 @@ def narrate(
             remaining_opening_interaction,
             safe,
         )
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.NPC_IDENTITY,
+            reason="opening initiated an unauthorized interaction",
+        )
         return safe
 
     remaining_canon = (
@@ -1710,6 +1816,10 @@ def narrate(
 
     if not remaining_canon:
         logger.debug("FINAL RESPONSE\n%s", draft)
+        _log_narration_outcome(
+            NarrationOutcome.REPAIRED_VIA_TRIM if any_trim_applied else NarrationOutcome.ACCEPTED_AFTER_REVISION,
+            attempt=attempt,
+        )
         return draft
 
     logger.warning("Narrator output still violates canon after hard revisions: %s", remaining_canon)
@@ -1738,6 +1848,12 @@ def narrate(
             filtered,
         )
         logger.debug("FINAL RESPONSE (granular fallback)\n%s", filtered)
+        _log_narration_outcome(
+            NarrationOutcome.REPAIRED_VIA_TRIM,
+            attempt=attempt,
+            category=RepairReasonCategory.CANON,
+            reason="dropped unsupported canon/meta segments, kept the supported remainder",
+        )
         return filtered
 
     # Only an active NPC answering a factual gap gets the epistemic refusal.
@@ -1749,6 +1865,12 @@ def narrate(
             "using epistemic refusal"
         )
         logger.debug("FINAL RESPONSE (epistemic fallback)\n— Não sei dizer.")
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.CANON,
+            reason="no supported segment survived canon filtering; used epistemic refusal",
+        )
         return "— Não sei dizer."
 
     safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
@@ -1757,5 +1879,11 @@ def narrate(
         "NPC for an epistemic refusal. Returning deterministic safe fallback instead of the "
         "known-invalid draft.\nFALLBACK:\n%s",
         safe,
+    )
+    _log_narration_outcome(
+        NarrationOutcome.FALLBACK,
+        attempt=attempt,
+        category=RepairReasonCategory.CANON,
+        reason="no supported segment survived canon filtering and no active NPC for refusal",
     )
     return safe

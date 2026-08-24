@@ -11,6 +11,18 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "hermes3:8b-llama3.1-q4_K_M"
     ollama_timeout_seconds: float = 180.0
+    # Phase 24A.1 — verified live against the installed Ollama server
+    # that options.num_predict is respected (a real cap, not a guess:
+    # requesting num_predict=30 returned exactly eval_count=30 with
+    # done_reason="length"). Without any cap, generation has no upper
+    # bound at all, which is part of how the model was able to keep
+    # going into a fabricated multi-turn "PLAYER:/NARRATOR:" scaffold
+    # instead of stopping after one coherent beat. 500 gives generous
+    # room for narrator.py's own "no máximo dois/três parágrafos
+    # curtos" style guidance (a genuinely long reply needs nowhere
+    # near this many tokens) while still cutting off a runaway
+    # continuation well before it can simulate several more turns.
+    ollama_num_predict: int = 500
     # Phase 18H — a small dedicated embedding model, separate from the
     # narration/intent model above. None disables semantic retrieval
     # gracefully (app.ai.retrieval.semantic degrades to no candidates)

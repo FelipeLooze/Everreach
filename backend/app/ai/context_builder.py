@@ -1374,14 +1374,69 @@ def build_canonical_facts(state: GameStateSnapshot) -> dict:
 def build_recent_history(
     entries: Sequence[HistoryEntry], max_entries: int = RECENT_HISTORY_ENTRIES
 ) -> str:
+    """Phase 24A.1 — deliberately NOT a raw "PLAYER: ...\\nNARRATOR: ..."
+    transcript anymore. That literal alternating-label format was a real,
+    confirmed root cause (Phase 24A live audit): the model was shown its
+    own conversation history in exactly the shape it later reproduced as
+    a fabricated multi-turn continuation, because nothing distinguished
+    "this is what already happened" from "this is a script to continue."
+    The new format wraps every past turn in explicit historical framing
+    and an unambiguous instruction not to continue it — same underlying
+    information (player speech vs. narrated response, in order), just no
+    longer shaped like text a completion model would want to extend.
+
+    Turns are reconstructed from get_recent_story_log's own invariant
+    (app.services.story_log._entries_from_events): each STORY_EXCHANGE
+    event contributes exactly one adjacent (player, narrator) pair, in
+    that order; only WORLD_STARTED ever contributes a lone leading
+    narrator-only entry (no player turn preceded it). Pairing walks the
+    list respecting that shape rather than assuming a fixed stride, so a
+    slice that happens to keep or drop the leading singleton never
+    desynchronizes the pairing.
+    """
     recent = entries[-max_entries:]
     if not recent:
         return "(nenhuma troca anterior nesta cena)"
-    lines = []
-    for entry in recent:
-        speaker = "PLAYER" if entry.kind == "player" else "NARRATOR"
-        text = entry.text.strip()
+
+    def _clipped(text: str) -> str:
+        text = text.strip()
         if len(text) > MAX_HISTORY_ENTRY_CHARS:
             text = f"{text[:MAX_HISTORY_ENTRY_CHARS]}…"
-        lines.append(f"{speaker}: {text}")
-    return "\n".join(lines)
+        return text
+
+    blocks: list[str] = []
+    turn_number = 0
+    index = 0
+    if recent[0].kind != "player":
+        blocks.append(
+            "Narração inicial da cena (não é uma fala do jogador):\n"
+            f'"{_clipped(recent[0].text)}"'
+        )
+        index = 1
+
+    while index < len(recent):
+        entry = recent[index]
+        if entry.kind == "player" and index + 1 < len(recent) and recent[index + 1].kind != "player":
+            turn_number += 1
+            blocks.append(
+                f"Turno {turn_number}:\n"
+                f'O jogador disse anteriormente: "{_clipped(entry.text)}"\n'
+                f'Resposta narrada anteriormente: "{_clipped(recent[index + 1].text)}"'
+            )
+            index += 2
+        else:
+            # Defensive fallback for a shape the (player, narrator) pair
+            # invariant doesn't cover — never silently drop an entry.
+            label = "O jogador disse anteriormente" if entry.kind == "player" else "Resposta narrada anteriormente"
+            blocks.append(f'{label}: "{_clipped(entry.text)}"')
+            index += 1
+
+    return (
+        "HISTÓRICO DE TROCAS RECENTES\n\n"
+        "As entradas abaixo descrevem turnos ANTERIORES desta cena. São apenas "
+        "contexto histórico, nunca uma transcrição para continuar. Não gere um "
+        "novo turno do jogador. Não continue este histórico como se fosse a "
+        "próxima fala.\n\n"
+        + "\n\n".join(blocks)
+        + "\n\nFIM DO HISTÓRICO DE TROCAS RECENTES"
+    )

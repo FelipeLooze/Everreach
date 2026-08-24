@@ -76,8 +76,10 @@ def test_full_campaign_flow(client, fake_llm):
     assert action["intent_type"] == "FREEFORM"
     narrator_system, narrator_prompt = fake_llm.calls[-1]
     assert "NUNCA invente para o protagonista" in narrator_system
-    assert "PLAYER INPUT:\nI look around the village" in narrator_prompt
-    assert "RECENT HISTORY:\nNARRATOR: [test narration]" in narrator_prompt
+    assert '"I look around the village' in narrator_prompt
+    assert "TURNO ATUAL DO JOGADOR" in narrator_prompt
+    assert "HISTÓRICO DE TROCAS RECENTES" in narrator_prompt
+    assert '"[test narration]"' in narrator_prompt
 
     resp = client.get(f"/api/campaigns/{campaign_id}/story", params={"character_id": character_id})
     assert resp.status_code == 200

@@ -4,6 +4,12 @@ from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService
 
 
+@dataclass
+class _Entry:
+    kind: str
+    text: str
+
+
 class CapturingLLM(LLMService):
     def __init__(self, response: str = "Resposta do NPC.") -> None:
         self.response = response
@@ -77,7 +83,12 @@ def test_narrator_applies_system_prompt_and_all_dynamic_sections():
         mechanical_summary="Nenhuma mudança mecânica.",
         context="Local: praça; NPC presente: um ancião.",
         player_input='"O senhor é desta cidade?"',
-        recent_history="PLAYER: Bom dia.\nNARRATOR: — Bom dia — responde o ancião.",
+        recent_history=(
+            "HISTÓRICO DE TROCAS RECENTES\n\n"
+            'Turno 1:\nO jogador disse anteriormente: "Bom dia."\n'
+            'Resposta narrada anteriormente: "— Bom dia — responde o ancião."'
+            "\n\nFIM DO HISTÓRICO DE TROCAS RECENTES"
+        ),
     )
 
     assert result == "Resposta do NPC."
@@ -89,8 +100,8 @@ def test_narrator_applies_system_prompt_and_all_dynamic_sections():
     assert "Somente o backend pode alterar o nível de certeza." in system
     assert "MODO DA CENA:\nCONTINUATION" in prompt
     assert "SCENE CONTEXT:" in prompt
-    assert "RECENT HISTORY:" in prompt
-    assert "PLAYER INPUT:" in prompt
+    assert "HISTÓRICO DE TROCAS RECENTES" in prompt
+    assert "TURNO ATUAL DO JOGADOR" in prompt
     assert '"O senhor é desta cidade?"' in prompt
     assert "AUTHORITATIVE MECHANICAL FACTS:" in prompt
 
@@ -1368,3 +1379,133 @@ def test_narrator_catches_protagonist_agency_violation_in_screenplay_colon_forma
 
     assert result == "Osgar Vell aguarda pacientemente."
     assert len(llm.calls) == 3
+
+
+# --- Phase 24A.1 — real-failure regression cases (24A.1's own required set) ---
+#
+# Cases 2/3/6 test the deterministic guarantees this subphase actually
+# built (verbatim current-turn isolation, question grounding) — NOT a
+# conversational-relevance validator, which 24A.1 explicitly defers to
+# later Phase 24 work rather than half-building here.
+
+
+def test_case1_name_question_current_turn_block_is_grounded_verbatim():
+    block = narrator._build_current_turn_block("Olá, bom dia senhor. Qual o seu nome?")
+    assert '"Olá, bom dia senhor. Qual o seu nome?"' in block
+    assert narrator._QUESTION_GROUNDING_LINE in block
+    assert "Não gere fala, pensamentos, decisões ou ações voluntárias para o protagonista." in block
+
+
+def test_case2_location_question_is_isolated_as_the_current_turn():
+    # "O senhor sabe me informar onde estou?" (a real observed failure:
+    # the NPC randomly offered an inn instead). 24A.1 guarantees the
+    # question is grounded as the CURRENT turn with an explicit
+    # must-address instruction; whether the model actually complies is
+    # exactly what a future conversational-relevance validator (24J)
+    # would enforce, and is out of scope here.
+    llm = StubbornLLM("— Não sei dizer ao certo, mas fica perto da praça.")
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Aldric Draven"
+    )
+    narrator.narrate(
+        llm,
+        "Logan conversa com Aldric Draven.",
+        context,
+        "O senhor sabe me informar onde estou?",
+        "(sem histórico)",
+    )
+    system, prompt = llm.calls[0]
+    assert '"O senhor sabe me informar onde estou?"' in prompt
+    assert narrator._QUESTION_GROUNDING_LINE in prompt
+
+
+def test_case3_settlement_name_question_is_isolated_as_the_current_turn():
+    # "Na verdade eu queria saber qual cidade é essa, senhor. O nome
+    # dela." — the real transcript where the response spontaneously
+    # switched to discussing "o conselho" instead. Same scope note as
+    # case 2 above.
+    llm = StubbornLLM("— Isto aqui é Corford.")
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Aldric Draven"
+    )
+    narrator.narrate(
+        llm,
+        "Logan conversa com Aldric Draven.",
+        context,
+        "Na verdade eu queria saber qual cidade é essa, senhor. O nome dela.",
+        "(sem histórico)",
+    )
+    system, prompt = llm.calls[0]
+    assert '"Na verdade eu queria saber qual cidade é essa, senhor. O nome dela."' in prompt
+    assert narrator._QUESTION_GROUNDING_LINE in prompt
+
+
+def test_case4_real_fabricated_logan_lines_never_survive():
+    # The exact fabricated protagonist lines observed in real gameplay.
+    llm = StubbornLLM(
+        "Garrick Draven aponta para a estalagem.\n\n"
+        "— Obrigado, Garrick. Vou certamente visitar sua casa para descansar — diz Logan.\n\n"
+        '"Interessante... Acho que vou dar uma olhada." pensa Logan, satisfeito.'
+    )
+    context = (
+        "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n\n"
+        "ACTIVE NPC CONTEXT\nName: Garrick Draven"
+    )
+    result = narrator.narrate(
+        llm,
+        "Logan conversa com Garrick Draven.",
+        context,
+        "Obrigado.",
+        "(sem histórico)",
+    )
+    assert "Agradeço a oferta, senhor Thane" not in result
+    assert "Acho que vou dar uma olhada" not in result
+    assert "diz Logan" not in result
+
+
+def test_case5_history_leak_labels_never_reach_final_output():
+    llm = StubbornLLM(
+        "Aldric hesita por um momento.\n\n"
+        "PLAYER: Logan espera ansiosamente pela resposta\n"
+        "NARRATOR: — Poderia me dizer o motivo de sua visita?"
+    )
+    context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+    result = narrator.narrate(
+        llm,
+        "Logan conversa com Aldric.",
+        context,
+        "Qual o seu nome?",
+        "(sem histórico)",
+    )
+    assert "PLAYER:" not in result
+    assert "NARRATOR:" not in result
+
+
+def test_case6_current_question_is_structurally_separated_from_stale_history():
+    # Recent history contains an OLDER lodging question; current input
+    # asks the village name. 24A.1's guarantee is structural: the two
+    # never blur into the same block, and the current one is the only
+    # text inside TURNO ATUAL DO JOGADOR.
+    llm = StubbornLLM("— Isto aqui é Corford.")
+    context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
+    recent_history = context_builder.build_recent_history(
+        [
+            _Entry("player", "Tem alguma estalagem por aqui?"),
+            _Entry("narrator", "— Sim, ali adiante — diz o ancião."),
+        ]
+    )
+    narrator.narrate(
+        llm,
+        "Logan conversa com o ancião.",
+        context,
+        "Qual o nome dessa vila?",
+        recent_history,
+    )
+    system, prompt = llm.calls[0]
+    current_turn_start = prompt.index("TURNO ATUAL DO JOGADOR")
+    current_turn_end = prompt.index("FIM DO TURNO ATUAL DO JOGADOR")
+    current_turn_text = prompt[current_turn_start:current_turn_end]
+    assert '"Qual o nome dessa vila?"' in current_turn_text
+    assert "estalagem" not in current_turn_text.lower()

@@ -135,6 +135,13 @@ _PROMPT_LEAK_MARKERS = (
     # first such label onward is fabricated, unauthorized turns.
     "PLAYER:",
     "NARRATOR:",
+    # Phase 24A.1 — the new bounded history/current-turn framing's own
+    # literal headers/footers. If the model ever echoes one of these
+    # back, that is unambiguously leaked scaffolding, never real prose.
+    "HISTÓRICO DE TROCAS RECENTES",
+    "FIM DO HISTÓRICO DE TROCAS RECENTES",
+    "TURNO ATUAL DO JOGADOR",
+    "FIM DO TURNO ATUAL DO JOGADOR",
 )
 
 
@@ -587,6 +594,27 @@ def _protagonist_agency_violations(
 
     speaks_pattern = re.compile(rf"\b(?:{_SPEECH_VERBS})\s+{name}\b", re.IGNORECASE)
     if speaks_pattern.search(text):
+        return [_AGENCY_VIOLATION_MESSAGE]
+
+    # Phase 24A.1 — the spec's own explicit forbidden examples ("Logan
+    # thinks the man is lying", "Logan feels relieved", "Logan decides
+    # to run", "Logan agrees") use an interpreted mental-state verb, not
+    # a speech verb — speaks_pattern above never matches "pensa"/"sente"/
+    # "acha"/"decide"/"concorda". "{name} pensa..." (name leading a
+    # clause) is already caught by subject_pattern below regardless of
+    # verb; this specifically covers the verb-first Portuguese word
+    # order ("pensa Logan, satisfeito.") that subject_pattern's
+    # name-must-lead-the-clause anchor cannot — confirmed missing by a
+    # real regression test built from actual observed output. Deliberately
+    # excludes "percebe"/"nota" (notices) — those are legitimately
+    # sensory/perceptual in this codebase's own established SENSATION
+    # != EMOTION policy (19E) and would false-positive on allowed
+    # physical-perception narration.
+    mental_state_pattern = re.compile(
+        rf"\b(?:pensa|pensou|sente|sentiu|acha|achou|decide|decidiu|concorda|concordou)\s+{name}\b",
+        re.IGNORECASE,
+    )
+    if mental_state_pattern.search(text):
         return [_AGENCY_VIOLATION_MESSAGE]
 
     # A fabricated protagonist reply doesn't always carry an explicit
@@ -1096,6 +1124,53 @@ def _drop_agency_violations(
     return "\n\n".join(kept_paragraphs).strip()
 
 
+_QUESTION_WORDS = re.compile(
+    r"\b(qual|quais|quem|onde|como|quando|por\s*que|porque|quanto|quantos|quantas)\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_direct_question(player_input: str) -> bool:
+    """Deterministic, cheap heuristic — Phase 24A.1 explicitly defers a
+    real conversational-act classifier (Phase 24E/24J) to later Phase 24
+    work; this only needs to catch the obvious case ("?" or a Portuguese
+    interrogative) well enough to ground the model against answering an
+    unrelated topic, without another LLM call per turn."""
+    return "?" in player_input or bool(_QUESTION_WORDS.search(player_input))
+
+
+_QUESTION_GROUNDING_LINE = (
+    "O jogador fez uma pergunta direta. O interlocutor deve endereçá-la "
+    "explicitamente — respondendo, recusando, evitando de forma plausível "
+    "e grounded, ou admitindo desconhecimento — mas nunca ignorando-a "
+    "para falar de outro assunto que o jogador não trouxe."
+)
+
+
+def _build_current_turn_block(player_input: str) -> str:
+    """Phase 24A.1 — makes the player's CURRENT turn visually/semantically
+    unmistakable, instead of relying on the model to notice it somewhere
+    inside a long prompt. The exact text stays verbatim (never summarized
+    or replaced by an intent label) — it remains the one authoritative
+    record of what Logan actually said/attempted this turn."""
+    lines = [
+        "TURNO ATUAL DO JOGADOR",
+        "",
+        "Entrada exata do jogador (a única fala/ação que realmente aconteceu agora):",
+        "",
+        f'"{player_input.strip()}"',
+        "",
+        "Esta é a ação ou fala ATUAL do jogador. Responda a ESTE turno específico.",
+        "Não responda a um turno anterior do histórico.",
+        "Não gere fala, pensamentos, decisões ou ações voluntárias para o protagonista.",
+    ]
+    if _looks_like_direct_question(player_input):
+        lines.append(_QUESTION_GROUNDING_LINE)
+    lines.append("")
+    lines.append("FIM DO TURNO ATUAL DO JOGADOR")
+    return "\n".join(lines)
+
+
 def _safe_hard_failure_fallback(mode: NarrationMode, npc_name: str = "") -> str:
     """Return a deterministic response that cannot violate player agency or canon.
 
@@ -1125,11 +1200,12 @@ def narrate(
     - STYLE: cosmetic prose/format issues. These are logged only and never cause
       another LLM generation by themselves.
     """
+    current_turn_block = _build_current_turn_block(player_input)
     prompt = (
         f"MODO DA CENA:\n{mode}\n\n"
         f"SCENE CONTEXT:\n{context}\n\n"
-        f"RECENT HISTORY:\n{recent_history}\n\n"
-        f"PLAYER INPUT:\n{player_input}\n\n"
+        f"{recent_history}\n\n"
+        f"{current_turn_block}\n\n"
         "AUTHORITATIVE MECHANICAL FACTS:\n"
         f"{mechanical_summary}\n\n"
         "Escreva somente o próximo momento da cena, em português do Brasil."
@@ -1138,7 +1214,7 @@ def narrate(
     logger.debug("NARRATOR SYSTEM PROMPT\n%s", _SYSTEM_PROMPT)
     logger.debug("SCENE CONTEXT\n%s", context)
     logger.debug("RECENT HISTORY\n%s", recent_history)
-    logger.debug("PLAYER INPUT\n%s", player_input)
+    logger.debug("CURRENT TURN BLOCK\n%s", current_turn_block)
     logger.debug("AUTHORITATIVE FACTS\n%s", mechanical_summary)
 
     raw_response = llm_service.generate(_SYSTEM_PROMPT, prompt)

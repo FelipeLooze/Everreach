@@ -341,8 +341,8 @@ def test_direct_follow_up_keeps_npc_and_exact_recent_history(db_session):
         .count()
         == 3
     )
-    assert f"PLAYER: Falo com {elder_first_name}: — Bom dia." in second_prompts
-    assert "NARRATOR: — Bom dia." in second_prompts
+    assert f'O jogador disse anteriormente: "Falo com {elder_first_name}: — Bom dia."' in second_prompts
+    assert 'Resposta narrada anteriormente: "— Bom dia."' in second_prompts
 
 def test_resolve_action_move_advances_clock_and_world_tick_exactly_once(
     db_session,

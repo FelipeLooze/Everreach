@@ -413,6 +413,13 @@ def resolve_action(
             "player_text": text,
             "narrative": narrative_validation.final_text,
             "narrator_unavailable": narrator_unavailable,
+            # Phase 24D — the backend already resolved this deterministically
+            # (context_npc, above); persisting it is the only way a LATER
+            # turn's recent-history framing can attribute a past narrated
+            # exchange to a specific NPC instead of just "the narrator" —
+            # the LLM is never asked to infer or decide this after the fact.
+            "npc_id": context_npc.id if context_npc is not None else None,
+            "npc_name": context_npc.name if context_npc is not None else None,
         },
         importance=2 if is_dialogue else 1,
     )

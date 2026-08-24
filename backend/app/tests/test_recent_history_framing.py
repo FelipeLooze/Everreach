@@ -15,6 +15,7 @@ from app.ai.context_builder import build_recent_history
 class _Entry:
     kind: str
     text: str
+    npc_name: str | None = None
 
 
 def test_recent_history_no_longer_uses_bare_player_narrator_labels():
@@ -82,3 +83,45 @@ def test_recent_history_handles_leading_world_started_narration():
 
 def test_recent_history_empty_stays_a_plain_marker():
     assert build_recent_history([]) == "(nenhuma troca anterior nesta cena)"
+
+
+def test_recent_history_attributes_past_response_to_known_npc():
+    # Phase 24D — when the backend already resolved which NPC produced a
+    # past narrated turn (StoryEntry.npc_name), history should say so
+    # explicitly instead of the old generic "narrated" label, so the model
+    # can't confuse one NPC's past words for another's.
+    entries = [
+        _Entry("player", "Qual o seu nome?"),
+        _Entry("narrator", "— Sou Aldric — diz o ancião.", npc_name="Aldric"),
+    ]
+    history = build_recent_history(entries)
+
+    assert 'Resposta de Aldric anteriormente: "— Sou Aldric — diz o ancião."' in history
+    assert "Resposta narrada anteriormente" not in history
+
+
+def test_recent_history_falls_back_to_generic_label_without_npc_name():
+    # No active interlocutor was resolved for that turn (e.g. pure scene
+    # narration) — the generic label must still be used, not "None" or a
+    # blank attribution.
+    entries = [
+        _Entry("player", "Olhar ao redor"),
+        _Entry("narrator", "Nada acontece de imediato."),
+    ]
+    history = build_recent_history(entries)
+
+    assert 'Resposta narrada anteriormente: "Nada acontece de imediato."' in history
+
+
+def test_recent_history_defensive_fallback_branch_also_attributes_npc():
+    # Same attribution rule applies in the unpaired defensive-fallback
+    # branch: a narrator entry that isn't consumed as the second half of
+    # a (player, narrator) pair (here, two narrator entries back to back).
+    entries = [
+        _Entry("player", "Olá."),
+        _Entry("narrator", "— Olá — diz Osgar.", npc_name="Osgar"),
+        _Entry("narrator", "— Bem-vindo — diz Osgar.", npc_name="Osgar"),
+    ]
+    history = build_recent_history(entries)
+
+    assert 'Resposta de Osgar anteriormente: "— Bem-vindo — diz Osgar."' in history

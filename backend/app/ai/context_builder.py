@@ -1511,6 +1511,15 @@ def build_recent_history(
             text = f"{text[:MAX_HISTORY_ENTRY_CHARS]}…"
         return text
 
+    def _response_label(entry) -> str:
+        # Phase 24D — attribute a past narrated turn to the specific NPC
+        # the backend already resolved as active for it, when known
+        # (getattr, not direct access: plain HistoryEntry-shaped objects
+        # without npc_name — most unit-test doubles — still work
+        # unchanged, they just get the generic label).
+        npc_name = getattr(entry, "npc_name", None)
+        return f"Resposta de {npc_name} anteriormente" if npc_name else "Resposta narrada anteriormente"
+
     blocks: list[str] = []
     turn_number = 0
     index = 0
@@ -1525,16 +1534,17 @@ def build_recent_history(
         entry = recent[index]
         if entry.kind == "player" and index + 1 < len(recent) and recent[index + 1].kind != "player":
             turn_number += 1
+            response_entry = recent[index + 1]
             blocks.append(
                 f"Turno {turn_number}:\n"
                 f'O jogador disse anteriormente: "{_clipped(entry.text)}"\n'
-                f'Resposta narrada anteriormente: "{_clipped(recent[index + 1].text)}"'
+                f'{_response_label(response_entry)}: "{_clipped(response_entry.text)}"'
             )
             index += 2
         else:
             # Defensive fallback for a shape the (player, narrator) pair
             # invariant doesn't cover — never silently drop an entry.
-            label = "O jogador disse anteriormente" if entry.kind == "player" else "Resposta narrada anteriormente"
+            label = "O jogador disse anteriormente" if entry.kind == "player" else _response_label(entry)
             blocks.append(f'{label}: "{_clipped(entry.text)}"')
             index += 1
 

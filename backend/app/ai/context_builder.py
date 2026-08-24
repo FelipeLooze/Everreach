@@ -4,6 +4,7 @@ from typing import Protocol, Sequence
 import unicodedata
 
 from sqlalchemy.orm import Session
+from app.ai.conversational_act import ConversationalSubject, classify_subject
 from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
@@ -116,6 +117,7 @@ class NarrativeContext:
     combat: str
     active_npc: str
     active_transported: str
+    direct_question_grounding: str
     organizations: str
     currency: str
     regional: str
@@ -145,6 +147,7 @@ class NarrativeContext:
             *([self.combat] if self.combat else []),
             self.active_npc,
             self.active_transported,
+            *([self.direct_question_grounding] if self.direct_question_grounding else []),
             self.organizations,
             self.currency,
             *([self.regional] if self.regional else []),
@@ -801,6 +804,60 @@ def _resolve_active_npc(
     return active_npc
 
 
+def _direct_question_grounding_lines(
+    player_input: str,
+    state: GameStateSnapshot,
+    active_npc: NPC | None,
+    location_name_known: bool,
+) -> list[str]:
+    """Phase 24J.1 Step 4 — for a direct question about the active NPC's
+    own identity or the current settlement's name, tell the narrator
+    up front what it is actually authorized to say, instead of relying
+    only on after-the-fact repair. Deliberately tiny and only fires for
+    the two subjects with an unambiguous, data-driven answer (mirrors
+    the same acceptance signals app.ai.validation.relevance now checks)
+    — never a general-purpose answer key, and never a substitute for the
+    exact player utterance staying authoritative elsewhere.
+    """
+    subject = classify_subject(player_input)
+
+    if subject == ConversationalSubject.SELF_NAME:
+        if active_npc is None:
+            return []
+        return [
+            "DIRECT QUESTION GROUNDING",
+            "The player is asking the ACTIVE interlocutor's own name/identity.",
+            f"Authorized answer: {active_npc.name}",
+        ]
+
+    if subject in (ConversationalSubject.CURRENT_SETTLEMENT, ConversationalSubject.CURRENT_LOCATION):
+        if state.location is None or location_name_known:
+            return []
+        is_local_resident = active_npc is not None and active_npc.location_id == state.location.id
+        if is_local_resident:
+            # "Authorized answer:" stays on its own line with ONLY the bare
+            # fact — this exact line is re-parsed verbatim by narrator.py's
+            # _direct_question_grounding_fact and may be used as-is in
+            # player-facing repair/fallback text (Steps 6/7), so it must
+            # never carry the explanatory clause below.
+            return [
+                "DIRECT QUESTION GROUNDING",
+                "The player is asking for the CURRENT location/settlement's name.",
+                f"Authorized answer: {state.location.name}",
+                "The active interlocutor lives or works here and may state it plainly; this "
+                "is ordinary local knowledge, not a secret.",
+            ]
+        return [
+            "DIRECT QUESTION GROUNDING",
+            "The player is asking for the CURRENT location/settlement's name.",
+            "No confirmed answer available — nothing establishes the active interlocutor (if "
+            "any) as someone who would know this name. A genuine admission of not knowing, or "
+            "a refusal, is the correct response here. Never invent or guess the name.",
+        ]
+
+    return []
+
+
 def _scene_subjects(
     db: Session,
     state: GameStateSnapshot,
@@ -1277,11 +1334,26 @@ def build_narrative_context(
     if state.location is None:
         location_lines.append("Current location: unknown")
     else:
+        # Phase 24J.1 — Name/Region are a private proper noun (the player
+        # may not know it yet); Type is what anyone physically present can
+        # already tell just by looking around, regardless of whether its
+        # NAME is known. Bundling both under one undifferentiated "private"
+        # label previously let the model express uncertainty about WHETHER
+        # they were even in a village at all, when only the village's NAME
+        # should ever be in doubt (a real live-playtest failure — a
+        # transported person unsure of the settlement's name also became
+        # unsure whether it was a village). The explicit annotations below
+        # keep that distinction unmissable at the point of use.
         location_lines.extend(
             [
-                f"Name: {state.location.name}",
-                f"Type: {state.location.type.upper()}",
-                f"Region: {state.region.name if state.region else 'unknown'}",
+                f"Name: {state.location.name} (HIDDEN — a private proper noun; do not state it "
+                "unless the player already knows it or an authorized interlocutor may reveal it)",
+                f"Type: {state.location.type.upper()} (DIRECTLY PERCEPTIBLE — anyone physically "
+                "present can tell this much just by looking around, e.g. that they are standing "
+                "in a village, independent of whether its NAME is known — never express "
+                "uncertainty about this)",
+                f"Region: {state.region.name if state.region else 'unknown'} "
+                "(HIDDEN — same rule as Name)",
             ]
         )
 
@@ -1560,6 +1632,9 @@ def build_narrative_context(
         combat="\n".join(combat_lines) if combat_lines else "",
         active_npc="\n".join(active_lines),
         active_transported="\n".join(active_transported_lines),
+        direct_question_grounding="\n".join(
+            _direct_question_grounding_lines(player_input, state, active_npc, location_name_known)
+        ),
         organizations="\n".join(organization_lines),
         currency="\n".join(currency_lines),
         regional="\n".join(regional_lines) if regional_lines else "",

@@ -612,6 +612,14 @@ VISITED não significa "sabe o nome".
 MAPPED não significa automaticamente "sabe o nome" se nenhum KnowledgeFact
 autorizado forneceu esse nome.
 
+Não saber o NOME canônico de um lugar nunca é motivo para expressar
+incerteza sobre que TIPO de lugar é. O campo "Type" (vila, cidade,
+floresta, ...) é diretamente perceptível por qualquer pessoa fisicamente
+presente, exatamente como "Name" e "Region" são privados — um
+protagonista ou PNJ pode dizer com total confiança "estamos numa vila"
+mesmo sem saber o nome dela. Nunca confunda desconhecer o nome com
+desconhecer onde/que tipo de lugar é.
+
 Ainda é permitido descrever elementos físicos diretamente perceptíveis
 fornecidos pelo contexto sem usar o nome desconhecido do lugar.
 

@@ -61,6 +61,111 @@ _GREETING_PATTERN = re.compile(
     r"^\s*(ol[áa]|oi|e\s*a[íi]|bom\s+dia|boa\s+tarde|boa\s+noite|sauda[çc][õo]es)\b",
     re.IGNORECASE,
 )
+# Distinguishes "qual o SEU nome" (about the interlocutor) from "qual o
+# nome dessa VILA" (about something else entirely) — both are "asking
+# about a name" at the act level; only this marker tells them apart.
+_SELF_REFERENCE_MARKERS = re.compile(r"\b(seu|sua|voc[êe]|voc[êe]s|teu|tua)\b", re.IGNORECASE)
+
+
+class ConversationalSubject(str, Enum):
+    """Phase 24J.1 — what a question/request is actually ABOUT, layered on
+    top of `ConversationalAct` rather than replacing it. The act alone is
+    too coarse for relevance checking: `classify()` buckets "qual o SEU
+    nome?" and "qual o nome dessa VILA?" into the same QUESTION_NAME act
+    (both ask about "a name"), but only a subject dimension can tell them
+    apart well enough to check the response against the right fact.
+
+    Deliberately a small, broad set — the smallest structured vocabulary
+    that lets relevance validation pick the right acceptance signal (the
+    NPC's own name vs. the settlement's canonical name vs. some other
+    person entirely), never hundreds of specific-topic enums. The exact
+    player utterance stays the authoritative record everywhere else; this
+    is a routing hint, not a paraphrase of what was asked.
+    """
+
+    SELF_NAME = "SELF_NAME"
+    CURRENT_SETTLEMENT = "CURRENT_SETTLEMENT"
+    CURRENT_LOCATION = "CURRENT_LOCATION"
+    PERSON = "PERSON"
+    OBJECT = "OBJECT"
+    ORGANIZATION = "ORGANIZATION"
+    DIRECTION = "DIRECTION"
+    SERVICE = "SERVICE"
+    EVENT = "EVENT"
+    GENERIC_INFORMATION = "GENERIC_INFORMATION"
+    NONE = "NONE"
+
+
+_HERE_REFERENCE = re.compile(
+    r"\b(aqui|esta|este|desta|deste|nesta|neste|essa|esse|dessa|desse|nessa|nesse)\b",
+    re.IGNORECASE,
+)
+_SETTLEMENT_WORDS = re.compile(
+    r"\bvila\b|\bcidade\b|\baldeia\b|\bvilarejo\b|\bpovoado\b", re.IGNORECASE
+)
+_LOCATION_GENERIC_WORDS = re.compile(
+    r"\blugar\b|\bregi[ãa]o\b|\bonde\s+estamos\b|\bonde\s+(eu\s+)?estou\b", re.IGNORECASE
+)
+_ORG_WORDS = re.compile(
+    r"\bguilda\b|\bconselho\b|\bordem\b|\bimp[ée]rio\b|\breino\b|\bfacc?[ãa]o\b|\birmandade\b",
+    re.IGNORECASE,
+)
+_DIRECTION_WORDS = re.compile(
+    r"\bcomo\s+chego\b|\bcaminho\b|\bdire[çc][ãa]o\b|\bfica\s+onde\b|\bpor\s+onde\b",
+    re.IGNORECASE,
+)
+_SERVICE_WORDS = re.compile(
+    r"\bloja\b|\bcomprar\b|\bvender\b|\btaverna\b|\bestalagem\b|\bpre[çc]o\b|\bhospedagem\b|\bquarto\b",
+    re.IGNORECASE,
+)
+_EVENT_WORDS = re.compile(
+    r"\baconteceu\b|\bfestival\b|\bguerra\b|\bataque\b|\bcelebra[çc][ãa]o\b", re.IGNORECASE
+)
+_OBJECT_REFERENCE = re.compile(r"\bisso\b|\bisto\b|\baquil[oa]\b", re.IGNORECASE)
+_QUESTION_OR_REQUEST_ACTS = QUESTION_ACTS | frozenset({ConversationalAct.REQUEST_HELP})
+
+
+def classify_subject(player_input: str) -> ConversationalSubject:
+    """Deterministic, cheap, single-label subject classification — same
+    style and constraints as `classify()` (regex only, no LLM call, no
+    semantic parse). Only meaningful for acts that actually ask/request
+    something; GREETING/STATEMENT/FAREWELL always resolve to NONE."""
+    text = player_input.strip()
+    if not text:
+        return ConversationalSubject.NONE
+
+    act = classify(text)
+    if act not in _QUESTION_OR_REQUEST_ACTS:
+        return ConversationalSubject.NONE
+
+    has_name_word = bool(_NAME_WORDS.search(text))
+    has_here_ref = bool(_HERE_REFERENCE.search(text))
+    is_self = bool(_SELF_REFERENCE_MARKERS.search(text))
+    is_settlement = bool(_SETTLEMENT_WORDS.search(text))
+
+    if has_name_word and is_settlement:
+        return ConversationalSubject.CURRENT_SETTLEMENT
+    if has_name_word and is_self:
+        return ConversationalSubject.SELF_NAME
+    if is_settlement and has_here_ref:
+        return ConversationalSubject.CURRENT_SETTLEMENT
+    if _DIRECTION_WORDS.search(text):
+        return ConversationalSubject.DIRECTION
+    if _LOCATION_GENERIC_WORDS.search(text) or (
+        has_here_ref and re.search(r"\bonde\b", text, re.IGNORECASE)
+    ):
+        return ConversationalSubject.CURRENT_LOCATION
+    if _ORG_WORDS.search(text):
+        return ConversationalSubject.ORGANIZATION
+    if _SERVICE_WORDS.search(text):
+        return ConversationalSubject.SERVICE
+    if _EVENT_WORDS.search(text):
+        return ConversationalSubject.EVENT
+    if has_name_word or _PERSON_WORDS.search(text):
+        return ConversationalSubject.PERSON
+    if _OBJECT_WORDS.search(text) or _OBJECT_REFERENCE.search(text):
+        return ConversationalSubject.OBJECT
+    return ConversationalSubject.GENERIC_INFORMATION
 
 
 def classify(player_input: str) -> ConversationalAct:

@@ -29,6 +29,7 @@ def _ctx(**overrides) -> NarrativeContext:
         combat="",
         active_npc="ACTIVE NPC CONTEXT\nName: Aldric",
         active_transported="ACTIVE TRANSPORTED PERSON CONTEXT\n- none",
+        direct_question_grounding="",
         organizations="ORGANIZATIONS\n- none",
         currency="CURRENCY\n- none",
         regional="",

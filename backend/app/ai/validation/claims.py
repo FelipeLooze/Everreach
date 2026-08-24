@@ -43,6 +43,12 @@ class ClaimCategory(StrEnum):
     # leading dash, silently missing the colon-attributed and quote-mark
     # dialogue shapes narrator.py itself already treats as spoken.
     NPC_DIALOGUE = "NPC_DIALOGUE"
+    # Phase 24J.1 — a distinct Violation.category (not a NarrativeClaim
+    # category) so contract.py's repair pipeline can single out a
+    # conversational-relevance NOT_ADDRESSED violation and attempt a
+    # targeted, question-aware repair instead of the generic drop-and-
+    # fallback path every other AUTHORITATIVE violation gets.
+    CONVERSATIONAL_RELEVANCE = "CONVERSATIONAL_RELEVANCE"
 
 
 @dataclass(frozen=True)

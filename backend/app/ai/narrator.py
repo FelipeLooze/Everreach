@@ -1,3 +1,4 @@
+import difflib
 from enum import StrEnum
 from pathlib import Path
 import re
@@ -853,9 +854,41 @@ def _private_location_fields(context: str) -> dict[str, str]:
     fields = {}
     for label in ("Name", "Region"):
         match = re.search(rf"^{label}:\s*([^\n]+)", section_match.group(1), re.MULTILINE)
-        if match and match.group(1).strip().lower() != "unknown":
-            fields[label] = match.group(1).strip()
+        if not match:
+            continue
+        # Phase 24J.1 added a trailing "(HIDDEN — ...)"/"(DIRECTLY
+        # PERCEPTIBLE — ...)" annotation on these lines (context_builder's
+        # location_lines) — strip it so downstream consumers (the hidden-
+        # name guard, relevance grounding, targeted repair) keep getting
+        # the bare proper noun, not the annotation text along with it.
+        value = re.sub(r"\s*\([^()]*\)\s*$", "", match.group(1).strip()).strip()
+        if value and value.lower() != "unknown":
+            fields[label] = value
     return fields
+
+
+def _direct_question_grounding_section(context: str) -> str:
+    match = re.search(
+        r"(?:^|\n)DIRECT QUESTION GROUNDING\n(.*?)(?:\n\n|\Z)", context, re.DOTALL
+    )
+    return match.group(1) if match else ""
+
+
+def _direct_question_grounding_fact(context: str) -> str | None:
+    """The specific fact context_builder's DIRECT QUESTION GROUNDING
+    section (Phase 24J.1 Step 4) authorized for the current question, if
+    any — used by the repair pipeline (Step 6) to answer a NOT_ADDRESSED
+    question with a real, backend-supplied fact instead of silence."""
+    section = _direct_question_grounding_section(context)
+    match = re.search(r"^Authorized answer:\s*([^\n]+)", section, re.MULTILINE)
+    return match.group(1).strip() if match else None
+
+
+def _direct_question_grounding_is_explicit_ignorance(context: str) -> bool:
+    """True when the grounding section exists but explicitly states no
+    confirmed answer is available — the repair pipeline should produce a
+    genuine in-character admission of not knowing rather than silence."""
+    return "No confirmed answer available" in _direct_question_grounding_section(context)
 
 
 def _npc_knowledge(context: str) -> str:
@@ -865,6 +898,16 @@ def _npc_knowledge(context: str) -> str:
         re.DOTALL,
     )
     return match.group(1) if match else ""
+
+
+def _active_npc_location(context: str) -> str:
+    section_match = re.search(
+        r"(?:^|\n)ACTIVE NPC CONTEXT\n(.*?)(?:\n\n|\Z)", context, re.DOTALL
+    )
+    if not section_match:
+        return ""
+    match = re.search(r"^Location:\s*([^\n]+)", section_match.group(1), re.MULTILINE)
+    return match.group(1).strip() if match else ""
 
 
 def _find_hidden_name_violations(
@@ -878,6 +921,19 @@ def _find_hidden_name_violations(
     """
     private_fields = _private_location_fields(context)
     npc_knowledge = _npc_knowledge(context)
+    # A resident NPC (their own registered Location matches the current
+    # location's canonical name) trivially knows where they live, the same
+    # way any real innkeeper knows their own village's name without it
+    # being a curated secret — this is ambient local knowledge, not a
+    # KnowledgeFact that needs explicit seeding (Phase 24J.1, confirmed via
+    # live trace: an innkeeper with no seeded NPCKnowledge row was blocked
+    # from ever answering "what village is this?").
+    location_name = private_fields.get("Name", "")
+    npc_is_local = bool(
+        active_interlocutor_name
+        and location_name
+        and _mentions_canonical_name(_active_npc_location(context), location_name)
+    )
     unknown_names = []
     for kind, field in (("location", "Name"), ("region", "Region")):
         flag = re.search(
@@ -886,9 +942,11 @@ def _find_hidden_name_violations(
             re.IGNORECASE,
         )
         name = private_fields.get(field)
-        if not flag or not name or not _mentions(text, name):
+        if not flag or not name or not _mentions_canonical_name(text, name):
             continue
-        npc_can_reveal = active_interlocutor_name and _mentions(npc_knowledge, name)
+        npc_can_reveal = npc_is_local or (
+            active_interlocutor_name and _mentions_canonical_name(npc_knowledge, name)
+        )
         if not npc_can_reveal:
             unknown_names.append(name)
     if unknown_names:
@@ -1032,6 +1090,39 @@ def _find_repetition_violations(text: str, recent_history: str) -> list[str]:
             )
 
     return violations
+
+
+# Phase 24J.1 Step 8 — near-verbatim reuse becomes a BLOCKING violation
+# (triggers narrate()'s own revision loop), but ONLY when the current
+# player turn is a direct question. Phase 24K's repetition check above
+# stays non-blocking for everything else, per its own explicit "do not
+# ban reasonable recurring vocabulary" rule — this is deliberately much
+# narrower: a real playtest failure was the SAME generic non-answer
+# ("Como posso ajudar você hoje?") appearing again on the very next
+# turn, after a direct question. That specific pattern (a question,
+# answered twice with the same stock line) is strong, reliable evidence
+# of failure, not a stylistic tic worth merely logging.
+_STALE_REPEAT_SIMILARITY_THRESHOLD = 0.85
+
+
+def _find_stale_repeated_response_violations(text: str, recent_history: str, player_input: str) -> list[str]:
+    if classify_conversational_act(player_input) not in _MUST_ADDRESS_ACTS:
+        return []
+    past_responses = _recent_narrator_responses(recent_history)
+    if not past_responses:
+        return []
+    most_recent = past_responses[-1]
+    if not most_recent.strip():
+        return []
+    similarity = difflib.SequenceMatcher(None, _normalized(text), _normalized(most_recent)).ratio()
+    if similarity >= _STALE_REPEAT_SIMILARITY_THRESHOLD:
+        return [
+            "a resposta repete quase literalmente o turno narrado imediatamente anterior sem "
+            "justificativa — o jogador fez uma pergunta direta e recebeu, de novo, essencialmente "
+            "a mesma fala; isso não é uma escolha intencional do interlocutor, é falha em "
+            "reconhecer que uma NOVA pergunta foi feita"
+        ]
+    return []
 
 
 def _split_paragraphs(text: str) -> list[str]:
@@ -1183,6 +1274,31 @@ def _mentions(paragraph: str, name: str) -> bool:
         return False
     first_name = name.split()[0]
     return re.search(rf"\b{re.escape(first_name)}\b", paragraph, re.IGNORECASE) is not None
+
+
+def _mentions_canonical_name(paragraph: str, name: str) -> bool:
+    """Like `_mentions`, but for CANONICAL LOCATION/REGION names specifically.
+
+    `_mentions`'s first-word-only shortcut is safe for people (a first name
+    is rarely an ordinary word), but many location/region names lead with
+    an everyday noun ("Campos de Kessler", "Vila de Sarn") — matching only
+    that leading word caused real false-positive hidden-name violations
+    against text that used the ordinary word ("campos" = fields/countryside)
+    with no relation to the private proper name, discarding an already-safe,
+    self-corrected response (Phase 24J.1, confirmed via live trace). Matches
+    the full name as a phrase, or its last (typically most distinctive)
+    word, but never a lone leading word shared with multi-word names.
+    """
+    if not name:
+        return False
+    words = name.split()
+    if len(words) == 1:
+        return _mentions(paragraph, name)
+    full_pattern = r"\s+".join(re.escape(word) for word in words)
+    if re.search(full_pattern, paragraph, re.IGNORECASE):
+        return True
+    last_word = words[-1]
+    return re.search(rf"\b{re.escape(last_word)}\b", paragraph, re.IGNORECASE) is not None
 
 
 def _paragraph_speaker_among(paragraph: str, candidates: list[str]) -> str | None:
@@ -1506,6 +1622,11 @@ def narrate(
             if empty_violations
             else _find_style_violations(draft) + _find_repetition_violations(draft, recent_history)
         )
+        stale_repeat_violations = (
+            []
+            if empty_violations
+            else _find_stale_repeated_response_violations(draft, recent_history, player_input)
+        )
 
         hard_violations = (
             empty_violations
@@ -1518,6 +1639,7 @@ def narrate(
             + unauthorized_speaker_violations
             + hidden_name_violations
             + opening_interaction_violations
+            + stale_repeat_violations
         )
 
         logger.debug(
@@ -1525,7 +1647,7 @@ def narrate(
             "META-AWARENESS VIOLATIONS: %s\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
             "UNAUTHORIZED COMBATANT VIOLATIONS: %s\nUNAUTHORIZED SPEAKER VIOLATIONS: %s\n"
             "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
-            "STYLE VIOLATIONS: %s",
+            "STALE REPEAT VIOLATIONS: %s\nSTYLE VIOLATIONS: %s",
             attempt,
             empty_violations,
             canon_violations,
@@ -1536,6 +1658,7 @@ def narrate(
             unauthorized_speaker_violations,
             hidden_name_violations,
             opening_interaction_violations,
+            stale_repeat_violations,
             style_violations,
         )
 
@@ -1773,7 +1896,25 @@ def narrate(
             draft = trimmed
             any_trim_applied = True
         else:
-            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+            # Phase 24J.1 Steps 7/9: a hidden-name violation is, in
+            # spirit, the exact same "unsupported/unauthorized fact about
+            # the world" case _find_canon_violations' own epistemic
+            # refusal already exists for (see that branch's docstring —
+            # "objective, persistent facts about the world (geography...)"
+            # is literally what a location's canonical name is) — it was
+            # just never wired up here. Confirmed via live trace as a
+            # real regression: a transported person correctly forbidden
+            # from knowing the village's name (hidden-name guard working
+            # exactly as intended) fell all the way to blank scripted
+            # silence for a direct, answerable-in-spirit-only-as-
+            # "I-don't-know" question, instead of actually saying so.
+            grounded_fact = _direct_question_grounding_fact(context)
+            if grounded_fact and active_interlocutor_name:
+                safe = f"— {grounded_fact} — responde {active_interlocutor_name}."
+            elif mode == "CONTINUATION" and active_interlocutor_name:
+                safe = "— Não sei dizer."
+            else:
+                safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
             logger.error(
                 "FALLBACK REASON: hidden name violation could not be removed without "
                 "emptying the response. Returning deterministic safe fallback instead of "
@@ -1788,6 +1929,34 @@ def narrate(
                 reason="hidden name violation could not be trimmed without emptying the response",
             )
             return safe
+
+    # A near-verbatim repeat of the immediately preceding turn, in reply to
+    # a fresh direct question, survived both revision attempts. There is
+    # no "offending segment" to trim here — the whole draft IS the stale
+    # repeat — so prefer a genuine backend-authorized fact or admission of
+    # ignorance (Phase 24J.1 Steps 7/9) over the old blank scripted line.
+    remaining_stale_repeat = _find_stale_repeated_response_violations(draft, recent_history, player_input)
+    if remaining_stale_repeat:
+        grounded_fact = _direct_question_grounding_fact(context)
+        if grounded_fact and active_interlocutor_name:
+            safe = f"— {grounded_fact} — responde {active_interlocutor_name}."
+        elif _direct_question_grounding_is_explicit_ignorance(context) and active_interlocutor_name:
+            safe = f"— Não sei dizer ao certo — responde {active_interlocutor_name}."
+        else:
+            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        logger.error(
+            "FALLBACK REASON: draft still repeated the immediately preceding response after "
+            "hard revisions, in reply to a direct question: %s\nFALLBACK:\n%s",
+            remaining_stale_repeat,
+            safe,
+        )
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.RELEVANCE,
+            reason="stale near-verbatim repeat of the previous turn in reply to a direct question",
+        )
+        return safe
 
     # An opening is only the initial situation. If the model insists on
     # forcing a native NPC encounter after both revisions, do not expose that

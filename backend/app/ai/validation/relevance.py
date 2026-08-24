@@ -1,4 +1,4 @@
-"""Phase 24J — Conversational Relevance Validation.
+"""Phase 24J / 24J.1 — Conversational Relevance Validation.
 
 The master plan's own words: "This is currently one of the highest-
 priority missing guarantees." Detects when the Narrator's response
@@ -8,10 +8,10 @@ answered with "Temos uma ótima estalagem na praça." is invalid random
 topic drift, never a legitimate NPC choice.
 
 NPCs ARE allowed to lie, refuse, evade, or plead ignorance — those are
-all intentional, grounded responses (spec's own list) and must NOT be
-rejected here. Only genuine non-acknowledgment (no refusal marker, no
-ignorance marker, no evasion marker, and no topical connection to what
-was asked at all) is a violation.
+all intentional, grounded responses and must NOT be rejected here.
+Only genuine non-acknowledgment (no refusal marker, no ignorance
+marker, no evasion marker, no clarification request, and no topical
+connection to what was asked at all) is a violation.
 
 Deterministic only, per the plan's explicit "avoid adding another full
 LLM generation call to every normal turn merely to judge relevance" —
@@ -20,34 +20,54 @@ already established throughout this codebase (_PERSISTENT_CONCEPTS,
 _SPEECH_VERBS, narrator.py's own canon denial_pattern), not a semantic
 parse or a second LLM call.
 
-ENFORCEMENT IS DELIBERATELY NARROW (a real regression found and fixed
-during this subphase, not a hypothetical): a first attempt enforced
-NOT_ADDRESSED for every "must-address" act using generic keyword
-overlap, and it broke a real, passing scenario — "como se chama este
-lugar?" (asking a PLACE's name) answered "Isto aqui é Cardal..." shares
-no literal words with the question at all (real dialogue paraphrases,
-it doesn't echo the player's wording back), so the whole legitimate
-answer was discarded and a village-name reveal other tests depend on
-never reached persistence. Two problems compounded: (1) Phase 24E's
-QUESTION_NAME bucket fires for ANY "nome"/"chama" + interrogative,
-regardless of WHOSE name is being asked, and (2) literal keyword overlap
-is too brittle to gate a full-response REJECTION for paraphrased
-dialogue in general.
+HISTORY — Phase 24J (original): a first attempt enforced NOT_ADDRESSED
+for every "must-address" act using generic keyword overlap, and it
+broke a real, passing scenario — "como se chama este lugar?" answered
+"Isto aqui é Cardal..." shares no literal words with the question at
+all (real dialogue paraphrases, it doesn't echo the player's wording
+back). The fix at the time was to narrow enforcement to ONLY a
+self-identity question ("qual o SEU nome"), using the NPC's own
+registered name as the acceptance signal — data-driven and immune to
+paraphrase risk, but leaving every other must-address act (including
+location/settlement questions) completely unenforced.
 
-The fix: hard rejection is enforced ONLY for the unambiguous case the
-spec actually worked an example for — a question that both (a)
-classifies as QUESTION_NAME/QUESTION_PERSON AND (b) explicitly
-references the interlocutor in second person ("seu nome", "como VOCÊ se
-chama") — using the NPC's real registered name as the acceptance
-signal, which is data-driven and immune to paraphrase risk (either the
-NPC's actual name string appears or it doesn't). classify_relevance()
-still computes a best-effort outcome across every must-address act (for
-observability/trace, matching the spec's full outcome taxonomy) — but
-the validator only turns NOT_ADDRESSED into a Violation for that one
-narrow, high-confidence case. Broader relevance judgment for
-LOCATION/OBJECT/generic-information questions is a known, deliberately
-deferred gap (same spirit as Phase 24I's acknowledged organization-name
-limitation), not attempted here.
+HISTORY — Phase 24J.1 (real live playtest failure, this subphase):
+that gap was hit for real. A player asked a local innkeeper "Saberia
+me informar que vila é essa?" and, on a literal repeat of the question
+one turn later, got a bare, near-verbatim generic greeting closer
+("Como posso ajudar você hoje?") acknowledging nothing — and it sailed
+through validation with zero violations, because QUESTION_LOCATION/
+QUESTION_NAME-about-a-settlement was never in the enforced set at all.
+
+THE FIX (24J.1): broaden enforcement to every `_MUST_ADDRESS_ACTS` act,
+but do it the same safe way the original identity-only fix did, not by
+reverting to naive keyword overlap. `app.ai.conversational_act`'s new
+`classify_subject()` (additive, not a replacement of the 9-label act)
+gives a small structured "what is this actually about" dimension.
+Where a subject has a strong, data-driven acceptance signal available
+(SELF_NAME -> the active NPC's own registered name; CURRENT_SETTLEMENT/
+CURRENT_LOCATION -> the location's canonical Name field, already parsed
+by `narrator._private_location_fields`, the same parser the hidden-name
+guard uses), that signal decides ANSWERED outright. Where no such
+signal is available for this subject or this context (e.g. no location
+Name registered at all, as in the original Cardal scenario), the same
+paraphrase-tolerant fallback used since Phase 24J — term overlap OR any
+concrete named answer (`_gives_a_concrete_named_answer`) — is what
+`classify_relevance` already used to accept "Isto aqui é Cardal...",
+and stays the fallback here too. That's what keeps this broadening
+from repeating the original regression: the fallback isn't new, it's
+already proven safe, it's just no longer gated off from every act
+except self-identity.
+
+The outcome taxonomy also expands (24J.1) to the spec's own vocabulary:
+ANSWERED, REFUSED, EVADED, ADMITTED_IGNORANCE, REQUESTED_CLARIFICATION,
+PLAUSIBLY_MISUNDERSTOOD, NOT_ADDRESSED. A LIED_OR_CONTESTED case is
+deliberately NOT a separate detection branch: relevance is about
+whether the NPC engaged with the question, not whether what they said
+is true — a confident lie looks, to this validator, exactly like a
+confident answer (ANSWERED); Canon/knowledge validators are the layer
+that would ever dispute the content, not this one. Only NOT_ADDRESSED
+is ever turned into a Violation.
 """
 import re
 from enum import StrEnum
@@ -56,8 +76,10 @@ from sqlalchemy.orm import Session
 
 from app.ai.context_builder import _proper_nouns
 from app.ai.conversational_act import ConversationalAct
+from app.ai.conversational_act import ConversationalSubject
 from app.ai.conversational_act import classify as classify_conversational_act
-from app.ai.narrator import _mentions, _normalized
+from app.ai.conversational_act import classify_subject
+from app.ai.narrator import _mentions, _mentions_canonical_name, _normalized, _private_location_fields
 from app.ai.validation.claims import ClaimCategory, NarrativeClaim
 from app.ai.validation.contract import NarrativeProposal, Violation, register_validator
 from app.game.npcs.service import _SEARCH_STOP_WORDS
@@ -74,15 +96,19 @@ _MUST_ADDRESS_ACTS = frozenset(
         ConversationalAct.REQUEST_HELP,
     }
 )
-_IDENTITY_ACTS = frozenset({ConversationalAct.QUESTION_NAME, ConversationalAct.QUESTION_PERSON})
+
+_LOCATION_SUBJECTS = frozenset(
+    {ConversationalSubject.CURRENT_SETTLEMENT, ConversationalSubject.CURRENT_LOCATION}
+)
 
 
 class RelevanceOutcome(StrEnum):
-    ADDRESSED = "ADDRESSED"
-    PARTIALLY_ADDRESSED = "PARTIALLY_ADDRESSED"
-    DELIBERATELY_EVADED = "DELIBERATELY_EVADED"
-    DELIBERATELY_REFUSED = "DELIBERATELY_REFUSED"
-    PLAUSIBLE_IGNORANCE = "PLAUSIBLE_IGNORANCE"
+    ANSWERED = "ANSWERED"
+    REFUSED = "REFUSED"
+    EVADED = "EVADED"
+    ADMITTED_IGNORANCE = "ADMITTED_IGNORANCE"
+    REQUESTED_CLARIFICATION = "REQUESTED_CLARIFICATION"
+    PLAUSIBLY_MISUNDERSTOOD = "PLAUSIBLY_MISUNDERSTOOD"
     NOT_ADDRESSED = "NOT_ADDRESSED"
 
 
@@ -102,15 +128,12 @@ _EVASION_MARKERS = re.compile(
     r"mudemos\s+de\s+assunto|melhor\s+falarmos\s+de\s+outra\s+coisa)\b",
     re.IGNORECASE,
 )
-# Distinguishes "qual o SEU nome" (about the NPC) from "como se chama
-# ESTE LUGAR" (about something else entirely) — both classify as
-# QUESTION_NAME/QUESTION_PERSON under Phase 24E's coarser taxonomy, but
-# only the former can fairly be checked against the NPC's own name.
-_SELF_REFERENCE_MARKERS = re.compile(r"\b(seu|sua|voce|voces|teu|tua)\b", re.IGNORECASE)
-
-
-def _is_self_identity_question(player_input: str) -> bool:
-    return bool(_SELF_REFERENCE_MARKERS.search(_normalized(player_input)))
+_CLARIFICATION_MARKERS = re.compile(
+    r"\b(como\s+assim|pode\s+repetir|poderia\s+repetir|nao\s+entendi|"
+    r"o\s+que\s+voce\s+quer\s+dizer|poderia\s+explicar\s+melhor|"
+    r"pode\s+ser\s+mais\s+especifico|quem\s+voce\s+quer\s+dizer)\b",
+    re.IGNORECASE,
+)
 
 
 def _addresses_identity_question(response_text: str, active_npc_name: str) -> bool:
@@ -140,42 +163,60 @@ def _gives_a_concrete_named_answer(response_text: str) -> bool:
     return bool(_proper_nouns(response_text))
 
 
+def _strong_signal(
+    subject: ConversationalSubject, response_text: str, active_npc_name: str, context: str
+) -> bool | None:
+    """True/False if a subject-specific, data-driven acceptance signal
+    applies here; None if no such signal exists for this subject/context
+    (caller falls through to the paraphrase-tolerant weak-signal check)."""
+    if subject == ConversationalSubject.SELF_NAME:
+        if not active_npc_name:
+            return None
+        return _addresses_identity_question(response_text, active_npc_name)
+    if subject in _LOCATION_SUBJECTS:
+        location_name = _private_location_fields(context).get("Name", "")
+        if not location_name:
+            return None
+        return _mentions_canonical_name(response_text, location_name)
+    return None
+
+
 def classify_relevance(
-    player_input: str, response_text: str, active_npc_name: str = ""
+    player_input: str, response_text: str, active_npc_name: str = "", context: str = ""
 ) -> RelevanceOutcome:
     act = classify_conversational_act(player_input)
     if act not in _MUST_ADDRESS_ACTS:
-        return RelevanceOutcome.ADDRESSED
+        return RelevanceOutcome.ANSWERED
 
     normalized_response = _normalized(response_text)
     if _REFUSAL_MARKERS.search(normalized_response):
-        return RelevanceOutcome.DELIBERATELY_REFUSED
+        return RelevanceOutcome.REFUSED
+    if _CLARIFICATION_MARKERS.search(normalized_response):
+        return RelevanceOutcome.REQUESTED_CLARIFICATION
     if _IGNORANCE_MARKERS.search(normalized_response):
-        return RelevanceOutcome.PLAUSIBLE_IGNORANCE
+        return RelevanceOutcome.ADMITTED_IGNORANCE
     if _EVASION_MARKERS.search(normalized_response):
-        return RelevanceOutcome.DELIBERATELY_EVADED
+        return RelevanceOutcome.EVADED
 
-    if act in _IDENTITY_ACTS and _is_self_identity_question(player_input):
-        if _addresses_identity_question(response_text, active_npc_name):
-            return RelevanceOutcome.ADDRESSED
-        if _term_overlap(player_input, response_text) or _gives_a_concrete_named_answer(
-            response_text
-        ):
-            return RelevanceOutcome.PARTIALLY_ADDRESSED
-        return RelevanceOutcome.NOT_ADDRESSED
+    subject = classify_subject(player_input)
+    strong = _strong_signal(subject, response_text, active_npc_name, context)
+    weak_signal = _term_overlap(player_input, response_text) or _gives_a_concrete_named_answer(
+        response_text
+    )
 
-    # Every other must-address act: informational classification only
-    # (see module docstring) — real paraphrased dialogue routinely fails
-    # literal keyword overlap even when it's a perfectly good answer, so
-    # this outcome is never turned into a hard rejection below.
-    if _term_overlap(player_input, response_text) or _gives_a_concrete_named_answer(response_text):
-        return RelevanceOutcome.ADDRESSED
-    return RelevanceOutcome.NOT_ADDRESSED
+    if strong is True:
+        return RelevanceOutcome.ANSWERED
+    if strong is None:
+        return RelevanceOutcome.ANSWERED if weak_signal else RelevanceOutcome.NOT_ADDRESSED
+    # strong is False: the specific fact was demonstrably not given, but a
+    # good-faith weak signal still counts as a plausible (if imperfect)
+    # attempt rather than a flat non-response.
+    return RelevanceOutcome.PLAUSIBLY_MISUNDERSTOOD if weak_signal else RelevanceOutcome.NOT_ADDRESSED
 
 
 _NOT_ADDRESSED_MESSAGE = (
-    "a resposta não demonstra nenhum reconhecimento de que o jogador perguntou o nome/"
-    "identidade do interlocutor; tópico completamente diferente sem recusa, evasão ou "
+    "a resposta não demonstra nenhum reconhecimento do que o jogador perguntou/pediu; "
+    "tópico completamente diferente sem recusa, evasão, pedido de esclarecimento ou "
     "admissão de desconhecimento explícitas — isso é deriva de tópico, não uma escolha "
     "intencional do NPC"
 )
@@ -192,14 +233,11 @@ def validate_conversational_relevance(
         return []
 
     act = classify_conversational_act(proposal.player_input)
-    # Enforcement stays deliberately narrow — see module docstring. Only
-    # a self-identity question ("qual o SEU nome") is enforced; every
-    # other must-address act is intentionally left unenforced here.
-    if act not in _IDENTITY_ACTS or not _is_self_identity_question(proposal.player_input):
+    if act not in _MUST_ADDRESS_ACTS:
         return []
 
     outcome = classify_relevance(
-        proposal.player_input, proposal.text, proposal.active_npc_name or ""
+        proposal.player_input, proposal.text, proposal.active_npc_name or "", proposal.context
     )
     if outcome != RelevanceOutcome.NOT_ADDRESSED:
         return []
@@ -209,6 +247,10 @@ def validate_conversational_relevance(
     # text (falls under MIN_COHERENT_REPAIR_CHARS) rather than keeping
     # unrelated sentences the earlier claim was attached to.
     return [
-        Violation(claim_index=claim.index, category=ClaimCategory.AUTHORITATIVE, reason=_NOT_ADDRESSED_MESSAGE)
+        Violation(
+            claim_index=claim.index,
+            category=ClaimCategory.CONVERSATIONAL_RELEVANCE,
+            reason=_NOT_ADDRESSED_MESSAGE,
+        )
         for claim in claims
     ]

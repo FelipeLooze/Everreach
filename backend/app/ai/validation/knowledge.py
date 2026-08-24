@@ -25,7 +25,12 @@ import re
 from sqlalchemy.orm import Session
 
 from app.ai.context_builder import _proper_nouns
-from app.ai.narrator import _find_hidden_name_violations
+from app.ai.narrator import (
+    _active_npc_location,
+    _find_hidden_name_violations,
+    _mentions_canonical_name,
+    _private_location_fields,
+)
 from app.ai.validation.claims import ClaimCategory, NarrativeClaim
 from app.ai.validation.contract import NarrativeProposal, Violation, register_validator
 from app.core.enums import KnowerType
@@ -76,7 +81,35 @@ def validate_knowledge(
         known_names: set[str] = set()
         for fact in facts:
             known_names |= _fact_subject_names(fact.statement)
-        safe_names = known_names | {proposal.active_npc_name or "", proposal.character_name}
+        # Phase 24J.1: whole-string membership alone missed the very
+        # common case of dialogue attributed by first name only ("—
+        # responde Perrin." for an NPC registered as "Perrin Ferrow") —
+        # confirmed via a real test scenario reproducing exactly that
+        # phrasing. _fact_subject_names splits into individual
+        # capitalized words (>=3 chars), the same granularity `mentioned`
+        # itself is extracted at, so a first-name-only attribution now
+        # matches correctly.
+        safe_names = (
+            known_names
+            | {proposal.active_npc_name or "", proposal.character_name}
+            | _fact_subject_names(proposal.active_npc_name or "")
+            | _fact_subject_names(proposal.character_name)
+        )
+        # A resident NPC (their own registered Location matches the
+        # current location) trivially knows where they live — the same
+        # ambient-local-knowledge exception narrator.py's hidden-name
+        # guard makes, applied here too (Phase 24J.1, confirmed via live
+        # trace): without it, this validator independently re-blocks the
+        # exact same "innkeeper can't say their own village's name" gap
+        # even after the guard above stops treating it as hidden.
+        private_fields = _private_location_fields(proposal.context)
+        location_name = private_fields.get("Name", "")
+        npc_location = _active_npc_location(proposal.context)
+        if location_name and _mentions_canonical_name(npc_location, location_name):
+            safe_names |= _fact_subject_names(location_name)
+            region_name = private_fields.get("Region", "")
+            if region_name:
+                safe_names |= _fact_subject_names(region_name)
 
         for claim in claims:
             if not claim.is_(ClaimCategory.NPC_DIALOGUE):

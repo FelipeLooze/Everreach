@@ -62,7 +62,15 @@ from typing import Callable
 
 from sqlalchemy.orm import Session
 
-from app.ai.narrator import NarrationMode
+from app.ai.llm_service import LLMService
+from app.ai.narrator import (
+    NarrationMode,
+    _direct_question_grounding_fact,
+    _direct_question_grounding_is_explicit_ignorance,
+    _find_hidden_name_violations,
+    _strip_prompt_leak,
+    _system_prompt_for,
+)
 from app.ai.validation.claims import ClaimCategory, NarrativeClaim, extract_claims
 from app.ai.validation.fallback import safe_fallback_narration
 from app.ai.validation.trace import log_validation_trace
@@ -132,8 +140,104 @@ def register_validator(fn: NarrativeValidator) -> NarrativeValidator:
     return fn
 
 
+def _targeted_relevance_repair(
+    llm_service: LLMService, proposal: NarrativeProposal
+) -> str | None:
+    """Phase 24J.1 Step 6 — Tier 2 repair, but scoped to exactly one
+    failure mode: a NOT_ADDRESSED conversational-relevance violation.
+    One narrow, question-aware rewrite through the same LLM the narrator
+    already uses (explicitly authorized by the spec: "an additional
+    local LLM call for targeted repair is authorized if needed"), naming
+    the current question, the active speaker, and exactly what they're
+    backend-authorized to know — never inventing anything, never
+    touching the protagonist's own speech/actions. Bounded to a single
+    attempt (no loop); the hidden-name guard and relevance classifier
+    are both re-checked on the result so a narrow rewrite like this can
+    never smuggle in a name the player doesn't know or silently fail to
+    fix the very thing it was asked to fix.
+    """
+    if not proposal.active_npc_name:
+        return None
+
+    fact = _direct_question_grounding_fact(proposal.context)
+    if fact:
+        known_instruction = f"O que o interlocutor está autorizado a dizer: {fact}"
+    elif _direct_question_grounding_is_explicit_ignorance(proposal.context):
+        known_instruction = (
+            "Não há uma resposta confirmada disponível para o interlocutor. Ele deve "
+            "admitir que não sabe, ou recusar responder — nunca inventar uma resposta."
+        )
+    else:
+        known_instruction = (
+            "Não há um fato específico pré-aprovado para esta pergunta. Responda de forma "
+            "coerente e grounded com o que o interlocutor plausivelmente saberia, ou admita "
+            "desconhecimento — nunca invente fatos de mundo (nomes, lugares, história)."
+        )
+
+    repair_prompt = (
+        f'O jogador perguntou/pediu isto no turno atual: "{proposal.player_input.strip()}"\n\n'
+        f"O interlocutor ativo é {proposal.active_npc_name}.\n"
+        f"{known_instruction}\n\n"
+        "A resposta anterior não reconheceu essa pergunta de forma alguma — mudou de assunto "
+        "sem recusar, evadir ou admitir desconhecimento. Reescreva SOMENTE a resposta "
+        "narrativa/fala do interlocutor respondendo diretamente a isso, em no máximo dois "
+        "parágrafos curtos, em português do Brasil. Não gere fala, pensamentos ou ações "
+        f"voluntárias para {proposal.character_name}."
+    )
+
+    try:
+        raw = llm_service.generate(_system_prompt_for(proposal.mode), repair_prompt)
+    except Exception:
+        return None
+
+    candidate = _strip_prompt_leak(raw).strip()
+    if not candidate:
+        return None
+
+    if _find_hidden_name_violations(candidate, proposal.context, proposal.active_npc_name):
+        return None
+
+    # Deferred import: app.ai.validation.relevance imports this module at
+    # its own module level (it registers a validator here), so importing
+    # it back at contract.py's module level would be circular. By call
+    # time both modules are already fully loaded.
+    from app.ai.validation.relevance import RelevanceOutcome, classify_relevance
+
+    outcome = classify_relevance(
+        proposal.player_input, candidate, proposal.active_npc_name, proposal.context
+    )
+    if outcome == RelevanceOutcome.NOT_ADDRESSED:
+        return None
+    return candidate
+
+
+def _grounded_fallback_narration(proposal: NarrativeProposal) -> str:
+    """Phase 24J.1 Steps 7/9 — the generic scripted fallback ("Nada
+    acontece de imediato." / "{npc} permanece em silêncio.") must never
+    be the FINAL answer to a direct question aimed at an available
+    active NPC, even after targeted repair (above) fails or no
+    LLMService was supplied. A genuine backend-authorized fact or a
+    plain admission of not knowing is always preferable to silence for
+    someone who is right there and was directly asked. Falls back to
+    the original scripted line only when there's no active interlocutor,
+    or the grounding context has nothing to offer either.
+    """
+    if not proposal.active_npc_name:
+        return safe_fallback_narration(proposal.mode, proposal.active_npc_name)
+
+    fact = _direct_question_grounding_fact(proposal.context)
+    if fact:
+        return f"— {fact} — responde {proposal.active_npc_name}."
+    if _direct_question_grounding_is_explicit_ignorance(proposal.context):
+        return f"— Não sei dizer ao certo — responde {proposal.active_npc_name}."
+    return safe_fallback_narration(proposal.mode, proposal.active_npc_name)
+
+
 def _repair(
-    proposal: NarrativeProposal, claims: list[NarrativeClaim], violations: list[Violation]
+    proposal: NarrativeProposal,
+    claims: list[NarrativeClaim],
+    violations: list[Violation],
+    llm_service: LLMService | None = None,
 ) -> str:
     """Phase 19Q — Narrative Repair, tier 1 of the spec's own REPAIR
     PRIORITY ("remove invalid clause if prose remains coherent"): drop
@@ -142,24 +246,36 @@ def _repair(
     too fragmentary to stand alone as a scene beat (MIN_COHERENT_
     REPAIR_CHARS) — never returns a bare empty string to the player.
 
-    Tiers 2-3 (rewrite using validated facts; bounded regeneration via
-    another LLM call) are NOT implemented: both would need an LLMService
-    threaded through this pipeline, a larger integration explicitly
-    deferred since Phase 19A/19N — this is a single deterministic pass,
-    never a loop, which already satisfies "do not loop indefinitely."
+    Tier 2 (24J.1): scoped specifically to a conversational-relevance
+    NOT_ADDRESSED violation — see _targeted_relevance_repair. Every
+    other violation category still falls straight to the scripted
+    fallback (Tier 3 rewrite-using-validated-facts stays out of scope,
+    as before) — this is a single bounded pass, never a loop.
     """
     invalid_indices = {violation.claim_index for violation in violations}
     kept = [claim.text for claim in claims if claim.index not in invalid_indices]
     repaired = " ".join(kept).strip()
-    if len(repaired) < MIN_COHERENT_REPAIR_CHARS:
+    if len(repaired) >= MIN_COHERENT_REPAIR_CHARS:
+        return repaired
+
+    is_relevance_failure = any(
+        violation.category == ClaimCategory.CONVERSATIONAL_RELEVANCE for violation in violations
+    )
+    if not is_relevance_failure:
         return safe_fallback_narration(proposal.mode, proposal.active_npc_name)
-    return repaired
+
+    if llm_service is not None:
+        targeted = _targeted_relevance_repair(llm_service, proposal)
+        if targeted is not None:
+            return targeted
+    return _grounded_fallback_narration(proposal)
 
 
 def validate_narrative_proposal(
     db: Session,
     campaign_id: str,
     proposal: NarrativeProposal,
+    llm_service: LLMService | None = None,
 ) -> NarrativeValidationResult:
     """Runs every registered validator (empty until 19D) against the
     proposal's extracted claims and repairs (drops) whatever any of them
@@ -181,6 +297,6 @@ def validate_narrative_proposal(
 
     return NarrativeValidationResult(
         valid=False,
-        final_text=_repair(proposal, claims, violations),
+        final_text=_repair(proposal, claims, violations, llm_service),
         violations=[violation.reason for violation in violations],
     )

@@ -1,14 +1,12 @@
-"""Phase 24J — Conversational Relevance Validation.
+"""Phase 24J / 24J.1 — Conversational Relevance Validation.
 
-The spec's own worked example set, plus the real regression this
-subphase caught and fixed: a first, broader-enforcement version of this
-validator rejected a legitimate, paraphrased answer to "como se chama
-este lugar?" (a place-name question, not a question about the NPC's own
-identity) because the response shared no literal words with the
-question and didn't mention the NPC's own name either — see
-app.ai.validation.relevance's module docstring for the full story.
-Enforcement is deliberately narrow because of that: only a genuine
-self-identity question ("qual o SEU nome") is ever rejected.
+The spec's own worked example set, plus the real regressions this
+module's history caught and fixed — see app.ai.validation.relevance's
+module docstring for the full story. Enforcement now covers every
+must-address act (24J.1 broadened it beyond self-identity questions),
+but the original paraphrase-tolerant fallback (term overlap OR any
+concrete named answer) is what keeps a legitimate, non-overlapping
+answer like "Isto aqui é Cardal..." from being wrongly rejected.
 """
 from app.ai.validation import NarrativeProposal, validate_narrative_proposal
 from app.ai.validation.relevance import RelevanceOutcome, classify_relevance
@@ -36,17 +34,17 @@ def _proposal(text: str, player_input: str, **overrides) -> NarrativeProposal:
 
 def test_classify_direct_answer_is_addressed():
     outcome = classify_relevance("Qual o seu nome?", "Meu nome é Aldric.", "Aldric Draven")
-    assert outcome == RelevanceOutcome.ADDRESSED
+    assert outcome == RelevanceOutcome.ANSWERED
 
 
 def test_classify_explicit_refusal_is_deliberately_refused():
     outcome = classify_relevance("Qual o seu nome?", "Prefiro não dizer.", "Aldric Draven")
-    assert outcome == RelevanceOutcome.DELIBERATELY_REFUSED
+    assert outcome == RelevanceOutcome.REFUSED
 
 
 def test_classify_dismissal_is_deliberately_refused():
     outcome = classify_relevance("Qual o seu nome?", "Você não precisa saber.", "Aldric Draven")
-    assert outcome == RelevanceOutcome.DELIBERATELY_REFUSED
+    assert outcome == RelevanceOutcome.REFUSED
 
 
 def test_classify_random_topic_drift_is_not_addressed():
@@ -59,12 +57,12 @@ def test_classify_random_topic_drift_is_not_addressed():
 
 def test_classify_plausible_ignorance_is_recognized():
     outcome = classify_relevance("Qual o seu nome?", "Não sei dizer ao certo.", "Aldric Draven")
-    assert outcome == RelevanceOutcome.PLAUSIBLE_IGNORANCE
+    assert outcome == RelevanceOutcome.ADMITTED_IGNORANCE
 
 
 def test_classify_greeting_has_nothing_mandatory_to_address():
     outcome = classify_relevance("Olá, bom dia.", "Bom dia! Como posso ajudar?", "Aldric Draven")
-    assert outcome == RelevanceOutcome.ADDRESSED
+    assert outcome == RelevanceOutcome.ANSWERED
 
 
 # --- The real regression this subphase found and fixed ---
@@ -76,7 +74,7 @@ def test_classify_place_name_question_is_not_misjudged_as_npc_identity():
         "— Isto aqui é Cardal, uma vila tranquila do Vale Verdejante.",
         "Aldric Draven",
     )
-    assert outcome == RelevanceOutcome.ADDRESSED
+    assert outcome == RelevanceOutcome.ANSWERED
 
 
 # --- validate_conversational_relevance() — the registered Phase 19 validator ---
@@ -118,13 +116,17 @@ def test_validator_allows_plausible_ignorance(db_session):
     assert result.valid is True
 
 
-def test_validator_does_not_enforce_non_identity_acts(db_session):
-    # Deliberately unenforced (see module docstring) — a location
-    # question answered with a paraphrased, non-overlapping response
-    # must never be rejected by this validator. (Response text avoids
-    # any _PERSISTENT_CONCEPTS keyword so only the relevance validator
-    # under test is exercised here, not Phase 24I's canon validator.)
-    campaign = create_campaign(db_session, "Pergunta De Local Nao Reforcada")
+def test_validator_allows_a_paraphrased_location_answer(db_session):
+    # Now enforced (24J.1 broadened past self-identity-only), but this
+    # must still pass: no location Name is registered in this test's
+    # context, so classify_relevance has no strong signal to check and
+    # falls to the paraphrase-tolerant weak signal (a proper noun,
+    # "Cardal", is present) — the same fallback that has protected this
+    # exact scenario since the original Phase 24J regression. (Response
+    # text avoids any _PERSISTENT_CONCEPTS keyword so only the relevance
+    # validator under test is exercised here, not Phase 24I's canon
+    # validator.)
+    campaign = create_campaign(db_session, "Pergunta De Local Parafraseada")
     proposal = _proposal("Isto aqui é Cardal.", "Como se chama este lugar?")
 
     result = validate_narrative_proposal(db_session, campaign.id, proposal)
@@ -140,6 +142,49 @@ def test_validator_ignores_a_third_party_name_question(db_session):
     proposal = _proposal(
         "Ah, aquele é só um viajante de passagem, não sei o nome dele.",
         "Quem é aquele homem ali?",
+    )
+
+    result = validate_narrative_proposal(db_session, campaign.id, proposal)
+
+    assert result.valid is True
+
+
+def test_validator_rejects_generic_non_answer_to_settlement_question(db_session):
+    # The exact real-playtest failure this subphase was opened to fix:
+    # a village-name question, with the location's canonical Name
+    # registered in context (the strong signal is available here, unlike
+    # the Cardal test above), answered with a bare generic greeting
+    # closer that acknowledges nothing.
+    campaign = create_campaign(db_session, "Pergunta De Vila Nao Respondida")
+    proposal = _proposal(
+        "Como posso ajudar você hoje?",
+        "Qual o nome dessa vila?",
+        context=(
+            "CURRENT PLAYER\nName: Logan\n\n"
+            "CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH\n"
+            "Name: Karvale\nType: VILLAGE\nRegion: Campos de Kessler\n\n"
+            "ACTIVE NPC CONTEXT\nName: Perrin Ferrow\nLocation: Karvale"
+        ),
+        active_npc_name="Perrin Ferrow",
+    )
+
+    result = validate_narrative_proposal(db_session, campaign.id, proposal)
+
+    assert result.valid is False
+
+
+def test_validator_allows_settlement_answer_with_canonical_name(db_session):
+    campaign = create_campaign(db_session, "Pergunta De Vila Respondida")
+    proposal = _proposal(
+        "— Isto aqui é Karvale — responde Perrin.",
+        "Qual o nome dessa vila?",
+        context=(
+            "CURRENT PLAYER\nName: Logan\n\n"
+            "CANONICAL LOCATION CONTEXT — PRIVATE WORLD TRUTH\n"
+            "Name: Karvale\nType: VILLAGE\nRegion: Campos de Kessler\n\n"
+            "ACTIVE NPC CONTEXT\nName: Perrin Ferrow\nLocation: Karvale"
+        ),
+        active_npc_name="Perrin Ferrow",
     )
 
     result = validate_narrative_proposal(db_session, campaign.id, proposal)

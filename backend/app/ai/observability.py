@@ -45,6 +45,10 @@ def log_narrative_request(
     active_npc_id: str | None = None,
     player_input: str | None = None,
     model: str | None = None,
+    intent_provider: str | None = None,
+    intent_model: str | None = None,
+    narrative_provider: str | None = None,
+    narrative_model: str | None = None,
     temperature: float | None = None,
     num_predict: int | None = None,
     context_fingerprint: str | None = None,
@@ -65,6 +69,10 @@ def log_narrative_request(
             _clip_for_log(player_input, _PLAYER_INPUT_LOG_CHARS) if player_input else None
         ),
         "model": model,
+        "intent_provider": intent_provider,
+        "intent_model": intent_model,
+        "narrative_provider": narrative_provider,
+        "narrative_model": narrative_model,
         "temperature": temperature,
         "num_predict": num_predict,
         "context_fingerprint": context_fingerprint,
@@ -91,3 +99,55 @@ def _render_field(value) -> str:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return str(value)
     return repr(str(value))
+
+
+# --- Phase 24K — per-call provider observability ---
+#
+# One structured log line per llm_service.generate() call, distinct from
+# log_narrative_request's own one-line-per-TURN summary above: a turn can
+# make up to three calls (intent parse, narrator draft/revisions, a
+# targeted repair), now potentially against two different providers, and
+# the spec explicitly asks that observability "make clear which
+# provider/model handled each stage" so an intent-classification failure
+# is never mistaken for a narrative-model failure. See app.ai.llm_call
+# for the thin wrapper that calls this around every such generate() call.
+
+
+def log_generation_call(
+    *,
+    purpose: str,
+    provider: str,
+    model: str,
+    attempt: int = 1,
+    latency_ms: float | None = None,
+    prompt_tokens: int | None = None,
+    completion_tokens: int | None = None,
+    total_tokens: int | None = None,
+    finish_reason: str | None = None,
+    request_id: str | None = None,
+    status: str = "OK",
+    error_message: str | None = None,
+) -> None:
+    """purpose is one of "INTENT"/"NARRATIVE"/"REPAIR". Never pass an API
+    key, Authorization header, or hidden reasoning content in any field
+    here — this function has no such parameter by design, so there is
+    nothing for a future caller to accidentally wire up."""
+    fields = {
+        "purpose": purpose,
+        "provider": provider,
+        "model": model,
+        "attempt": attempt,
+        "latency_ms": round(latency_ms, 1) if latency_ms is not None else None,
+        "prompt_tokens": prompt_tokens,
+        "completion_tokens": completion_tokens,
+        "total_tokens": total_tokens,
+        "finish_reason": finish_reason,
+        "request_id": request_id,
+        "status": status,
+        "error_message": error_message,
+    }
+    rendered = " ".join(
+        f"{key}={_render_field(value)}" for key, value in fields.items() if value is not None
+    )
+    level = logging.WARNING if status != "OK" else logging.DEBUG
+    logger.log(level, "llm_generation_call %s", rendered)

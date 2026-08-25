@@ -86,6 +86,33 @@ class Settings(BaseSettings):
     # app.game.visual.asset_storage.stage_reference_image.
     comfyui_input_root: str = ""
 
+    # Phase 24K — OpenRouter (https://openrouter.ai), a second LLMService
+    # implementation alongside Ollama, added to evaluate a substantially
+    # stronger remote model against the same Everreach narrative
+    # architecture. Read from environment ONLY — never hardcoded, never
+    # committed (see .env.example, which ships this key empty).
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_timeout_seconds: float = 180.0
+    openrouter_temperature: float = 0.35
+    # None means "don't send max_tokens at all" — some OpenRouter models
+    # reject an unsupported/unexpected optional parameter outright, so
+    # this is opt-in, unlike Ollama's num_predict (always sent today).
+    openrouter_max_tokens: int | None = 500
+    # Optional OpenRouter attribution headers (HTTP-Referer/X-Title) —
+    # not required for core functionality, only sent when non-empty.
+    openrouter_http_referer: str = ""
+    openrouter_app_title: str = ""
+
+    # Phase 24K — intent parsing and narrative generation can each use a
+    # different provider/model. Both default to "ollama" with an empty
+    # model (falls back to ollama_model below) — an unmodified .env
+    # behaves EXACTLY as before this phase, on both roles.
+    intent_llm_provider: str = "ollama"
+    intent_llm_model: str = ""
+    narrative_llm_provider: str = "ollama"
+    narrative_llm_model: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

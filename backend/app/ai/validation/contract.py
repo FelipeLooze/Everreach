@@ -62,6 +62,7 @@ from typing import Callable
 
 from sqlalchemy.orm import Session
 
+from app.ai.llm_call import call_llm
 from app.ai.llm_service import LLMService
 from app.ai.narrator import (
     NarrationMode,
@@ -188,7 +189,9 @@ def _targeted_relevance_repair(
     )
 
     try:
-        raw = llm_service.generate(_system_prompt_for(proposal.mode), repair_prompt)
+        raw = call_llm(
+            llm_service, _system_prompt_for(proposal.mode), repair_prompt, purpose="REPAIR"
+        )
     except Exception:
         return None
 
@@ -243,7 +246,9 @@ def _targeted_service_existence_repair(
     )
 
     try:
-        raw = llm_service.generate(_system_prompt_for(proposal.mode), repair_prompt)
+        raw = call_llm(
+            llm_service, _system_prompt_for(proposal.mode), repair_prompt, purpose="REPAIR"
+        )
     except Exception:
         return None
 

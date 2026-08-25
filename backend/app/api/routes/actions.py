@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.ai.llm_service import LLMService
-from app.api.dependencies.llm import get_llm_service
+from app.api.dependencies.llm import get_intent_llm_service, get_narrative_llm_service
 from app.api.serializers import to_game_state_response
 from app.db.database import get_db
 from app.game import engine
@@ -19,7 +19,8 @@ def post_action(
     character_id: str,
     body: ActionRequest,
     db: Session = Depends(get_db),
-    llm_service: LLMService = Depends(get_llm_service),
+    llm_service: LLMService = Depends(get_narrative_llm_service),
+    intent_llm_service: LLMService = Depends(get_intent_llm_service),
 ):
     try:
         result = engine.resolve_action(
@@ -30,6 +31,7 @@ def post_action(
             body.text,
             technique_id=body.technique_id,
             action_key=body.action_key,
+            intent_llm_service=intent_llm_service,
         )
     except engine.CharacterDeadError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

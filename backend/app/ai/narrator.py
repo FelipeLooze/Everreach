@@ -11,6 +11,7 @@ from app.ai.conversational_act import (
     _SERVICE_WORDS,
     classify as classify_conversational_act,
 )
+from app.ai.llm_call import call_llm
 from app.ai.llm_service import LLMService
 from app.core.enums import CONNECTION_TYPE_LABELS_PT
 from app.core.logging import get_logger
@@ -373,12 +374,55 @@ _NON_PORTUGUESE_SCRIPT_MESSAGE = (
     "modelo vazando para a saída); escreva somente a cena em português"
 )
 
+# Phase 24K — the same class of leak the CJK check above already
+# catches, in a Latin-alphabet shape a script check cannot see: a
+# stronger remote model (nvidia/nemotron-3-ultra-550b-a55b:free via
+# OpenRouter) confirmed LIVE to occasionally return its own raw
+# English chain-of-thought as the entire response ("The user is
+# asking me to write the next narrative moment. Let me analyze the
+# context carefully...") — sending OpenRouter's own documented
+# reasoning.exclude request parameter (app.ai.llm_service.
+# OpenRouterLLMService) reduced but did not eliminate this for this
+# specific free-tier model/route.
+#
+# A diacritic-DENSITY heuristic was tried first and reverted: it false-
+# positived on multiple pre-existing, legitimate, all-Portuguese test
+# fixtures (short exchanges using mostly unaccented common words, e.g.
+# "— Osgar sorri e acena com a cabeça." / "— O que posso fazer por
+# aqui?") — real Portuguese prose can easily run long stretches with
+# few or no accented words, so ratio alone is not a safe signal.
+#
+# The word "the" is the fix: it is one of the most common words in
+# English and has no Portuguese cognate — it cannot appear in
+# legitimate narration by coincidence, no matter how unaccented that
+# narration's own words happen to be. Every real leaked sample
+# (this session's own live evidence) uses it 5+ times ("The user...",
+# "the context...", "the previous turn...", "the AUTHORITATIVE...");
+# every one of the test fixtures that broke the diacritic version uses
+# it zero times. A minimum repeat count (not just >=1) keeps this safe
+# even against a single incidental false match this reasoning hasn't
+# anticipated.
+_ENGLISH_ARTICLE_PATTERN = re.compile(r"\bthe\b", re.IGNORECASE)
+_ENGLISH_LEAK_MIN_THE_COUNT = 3
+
+_ENGLISH_REASONING_LEAK_MESSAGE = (
+    "a resposta parece ser texto em inglês descrevendo o raciocínio do modelo sobre a "
+    "tarefa, não a cena narrada (usa a palavra inglesa 'the' repetidamente, o que nunca "
+    "ocorre em português); escreva somente a cena em português, nunca análise da instrução"
+)
+
+
+def _looks_like_english_reasoning_leak(text: str) -> bool:
+    return len(_ENGLISH_ARTICLE_PATTERN.findall(text)) >= _ENGLISH_LEAK_MIN_THE_COUNT
+
 
 def _empty_response_violations(text: str) -> list[str]:
     if not text.strip():
         return [_EMPTY_OR_LEAKED_RESPONSE_MESSAGE]
     if _CJK_SCRIPT_PATTERN.search(text):
         return [_NON_PORTUGUESE_SCRIPT_MESSAGE]
+    if _looks_like_english_reasoning_leak(text):
+        return [_ENGLISH_REASONING_LEAK_MESSAGE]
     return []
 
 
@@ -2110,7 +2154,7 @@ def narrate(
     logger.debug("CURRENT TURN BLOCK\n%s", current_turn_block)
     logger.debug("AUTHORITATIVE FACTS\n%s", mechanical_summary)
 
-    raw_response = llm_service.generate(system_prompt, prompt)
+    raw_response = call_llm(llm_service, system_prompt, prompt, purpose="NARRATIVE", attempt=1)
     logger.debug("RAW NARRATOR RESPONSE\n%s", raw_response)
     response = _strip_prompt_leak(raw_response)
     if response != raw_response.strip():
@@ -2272,7 +2316,9 @@ def narrate(
             attempt,
             "\n".join(hard_violations),
         )
-        raw_revision = llm_service.generate(system_prompt, revision_prompt)
+        raw_revision = call_llm(
+            llm_service, system_prompt, revision_prompt, purpose="NARRATIVE", attempt=attempt + 1
+        )
         logger.debug("RAW NARRATOR RESPONSE (REVISION %s)\n%s", attempt, raw_revision)
         draft = _strip_prompt_leak(raw_revision)
         if draft != raw_revision.strip():
@@ -2295,6 +2341,35 @@ def narrate(
             attempt=attempt,
             category=RepairReasonCategory.FORMAT,
             reason="empty response after stripping leaked prompt text",
+        )
+        return safe
+
+    # Phase 24K — confirmed live as a real gap, not hypothetical: a
+    # stronger, more persistent model (Nemotron via OpenRouter) can keep
+    # re-leaking its own English reasoning across BOTH revision attempts,
+    # not just the first draft. _empty_response_violations (CJK script,
+    # now also the English-reasoning-leak check above) was only ever
+    # checked INSIDE the bounded revision loop — nothing re-checked it
+    # against the loop's own final draft afterward, so a violation that
+    # survived every attempt fell through uncaught into the OTHER post-
+    # loop checks below, none of which recognize "this is leaked
+    # reasoning text, not a narrative violation" as their own concern,
+    # and the raw leak reached the player. Same short-circuit shape as
+    # the empty-draft check immediately above.
+    unresolved_empty_or_script_leak = _empty_response_violations(draft)
+    if unresolved_empty_or_script_leak:
+        safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        logger.error(
+            "FALLBACK REASON: draft still failed the empty/script-leak check after hard "
+            "revisions: %s\nFALLBACK:\n%s",
+            unresolved_empty_or_script_leak,
+            safe,
+        )
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.FORMAT,
+            reason="unresolved empty/script-leak violation after hard revisions",
         )
         return safe
 

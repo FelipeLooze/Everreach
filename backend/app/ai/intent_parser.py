@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.ai.llm_call import call_llm
 from app.ai.llm_service import LLMService, LLMServiceError
 from app.core.enums import ActionIntentType, TravelPace
 from app.core.logging import get_logger
@@ -40,7 +41,7 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
     logger.debug("INTENT PARSER PROMPT\n%s", prompt)
 
     try:
-        raw = llm_service.generate(_SYSTEM_PROMPT, prompt)
+        raw = call_llm(llm_service, _SYSTEM_PROMPT, prompt, purpose="INTENT")
     except LLMServiceError:
         logger.info("intent parser: LLM unavailable, falling back to FREEFORM")
         return Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=text)

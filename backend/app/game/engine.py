@@ -100,11 +100,19 @@ def resolve_action(
     *,
     technique_id: str | None = None,
     action_key: str | None = None,
+    intent_llm_service: LLMService | None = None,
 ) -> ActionResult:
     # Phase 24P — narrative_request_id is already set for the whole call
     # by the decorator above; captured here only so the summary line at
     # the end can report it and total latency alongside it.
     _narrative_request_started_at = time.monotonic()
+    # Phase 24K — intent_llm_service is the NEW, optional role split;
+    # llm_service (unchanged name/position, still positional) stays the
+    # NARRATIVE-role service, used for narration, repair, and every
+    # incidental content-generation helper this function calls, exactly
+    # as before this phase. Defaulting to llm_service when not given
+    # preserves every existing caller/test that only ever passed one.
+    intent_llm_service = intent_llm_service or llm_service
     character = db.get(Character, character_id)
     if character is None or character.campaign_id != campaign_id:
         raise ValueError(f"Personagem desconhecido nesta campanha: {character_id}")
@@ -169,7 +177,7 @@ def resolve_action(
             raw_text=text,
         )
     else:
-        intent = intent_parser.parse(llm_service, text, context)
+        intent = intent_parser.parse(intent_llm_service, text, context)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     if technique_use is not None:
@@ -510,7 +518,19 @@ def resolve_action(
         character_id=character_id,
         active_npc_id=context_npc.id if context_npc is not None else None,
         player_input=text,
-        model=settings.ollama_model,
+        # Phase 24K — role-aware: intent parsing and narration can now be
+        # two different providers/models, so a single "model" field would
+        # be misleading (and previously wasn't even accurate — it always
+        # reported settings.ollama_model regardless of what actually
+        # generated this turn). Read directly from each service instance
+        # rather than Settings, so it's correct even when overridden in a
+        # test. `model` is kept for back-compat with existing callers/
+        # tests, mirroring narrative_model.
+        model=llm_service.model_name,
+        intent_provider=intent_llm_service.provider_name,
+        intent_model=intent_llm_service.model_name,
+        narrative_provider=llm_service.provider_name,
+        narrative_model=llm_service.model_name,
         temperature=settings.ollama_temperature,
         num_predict=settings.ollama_num_predict,
         context_fingerprint=hashlib.sha256(fresh_context.encode()).hexdigest()[:12],

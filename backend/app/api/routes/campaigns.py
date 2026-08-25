@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService, LLMServiceError
-from app.api.dependencies.llm import get_llm_service
+from app.api.dependencies.llm import get_narrative_llm_service
 from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.db.models.character import Character
@@ -113,7 +113,7 @@ def start_world(
     campaign_id: str,
     character_id: str,
     db: Session = Depends(get_db),
-    llm_service: LLMService = Depends(get_llm_service),
+    llm_service: LLMService = Depends(get_narrative_llm_service),
 ):
     campaign = db.get(Campaign, campaign_id)
     if campaign is None:

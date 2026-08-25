@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import json
+import time
 
 import httpx
 
@@ -8,6 +10,27 @@ from app.core.gpu_coordinator import gpu_heavy_operation, set_llm_release_hook
 from app.core.logging import get_logger
 
 logger = get_logger("llm")
+
+
+@dataclass(frozen=True)
+class GenerationMetadata:
+    """Phase 24K — the small, provider-neutral result shape the spec asks
+    for: enough for observability to report what actually answered a
+    turn without needing a second parallel abstraction alongside
+    LLMService.generate()'s own plain-string contract (which stays
+    unchanged — dozens of existing callers/test doubles only implement
+    that). Populated by a concrete service after each generate() call,
+    read back via LLMService.last_generation_metadata; any field a given
+    provider doesn't report (e.g. Ollama has no request_id) stays None."""
+
+    provider: str
+    model: str
+    latency_ms: float
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+    finish_reason: str | None = None
+    request_id: str | None = None
 
 
 def _ollama_error_detail(response: httpx.Response) -> str | None:
@@ -40,6 +63,30 @@ class LLMService(ABC):
     @abstractmethod
     def generate(self, system: str, prompt: str) -> str:
         """Return the model's raw text completion for a single-turn system+prompt call."""
+
+    @property
+    def provider_name(self) -> str:
+        """Phase 24K — observability identifier ("ollama"/"openrouter").
+        Not abstract: a safe, generic default so the dozens of existing
+        test-double LLMService subclasses across the suite need no
+        changes; only a real provider implementation overrides this."""
+        return "unknown"
+
+    @property
+    def model_name(self) -> str:
+        """Phase 24K — the specific model this service talks to, for
+        observability. Same "not abstract, safe default" reasoning as
+        provider_name above."""
+        return "unknown"
+
+    @property
+    def last_generation_metadata(self) -> GenerationMetadata | None:
+        """Phase 24K — metadata for the MOST RECENT generate() call this
+        instance made (tokens/finish_reason/latency/request_id, whatever
+        the provider actually returned), or None before any call has
+        completed. Default None — a test double need not populate this
+        for its result to remain a valid, complete LLMService."""
+        return None
 
     def embed(self, text: str) -> list[float]:
         """Phase 18H — return a semantic embedding vector for text.
@@ -86,6 +133,19 @@ class OllamaLLMService(LLMService):
         self._num_predict = num_predict
         self._temperature = temperature
         self._keep_alive = keep_alive
+        self._last_generation_metadata: GenerationMetadata | None = None
+
+    @property
+    def provider_name(self) -> str:
+        return "ollama"
+
+    @property
+    def model_name(self) -> str:
+        return self._model
+
+    @property
+    def last_generation_metadata(self) -> GenerationMetadata | None:
+        return self._last_generation_metadata
 
     def generate(self, system: str, prompt: str) -> str:
         options = {"temperature": self._temperature}
@@ -98,6 +158,7 @@ class OllamaLLMService(LLMService):
             # going into a fabricated multi-turn continuation instead of
             # stopping after one coherent beat.
             options["num_predict"] = self._num_predict
+        started = time.monotonic()
         try:
             # Phase 23D-Q — Ollama and ComfyUI share one local GPU;
             # only the actual network round trip (where Ollama does the
@@ -174,6 +235,24 @@ class OllamaLLMService(LLMService):
             data.get("prompt_eval_count"),
             data.get("done_reason"),
         )
+        # Phase 24K — the same metadata, in the small provider-neutral
+        # shape observability now reads regardless of which provider
+        # answered; total latency (not just Ollama's own eval_duration)
+        # so it's directly comparable to OpenRouterLLMService's own.
+        self._last_generation_metadata = GenerationMetadata(
+            provider="ollama",
+            model=self._model,
+            latency_ms=(time.monotonic() - started) * 1000,
+            prompt_tokens=data.get("prompt_eval_count"),
+            completion_tokens=data.get("eval_count"),
+            total_tokens=(
+                (data.get("prompt_eval_count") or 0) + (data.get("eval_count") or 0)
+                if data.get("prompt_eval_count") is not None or data.get("eval_count") is not None
+                else None
+            ),
+            finish_reason=data.get("done_reason"),
+            request_id=None,
+        )
         text = data.get("response", "")
         return text.strip()
 
@@ -243,17 +322,281 @@ class OllamaLLMService(LLMService):
             logger.info("Could not release Ollama GPU residency: %s", exc)
 
 
-def build_llm_service(settings: Settings | None = None) -> LLMService:
-    settings = settings or get_settings()
-    service = OllamaLLMService(
+def _openrouter_error_detail(response: httpx.Response) -> str | None:
+    """Mirrors _ollama_error_detail's own reasoning: OpenRouter's error
+    body shape is {"error": {"message": "...", "code": ..., ...}} (an
+    OBJECT, not a bare string like Ollama's) — best-effort, must never
+    itself raise out of an error-handling path."""
+    try:
+        body = response.json()
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(body, dict):
+        return None
+    error = body.get("error")
+    if isinstance(error, dict):
+        message = error.get("message")
+        if isinstance(message, str) and message:
+            return message
+    elif isinstance(error, str) and error:
+        return error
+    return None
+
+
+class OpenRouterLLMService(LLMService):
+    """Phase 24K — talks to OpenRouter's OpenAI-compatible Chat
+    Completions API. This is the ONLY place that knows about
+    OpenRouter's HTTP shape, mirroring OllamaLLMService's own "one class
+    per provider" boundary — narrator.py/intent_parser.py/engine.py
+    never see this class, only the shared LLMService.generate() contract.
+
+    Deliberately conservative about what it sends: only model/messages/
+    temperature/max_tokens, per the governing spec's own instruction not
+    to assume every OpenRouter model supports every optional OpenAI
+    parameter. No reasoning-control parameter is sent — if a model
+    returns extra reasoning content alongside its answer, this class
+    only ever reads message["content"], so reasoning text can never
+    reach the player, RAG, conversation history, or logs by construction
+    (nothing here ever looks at any other message field)."""
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        base_url: str = "https://openrouter.ai/api/v1",
+        timeout: float = 180.0,
+        temperature: float = 0.35,
+        max_tokens: int | None = 500,
+        http_referer: str = "",
+        app_title: str = "",
+    ) -> None:
+        self._api_key = api_key
+        self._model = model
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self._temperature = temperature
+        self._max_tokens = max_tokens
+        self._http_referer = http_referer
+        self._app_title = app_title
+        self._last_generation_metadata: GenerationMetadata | None = None
+
+    @property
+    def provider_name(self) -> str:
+        return "openrouter"
+
+    @property
+    def model_name(self) -> str:
+        return self._model
+
+    @property
+    def last_generation_metadata(self) -> GenerationMetadata | None:
+        return self._last_generation_metadata
+
+    def generate(self, system: str, prompt: str) -> str:
+        if not self._api_key:
+            # Checked before any network call — never a bare 401 from a
+            # request we should never have sent.
+            raise LLMServiceError(
+                "OPENROUTER_API_KEY is not configured. Set it in the environment "
+                "before selecting the openrouter provider."
+            )
+
+        headers = {"Authorization": f"Bearer {self._api_key}"}
+        if self._http_referer:
+            headers["HTTP-Referer"] = self._http_referer
+        if self._app_title:
+            headers["X-Title"] = self._app_title
+
+        payload = {
+            "model": self._model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": self._temperature,
+            # Phase 24K — confirmed necessary via a real live call, not
+            # speculative: nvidia/nemotron-3-ultra-550b-a55b:free, asked
+            # with no "reasoning" parameter at all, returned its raw
+            # chain-of-thought INSIDE message.content itself ("Let me
+            # analyze the context carefully...") rather than routing it
+            # to the separate message.reasoning field OpenRouter's own
+            # docs describe as the normal split. "exclude" is OpenRouter's
+            # own documented, provider-neutral field (audited via its
+            # current reasoning-tokens docs before adding this) — the
+            # model may still reason internally, but is told not to
+            # return it in the response at all, closing this at its
+            # actual source rather than trying to detect/strip a chain-
+            # of-thought preamble out of already-returned content.
+            "reasoning": {"exclude": True},
+        }
+        if self._max_tokens is not None:
+            payload["max_tokens"] = self._max_tokens
+
+        started = time.monotonic()
+        try:
+            with gpu_heavy_operation("LLM_TASK"):
+                response = httpx.post(
+                    f"{self._base_url}/chat/completions",
+                    json=payload,
+                    headers=headers,
+                    timeout=self._timeout,
+                )
+        except httpx.ConnectError as exc:
+            logger.warning("OpenRouter unreachable: %s", exc)
+            raise LLMServiceError(f"Could not reach OpenRouter: {exc}") from exc
+        except httpx.TimeoutException as exc:
+            logger.warning("OpenRouter request timed out: %s", exc)
+            raise LLMServiceError("OpenRouter took too long to respond.") from exc
+        latency_ms = (time.monotonic() - started) * 1000
+
+        if response.status_code != 200:
+            detail = _openrouter_error_detail(response)
+            if response.status_code == 401:
+                logger.warning("OpenRouter authentication failed: %s", detail or "no detail")
+                raise LLMServiceError(
+                    f"OpenRouter authentication failed: {detail or 'invalid or missing API key'}"
+                )
+            if response.status_code == 429:
+                # Phase 24K — identified explicitly as RATE_LIMITED per
+                # the spec: no retry, no silent fallback to another
+                # provider, truthful reporting so an evaluation run
+                # never mistakes "quota exhausted" for "model answered
+                # with nothing."
+                logger.warning(
+                    "OpenRouter rate limit reached (model=%s): %s", self._model, detail or "no detail"
+                )
+                raise LLMServiceError(
+                    f"OpenRouter rate limit reached for {self._model}: {detail or 'rate limited'}"
+                )
+            if response.status_code == 404:
+                logger.warning("OpenRouter model unavailable (model=%s): %s", self._model, detail)
+                raise LLMServiceError(
+                    f"OpenRouter model unavailable ({self._model}): {detail or 'not found'}"
+                )
+            if response.status_code >= 500:
+                logger.warning(
+                    "OpenRouter server error %s (model=%s): %s", response.status_code, self._model, detail
+                )
+                raise LLMServiceError(
+                    f"OpenRouter server error ({response.status_code}): {detail or 'provider unavailable'}"
+                )
+            logger.warning(
+                "OpenRouter request failed %s (model=%s): %s", response.status_code, self._model, detail
+            )
+            raise LLMServiceError(
+                f"OpenRouter request failed ({response.status_code}): {detail or 'unknown error'}"
+            )
+
+        try:
+            data = response.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            logger.warning("OpenRouter returned a malformed (non-JSON) response: %s", exc)
+            raise LLMServiceError("OpenRouter returned a malformed response.") from exc
+
+        if not isinstance(data, dict):
+            logger.warning("OpenRouter returned a non-object response body.")
+            raise LLMServiceError("OpenRouter returned an unexpected response shape.")
+
+        # Phase 24K — an error payload can arrive inside an otherwise-200
+        # response (documented OpenRouter behavior for some upstream
+        # provider failures) — must never be silently treated as an
+        # empty generated response, same discipline as Ollama's own
+        # in-body error check.
+        error = data.get("error")
+        if error:
+            message = error.get("message") if isinstance(error, dict) else str(error)
+            logger.warning("OpenRouter reported an error payload: %s", message)
+            raise LLMServiceError(f"OpenRouter error: {message}")
+
+        choices = data.get("choices")
+        if not choices or not isinstance(choices, list):
+            logger.warning("OpenRouter response had no choices: keys=%s", list(data.keys()))
+            raise LLMServiceError("OpenRouter returned no completion choices.")
+
+        first_choice = choices[0] if isinstance(choices[0], dict) else {}
+        message = first_choice.get("message") if isinstance(first_choice.get("message"), dict) else {}
+        content = message.get("content")
+        if not isinstance(content, str) or not content.strip():
+            logger.warning("OpenRouter response had no assistant content.")
+            raise LLMServiceError("OpenRouter returned an empty completion (no assistant content).")
+
+        usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
+        finish_reason = first_choice.get("finish_reason")
+        request_id = data.get("id")
+
+        self._last_generation_metadata = GenerationMetadata(
+            provider="openrouter",
+            model=self._model,
+            latency_ms=latency_ms,
+            prompt_tokens=usage.get("prompt_tokens"),
+            completion_tokens=usage.get("completion_tokens"),
+            total_tokens=usage.get("total_tokens"),
+            finish_reason=finish_reason if isinstance(finish_reason, str) else None,
+            request_id=request_id if isinstance(request_id, str) else None,
+        )
+        logger.debug(
+            "OpenRouter generation metadata: model=%s finish_reason=%s prompt_tokens=%s "
+            "completion_tokens=%s total_tokens=%s latency_ms=%.0f request_id=%s",
+            self._model,
+            finish_reason,
+            usage.get("prompt_tokens"),
+            usage.get("completion_tokens"),
+            usage.get("total_tokens"),
+            latency_ms,
+            request_id,
+        )
+        return content.strip()
+
+
+def _build_ollama_service(settings: Settings, model: str) -> OllamaLLMService:
+    return OllamaLLMService(
         base_url=settings.ollama_base_url,
-        model=settings.ollama_model,
+        model=model,
         timeout=settings.ollama_timeout_seconds,
         embedding_model=settings.ollama_embedding_model,
         num_predict=settings.ollama_num_predict,
         temperature=settings.ollama_temperature,
         keep_alive=settings.ollama_keep_alive,
     )
+
+
+def _build_openrouter_service(settings: Settings, model: str) -> OpenRouterLLMService:
+    return OpenRouterLLMService(
+        api_key=settings.openrouter_api_key,
+        model=model,
+        base_url=settings.openrouter_base_url,
+        timeout=settings.openrouter_timeout_seconds,
+        temperature=settings.openrouter_temperature,
+        max_tokens=settings.openrouter_max_tokens,
+        http_referer=settings.openrouter_http_referer,
+        app_title=settings.openrouter_app_title,
+    )
+
+
+def _build_service_for_role(settings: Settings, provider: str, model: str) -> LLMService:
+    normalized = (provider or "ollama").strip().lower()
+    if normalized == "openrouter":
+        if not model:
+            raise LLMServiceError(
+                "An OpenRouter model must be configured (e.g. NARRATIVE_LLM_MODEL) "
+                "when provider=openrouter — the free router alias is deliberately "
+                "not used here, per the exact-model-ID requirement."
+            )
+        return _build_openrouter_service(settings, model)
+    if normalized == "ollama":
+        return _build_ollama_service(settings, model or settings.ollama_model)
+    raise LLMServiceError(f"Unknown LLM provider: {provider!r} (expected 'ollama' or 'openrouter')")
+
+
+def build_llm_service(settings: Settings | None = None) -> LLMService:
+    """The single default LLMService — used by callers outside the
+    per-turn intent/narrative pipeline (world-gen content helpers: class/
+    technique/quest/organization generators). Phase 24K's role split
+    (see build_role_llm_services) does not affect this: always plain
+    Ollama with settings.ollama_model, byte-for-byte the same as before
+    this phase, so those call sites keep their exact pre-24K behavior."""
+    settings = settings or get_settings()
+    service = _build_ollama_service(settings, settings.ollama_model)
     # Phase 23D-Q.2 — the coordinator calls this back right before a
     # VISUAL_TASK runs, so ComfyUI gets the full VRAM budget instead of
     # competing with a resident LLM. Registered generically (works for
@@ -261,3 +604,39 @@ def build_llm_service(settings: Settings | None = None) -> LLMService:
     # this stays correct if the concrete service ever changes.
     set_llm_release_hook(service.release_gpu_residency)
     return service
+
+
+def build_role_llm_services(settings: Settings | None = None) -> tuple[LLMService, LLMService]:
+    """Phase 24K — returns (intent_service, narrative_service), built
+    independently from INTENT_LLM_PROVIDER/MODEL and NARRATIVE_LLM_
+    PROVIDER/MODEL. Both default to provider="ollama" with an empty
+    model (falls back to settings.ollama_model) — an unmodified .env
+    produces two separate OllamaLLMService instances pointed at the
+    exact same server/model, functionally identical to the single
+    pre-24K build_llm_service() default.
+
+    Registers ONE combined GPU-release hook covering every distinct
+    service actually constructed (not just one) — a real fix for a real
+    gap: registering only the narrative service's hook would silently
+    stop releasing the intent service's own resident model whenever the
+    two providers differ (e.g. intent=Ollama, narrative=OpenRouter would
+    otherwise overwrite Ollama's real release hook with OpenRouter's
+    no-op)."""
+    settings = settings or get_settings()
+    intent_service = _build_service_for_role(
+        settings, settings.intent_llm_provider, settings.intent_llm_model
+    )
+    narrative_service = _build_service_for_role(
+        settings, settings.narrative_llm_provider, settings.narrative_llm_model
+    )
+
+    distinct_services = [intent_service]
+    if narrative_service is not intent_service:
+        distinct_services.append(narrative_service)
+
+    def _release_all() -> None:
+        for service in distinct_services:
+            service.release_gpu_residency()
+
+    set_llm_release_hook(_release_all)
+    return intent_service, narrative_service

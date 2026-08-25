@@ -4,10 +4,16 @@ from typing import Protocol, Sequence
 import unicodedata
 
 from sqlalchemy.orm import Session
-from app.ai.conversational_act import ConversationalSubject, classify_subject
+from app.ai.conversational_act import (
+    ConversationalSubject,
+    classify_subject,
+    is_existence_question,
+    service_type_asked_about,
+)
 from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
+from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
 from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
 from app.db.models.quest import CharacterQuestObjective, QuestObjective
 from app.db.models.shop import Shop, ShopListing
@@ -24,6 +30,7 @@ from app.core.enums import (
     OrganizationVisibility,
     ShopStatus,
     SimulatedPlayerStatus,
+    connection_type_label_pt,
 )
 from app.core.logging import get_logger
 from app.ai.retrieval.access import knowledge_aware_documents
@@ -667,6 +674,25 @@ def _explicit_name_known(
     )
 
 
+# Phase 24J.4 — Issue 1 (Relational Geography Hallucination). Confirmed
+# via live trace: an early-game question ("existe uma estalagem?") gets
+# asked before the player has been TAUGHT any destination's proper NAME —
+# every entry in CONNECTED LOCATIONS KNOWN TO PLAYER redacts to "Local
+# desconhecido", leaving narrator._find_relational_geography_violations
+# with zero ground truth to correlate a claim against, even though the
+# STRUCTURAL fact (this destination is a service of type X) is fully
+# known and not secret at all — the existing CANONICAL LOCATION CONTEXT
+# block already treats a location's Type as "DIRECTLY PERCEPTIBLE" even
+# when its Name is hidden; this line was the one place that distinction
+# wasn't carried through. Exposing the type label lets the validator
+# still correlate a claim like "a estalagem fica a leste" to its real
+# connection via the generic service alias, even before the proper noun
+# is known.
+_LOCATION_TYPE_LABELS_PT = {
+    location_type: name for name, location_type, _description in SETTLEMENT_SERVICE_POOL.values()
+}
+
+
 def _known_connection_lines(
     db: Session,
     state: GameStateSnapshot,
@@ -717,10 +743,24 @@ def _known_connection_lines(
             if _explicit_name_known(player_facts, destination.name)
             else "Local desconhecido"
         )
+        # Type stays visible even when the proper noun is redacted above —
+        # see this function's own Phase 24J.4 docstring note. Square
+        # brackets (not parens) so it can't be confused with the
+        # route-kind parenthetical that always follows.
+        type_label = _LOCATION_TYPE_LABELS_PT.get(destination.type)
+        destination_label = (
+            f"{destination_name} [{type_label}]" if type_label else destination_name
+        )
 
+        # Phase 24J.4 — this line is the ONLY structured, per-destination
+        # connection fact the narrator/validator has access to; it must
+        # speak the same Portuguese vocabulary the model actually narrates
+        # in (24J.2 already fixed this for perception.service's own route
+        # sentences, but this separate representation still leaked the raw
+        # English enum value, e.g. "PATH").
         lines.append(
-            f"- {direction} -> {destination_name} "
-            f"({connection.connection_type}, distância {connection.distance:g})"
+            f"- {direction} -> {destination_label} "
+            f"({connection_type_label_pt(connection.connection_type)}, distância {connection.distance:g})"
         )
 
     return lines[:MAX_VISIBLE_ENTITIES]
@@ -805,6 +845,7 @@ def _resolve_active_npc(
 
 
 def _direct_question_grounding_lines(
+    db: Session,
     player_input: str,
     state: GameStateSnapshot,
     active_npc: NPC | None,
@@ -854,6 +895,89 @@ def _direct_question_grounding_lines(
             "any) as someone who would know this name. A genuine admission of not knowing, or "
             "a refusal, is the correct response here. Never invent or guess the name.",
         ]
+
+    # Phase 24J.4 — Issue 2 (False Factual Denial). Confirmed live: a
+    # resident NPC confidently denied a service that demonstrably exists
+    # one hop away. Steering this up front (like the two branches above)
+    # is cheaper and more reliable than only catching it after the fact —
+    # this line is re-parsed verbatim by the SAME
+    # _direct_question_grounding_fact narrator.py already uses for the
+    # other two subjects, so the targeted-repair safety net (Issue 2's
+    # validator, app.ai.validation.existence) reuses this exact fact too.
+    if subject == ConversationalSubject.SERVICE and is_existence_question(player_input):
+        service_type = service_type_asked_about(player_input)
+        if service_type is not None and state.location is not None:
+            service_location = (
+                db.query(Location)
+                .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+                .filter(
+                    LocationConnection.from_location_id == state.location.id,
+                    LocationConnection.active.is_(True),
+                    Location.type == service_type,
+                )
+                .first()
+            )
+            is_local_resident = active_npc is not None and active_npc.location_id == state.location.id
+            if service_location is not None and is_local_resident:
+                return [
+                    "DIRECT QUESTION GROUNDING",
+                    "The player is asking whether a specific local service exists.",
+                    f"Authorized answer: sim, {service_location.name} existe e é conhecida "
+                    "localmente.",
+                    "The active interlocutor lives or works here and may confirm this plainly; "
+                    "this is ordinary local knowledge, not a secret. A denial would be "
+                    "factually wrong.",
+                ]
+            if service_location is None:
+                return [
+                    "DIRECT QUESTION GROUNDING",
+                    "The player is asking whether a specific local service exists.",
+                    "Authorized answer: nenhum serviço confirmado desse tipo existe por perto.",
+                    "A plain denial or admission of not knowing is the correct response here.",
+                ]
+
+    # Phase 24J.4 — Issue 1, a second live-confirmed source of the SAME
+    # relational-geography hallucination: "Onde fica a ferraria?" is a
+    # SERVICE-subject, non-existence question with no grounding branch of
+    # its own, so app.ai.validation.contract._targeted_relevance_repair
+    # (triggered whenever the relevance check rejects a draft for an
+    # UNRELATED reason — confirmed live: "no topical acknowledgment") had
+    # no authorized fact to give the model and fell to its own generic
+    # "answer coherently or admit not knowing" instruction — free rein to
+    # invent a wrong direction AND fabricated street names in one pass,
+    # entirely unchecked (the repair candidate is only re-validated for
+    # hidden names and relevance, never canon/geography). Grounding this
+    # up front closes that gap at the source, the same way the two
+    # branches above already do for identity/existence.
+    if subject == ConversationalSubject.SERVICE and not is_existence_question(player_input):
+        service_type = service_type_asked_about(player_input)
+        if (
+            service_type is not None
+            and state.location is not None
+            and re.search(r"\bonde\b|\bfica\b|\bdire[çc][ãa]o\b", player_input, re.IGNORECASE)
+        ):
+            connection_row = (
+                db.query(LocationConnection, Location)
+                .join(Location, Location.id == LocationConnection.to_location_id)
+                .filter(
+                    LocationConnection.from_location_id == state.location.id,
+                    LocationConnection.active.is_(True),
+                    Location.type == service_type,
+                )
+                .first()
+            )
+            if connection_row is not None:
+                connection, service_location = connection_row
+                direction = connection.direction or "direção não registrada"
+                route_kind = connection_type_label_pt(connection.connection_type)
+                return [
+                    "DIRECT QUESTION GROUNDING",
+                    "The player is asking WHERE a specific local service is.",
+                    f"Authorized answer: fica a {direction}, por uma {route_kind}.",
+                    "This is the ONLY authorized direction/route for this destination — never "
+                    "state a different direction, invent a street/landmark name, or merge this "
+                    "with a different real connection.",
+                ]
 
     return []
 
@@ -923,6 +1047,26 @@ def active_npc_relevant_facts(
     )
 
 
+# Phase 24J.4 — Issue 3 (Dialogue-Revealed Knowledge). The original
+# confirmed bug ("Esta é Elhelm..." never registered as a reveal) traced
+# to the OLD "cardal_is_village" fact template ("{village.name} é uma
+# vila da região {region.name}.") putting the taught entity in the
+# sentence-initial position, which _proper_nouns below always excludes.
+# TRIED loosening this function's own "skip the first word" rule to a
+# curated allowlist of common words — but that broke a DIFFERENT,
+# pre-existing consumer of the SAME function: relevance.py's
+# _gives_a_concrete_named_answer reuses this on ARBITRARY narrator
+# output, not just fact statements. "Nada acontece de imediato." isn't
+# in any hand-written common-word allowlist, so "Nada" stopped being
+# skipped and got counted as a proper noun — a bare non-answer started
+# registering as "gave a concrete named answer" (confirmed regression:
+# test_case_e_nothing_happens_fallback_to_available_npc_is_rejected went
+# from correctly REJECTED to incorrectly ACCEPTED). REVERTED — this
+# function is unchanged from before this phase. The real fix for Issue 3
+# lives at the SOURCE instead: world/seed.py's fact templates were
+# reworded so the taught entity is never sentence-initial in the first
+# place ("Esta vila se chama {village.name}." — "Esta" is the skippable
+# first word, {village.name} isn't).
 def _proper_nouns(statement: str) -> set[str]:
     """Capitalized words in a fact's statement, i.e. its named entities.
 
@@ -1633,7 +1777,9 @@ def build_narrative_context(
         active_npc="\n".join(active_lines),
         active_transported="\n".join(active_transported_lines),
         direct_question_grounding="\n".join(
-            _direct_question_grounding_lines(player_input, state, active_npc, location_name_known)
+            _direct_question_grounding_lines(
+                db, player_input, state, active_npc, location_name_known
+            )
         ),
         organizations="\n".join(organization_lines),
         currency="\n".join(currency_lines),

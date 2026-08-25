@@ -67,7 +67,9 @@ def test_npc_revealing_the_village_name_in_dialogue_teaches_the_player(db_sessio
 
     # No extra LLM call: still just intent-parse + narration.
     assert len(llm.calls) == 2
-    assert "cardal_is_village" in _player_fact_keys(db_session, character.id)
+    fact_keys = _player_fact_keys(db_session, character.id)
+    assert "settlement_name_known" in fact_keys
+    assert "settlement_region_known" in fact_keys
 
     state_after = build_game_state(db_session, campaign.id, character.id)
     response_after = to_game_state_response(db_session, state_after)
@@ -84,7 +86,7 @@ def test_npc_not_mentioning_the_name_does_not_teach_it(db_session):
         db_session, llm, campaign.id, character.id, f"— Bom dia, {elder_first_name}.",
     )
 
-    assert "cardal_is_village" not in _player_fact_keys(db_session, character.id)
+    assert "settlement_name_known" not in _player_fact_keys(db_session, character.id)
 
     state_after = build_game_state(db_session, campaign.id, character.id)
     assert to_game_state_response(db_session, state_after).location.name is None
@@ -109,7 +111,7 @@ def test_repeated_reveals_across_turns_stay_idempotent(db_session):
         .filter(
             KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
             KnowledgeKnower.knower_id == character.id,
-            KnowledgeFact.fact_key == "cardal_is_village",
+            KnowledgeFact.fact_key == "settlement_name_known",
         )
         .all()
     ]

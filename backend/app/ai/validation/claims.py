@@ -49,6 +49,11 @@ class ClaimCategory(StrEnum):
     # targeted, question-aware repair instead of the generic drop-and-
     # fallback path every other AUTHORITATIVE violation gets.
     CONVERSATIONAL_RELEVANCE = "CONVERSATIONAL_RELEVANCE"
+    # Phase 24J.4 — same reasoning as CONVERSATIONAL_RELEVANCE above: a
+    # distinct Violation.category so contract.py's repair pipeline can
+    # single out a false service-existence denial and attempt a targeted,
+    # fact-aware repair instead of the generic drop-and-fallback path.
+    SERVICE_EXISTENCE = "SERVICE_EXISTENCE"
 
 
 @dataclass(frozen=True)

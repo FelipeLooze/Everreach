@@ -552,7 +552,15 @@ def _teach_facts_revealed_in_narration(
     mechanically teach that same fact to the player. The narrator itself
     never gains authority to grant knowledge — this only promotes a fact
     the backend already trusts (it's in the NPC's own NPC KNOWLEDGE) once
-    the produced text shows it was genuinely said, not merely available."""
+    the produced text shows it was genuinely said, not merely available.
+
+    Phase 24J.4 — order of operations, verified (not assumed): the caller
+    passes `narrative_validation.final_text`, i.e. the FINAL, already-
+    validated/repaired narration — never a raw pre-rejection draft. A
+    hallucinated claim that got rejected by the narrator's own repair
+    loop or by validate_narrative_proposal never reaches this function's
+    `narrated_text` at all, so it can never be taught.
+    """
     revealed_facts = context_builder.active_npc_relevant_facts(
         db,
         fresh_state,
@@ -560,7 +568,17 @@ def _teach_facts_revealed_in_narration(
         player_input=player_input,
     )
     for fact in revealed_facts:
-        if context_builder.fact_is_revealed_in_text(fact, narrated_text):
+        revealed = context_builder.fact_is_revealed_in_text(fact, narrated_text)
+        logger.info(
+            "knowledge acquisition check: fact_key=%s subject=%s revealer=%s learner=%s "
+            "persisted=%s",
+            fact.fact_key,
+            fact.subject,
+            context_npc.id,
+            character.id,
+            revealed,
+        )
+        if revealed:
             npcs_service.teach_fact(
                 db,
                 campaign_id,

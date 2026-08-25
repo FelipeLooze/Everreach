@@ -479,7 +479,14 @@ def test_known_location_fact_authorizes_canonical_location_and_region_names(
     teach_fact(
         db_session,
         campaign.id,
-        "cardal_is_village",
+        "settlement_name_known",
+        KnowerType.PLAYER,
+        character.id,
+    )
+    teach_fact(
+        db_session,
+        campaign.id,
+        "settlement_region_known",
         KnowerType.PLAYER,
         character.id,
     )

@@ -223,7 +223,14 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
     teach_fact(
         db,
         campaign_id,
-        "cardal_is_village",
+        "settlement_name_known",
+        KnowerType.PLAYER,
+        character_id,
+    )
+    teach_fact(
+        db,
+        campaign_id,
+        "settlement_region_known",
         KnowerType.PLAYER,
         character_id,
     )

@@ -16,6 +16,9 @@ though today both may be phrased as a question-shaped sentence).
 """
 from enum import Enum
 import re
+import unicodedata
+
+from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
 
 
 class ConversationalAct(str, Enum):
@@ -115,7 +118,13 @@ _DIRECTION_WORDS = re.compile(
     re.IGNORECASE,
 )
 _SERVICE_WORDS = re.compile(
-    r"\bloja\b|\bcomprar\b|\bvender\b|\btaverna\b|\bestalagem\b|\bpre[çc]o\b|\bhospedagem\b|\bquarto\b",
+    r"\bloja\b|\bcomprar\b|\bvender\b|\btaverna\b|\bestalagem\b|\bpre[çc]o\b|\bhospedagem\b|\bquarto\b"
+    # Phase 24J.4 — "ferraria"/"ferreiro" were entirely absent: a question
+    # like "existe uma ferraria aqui?" fell through to a different subject
+    # bucket and got neither the relevance nor the factual-denial checks
+    # this whole subject exists to gate. The spec's own required test case
+    # ("is there a blacksmith?") needs this.
+    r"|\bferraria\b|\bferreir[oa]\b",
     re.IGNORECASE,
 )
 _EVENT_WORDS = re.compile(
@@ -166,6 +175,71 @@ def classify_subject(player_input: str) -> ConversationalSubject:
     if _OBJECT_WORDS.search(text) or _OBJECT_REFERENCE.search(text):
         return ConversationalSubject.OBJECT
     return ConversationalSubject.GENERIC_INFORMATION
+
+
+def _normalized_subject_text(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text.casefold())
+    return "".join(char for char in decomposed if not unicodedata.combining(char))
+
+
+# Phase 24J.4 — Issue 2 (False Factual Denial). Which SPECIFIC service a
+# SERVICE-subject question is about, and whether it's an existence/
+# availability question specifically (as opposed to e.g. a price question
+# about a service already known to exist). Every service type's PRIMARY
+# alias comes directly from SETTLEMENT_SERVICE_POOL's own label — the
+# single source of truth for what a service is actually called, zero risk
+# of drifting out of sync with world content — with only a small,
+# hand-maintained set of well-established colloquial synonyms layered on
+# top for the types a player would naturally phrase differently.
+_SERVICE_TYPE_SYNONYMS_PT: dict[str, tuple[str, ...]] = {
+    "inn": ("hospedagem", "pousada"),
+    "blacksmith": ("ferreiro", "ferreira"),
+    "shop": ("loja",),
+}
+
+_SERVICE_TYPE_ALIASES_PT: dict[str, tuple[str, ...]] = {
+    service_type: (_normalized_subject_text(label),) + _SERVICE_TYPE_SYNONYMS_PT.get(service_type, ())
+    for label, service_type, _description in SETTLEMENT_SERVICE_POOL.values()
+}
+
+_SERVICE_TYPE_ALIAS_LOOKUP: tuple[tuple[str, str], ...] = tuple(
+    sorted(
+        (
+            (_normalized_subject_text(alias), service_type)
+            for service_type, aliases in _SERVICE_TYPE_ALIASES_PT.items()
+            for alias in aliases
+        ),
+        key=lambda pair: len(pair[0]),
+        reverse=True,
+    )
+)
+
+
+def service_type_asked_about(player_input: str) -> str | None:
+    """Which SETTLEMENT_SERVICE_POOL type key (if any) this text names,
+    by exact-alias match — never a guess. Longest alias first so "loja
+    geral" matches whole rather than being pre-empted by the shorter
+    "loja"."""
+    normalized = _normalized_subject_text(player_input)
+    for alias, service_type in _SERVICE_TYPE_ALIAS_LOOKUP:
+        if re.search(rf"\b{re.escape(alias)}\b", normalized):
+            return service_type
+    return None
+
+
+_EXISTENCE_QUESTION_PATTERN = re.compile(
+    r"\bexiste\b|\bha\b|\btem\b|\bpossui\b|\bhouve\b", re.IGNORECASE
+)
+
+
+def is_existence_question(player_input: str) -> bool:
+    """True for "existe/tem/há uma estalagem?" — false for a price/
+    directions/other question that merely mentions a service in passing.
+    Deliberately narrow (per the governing spec's own instruction: prefer
+    known entities + known aliases over general parsing) — a question
+    this doesn't recognize simply isn't covered by the factual-denial
+    check, not a false positive risk either way."""
+    return bool(_EXISTENCE_QUESTION_PATTERN.search(_normalized_subject_text(player_input)))
 
 
 def classify(player_input: str) -> ConversationalAct:

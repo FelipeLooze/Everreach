@@ -211,6 +211,56 @@ def _targeted_relevance_repair(
     return candidate
 
 
+def _targeted_service_existence_repair(
+    llm_service: LLMService, proposal: NarrativeProposal
+) -> str | None:
+    """Phase 24J.4 — mirrors _targeted_relevance_repair's shape exactly
+    (same grounding-fact source, same hidden-name/relevance re-check
+    safety net), but with a corrected framing: the previous draft DID
+    address the question (it's topically relevant) — it just confidently
+    denied something that demonstrably exists. Reusing the relevance
+    repair's "did not acknowledge this at all" phrasing verbatim would be
+    factually wrong about what actually happened.
+    """
+    if not proposal.active_npc_name:
+        return None
+
+    fact = _direct_question_grounding_fact(proposal.context)
+    if not fact:
+        return None
+
+    repair_prompt = (
+        f'O jogador perguntou isto no turno atual: "{proposal.player_input.strip()}"\n\n'
+        f"O interlocutor ativo é {proposal.active_npc_name}, residente local.\n"
+        f"Fato autorizado: {fact}\n\n"
+        "A resposta anterior negou isso com confiança, mas o fato acima é verdadeiro — o "
+        "interlocutor conhece bem sua própria vila. Reescreva SOMENTE a resposta narrativa/"
+        "fala do interlocutor confirmando esse fato, em no máximo dois parágrafos curtos, em "
+        f"português do Brasil. Não gere fala, pensamentos ou ações voluntárias para "
+        f"{proposal.character_name}."
+    )
+
+    try:
+        raw = llm_service.generate(_system_prompt_for(proposal.mode), repair_prompt)
+    except Exception:
+        return None
+
+    candidate = _strip_prompt_leak(raw).strip()
+    if not candidate:
+        return None
+
+    if _find_hidden_name_violations(candidate, proposal.context, proposal.active_npc_name):
+        return None
+
+    # Deferred import — same circular-import reason as _targeted_relevance_repair.
+    from app.ai.narrator import _normalized
+    from app.ai.validation.existence import _CONFIDENT_DENIAL_PATTERN
+
+    if _CONFIDENT_DENIAL_PATTERN.search(_normalized(candidate)):
+        return None
+    return candidate
+
+
 def _grounded_fallback_narration(proposal: NarrativeProposal) -> str:
     """Phase 24J.1 Steps 7/9 — the generic scripted fallback ("Nada
     acontece de imediato." / "{npc} permanece em silêncio.") must never
@@ -261,11 +311,23 @@ def _repair(
     is_relevance_failure = any(
         violation.category == ClaimCategory.CONVERSATIONAL_RELEVANCE for violation in violations
     )
-    if not is_relevance_failure:
+    # Phase 24J.4 — a false service-existence denial gets the SAME
+    # question-aware repair treatment as a NOT_ADDRESSED relevance
+    # failure: silence is never better than a real, backend-supplied
+    # fact for a direct question aimed at an available, knowledgeable
+    # active NPC.
+    is_service_existence_failure = any(
+        violation.category == ClaimCategory.SERVICE_EXISTENCE for violation in violations
+    )
+    if not is_relevance_failure and not is_service_existence_failure:
         return safe_fallback_narration(proposal.mode, proposal.active_npc_name)
 
     if llm_service is not None:
-        targeted = _targeted_relevance_repair(llm_service, proposal)
+        targeted = (
+            _targeted_service_existence_repair(llm_service, proposal)
+            if is_service_existence_failure
+            else _targeted_relevance_repair(llm_service, proposal)
+        )
         if targeted is not None:
             return targeted
     return _grounded_fallback_narration(proposal)

@@ -2,7 +2,7 @@ import difflib
 from enum import StrEnum
 from pathlib import Path
 import re
-from typing import Literal
+from typing import Literal, NamedTuple
 import unicodedata
 
 from app.ai.conversational_act import (
@@ -12,7 +12,9 @@ from app.ai.conversational_act import (
     classify as classify_conversational_act,
 )
 from app.ai.llm_service import LLMService
+from app.core.enums import CONNECTION_TYPE_LABELS_PT
 from app.core.logging import get_logger
+from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
 
 logger = get_logger("narration")
 
@@ -366,6 +368,236 @@ def _authoritative_context_only(context: str) -> str:
     return f"{before_audit}\n\nACTIVE QUESTS{authoritative_tail}"
 
 
+# Phase 24J.4 — Issue 1 (Relational Geography Hallucination). Confirmed via
+# live trace, 3 separate campaigns: the OLD route_kind+direction check below
+# only asks "does this vocabulary combination exist ANYWHERE in context?" —
+# it never asks WHICH destination the combination is actually about. A real
+# route (village -[ROAD,east]-> Estrada do Moinho) and a real but UNRELATED
+# route (village -[PATH,south]-> the inn) each individually satisfy that
+# check, so the model could freely claim "the inn is east, near Estrada do
+# Moinho" and nothing caught it — both individual facts exist; their
+# COMBINATION does not. Fixed by correlating each direction/route-kind
+# mention to the NEAREST known-destination mention in the same sentence,
+# then checking that pairing against the specific LocationConnection for
+# THAT destination — never against "does this exist somewhere."
+_DIRECTION_WORDS_PT = (
+    "nordeste", "noroeste", "sudeste", "sudoeste",
+    "norte", "sul", "leste", "oeste",
+)
+_ROUTE_KIND_WORDS_PT = tuple(sorted(set(CONNECTION_TYPE_LABELS_PT.values())))
+
+# Longest-label-first so a multi-word service label ("quadro de avisos")
+# is matched whole rather than partially by a shorter overlapping prefix.
+_SETTLEMENT_SERVICE_LABELS_PT = tuple(
+    sorted(
+        {_normalized(label) for label, _type, _description in SETTLEMENT_SERVICE_POOL.values()},
+        key=len,
+        reverse=True,
+    )
+)
+
+
+class _KnownConnection(NamedTuple):
+    direction: str
+    destination_name: str
+    route_kind: str
+    type_alias: str | None
+
+
+_KNOWN_CONNECTION_LINE_PATTERN = re.compile(
+    r"^-\s*(?P<direction>\S+)\s*->\s*(?P<destination>.+?)"
+    r"(?:\s*\[(?P<type_label>[^\[\]]+)\])?\s*\((?P<route_kind>[^,]+),"
+)
+
+
+def _parse_known_connections(context: str) -> list[_KnownConnection]:
+    """Parse the SAME structured per-destination connection facts already
+    exposed to the narrator (context_builder._known_connection_lines) back
+    into a comparable form — the established codebase pattern (see
+    _extract_character_name, _private_location_fields) rather than a new
+    parallel channel. "Preserve entity relationship": each line is already
+    exactly one (direction, destination, route_kind, type) tuple; this
+    never flattens them into an unrelated bag of words.
+
+    A destination whose proper NOUN is still hidden ("Local desconhecido")
+    is still kept, not discarded — its TYPE (in square brackets, when
+    recognized) stays visible even before the name does, mirroring the
+    established "Type is DIRECTLY PERCEPTIBLE, Name may be HIDDEN"
+    distinction CANONICAL LOCATION CONTEXT already draws. Confirmed via
+    live trace as a real gap: an early-game existence/direction question
+    ("existe uma estalagem? onde fica?") is answered before the player
+    has been taught ANY destination's proper name, so every entry
+    redacted to "Local desconhecido" and this validator had zero ground
+    truth to correlate against — even though the structural fact (this
+    connection leads to an inn) was never actually secret.
+    """
+    section_match = re.search(
+        r"CONNECTED LOCATIONS KNOWN TO PLAYER\n(.*?)(?:\n\n|\Z)", context, re.DOTALL
+    )
+    if not section_match:
+        return []
+    connections = []
+    for line in section_match.group(1).splitlines():
+        match = _KNOWN_CONNECTION_LINE_PATTERN.match(line.strip())
+        if not match:
+            continue
+        destination = match.group("destination").strip()
+        type_label = match.group("type_label")
+        connections.append(
+            _KnownConnection(
+                direction=_normalized(match.group("direction")),
+                destination_name=destination,
+                route_kind=_normalized(match.group("route_kind")),
+                type_alias=_normalized(type_label) if type_label else None,
+            )
+        )
+    return connections
+
+
+def _service_alias_for(connection: _KnownConnection) -> str | None:
+    """The generic Portuguese label a player would naturally use for this
+    destination ("estalagem") — from its own context-supplied type label
+    when the proper noun is still hidden, otherwise derived from the
+    known name itself (a settlement service is always named '{Label} de
+    {village}' at world-gen time). Reuses SETTLEMENT_SERVICE_POOL as the
+    single source of truth rather than a second, hand-maintained list."""
+    if connection.type_alias:
+        return connection.type_alias
+    normalized_name = _normalized(connection.destination_name)
+    for label in _SETTLEMENT_SERVICE_LABELS_PT:
+        if normalized_name.startswith(label):
+            return label
+    return None
+
+
+def _destination_mention_span(
+    segment_normalized: str, connection: _KnownConnection
+) -> tuple[int, int] | None:
+    if _normalized(connection.destination_name) != "local desconhecido":
+        exact = re.search(
+            rf"\b{re.escape(_normalized(connection.destination_name))}\b", segment_normalized
+        )
+        if exact:
+            return exact.start(), exact.end()
+    alias = _service_alias_for(connection)
+    if alias:
+        alias_match = re.search(rf"\b{re.escape(alias)}\b", segment_normalized)
+        if alias_match:
+            return alias_match.start(), alias_match.end()
+    return None
+
+
+def _relational_geography_violations_in_segment(
+    segment_normalized: str,
+    connections: list[_KnownConnection],
+    carried_connection: _KnownConnection | None = None,
+) -> tuple[list[str], _KnownConnection | None]:
+    """Checks one sentence-level segment; returns (violations, updated
+    carry). `carried_connection` is the destination the PREVIOUS segment
+    was about — natural Portuguese routinely splits a reveal and its
+    direction across two sentences with a pronoun ("A Estalagem... Ela
+    fica a leste."), and a segment with a direction/route mention but no
+    destination mention of its own falls back to it. Confirmed via live
+    trace as a real gap: exactly that two-sentence shape let a wrong
+    direction through with zero violations, because the sentence WITH the
+    direction word had no destination name in it at all to correlate
+    against.
+    """
+    mentions: list[tuple[int, str, str]] = []
+    for direction in _DIRECTION_WORDS_PT:
+        for m in re.finditer(rf"\b{direction}\b", segment_normalized):
+            mentions.append((m.start(), "direction", direction))
+    for route_kind in _ROUTE_KIND_WORDS_PT:
+        for m in re.finditer(rf"\b{route_kind}\w*\b", segment_normalized):
+            mentions.append((m.start(), "route_kind", route_kind))
+
+    destination_spans = [
+        (span[0], span[1], connection)
+        for connection in connections
+        for span in (_destination_mention_span(segment_normalized, connection),)
+        if span is not None
+    ]
+    next_carry = (
+        max(destination_spans, key=lambda span: span[1])[2] if destination_spans else carried_connection
+    )
+
+    if not mentions:
+        return [], next_carry
+
+    if not destination_spans:
+        if carried_connection is None:
+            return [], next_carry
+        # No destination named in THIS segment at all — every mention is
+        # about the carried-forward destination, not a proximity choice.
+        violations = []
+        for _pos, kind, word in mentions:
+            connection = carried_connection
+            claimed_matches = (
+                word == connection.direction if kind == "direction" else word == connection.route_kind
+            )
+            if not claimed_matches:
+                correct = connection.direction if kind == "direction" else connection.route_kind
+                destination_label = (
+                    connection.destination_name
+                    if _normalized(connection.destination_name) != "local desconhecido"
+                    else (_service_alias_for(connection) or connection.destination_name)
+                )
+                violations.append(
+                    f"a direção ou rota descrita para '{destination_label}' entra em conflito "
+                    f"com a geografia autoritativa (a conexão registrada usa '{correct}'); "
+                    "reescreva usando apenas a conexão fornecida para esse destino"
+                )
+        return violations, next_carry
+
+    violations = []
+    for pos, kind, word in mentions:
+        nearest_start, nearest_end, connection = min(
+            destination_spans,
+            key=lambda span: min(abs(pos - span[0]), abs(pos - span[1])),
+        )
+        claimed_matches = (
+            word == connection.direction if kind == "direction" else word == connection.route_kind
+        )
+        if not claimed_matches:
+            correct = connection.direction if kind == "direction" else connection.route_kind
+            destination_label = (
+                connection.destination_name
+                if _normalized(connection.destination_name) != "local desconhecido"
+                else (_service_alias_for(connection) or connection.destination_name)
+            )
+            violations.append(
+                f"a direção ou rota descrita para '{destination_label}' entra em conflito "
+                f"com a geografia autoritativa (a conexão registrada usa '{correct}'); reescreva "
+                "usando apenas a conexão fornecida para esse destino"
+            )
+    return violations, next_carry
+
+
+_REFERENTIAL_HINT_PATTERN = re.compile(r'se refere a "([^"]+)"')
+
+
+def _referential_hint_connection(
+    context: str, connections: list[_KnownConnection]
+) -> _KnownConnection | None:
+    """If _referential_continuity_hint fired for this turn (its own
+    marker text is embedded verbatim in the CURRENT TURN BLOCK section of
+    context), resolve its named referent to the matching known
+    connection — an EXACTLY-ONE match only, the same safe-failure-mode
+    every other resolver in this codebase uses.
+    """
+    match = _REFERENTIAL_HINT_PATTERN.search(context)
+    if not match:
+        return None
+    referent = _normalized(match.group(1))
+    candidates = [
+        connection
+        for connection in connections
+        if _service_alias_for(connection) == referent
+        or _normalized(connection.destination_name) == referent
+    ]
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def _find_canon_violations(text: str, context: str, player_input: str) -> list[str]:
     """Detect claims that expand persistent world canon without support.
 
@@ -440,6 +672,33 @@ def _find_canon_violations(text: str, context: str, player_input: str) -> list[s
                 violations.append(
                     f"combinação geográfica não registrada: {route_kind} + direção {direction}"
                 )
+
+    # Phase 24J.4 — Issue 1, the destination-specific correlation the check
+    # above cannot do (see _relational_geography_violations_in_segment's own
+    # docstring): the loop above only asks whether a vocabulary combination
+    # exists SOMEWHERE in context, which a real-but-unrelated connection can
+    # satisfy. This asks whether THIS destination's OWN connection actually
+    # has the direction/route claimed for it. Complementary, not a
+    # replacement — kept as a separate check so a genuinely novel
+    # combination with no destination mentioned nearby still gets caught
+    # by the coarser check above.
+    known_connections = _parse_known_connections(_authoritative_context_only(context))
+    if known_connections:
+        # Phase 24J.4 — a vague follow-up ("Onde ela fica?") answered with
+        # NO destination word at all in the response ("Pode encontrá-la na
+        # parte leste...") leaves every segment with nothing to correlate
+        # against — confirmed via live trace. narrator._referential_
+        # continuity_hint (24J.3) already names the likely referent for
+        # exactly this shape of question, embedded in the CURRENT TURN
+        # BLOCK section of context; seeding the carry-forward with it
+        # means the SAME destination correlation applies even when the
+        # response itself never names anything.
+        carried_connection = _referential_hint_connection(context, known_connections)
+        for segment in re.split(r"[.\n]", normalized_text):
+            segment_violations, carried_connection = _relational_geography_violations_in_segment(
+                segment, known_connections, carried_connection
+            )
+            violations.extend(segment_violations)
 
     if "nothing about what exists beyond it" in normalized_context:
         word_count = len(re.findall(r"\b\w+\b", normalized_text))
@@ -1596,7 +1855,8 @@ _NO_QUOTES_GROUNDING_LINE = (
 
 
 _VAGUE_FOLLOW_UP_PATTERN = re.compile(
-    r"^\s*[\"“']?\s*(onde\s+fica\??|quanto\s+custa\??|quem\s+trabalha\s+l[áa]\??|"
+    r"^\s*[\"“']?\s*(onde\s+(?:ela|ele)?\s*fica\??|quanto\s+(?:ela|ele)?\s*custa\??|"
+    r"quem\s+trabalha\s+l[áa]\??|"
     r"[ée]\s+longe\??|fica\s+longe\??|como\s+chego\s+l[áa]\??|onde\s+(?:é|fica)\s+isso\??)"
     r"\s*[\"”']?\s*$",
     re.IGNORECASE,

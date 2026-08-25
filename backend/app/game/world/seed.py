@@ -445,11 +445,28 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # the statements themselves need to become dynamic now that the
     # names they describe are generated per campaign.
     canonical_facts = [
+        # Phase 24J.4 — Issue 3 (Dialogue-Revealed Knowledge). Previously
+        # ONE bundled fact ("{village} é uma vila da região {region}.")
+        # requiring BOTH proper nouns to be said before EITHER could be
+        # taught. Confirmed via live trace: an elder's reveal of just the
+        # village's own name never registered, because the reveal-
+        # detection also silently required the region's name to be
+        # repeated verbatim. Split into two independent, single-entity
+        # facts so a partial reveal teaches exactly what was actually
+        # said — matching the governing spec's own worked example
+        # ("NPC: 'Esta vila é Elhelm.' -> Player learns: CURRENT
+        # SETTLEMENT NAME = Elhelm", independent of the region).
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"location:{village.id}",
-            fact_key="cardal_is_village",
-            statement=f"{village.name} é uma vila da região {region.name}.",
+            fact_key="settlement_name_known",
+            statement=f"Esta vila se chama {village.name}.",
+        ),
+        KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"region:{region.id}",
+            fact_key="settlement_region_known",
+            statement=f"Esta região se chama {region.name}.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,

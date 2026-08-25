@@ -68,6 +68,8 @@ from app.ai.narrator import (
     _direct_question_grounding_fact,
     _direct_question_grounding_is_explicit_ignorance,
     _find_hidden_name_violations,
+    _normalized,
+    _OBSERVATION_TURN_PATTERN,
     _strip_prompt_leak,
     _system_prompt_for,
 )
@@ -344,8 +346,17 @@ def validate_narrative_proposal(
     reject. Accepts the proposal unchanged when there are no violations
     — including, still today, whenever no validator is registered."""
     known_names = (proposal.active_npc_name,) if proposal.active_npc_name else ()
+    # Phase 24J.5 — mirrors narrator.narrate()'s own is_observation_turn
+    # computation exactly (same pattern, same field) so this independent
+    # second pass over the already-accepted text cannot disagree with it
+    # about whether THIS turn's backend-resolved mechanical fact was an
+    # observation action.
+    is_observation_turn = bool(_OBSERVATION_TURN_PATTERN.search(_normalized(proposal.mechanical_summary)))
     claims = extract_claims(
-        proposal.text, character_name=proposal.character_name, known_names=known_names
+        proposal.text,
+        character_name=proposal.character_name,
+        known_names=known_names,
+        is_observation_turn=is_observation_turn,
     )
 
     violations: list[Violation] = []

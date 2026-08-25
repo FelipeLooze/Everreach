@@ -156,6 +156,7 @@ def classify_claim(
     character_name: str = "",
     known_names: tuple[str, ...] = (),
     dialogue_context: bool | None = None,
+    is_observation_turn: bool = False,
 ) -> frozenset[ClaimCategory]:
     """dialogue_context (Phase 24H): whether `text`'s PARENT PARAGRAPH is
     spoken dialogue, when the caller already knows this. extract_claims
@@ -164,7 +165,17 @@ def classify_claim(
     always tell it's still inside dialogue on its own. None (the default,
     used by direct callers/tests passing an already-isolated sentence)
     falls back to auto-detecting from `text` itself, same as before this
-    parameter existed."""
+    parameter existed.
+
+    is_observation_turn (Phase 24J.5): mirrors the same flag narrator.py's
+    own internal pass already threads into _protagonist_agency_violations
+    — whether THIS turn's backend-resolved mechanical fact was itself an
+    observation action. Without it, this validator (a second, independent
+    pass over the SAME already-accepted text) disagreed with narrator.py
+    about a perception-framing verb like "dá" ("dá uma volta de olhos"),
+    re-flagging it as PLAYER_VOLUNTARY and dropping the whole sentence —
+    confirmed live as the actual cause of a "look around" hard fallback
+    even after narrator.py's own loop had already accepted the draft."""
     categories: set[ClaimCategory] = set()
     normalized_text = _normalized(text)
 
@@ -179,7 +190,7 @@ def classify_claim(
     # — "Osgar sorri para Logan" must not classify as PLAYER_VOLUNTARY
     # just because Logan is named as the object, not the subject.
     if character_name and _protagonist_agency_violations(
-        text, character_name, dialogue_context=is_dialogue
+        text, character_name, dialogue_context=is_dialogue, is_observation_turn=is_observation_turn
     ):
         categories.add(ClaimCategory.PLAYER_VOLUNTARY)
 
@@ -214,6 +225,7 @@ def extract_claims(
     *,
     character_name: str = "",
     known_names: tuple[str, ...] = (),
+    is_observation_turn: bool = False,
 ) -> list[NarrativeClaim]:
     """Phase 24H — iterates paragraphs (not the flat sentence list
     split_into_claims would give directly) so each sentence's classification
@@ -236,6 +248,7 @@ def extract_claims(
                         character_name=character_name,
                         known_names=known_names,
                         dialogue_context=paragraph_is_dialogue,
+                        is_observation_turn=is_observation_turn,
                     ),
                 )
             )

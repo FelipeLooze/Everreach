@@ -122,6 +122,36 @@ _SENSORY_PERCEPTION_VERBS = {
     "escuta",
 }
 
+# Phase 24J.5 — Issue 3. Confirmed via live trace (req=nr_edfafd53ef72): a
+# bare "olhar ao redor" — the same authorized EXAMINE action the sensory
+# set above exists for — got narrated as "Logan DÁ uma última volta de
+# olhos pela vila, avaliando seus arredores..." and was rejected across
+# both revision attempts because "dá" isn't in _SENSORY_PERCEPTION_VERBS.
+# Rather than keep growing that set unconditionally (the spec's own
+# architectural question: is the agency guard becoming dependent on an
+# ever-longer verb allowlist?), these verbs are legitimate ONLY when this
+# turn's own AUTHORITATIVE mechanical fact confirms the backend actually
+# resolved an observation action — narrate()'s existing mechanical_summary
+# parameter already carries that signal (_handle_examine's own summary
+# always starts "{name} observa os arredores..."), so no new engine.py
+# plumbing was needed to check it. Unlike _SENSORY_PERCEPTION_VERBS (always
+# safe, any mode, any turn — genuinely passive perception verbs by nature),
+# this set is intentionally gated: "examina"/"avalia" could plausibly
+# introduce a fabricated OBJECT if allowed unconditionally, so they only
+# bypass the guard when the backend itself already authorized this exact
+# turn as an observation.
+_OBSERVATION_FRAMING_VERBS = {
+    "da",
+    "lanca",
+    "examina",
+    "inspeciona",
+    "contempla",
+    "avalia",
+    "estuda",
+}
+
+_OBSERVATION_TURN_PATTERN = re.compile(r"\bobserva\s+os\s+arredores\b")
+
 # Phase 24J.3 — movement-completion verbs, allowed as the protagonist's own
 # grammatical subject in ANY mode, mirroring the sensory-verb exception
 # above: narrating a MOVE action's own authoritative destination (e.g.
@@ -487,6 +517,70 @@ def _destination_mention_span(
     return None
 
 
+# Phase 24J.5 — Issue 1 (False Containment/Same-Location Claim). Confirmed
+# live: "Você pode encontrá-la na praça central, bem no coração da vila"
+# for a service that is actually a SEPARATE connected Location, not the
+# current one. Distinct from the direction/route check above — a
+# containment claim can be false even with NO cardinal direction stated
+# at all. Deliberately narrow, per the governing spec's own instruction:
+# only the explicit containment shape ("fica NA praça", "fica DENTRO DA
+# praça", "É AQUI na praça", "fica NESTE MESMO local") is a claim; "fica
+# perto daqui" (near, not in) is loose natural wording and must never be
+# rejected merely for mentioning the hub as a reference point.
+#
+# The containment preposition must be DIRECTLY followed by the hub word
+# itself (only "mesmo" tolerated in between) — a first version instead
+# checked "na"/"no" and a hub word ANYWHERE in the same clause, and a
+# regression test caught it immediately: "Ela fica NA PARTE norte DA
+# praça" is a legitimate relative-direction phrase (the existing
+# direction check above already accepts it), but it also contains "fica",
+# "na", and "praça" somewhere in the same sentence — none of them
+# adjacent. Requiring direct adjacency is what actually distinguishes a
+# containment claim ("na praça") from a directional reference that merely
+# mentions the hub ("na parte norte DA praça" — "da", not "na", precedes
+# "praça" itself).
+_CONTAINMENT_CLAIM_PATTERN = re.compile(
+    r"\b(?:fica|esta|e|encontra(?:-l[ao])?)\b\s*(?:aqui\s+)?"
+    r"(?:n[ao]|dentro\s+d[ao])\s+(?:mesmo\s+)?"
+    r"(?:praca(?:\s+central)?|centro\s+da\s+vila|coracao\s+da\s+vila|vila|local)\b"
+    r"|\bneste\s+mesmo\s+local\b"
+)
+
+
+def _containment_violations_in_segment(
+    segment_normalized: str,
+    connections: list[_KnownConnection],
+    carried_connection: _KnownConnection | None = None,
+) -> list[str]:
+    if not _CONTAINMENT_CLAIM_PATTERN.search(segment_normalized):
+        return []
+    destination_spans = [
+        connection
+        for connection in connections
+        if _destination_mention_span(segment_normalized, connection) is not None
+    ]
+    if len(destination_spans) == 1:
+        connection = destination_spans[0]
+    elif not destination_spans and carried_connection is not None:
+        # No destination named in THIS segment — a pronoun ("encontrá-LA")
+        # referring back to the destination the previous segment named.
+        # Same shape as _relational_geography_violations_in_segment's own
+        # carry-forward, confirmed live for this exact check too.
+        connection = carried_connection
+    else:
+        return []
+    destination_label = (
+        connection.destination_name
+        if _normalized(connection.destination_name) != "local desconhecido"
+        else (_service_alias_for(connection) or connection.destination_name)
+    )
+    return [
+        f"a resposta afirma que '{destination_label}' está no/dentro do local atual, mas ele é "
+        "um destino SEPARADO conectado a partir daqui (não o mesmo local); descreva-o apenas "
+        "pela conexão real (direção/rota), nunca como parte do local atual"
+    ]
+
+
 def _relational_geography_violations_in_segment(
     segment_normalized: str,
     connections: list[_KnownConnection],
@@ -699,6 +793,13 @@ def _find_canon_violations(text: str, context: str, player_input: str) -> list[s
                 segment, known_connections, carried_connection
             )
             violations.extend(segment_violations)
+            # Phase 24J.5 — a separate relationship from direction/route:
+            # does the response claim this destination IS the current
+            # location, not merely a place reachable from it. See
+            # _containment_violations_in_segment's own docstring.
+            violations.extend(
+                _containment_violations_in_segment(segment, known_connections, carried_connection)
+            )
 
     if "nothing about what exists beyond it" in normalized_context:
         word_count = len(re.findall(r"\b\w+\b", normalized_text))
@@ -1017,6 +1118,7 @@ def _protagonist_agency_violations(
     mode: NarrationMode = "CONTINUATION",
     *,
     dialogue_context: bool | None = None,
+    is_observation_turn: bool = False,
 ) -> list[str]:
     """Detect the narrator inventing NEW actions/dialogue for the protagonist.
 
@@ -1164,6 +1266,13 @@ def _protagonist_agency_violations(
         if verb in {"abre", "empurra"} and re.search(
             r"\bporta[s]?\b", _normalized(text[match.end(): match.end() + 25])
         ):
+            continue
+
+        # Observation-framing verbs are legitimate ONLY when this turn's
+        # own authoritative mechanical fact confirms the backend actually
+        # resolved an observation action — see _OBSERVATION_FRAMING_VERBS'
+        # own docstring (24J.5).
+        if is_observation_turn and verb in _OBSERVATION_FRAMING_VERBS:
             continue
 
         return [_AGENCY_VIOLATION_MESSAGE]
@@ -1784,7 +1893,12 @@ def _fabricated_turn_violations(text: str, character_name: str, npc_name: str) -
 
 
 def _drop_agency_violations(
-    text: str, character_name: str, npc_name: str = "", mode: NarrationMode = "CONTINUATION"
+    text: str,
+    character_name: str,
+    npc_name: str = "",
+    mode: NarrationMode = "CONTINUATION",
+    *,
+    is_observation_turn: bool = False,
 ) -> str:
     """Remove fabricated protagonist dialogue/actions instead of accepting them.
 
@@ -1812,7 +1926,11 @@ def _drop_agency_violations(
         kept_sentences = []
         for sentence in _split_sentences(paragraph):
             if _protagonist_agency_violations(
-                sentence, character_name, mode, dialogue_context=paragraph_is_dialogue
+                sentence,
+                character_name,
+                mode,
+                dialogue_context=paragraph_is_dialogue,
+                is_observation_turn=is_observation_turn,
             ):
                 break
             kept_sentences.append(sentence)
@@ -1937,8 +2055,23 @@ def _safe_hard_failure_fallback(mode: NarrationMode, npc_name: str = "") -> str:
     It intentionally adds no location, history, route, item, quest, secret, or
     protagonist action. NPC silence / an uneventful beat are low-stakes scene
     behavior, not persistent worldbuilding.
+
+    Phase 24J.5 — Issue 2. Confirmed via live trace: the model repeatedly
+    (across both revision attempts) wrote the arrival scene with a local
+    inhabitant "se aproxima lentamente" — a genuine, stubborn OPENING
+    INTERACTION violation (an NPC approaching implies imminent engagement
+    the player never authorized), correctly rejected each time. But once
+    both revisions are exhausted, "Nada acontece de imediato." is a
+    nonsensical FIRST line for the player to ever read — it literally
+    means "nothing happens right now," which contradicts the moment being
+    described (an involuntary arrival). The guard itself was not the
+    problem; only the fallback TEXT was wrong for this mode. This is a
+    fixed, generic, always-true line — never model-generated, so it can
+    never itself violate anything — not a loosening of the guard above.
     """
-    if mode == "CONTINUATION" and npc_name:
+    if mode == "OPENING":
+        return "O momento se estende, e Logan ainda não deu seu primeiro passo neste novo mundo."
+    if npc_name:
         return f"{npc_name} permanece em silêncio."
     return "Nada acontece de imediato."
 
@@ -1990,6 +2123,12 @@ def narrate(
         context
     )
 
+    # Phase 24J.5 — see _OBSERVATION_FRAMING_VERBS' own docstring: whether
+    # THIS turn's backend-resolved mechanical fact was itself an
+    # observation action, computed once from the same mechanical_summary
+    # already passed into this function — no new engine.py plumbing.
+    is_observation_turn = bool(_OBSERVATION_TURN_PATTERN.search(_normalized(mechanical_summary)))
+
     active_interlocutor_name = (
         _extract_active_interlocutor_name(
             context
@@ -2019,7 +2158,13 @@ def narrate(
             draft, validation_context, player_input
         )
         meta_violations = [] if empty_violations else _find_meta_awareness_violations(draft, simulated_player_names)
-        agency_violations = [] if empty_violations else _protagonist_agency_violations(draft, character_name, mode)
+        agency_violations = (
+            []
+            if empty_violations
+            else _protagonist_agency_violations(
+                draft, character_name, mode, is_observation_turn=is_observation_turn
+            )
+        )
         turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
         unauthorized_combatant_violations = (
             [] if empty_violations else _find_unauthorized_combatant_violations(draft, context)
@@ -2173,7 +2318,9 @@ def narrate(
         return safe
 
     remaining_style = _find_style_violations(draft) + _find_repetition_violations(draft, recent_history)
-    remaining_agency = _protagonist_agency_violations(draft, character_name, mode)
+    remaining_agency = _protagonist_agency_violations(
+        draft, character_name, mode, is_observation_turn=is_observation_turn
+    )
     remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
     remaining_unauthorized_combatant = _find_unauthorized_combatant_violations(draft, context)
     remaining_unauthorized_speaker = _find_unauthorized_speaker_violations(
@@ -2218,7 +2365,13 @@ def narrate(
     # deterministically remove those parts. Never knowingly return the flawed
     # draft merely because trimming would empty it.
     if remaining_agency or remaining_turn:
-        trimmed = _drop_agency_violations(draft, character_name, active_interlocutor_name, mode)
+        trimmed = _drop_agency_violations(
+            draft,
+            character_name,
+            active_interlocutor_name,
+            mode,
+            is_observation_turn=is_observation_turn,
+        )
         if trimmed:
             logger.warning(
                 "FALLBACK REASON: protagonist still had fabricated dialogue/actions after "
@@ -2430,10 +2583,18 @@ def narrate(
     # The filter removes canon/meta claims but should not be allowed to leak an
     # agency violation that survived due to sentence reshaping. Recheck once.
     if filtered:
-        filtered_agency = _protagonist_agency_violations(filtered, character_name, mode)
+        filtered_agency = _protagonist_agency_violations(
+            filtered, character_name, mode, is_observation_turn=is_observation_turn
+        )
         filtered_turn = _fabricated_turn_violations(filtered, character_name, active_interlocutor_name)
         if filtered_agency or filtered_turn:
-            filtered = _drop_agency_violations(filtered, character_name, active_interlocutor_name, mode)
+            filtered = _drop_agency_violations(
+                filtered,
+                character_name,
+                active_interlocutor_name,
+                mode,
+                is_observation_turn=is_observation_turn,
+            )
 
     if filtered:
         logger.warning(

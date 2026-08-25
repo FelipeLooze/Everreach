@@ -68,6 +68,11 @@ def test_resting_npc_is_not_nearby(
 def test_working_npc_remains_available_for_interaction(
     db_session,
 ):
+    # Simplification Pass S1.2 — a WORKING NPC with a seeded workplace is
+    # now found AT that workplace, not at their base hub location (the
+    # confirmed bug this phase fixes: the old assumption here was the bug
+    # itself). The character must be at the blacksmith's actual forge to
+    # find her available while she's working.
     campaign, village, character = _setup(db_session)
 
     npc = (
@@ -80,6 +85,8 @@ def test_working_npc_remains_available_for_interaction(
     )
 
     npc.activity = NPCActivity.WORKING.value
+    assert npc.workplace_location_id is not None
+    character.location_id = npc.workplace_location_id
     db_session.flush()
 
     state = build_game_state(
@@ -211,6 +218,10 @@ def test_context_exposes_working_activity(
     )
 
     blacksmith.activity = NPCActivity.WORKING.value
+    # Simplification Pass S1.2 — she is now found at her actual forge
+    # while working, not the village hub; move the observer there too.
+    assert blacksmith.workplace_location_id is not None
+    character.location_id = blacksmith.workplace_location_id
     db_session.flush()
 
     state = build_game_state(

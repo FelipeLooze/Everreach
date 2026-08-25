@@ -42,6 +42,27 @@ _CONVERSATION_BOUNDARY_EVENTS = (
     EventType.WORLD_STARTED.value,
 )
 
+def _effective_npc_location_expression():
+    """Simplification Pass S1.2 — an NPC's PLAYER-VISIBLE presence: its
+    explicit workplace while WORKING there, otherwise its ordinary
+    location_id, exactly as before this phase. Confirmed live bug this
+    closes: an innkeeper/blacksmith seeded at the settlement hub (their
+    location_id) with no code path ever moving them to their own
+    service Location, so a player physically inside that service
+    location found nobody there and the narrator invented a replacement
+    person. NULL workplace_location_id (every existing save, and any
+    role without an obvious workplace) falls through to location_id
+    unchanged — this is a pure read-path addition, not a data rewrite."""
+    return case(
+        (
+            (NPC.activity == NPCActivity.WORKING.value)
+            & NPC.workplace_location_id.is_not(None),
+            NPC.workplace_location_id,
+        ),
+        else_=NPC.location_id,
+    )
+
+
 def npcs_at_location(
     db: Session,
     location_id: str,
@@ -49,7 +70,7 @@ def npcs_at_location(
     return (
         db.query(NPC)
         .filter(
-            NPC.location_id == location_id,
+            _effective_npc_location_expression() == location_id,
             NPC.alive.is_(True),
             NPC.incapacitated.is_(False),
             NPC.activity != NPCActivity.RESTING.value,

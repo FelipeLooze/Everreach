@@ -23,6 +23,16 @@ class NPC(Base):
     campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)
     region_id: Mapped[str] = mapped_column(ForeignKey("regions.id"), nullable=False)
     location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
+    # Simplification Pass S1.2 — the NPC's home/base location above never
+    # changes after seeding; this is the SEPARATE, optional service
+    # location (e.g. the inn, the forge) this NPC is normally found at
+    # while WORKING. Nullable and additive: an NPC without one (every
+    # existing save, and any NPC whose role has no obvious workplace)
+    # behaves exactly as before — see npcs_at_location's effective-location
+    # resolution in app.game.npcs.service.
+    workplace_location_id: Mapped[str | None] = mapped_column(
+        ForeignKey("locations.id"), nullable=True
+    )
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     personality: Mapped[str] = mapped_column(String, default="")

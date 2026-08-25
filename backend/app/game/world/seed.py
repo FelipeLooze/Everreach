@@ -420,6 +420,23 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         forward, back = roll_compass_direction_pair(village_service_rng)
         connect_locations(db, village, service_location, forward, back, distance=0.2, danger=0)
 
+    # Simplification Pass S1.2 — link the obvious service NPCs to their
+    # own service Location now that both exist, rather than relying on
+    # runtime role-guessing: exact linkage over fuzzy inference, per the
+    # governing spec's own instruction. The elder has no matching service
+    # (their base location_id, the village hub, already IS where the
+    # narrative expects them) and is intentionally left unset.
+    _service_location_by_type = {
+        location.type: location for location in village_service_locations
+    }
+    for npc, service_type in (
+        (blacksmith, "blacksmith"),
+        (innkeeper, "inn"),
+    ):
+        workplace = _service_location_by_type.get(service_type)
+        if workplace is not None:
+            npc.workplace_location_id = workplace.id
+
     # Phase 15J (organizations), 15K (economy) and most of 15L (threats)
     # for every non-anchor subregion now happen inside
     # generate_region_settlements_and_infrastructure above. Only the

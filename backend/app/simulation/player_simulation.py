@@ -12,6 +12,7 @@ from app.core.enums import (
     SimulatedPlayerStatus,
     SimulatedPlayerGoalType,
 )
+from app.core.logging import get_logger
 from app.db.models.knowledge import (
     KnowledgeFact,
     KnowledgeKnower,
@@ -48,10 +49,26 @@ from app.game.players.progression import apply_training
 from app.game.players.risk import acceptable_connections
 
 
+logger = get_logger("game")
+
 ACTION_CHANCE_PER_HOUR = 0.5
 ACTION_INTERVAL_MINUTES = 60
 RELEVANT_ACTION_INTERVAL_MINUTES = 6 * 60
 MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR
+
+# Phase S1.1 — Simplification Pass S1. Confirmed via the S0 audit: with no
+# cap, the DETAILED tier's hourly opportunity loop below replays one
+# iteration per (hour crossed × co-located simulated player), synchronously,
+# inside whatever single player action advanced the world clock far enough
+# to cross that many hours (a 60-day gap = 1,440 boundaries). Above this
+# threshold, tick() compresses the schedule using the EXACT SAME "at least
+# one action across N compressed hours" technique the RELEVANT tier already
+# uses unconditionally (_aggregated_action_chance, below) — not a new
+# statistical model, just applying the existing one to the tier that
+# previously never needed it. Raising this to a very large number restores
+# today's exact-every-hour behavior for any gap the game will realistically
+# produce — the rollback path asked for by the governing spec.
+LONG_GAP_BOUNDARY_THRESHOLD = 48
 
 
 def _hour_boundaries_crossed(
@@ -80,6 +97,38 @@ def _hour_boundaries_crossed(
         )
     )
 
+def _detailed_opportunity_schedule(
+    end_world_minute: int,
+    minutes: int,
+) -> tuple[tuple[int, ...], float]:
+    """Returns (opportunity_world_minutes, action_chance) for the DETAILED
+    tier. Below the threshold: today's unchanged exact hourly schedule.
+    Above it: the same compression RELEVANT tier already uses, applied at
+    the coarsest interval that keeps the opportunity count within the
+    threshold — bounding total work to O(threshold) regardless of how long
+    `minutes` actually is, while keeping the expected number of "took an
+    action" outcomes over the full elapsed span statistically unchanged.
+    """
+    exact = boundary_minutes_crossed(
+        end_world_minute, minutes, ACTION_INTERVAL_MINUTES
+    )
+    if len(exact) <= LONG_GAP_BOUNDARY_THRESHOLD:
+        return exact, ACTION_CHANCE_PER_HOUR
+
+    aggregate_interval_minutes = ACTION_INTERVAL_MINUTES * -(
+        -len(exact) // LONG_GAP_BOUNDARY_THRESHOLD
+    )
+    aggregated = boundary_minutes_crossed(
+        end_world_minute, minutes, aggregate_interval_minutes
+    )
+    logger.debug(
+        "player_simulation long-gap aggregate mode: exact_boundaries=%s "
+        "aggregate_boundaries=%s aggregate_interval_minutes=%s",
+        len(exact), len(aggregated), aggregate_interval_minutes,
+    )
+    return aggregated, _aggregated_action_chance(aggregate_interval_minutes)
+
+
 def tick(
     db: Session,
     campaign_id: str,
@@ -101,10 +150,8 @@ def tick(
         campaign_id,
     ).total_minutes()
 
-    detailed_opportunity_world_minutes = boundary_minutes_crossed(
-        end_world_minute,
-        minutes,
-        ACTION_INTERVAL_MINUTES,
+    detailed_opportunity_world_minutes, detailed_action_chance = (
+        _detailed_opportunity_schedule(end_world_minute, minutes)
     )
 
     relevant_opportunity_world_minutes = boundary_minutes_crossed(
@@ -152,7 +199,7 @@ def tick(
         (
             detailed_players,
             detailed_opportunity_world_minutes,
-            ACTION_CHANCE_PER_HOUR,
+            detailed_action_chance,
         ),
         (
             relevant_players,

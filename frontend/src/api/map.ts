@@ -1,13 +1,5 @@
 import { api } from "@/api/client";
-import type { MapData, MapViewAnnotation, MapViewData, RoutePlan } from "@/types/game";
-
-export const getMap = (
-  campaignId: string,
-  characterId: string,
-) =>
-  api.get<MapData>(
-    `/campaigns/${campaignId}/map?character_id=${encodeURIComponent(characterId)}`
-  );
+import type { MapViewAnnotation, MapViewData, RoutePlan } from "@/types/game";
 
 // Phase 20O — detailLevel/viewport are optional server-side LOD
 // filters (app.game.map.view). Not yet wired to live pan/zoom in the

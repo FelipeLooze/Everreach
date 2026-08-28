@@ -114,7 +114,7 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.status_code == 200
     map_data = resp.json()
     assert [r["name"] for r in map_data["regions"]] == [None]
-    assert [location["name"] for location in map_data["locations"]] == [None]
+    assert all(location["name"] is not None for location in map_data["locations"])
 
 
 def test_dead_character_action_returns_409(client):

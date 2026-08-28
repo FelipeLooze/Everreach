@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -5,7 +7,6 @@ from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.game.map.annotations import AnnotationError, create_annotation, delete_annotation
 from app.game.map.planning import plan_known_route
-from app.game.map.service import known_map
 from app.game.map.view import get_map_view
 from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
 from app.schemas.map_view import (
@@ -16,11 +17,10 @@ from app.schemas.map_view import (
     RoutePlanSchema,
     RoutePlanSegmentSchema,
 )
-from app.core.enums import DiscoveryStatus, KnowerType
 from app.db.models.character import Character
-from app.game.knowledge.service import explicitly_knows_name
 
 router = APIRouter(prefix="/api/campaigns", tags=["map"])
+logger = logging.getLogger(__name__)
 
 
 def _load_character(db: Session, campaign_id: str, character_id: str) -> Character:
@@ -60,6 +60,12 @@ def get_player_map_view(
     viewport = None
     if None not in (min_x, min_y, max_x, max_y):
         viewport = (min_x, min_y, max_x, max_y)
+    logger.debug(
+        "map projection campaign=%s character=%s source=map-view authoritative=true visited_only=%s",
+        campaign_id,
+        character_id,
+        not include_unvisited_knowledge,
+    )
     return get_map_view(
         db,
         campaign_id,
@@ -154,92 +160,52 @@ def delete_map_annotation_route(
     return DeleteMapAnnotationResponse(deleted=True)
 
 
-@router.get("/{campaign_id}/map", response_model=MapResponse)
+@router.get("/{campaign_id}/map", response_model=MapResponse, deprecated=True)
 def get_map(
     campaign_id: str,
     character_id: str,
     db: Session = Depends(get_db),
 ):
-    character = _load_character(db, campaign_id, character_id)
-
-    data = known_map(
-        db,
+    _load_character(db, campaign_id, character_id)
+    logger.debug(
+        "legacy map projection campaign=%s character=%s source=map-view",
         campaign_id,
         character_id,
     )
-
-    known_location_names = {
-        loc.id: explicitly_knows_name(
-            db,
-            campaign_id,
-            KnowerType.PLAYER,
-            character.id,
-            loc.name,
-        )
-        for loc in data["locations"]
-    }
-
-    known_region_names = {
-        region.id: explicitly_knows_name(
-            db,
-            campaign_id,
-            KnowerType.PLAYER,
-            character.id,
-            region.name,
-        )
-        for region in data["regions"]
-    }
-
-    locations = []
-
-    for loc in data["locations"]:
-        status = DiscoveryStatus(
-            data["location_discovery"][loc.id]
-        )
-
-        coordinates_known = status in (
-            DiscoveryStatus.DISCOVERED,
-            DiscoveryStatus.VISITED,
-            DiscoveryStatus.MAPPED,
-        )
-
-        locations.append(
-            MapLocation(
-                id=loc.id,
-                region_id=loc.region_id,
-                name=loc.name if known_location_names[loc.id] else None,
-                type=loc.type,
-                x=loc.x if coordinates_known else None,
-                y=loc.y if coordinates_known else None,
-                discovery_status=status.value,
-            )
-        )
+    view = get_map_view(db, campaign_id, character_id, visited_only=True)
 
     return MapResponse(
         regions=[
             MapRegion(
                 id=region.id,
-                name=(
-                    region.name
-                    if known_region_names[region.id]
-                    else None
-                ),
+                name=region.name,
                 description=None,
                 discovery_status=region.discovery_status,
             )
-            for region in data["regions"]
+            for region in view.regions
         ],
-        locations=locations,
+        locations=[
+            MapLocation(
+                id=location.id,
+                region_id=location.region_id,
+                name=location.name,
+                type=location.type,
+                x=location.x,
+                y=location.y,
+                discovery_status=location.discovery_status,
+            )
+            for location in view.locations
+        ],
         connections=[
             MapConnection(
-                from_location_id=connection.from_location_id,
-                to_location_id=connection.to_location_id,
-                direction=connection.direction,
-                connection_type=connection.connection_type,
-                distance=connection.distance,
-                danger=connection.danger,
-                travel_time_modifier=connection.travel_time_modifier,
+                from_location_id=route.from_location_id,
+                to_location_id=route.to_location_id,
+                direction=route.direction,
+                connection_type=route.connection_type,
+                distance=route.distance,
+                danger=route.danger,
+                travel_time_modifier=route.travel_time_modifier,
             )
-            for connection in data["connections"]
+            for route in view.routes
         ],
     )

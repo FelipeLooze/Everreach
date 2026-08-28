@@ -369,43 +369,10 @@ export interface Quest {
   objectives: QuestObjective[];
 }
 
-export interface MapRegion {
-  id: string;
-  name: string | null;
-  description: string | null;
-  discovery_status: string;
-}
-
-export interface MapLocation {
-  id: string;
-  region_id: string;
-  name: string | null;
-  type: string;
-  x: number | null;
-  y: number | null;
-  discovery_status: string;
-}
-
-export interface MapConnection {
-  from_location_id: string;
-  to_location_id: string;
-  direction: string | null;
-  connection_type: string;
-  distance: number;
-  danger: number;
-  travel_time_modifier: number;
-}
-
-export interface MapData {
-  regions: MapRegion[];
-  locations: MapLocation[];
-  connections: MapConnection[];
-}
-
 // Phase 20A/20B/20C/20F — the character-specific Map View projection
-// (app.game.map.view.MapViewData). Deliberately a different, smaller
-// shape than MapData above: precision is always present (never a raw
-// discovery-status inference the frontend has to redo).
+// (app.game.map.view.MapViewData). This is the single frontend map
+// read contract: precision is always present, so the frontend never
+// infers it from raw discovery status.
 export interface MapViewRegion {
   id: string;
   name: string | null;

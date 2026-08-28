@@ -20,7 +20,8 @@ def call_llm(
     purpose: str,
     attempt: int = 1,
 ) -> str:
-    """purpose is one of "INTENT"/"NARRATIVE"/"REPAIR". Logs the call
+    """purpose identifies the logical role (for example INTENT, NARRATIVE,
+    REPAIR or ECONOMIC_PRICE_PROPOSAL). Logs the call
     (success or failure) via log_generation_call, then returns the raw
     text or re-raises LLMServiceError unchanged — callers keep their
     existing try/except LLMServiceError handling verbatim."""

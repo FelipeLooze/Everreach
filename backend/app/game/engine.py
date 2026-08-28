@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.ai import context_builder, intent_parser, memory_manager, narrator, narrative_validator
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService, LLMServiceError
+from app.ai.conversational_act import economic_service_asked_about, is_price_question
 from app.ai.observability import log_narrative_request
 from app.ai.validation import NarrativeProposal, validate_narrative_proposal
 from app.core.config import get_settings
@@ -41,6 +42,11 @@ from app.game.combat.recovery import recover_character
 from app.game.items.interactions import (
     ITEM_INTERACTION_INTENTS,
     resolve_item_interaction,
+)
+from app.game.economy.economic_canon import (
+    EconomicCanonError,
+    materialize_economic_value,
+    service_subject,
 )
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
@@ -88,6 +94,67 @@ class ActionResult:
     mechanical_summary: str
     intent_type: str
     warnings: list[str] = field(default_factory=list)
+
+
+_DEFAULT_SERVICE_BY_LOCATION_TYPE = {
+    "inn": ("lodging", "quarto", "por noite"),
+    "blacksmith": ("repair", "reparo", "por serviço"),
+    "stable": ("stabling", "estabulagem", "por noite"),
+    "healer": ("healing", "tratamento", "por atendimento"),
+    "shop": ("professional_service", "serviço comercial", "por serviço"),
+}
+
+
+def _materialize_requested_service_price(
+    db: Session,
+    llm_service: LLMService,
+    campaign_id: str,
+    character: Character,
+    active_npc,
+    player_input: str,
+) -> None:
+    if not is_price_question(player_input) or character.location_id is None:
+        return
+    location = db.get(Location, character.location_id)
+    if location is None:
+        return
+    requested_key = economic_service_asked_about(player_input)
+    fallback = _DEFAULT_SERVICE_BY_LOCATION_TYPE.get(location.type)
+    if requested_key is None:
+        if fallback is None:
+            return
+        requested_key, display_name, unit = fallback
+    else:
+        labels = {
+            "lodging": ("quarto", "por noite"),
+            "meal": ("refeição", "por unidade"),
+            "repair": ("reparo", "por serviço"),
+            "transport": ("transporte", "por viagem"),
+            "stabling": ("estabulagem", "por noite"),
+            "healing": ("tratamento", "por atendimento"),
+            "crafting": ("fabricação", "por encomenda"),
+            "labor": ("mão de obra", "por dia"),
+            "rental": ("aluguel", "por período"),
+        }
+        display_name, unit = labels[requested_key]
+    subject = service_subject(
+        campaign_id,
+        location.id,
+        requested_key,
+        f"{display_name} em {location.name}",
+        unit=unit,
+        provider_type="NPC",
+        provider_id=active_npc.id,
+    )
+    try:
+        materialize_economic_value(db, subject, llm_service=llm_service)
+    except EconomicCanonError as exc:
+        logger.debug(
+            "economic materialization rejected location=%s service=%s reason=%s",
+            location.id,
+            requested_key,
+            str(exc),
+        )
 
 
 @with_narrative_request_id
@@ -142,6 +209,20 @@ def resolve_action(
             character.location_id,
         )
     )
+
+    # S1.3: price Canon is materialized only when it first matters.  This
+    # happens before context construction so the narrator receives the
+    # accepted value on the same turn; failures degrade to an honest
+    # "no established price" grounding rather than an invented number.
+    if technique_id is None and active_npc is not None:
+        _materialize_requested_service_price(
+            db,
+            llm_service,
+            campaign_id,
+            character,
+            active_npc,
+            text,
+        )
 
     context = context_builder.build_context(
         db,

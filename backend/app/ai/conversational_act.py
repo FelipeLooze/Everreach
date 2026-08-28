@@ -192,7 +192,10 @@ def _normalized_subject_text(text: str) -> str:
 # hand-maintained set of well-established colloquial synonyms layered on
 # top for the types a player would naturally phrase differently.
 _SERVICE_TYPE_SYNONYMS_PT: dict[str, tuple[str, ...]] = {
-    "inn": ("hospedagem", "pousada"),
+    # Simplification Pass S1.3 — "quarto" (room) added: the spec's own
+    # primary price example ("Quanto custa um quarto?") names the room,
+    # not the inn itself, and had no alias resolving it to "inn" at all.
+    "inn": ("hospedagem", "pousada", "quarto"),
     "blacksmith": ("ferreiro", "ferreira"),
     "shop": ("loja",),
 }
@@ -230,6 +233,57 @@ def service_type_asked_about(player_input: str) -> str | None:
 _EXISTENCE_QUESTION_PATTERN = re.compile(
     r"\bexiste\b|\bha\b|\btem\b|\bpossui\b|\bhouve\b", re.IGNORECASE
 )
+
+
+# Simplification Pass S1.3 — PRICE grounding. Two shapes: a price WORD
+# present anywhere ("preço", "diária", "valor" — covers "Esse quarto é
+# quanto a diária?", where "quanto" and the price word are not adjacent),
+# or the bare quantity word "quanto" paired with a small set of common
+# price-asking verbs regardless of order ("Quanto custa?"/"Quanto é?"/
+# "Quanto fica?"/"Quanto sai?"/"É quanto?") — "quanto" alone is too
+# generic (e.g. "quantos quartos existem" asks a count, not a price).
+_PRICE_WORDS_PATTERN = re.compile(r"\bpre[çc]o\b|\bdi[áa]ria\b|\bvalor\b", re.IGNORECASE)
+_PRICE_QUANTITY_WORD = re.compile(r"\bquanto\b", re.IGNORECASE)
+_PRICE_VERB_PATTERN = re.compile(r"\bcusta\b|\b[ée]\b|\bfica\b|\bsai\b|\bvale\b", re.IGNORECASE)
+
+
+def is_price_question(player_input: str) -> bool:
+    """True for "Quanto custa?"/"Qual o preço?"/"Quanto é a diária?"/
+    "Quanto fica?"/"Esse quarto é quanto a diária?"/"Quanto é?" — false
+    for an unrelated question that merely mentions a service in passing.
+    Deliberately narrow, same discipline as is_existence_question: a
+    question this doesn't recognize simply isn't covered by PRICE
+    grounding, not a false-positive risk either way."""
+    normalized = _normalized_subject_text(player_input)
+    if _PRICE_WORDS_PATTERN.search(normalized):
+        return True
+    return bool(
+        _PRICE_QUANTITY_WORD.search(normalized) and _PRICE_VERB_PATTERN.search(normalized)
+    )
+
+
+# Economic subjects are domain concepts, not phrase-specific intents.  This
+# deliberately small vocabulary routes generic services through one S1.3
+# materializer while exact conversational wording remains authoritative.
+_ECONOMIC_SERVICE_ALIASES: dict[str, tuple[str, ...]] = {
+    "lodging": ("quarto", "hospedagem", "pousada", "diaria", "estalagem"),
+    "meal": ("refeicao", "comida", "prato", "jantar", "almoco"),
+    "repair": ("reparo", "conserto", "manutencao"),
+    "transport": ("transporte", "passagem", "viagem"),
+    "stabling": ("estabulo", "estabulagem", "cavalo"),
+    "healing": ("cura", "tratamento", "atendimento"),
+    "crafting": ("fabricacao", "encomenda", "artesanato"),
+    "labor": ("trabalho", "mao de obra", "servico profissional"),
+    "rental": ("aluguel", "locacao"),
+}
+
+
+def economic_service_asked_about(player_input: str) -> str | None:
+    normalized = _normalized_subject_text(player_input)
+    for key, aliases in _ECONOMIC_SERVICE_ALIASES.items():
+        if any(re.search(rf"\b{re.escape(alias)}\b", normalized) for alias in aliases):
+            return key
+    return None
 
 
 def is_existence_question(player_input: str) -> bool:

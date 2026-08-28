@@ -39,6 +39,7 @@ from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.local_economy import LocationEconomy
+from app.db.models.economic_value import EconomicCanonValue
 from app.db.models.location import (
     CharacterConnectionDiscovery,
     CharacterLocationDiscovery,
@@ -180,6 +181,7 @@ __all__ = [
     "CharacterLocationDiscovery",
     "LocalSupplyLevel",
     "LocationEconomy",
+    "EconomicCanonValue",
     "Location",
     "LocationConnection",
     "LocationFeature",

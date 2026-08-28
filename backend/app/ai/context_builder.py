@@ -8,6 +8,8 @@ from app.ai.conversational_act import (
     ConversationalSubject,
     classify_subject,
     is_existence_question,
+    is_price_question,
+    economic_service_asked_about,
     service_type_asked_about,
 )
 from app.db.models.item import ItemInstance
@@ -52,6 +54,7 @@ from app.game.items.context import build_narrator_inventory_context
 from app.game.skills.technique_mastery import character_technique_mastery_tier
 from app.game.npcs.service import (
     KnownFact,
+    effective_npc_location_id,
     known_facts,
     relevant_known_facts,
 )
@@ -66,6 +69,7 @@ from app.game.organizations.reputation import organization_reputation_category, 
 from app.game.economy.currency import to_denominations
 from app.game.economy.local_economy import get_settlement_wealth, gold_circulates_normally
 from app.game.economy.pricing import PricingError, resolve_market_price
+from app.game.economy.economic_canon import current_price, get_service_value
 from app.game.economy.wallet import total_carried_by_owner
 
 
@@ -844,6 +848,21 @@ def _resolve_active_npc(
     return active_npc
 
 
+def _npc_is_present_at(npc: NPC | None, location_id: str | None) -> bool:
+    """Simplification Pass S1.2/S1.3 — is this NPC ACTUALLY here, using
+    the same effective-location rule app.game.npcs.service.npcs_at_
+    location's SQL expression encodes (WORKING + a set workplace
+    resolves there; everything else is the NPC's ordinary location_id).
+    Every DIRECT QUESTION GROUNDING branch's own "is this NPC a local
+    resident who'd know this" check needs this, not raw location_id —
+    S1.2 made a WORKING NPC's real presence diverge from their base
+    location_id, and this context (an NPC actually being talked to at
+    their own workplace) is now the common case, not an edge case."""
+    if npc is None or location_id is None:
+        return False
+    return effective_npc_location_id(npc) == location_id
+
+
 def _direct_question_grounding_lines(
     db: Session,
     player_input: str,
@@ -874,7 +893,7 @@ def _direct_question_grounding_lines(
     if subject in (ConversationalSubject.CURRENT_SETTLEMENT, ConversationalSubject.CURRENT_LOCATION):
         if state.location is None or location_name_known:
             return []
-        is_local_resident = active_npc is not None and active_npc.location_id == state.location.id
+        is_local_resident = _npc_is_present_at(active_npc, state.location.id)
         if is_local_resident:
             # "Authorized answer:" stays on its own line with ONLY the bare
             # fact — this exact line is re-parsed verbatim by narrator.py's
@@ -917,7 +936,7 @@ def _direct_question_grounding_lines(
                 )
                 .first()
             )
-            is_local_resident = active_npc is not None and active_npc.location_id == state.location.id
+            is_local_resident = _npc_is_present_at(active_npc, state.location.id)
             if service_location is not None and is_local_resident:
                 return [
                     "DIRECT QUESTION GROUNDING",
@@ -978,6 +997,75 @@ def _direct_question_grounding_lines(
                     "state a different direction, invent a street/landmark name, or merge this "
                     "with a different real connection.",
                 ]
+
+    # Simplification Pass S1.3 — PRICE. A direct price question ("Quanto
+    # custa um quarto?") normally happens standing inside the service
+    # itself, talking to the person who runs it — the price is looked up
+    # for the CURRENT location first (the common case), falling back to
+    # a connected service location of that type only if the player is
+    # asking about a DIFFERENT service from elsewhere (mirrors the
+    # existence/direction branches above). No fixed price anywhere in
+    # the economy model existed for this before this phase (confirmed
+    # by a full-codebase search) — grounding an honest "no price
+    # established" is just as important here as grounding a real number:
+    # either way, the model is never left to invent one.
+    if is_price_question(player_input):
+        service_type = service_type_asked_about(player_input)
+        service_key = economic_service_asked_about(player_input)
+        if service_key is None and state.location is not None:
+            service_key = {
+                "inn": "lodging",
+                "blacksmith": "repair",
+                "stable": "stabling",
+                "healer": "healing",
+            }.get(state.location.type)
+        if service_key is not None and state.location is not None:
+            if service_type is None or state.location.type == service_type:
+                priced_location = state.location
+            else:
+                priced_location = (
+                    db.query(Location)
+                    .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+                    .filter(
+                        LocationConnection.from_location_id == state.location.id,
+                        LocationConnection.active.is_(True),
+                        Location.type == service_type,
+                    )
+                    .first()
+                )
+            if priced_location is not None:
+                value = get_service_value(db, priced_location.id, service_key)
+                price = current_price(db, value) if value is not None else None
+                is_local_resident = _npc_is_present_at(active_npc, priced_location.id)
+                if price is not None and is_local_resident:
+                    return [
+                        "DIRECT QUESTION GROUNDING",
+                        "The player is asking the PRICE of a specific local service.",
+                        f"ECONOMIC SUBJECT: {service_key} at {priced_location.name}",
+                        f"BASE: {price.base_price_bronze} bronze.",
+                        f"CURRENT OFFER: {price.current_price_bronze} bronze.",
+                        "SPEAKER KNOWS PRICE: yes.",
+                        f"Authorized answer: {price.current_price_bronze} bronze.",
+                        "The active interlocutor runs or works here and knows this price "
+                        "plainly; never state a different number, and never invent a price "
+                        "for anything not listed here.",
+                    ]
+                if value is not None and is_local_resident:
+                    return [
+                        "DIRECT QUESTION GROUNDING",
+                        f"ECONOMIC SUBJECT: {service_key} at {priced_location.name}",
+                        f"CLASSIFICATION: {value.classification.value}.",
+                        "No numeric market price is authorized; answer naturally according to "
+                        "that classification and never invent a number.",
+                    ]
+                if value is None:
+                    return [
+                        "DIRECT QUESTION GROUNDING",
+                        "The player is asking the PRICE of a specific local service.",
+                        "No fixed price is established for this. A genuine admission that "
+                        "there's no set price (or an offer to negotiate, if that fits the "
+                        "interlocutor), is the correct response — never invent a number.",
+                    ]
 
     return []
 

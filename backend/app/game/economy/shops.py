@@ -20,6 +20,8 @@ import json
 
 from sqlalchemy.orm import Session
 
+from app.ai.llm_service import LLMService
+
 from app.core.enums import (
     CombatActorType,
     EventType,
@@ -31,6 +33,7 @@ from app.core.enums import (
 from app.db.models.item import ItemInstance
 from app.db.models.shop import Shop, ShopListing
 from app.game.economy.pricing import resolve_market_price
+from app.game.economy.economic_canon import item_subject, materialize_economic_value
 from app.game.economy.wallet import get_or_create_holding
 from app.game.economy.wallet import withdraw as wallet_withdraw
 from app.game.economy.wallet import deposit as wallet_deposit
@@ -100,13 +103,24 @@ def _change_till(db: Session, shop: Shop, delta: int, *, reason: str) -> Shop:
 
 
 def stock_item(
-    db: Session, shop: Shop, item: ItemInstance, *, asking_price_bronze: int | None = None
+    db: Session,
+    shop: Shop,
+    item: ItemInstance,
+    *,
+    asking_price_bronze: int | None = None,
+    llm_service: LLMService | None = None,
 ) -> ShopListing:
     if item.owner_type != shop.operator_type or item.owner_ref != shop.operator_id:
         raise ShopError("A loja só pode vender itens que seu operador realmente possui.")
     existing = db.query(ShopListing).filter(ShopListing.item_instance_id == item.id).first()
     if existing is not None:
         return existing
+    if asking_price_bronze is None and item.definition.base_value_bronze is None and llm_service is not None:
+        materialize_economic_value(
+            db,
+            item_subject(shop.campaign_id, item, location_id=shop.location_id),
+            llm_service=llm_service,
+        )
     listing = ShopListing(shop_id=shop.id, item_instance_id=item.id, asking_price_bronze=asking_price_bronze)
     db.add(listing)
     db.flush()

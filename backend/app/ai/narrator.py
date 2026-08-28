@@ -2017,7 +2017,14 @@ _NO_QUOTES_GROUNDING_LINE = (
 
 
 _VAGUE_FOLLOW_UP_PATTERN = re.compile(
-    r"^\s*[\"“']?\s*(onde\s+(?:ela|ele)?\s*fica\??|quanto\s+(?:ela|ele)?\s*custa\??|"
+    r"^\s*[\"“']?\s*(onde\s+(?:ela|ele)?\s*fica\??|"
+    # Simplification Pass S1.3 — widened from "quanto custa?" alone to
+    # every price-verb variant the spec's own required test names
+    # ("Quanto é?", the bare follow-up after a price was already stated
+    # once), same reasoning as the other three: a vague repeat of the
+    # question shape, immediately after a service/price was discussed,
+    # is about that same thing, not the settlement in general.
+    r"quanto\s+(?:ela|ele)?\s*(?:custa|[ée]|fica|sai|vale)\??|"
     r"quem\s+trabalha\s+l[áa]\??|"
     r"[ée]\s+longe\??|fica\s+longe\??|como\s+chego\s+l[áa]\??|onde\s+(?:é|fica)\s+isso\??)"
     r"\s*[\"”']?\s*$",

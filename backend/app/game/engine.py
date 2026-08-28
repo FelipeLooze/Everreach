@@ -494,6 +494,22 @@ def resolve_action(
     narrative_validation = validate_narrative_proposal(
         db, campaign_id, narrative_proposal, llm_service
     )
+    final_grounded_text = narrator.enforce_authorized_price_answer(
+        narrative_validation.final_text,
+        fresh_context,
+        text,
+        context_npc.name if context_npc is not None else "",
+    )
+    if final_grounded_text != narrative_validation.final_text:
+        narrative_validation = replace(
+            narrative_validation,
+            valid=False,
+            final_text=final_grounded_text,
+            violations=[
+                *narrative_validation.violations,
+                "authorized current price was omitted after narrative validation",
+            ],
+        )
 
     if context_npc is not None:
         _teach_facts_revealed_in_narration(

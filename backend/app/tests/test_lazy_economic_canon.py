@@ -3,6 +3,7 @@ import threading
 
 import pytest
 
+from app.ai import narrator
 from app.ai.context_builder import build_context
 from app.ai.llm_service import LLMService, LLMServiceError
 from app.core.enums import CombatActorType, ItemQuality, NPCActivity
@@ -46,6 +47,15 @@ class ProposalLLM(LLMService):
 class FailingLLM(LLMService):
     def generate(self, system: str, prompt: str) -> str:
         raise LLMServiceError("timeout")
+
+
+class PriceOmittingLLM(LLMService):
+    def __init__(self):
+        self.calls = 0
+
+    def generate(self, system: str, prompt: str) -> str:
+        self.calls += 1
+        return "O estalajadeiro sorri e espera a decisão de Logan."
 
 
 def _world(db_session, name="S1.3"):
@@ -354,3 +364,45 @@ def test_concurrent_first_materialization_has_one_canonical_winner(tmp_path):
         assert len(rows) == 1
         assert rows[0].base_price_bronze in {18, 21}
         assert set(outcomes) == {rows[0].base_price_bronze}
+
+
+def test_direct_price_question_cannot_omit_backend_authorized_offer():
+    llm = PriceOmittingLLM()
+    context = (
+        "CURRENT PLAYER\nName: Logan\n\n"
+        "ACTIVE NPC CONTEXT\nName: Colm Corrin\nLocation: Estalagem de Uldor\n\n"
+        "DIRECT QUESTION GROUNDING\n"
+        "The player is asking the PRICE of a specific local service.\n"
+        "ECONOMIC SUBJECT: lodging at Estalagem de Uldor\n"
+        "BASE: 8 bronze.\n"
+        "CURRENT OFFER: 8 bronze.\n"
+        "SPEAKER KNOWS PRICE: yes.\n"
+        "Authorized answer: 8 bronze."
+    )
+
+    result = narrator.narrate(
+        llm,
+        "Nenhuma mudança mecânica.",
+        context,
+        "Quanto custa um quarto?",
+        "(nenhuma troca anterior nesta cena)",
+    )
+
+    assert "8 bronze" in result.lower()
+    assert "Colm Corrin" in result
+    assert llm.calls == 3
+
+
+def test_final_price_guard_survives_a_later_validator_rewrite():
+    context = (
+        "DIRECT QUESTION GROUNDING\n"
+        "CURRENT OFFER: 8 bronze.\n"
+        "Authorized answer: 8 bronze."
+    )
+    result = narrator.enforce_authorized_price_answer(
+        "O estalajadeiro sorri, mas não informa o valor.",
+        context,
+        "Quanto custa um quarto?",
+        "Colm Corrin",
+    )
+    assert result == "— 8 bronze. — responde Colm Corrin."

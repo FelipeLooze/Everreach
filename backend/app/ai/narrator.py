@@ -10,6 +10,7 @@ from app.ai.conversational_act import (
     ConversationalAct,
     _SERVICE_WORDS,
     classify as classify_conversational_act,
+    is_price_question,
 )
 from app.ai.llm_call import call_llm
 from app.ai.llm_service import LLMService
@@ -1408,6 +1409,50 @@ def _direct_question_grounding_is_explicit_ignorance(context: str) -> bool:
     return "No confirmed answer available" in _direct_question_grounding_section(context)
 
 
+def _find_missing_authorized_price_answer_violations(
+    text: str, context: str, player_input: str
+) -> list[str]:
+    """A grounded direct price question must actually receive its price.
+
+    The LLM remains responsible for natural wording, but it may not silently
+    omit a backend-authorized current offer. This is deliberately narrower
+    than a general relevance validator: it only applies when S1.3 supplied a
+    numeric CURRENT OFFER for the speaker at hand.
+    """
+    if not is_price_question(player_input):
+        return []
+    section = _direct_question_grounding_section(context)
+    match = re.search(r"^CURRENT OFFER:\s*(\d+)\s+bronze\.?$", section, re.MULTILINE | re.IGNORECASE)
+    if match is None:
+        return []
+    amount = match.group(1)
+    if re.search(rf"\b{re.escape(amount)}\s+bronze\b", text, re.IGNORECASE):
+        return []
+    return [
+        "a pergunta direta de preço não foi respondida: informe explicitamente "
+        f"o CURRENT OFFER autorizado de {amount} bronze"
+    ]
+
+
+def enforce_authorized_price_answer(
+    text: str,
+    context: str,
+    player_input: str,
+    active_interlocutor_name: str = "",
+) -> str:
+    """Final deterministic guard after every narrative validation layer."""
+    if not _find_missing_authorized_price_answer_violations(text, context, player_input):
+        return text
+    grounded_fact = _direct_question_grounding_fact(context)
+    if grounded_fact and active_interlocutor_name:
+        logger.warning(
+            "final narrative guard restored omitted authorized economic answer speaker=%s",
+            active_interlocutor_name,
+        )
+        return f"— {grounded_fact} — responde {active_interlocutor_name}."
+    return text
+
+
 def _npc_knowledge(context: str) -> str:
     match = re.search(
         r"(?:^|\n)NPC KNOWLEDGE\n(.*?)(?:\n\nPLAYER KNOWLEDGE|\Z)",
@@ -2248,6 +2293,13 @@ def narrate(
             if empty_violations
             else _find_stale_repeated_response_violations(draft, recent_history, player_input)
         )
+        missing_price_answer_violations = (
+            []
+            if empty_violations
+            else _find_missing_authorized_price_answer_violations(
+                draft, context, player_input
+            )
+        )
 
         hard_violations = (
             empty_violations
@@ -2261,6 +2313,7 @@ def narrate(
             + hidden_name_violations
             + opening_interaction_violations
             + stale_repeat_violations
+            + missing_price_answer_violations
         )
 
         logger.debug(
@@ -2268,7 +2321,8 @@ def narrate(
             "META-AWARENESS VIOLATIONS: %s\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
             "UNAUTHORIZED COMBATANT VIOLATIONS: %s\nUNAUTHORIZED SPEAKER VIOLATIONS: %s\n"
             "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
-            "STALE REPEAT VIOLATIONS: %s\nSTYLE VIOLATIONS: %s",
+            "STALE REPEAT VIOLATIONS: %s\nMISSING PRICE ANSWER VIOLATIONS: %s\n"
+            "STYLE VIOLATIONS: %s",
             attempt,
             empty_violations,
             canon_violations,
@@ -2280,6 +2334,7 @@ def narrate(
             hidden_name_violations,
             opening_interaction_violations,
             stale_repeat_violations,
+            missing_price_answer_violations,
             style_violations,
         )
 
@@ -2417,11 +2472,15 @@ def narrate(
         active_interlocutor_name,
         simulated_player_names,
     )
+    remaining_missing_price_answer = _find_missing_authorized_price_answer_violations(
+        draft, context, player_input
+    )
 
     logger.debug(
         "REVIEW RESULT (final)\nAGENCY VIOLATIONS: %s\nFABRICATED TURN VIOLATIONS: %s\n"
         "UNAUTHORIZED COMBATANT VIOLATIONS: %s\nUNAUTHORIZED SPEAKER VIOLATIONS: %s\n"
         "HIDDEN NAME VIOLATIONS: %s\nOPENING INTERACTION VIOLATIONS: %s\n"
+        "MISSING PRICE ANSWER VIOLATIONS: %s\n"
         "STYLE VIOLATIONS: %s",
         remaining_agency,
         remaining_turn,
@@ -2429,6 +2488,7 @@ def narrate(
         remaining_unauthorized_speaker,
         remaining_hidden_names,
         remaining_opening_interaction,
+        remaining_missing_price_answer,
         remaining_style,
     )
 
@@ -2589,6 +2649,26 @@ def narrate(
                 reason="hidden name violation could not be trimmed without emptying the response",
             )
             return safe
+
+    if remaining_missing_price_answer:
+        safe = enforce_authorized_price_answer(
+            draft, context, player_input, active_interlocutor_name
+        )
+        if safe == draft:
+            safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        logger.error(
+            "FALLBACK REASON: direct price question still omitted the authorized offer "
+            "after hard revisions: %s\nFALLBACK:\n%s",
+            remaining_missing_price_answer,
+            safe,
+        )
+        _log_narration_outcome(
+            NarrationOutcome.FALLBACK,
+            attempt=attempt,
+            category=RepairReasonCategory.RELEVANCE,
+            reason="authorized current price omitted after revisions",
+        )
+        return safe
 
     # A near-verbatim repeat of the immediately preceding turn, in reply to
     # a fresh direct question, survived both revision attempts. There is

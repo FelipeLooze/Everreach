@@ -244,6 +244,7 @@ from app.game.knowledge.map_reliability import find_outdated_map_aspects
 from app.game.knowledge.maps import map_content
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.map.service import known_map
+from app.game.discovery.service import get_location_discovery, location_display_name
 from app.game.npcs.service import knows
 
 _POSITION_ASPECTS = (
@@ -508,9 +509,13 @@ def _build_map_view_location(
     provenance: str | None = None,
 ) -> MapViewLocation:
     precision = _best_known_precision(db, campaign_id, character_id, location, discovery_status)
-    name_known = _knows_name_aspect(
+    canonical_name_known = _knows_name_aspect(
         db, campaign_id, character_id, location.id
     ) or explicitly_knows_name(db, campaign_id, KnowerType.PLAYER, character_id, location.name)
+    discovery = get_location_discovery(db, character_id, location.id)
+    display_name = location_display_name(
+        location, discovery, canonical_name_known=canonical_name_known
+    )
     exact_position_known = precision == GeographicPrecision.PRECISE
 
     known_aspects = {
@@ -523,7 +528,7 @@ def _build_map_view_location(
     # whether that came from a Phase 17 grant or from ordinary physical
     # discovery/travel, which never writes an explicit EXISTENCE fact.
     known_aspects.add(GeographicKnowledgeAspect.EXISTENCE.value)
-    if name_known:
+    if display_name == location.name:
         known_aspects.add(GeographicKnowledgeAspect.NAME.value)
 
     return MapViewLocation(
@@ -532,7 +537,7 @@ def _build_map_view_location(
         subregion_id=location.subregion_id,
         parent_location_id=location.parent_location_id,
         type=location.type,
-        name=location.name if name_known else None,
+        name=display_name,
         precision=precision.value if precision is not None else None,
         x=location.x if exact_position_known else None,
         y=location.y if exact_position_known else None,
@@ -620,8 +625,9 @@ def get_map_view(
     scope: str | None = None,
     detail_level: str | None = None,
     viewport: tuple[float, float, float, float] | None = None,
+    visited_only: bool = False,
 ) -> MapViewData:
-    data = known_map(db, campaign_id, character_id)
+    data = known_map(db, campaign_id, character_id, visited_only=visited_only)
 
     locations: list[MapViewLocation] = []
     seen_location_ids: set[str] = set()
@@ -636,7 +642,10 @@ def get_map_view(
 
     regions_by_id = {region.id: region for region in data["regions"]}
 
-    phase17_only_ids = _phase17_known_location_ids(db, campaign_id, character_id) - seen_location_ids
+    phase17_only_ids = (
+        _phase17_known_location_ids(db, campaign_id, character_id) - seen_location_ids
+        if not visited_only else set()
+    )
     if phase17_only_ids:
         extra_locations = (
             db.query(Location)
@@ -666,7 +675,10 @@ def get_map_view(
 
     included_location_ids = {location.id for location in locations}
     maps_by_location = _owned_maps_by_location(db, character_id)
-    map_only_ids = set(maps_by_location.keys()) - included_location_ids
+    map_only_ids = (
+        set(maps_by_location.keys()) - included_location_ids
+        if not visited_only else set()
+    )
     if map_only_ids:
         map_only_locations = (
             db.query(Location)
@@ -691,7 +703,7 @@ def get_map_view(
         location_id: fact_key
         for location_id, fact_key in _phase17_rumored_location_ids(db, campaign_id, character_id).items()
         if location_id not in included_location_ids
-    }
+    } if not visited_only else {}
     if rumor_fact_key_by_location:
         rumored_locations = (
             db.query(Location)

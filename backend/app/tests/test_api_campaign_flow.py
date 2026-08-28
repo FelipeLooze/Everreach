@@ -45,7 +45,7 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.status_code == 200
     assert resp.json()["narrative"] == "[test narration]"
     assert resp.json()["narrator_unavailable"] is False
-    assert resp.json()["state"]["location"]["name"] is None
+    assert resp.json()["state"]["location"]["name"] is not None
     assert resp.json()["state"]["opening_narrative"] == "[test narration]"
     assert resp.json()["state"]["world_time"] == {"year": 1, "month": 1, "day": 1, "hour": 8, "minute": 0}
     assert len(fake_llm.calls) == 1
@@ -63,7 +63,7 @@ def test_full_campaign_flow(client, fake_llm):
     assert state["character"]["id"] == character_id
     assert state["opening_narrative"] == "[test narration]"
     assert state["region"]["name"] is None
-    assert state["location"]["name"] is None
+    assert state["location"]["name"] is not None
 
     resp = client.post(
         f"/api/campaigns/{campaign_id}/actions",
@@ -204,7 +204,7 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
         params={"character_id": character_id},
     ).json()
 
-    assert state["location"]["name"] is None
+    assert state["location"]["name"] is not None
     assert state["region"]["name"] is None
 
     from app.core.enums import KnowerType

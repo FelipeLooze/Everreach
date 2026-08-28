@@ -13,7 +13,7 @@ from app.game.character.service import create_character
 from app.game.world.seed import create_campaign, grant_initial_player_knowledge, seed_initial_region
 from app.game.world.reset import delete_campaign
 from app.services.event_log import log_event
-from app.core.enums import EventType, DiscoveryStatus
+from app.core.enums import EventType
 from app.api.serializers import to_game_state_response
 from app.game.game_state import build_game_state
 from app.schemas.campaign import (
@@ -24,7 +24,7 @@ from app.schemas.campaign import (
     WorldStartResponse,
 )
 from app.schemas.character import CharacterCreateRequest, CharacterResponse
-from app.game.discovery.service import set_location_discovery
+from app.game.discovery.service import get_location_discovery, record_location_visit
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
@@ -131,14 +131,13 @@ def start_world(
         if village is None:
             raise HTTPException(status_code=500, detail="A campanha não possui uma localização inicial")
 
+    existing_arrival = get_location_discovery(db, character.id, village.id)
     character.region_id = region.id
     character.location_id = village.id
-    set_location_discovery(
-        db,
-        character.id,
-        village.id,
-        DiscoveryStatus.VISITED,
-    )
+    if existing_arrival is None or existing_arrival.visited_at is None:
+        record_location_visit(
+            db, character.id, village.id, source="world_start"
+        )
     grant_initial_player_knowledge(
         db,
         campaign_id,

@@ -44,6 +44,7 @@ def get_player_map_view(
     min_y: float | None = None,
     max_x: float | None = None,
     max_y: float | None = None,
+    include_unvisited_knowledge: bool = False,
     db: Session = Depends(get_db),
 ):
     """Phase 20A/20B — the character-specific Map View projection, the
@@ -60,7 +61,13 @@ def get_player_map_view(
     if None not in (min_x, min_y, max_x, max_y):
         viewport = (min_x, min_y, max_x, max_y)
     return get_map_view(
-        db, campaign_id, character_id, scope=scope, detail_level=detail_level, viewport=viewport
+        db,
+        campaign_id,
+        character_id,
+        scope=scope,
+        detail_level=detail_level,
+        viewport=viewport,
+        visited_only=not include_unvisited_knowledge,
     )
 
 

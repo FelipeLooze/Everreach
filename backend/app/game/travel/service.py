@@ -13,7 +13,7 @@ from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import (
     get_connection_discovery,
     get_location_discovery,
-    set_location_discovery,
+    record_location_visit,
 )
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.world.materialization import ensure_location_materialized
@@ -324,11 +324,11 @@ def move_character(
     character.region_id = destination.region_id
 
     # Marca o destino como visitado apenas para este personagem.
-    set_location_discovery(
+    record_location_visit(
         db,
         character.id,
         destination.id,
-        DiscoveryStatus.VISITED,
+        source=f"travel:{connection.id}",
     )
 
     # Registra o incidente ocorrido durante o percurso, se houver.

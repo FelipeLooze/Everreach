@@ -15,6 +15,10 @@ from app.game.world.seed import create_campaign, grant_initial_player_knowledge,
 def _cardal_scene(db_session):
     campaign = create_campaign(db_session, "Dialogue Knowledge")
     region, village = seed_initial_region(db_session, campaign.id)
+    # This suite exercises an intentionally concealed identity. Ordinary visited
+    # locations now expose their canonical name under the S1.4 visit contract.
+    village.identity_hidden = True
+    village.unrevealed_name = None
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
     set_location_discovery(db_session, character.id, village.id, DiscoveryStatus.VISITED)
     grant_initial_player_knowledge(db_session, campaign.id, character.id)

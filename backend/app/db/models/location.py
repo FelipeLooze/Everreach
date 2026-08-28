@@ -35,6 +35,11 @@ class Location(Base):
     y: Mapped[int] = mapped_column(Integer, default=0)
     description: Mapped[str] = mapped_column(String, default="")
     discovery_status: Mapped[str] = mapped_column(String, default=DiscoveryStatus.UNKNOWN)
+    # S1.4: ordinary identities are visible after a physical visit.  Rare
+    # secret identities opt in explicitly and may expose only this masked
+    # label until the existing name-knowledge system reveals the Canon name.
+    identity_hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
+    unrevealed_name: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # Phase 15F — Three-Tier Materialization Model. 1 = fully materialized
     # at generation (macro structure). 2 = exists as a named stub only
@@ -131,6 +136,9 @@ class CharacterLocationDiscovery(Base):
         DateTime,
         nullable=True,
     )
+
+    last_visited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    visit_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
 
     mapped_at: Mapped[datetime | None] = mapped_column(
         DateTime,

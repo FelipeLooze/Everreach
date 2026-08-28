@@ -4,6 +4,7 @@ from app.core.enums import KnowerType
 from app.db.models.location import CharacterLocationDiscovery
 from app.game.game_state import GameStateSnapshot
 from app.game.knowledge.service import explicitly_knows_name
+from app.game.discovery.service import location_display_name
 from app.schemas.character import CharacterResponse
 from app.schemas.game_state import (
     ActiveQuestSummary,
@@ -57,6 +58,14 @@ def to_game_state_response(
         if state.location is not None
         else None
     )
+    location_display = (
+        location_display_name(
+            state.location,
+            location_discovery,
+            canonical_name_known=location_name_known,
+        )
+        if state.location is not None else None
+    )
 
     return GameStateResponse(
         character=CharacterResponse.model_validate(state.character),
@@ -73,7 +82,7 @@ def to_game_state_response(
         location=(
             LocationSummary(
                 id=state.location.id,
-                name=state.location.name if location_name_known else None,
+                name=location_display,
                 type=state.location.type,
                 description=None,
                 discovery_status=(

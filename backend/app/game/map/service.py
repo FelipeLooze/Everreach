@@ -14,6 +14,8 @@ def known_map(
     db: Session,
     campaign_id: str,
     character_id: str,
+    *,
+    visited_only: bool = False,
 ) -> dict:
     """Return only the part of the world known by one character.
 
@@ -23,7 +25,7 @@ def known_map(
     necessarily be exposed by the API.
     """
 
-    location_rows = (
+    query = (
         db.query(Location, CharacterLocationDiscovery)
         .join(
             CharacterLocationDiscovery,
@@ -38,9 +40,14 @@ def known_map(
             CharacterLocationDiscovery.character_id == character_id,
             CharacterLocationDiscovery.status != DiscoveryStatus.UNKNOWN,
         )
-        .order_by(Location.name)
-        .all()
     )
+    if visited_only:
+        query = query.filter(
+            CharacterLocationDiscovery.status.in_(
+                (DiscoveryStatus.VISITED.value, DiscoveryStatus.MAPPED.value)
+            )
+        )
+    location_rows = query.order_by(Location.name).all()
 
     if not location_rows:
         return {

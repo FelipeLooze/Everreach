@@ -13,6 +13,7 @@ from app.core.enums import NPCActivity
 from app.db.models.character import Character
 from app.db.models.npc import NPC
 from app.game.game_state import build_game_state
+from app.game.npcs import service as npc_service
 from app.game.npcs.service import npcs_at_location
 from app.game.world.seed import create_campaign, seed_initial_region
 
@@ -232,3 +233,30 @@ def test_travel_to_inn_finds_the_real_innkeeper_without_creating_a_new_npc(db_se
 
     state_at_inn = build_game_state(db_session, campaign.id, character.id)
     assert innkeeper.id in {n.id for n in state_at_inn.nearby_npcs}
+
+
+def test_workplace_interlocutor_remains_active_for_follow_up(db_session):
+    from app.game.character.service import create_character
+
+    campaign = create_campaign(db_session, "S1.2 Workplace Follow-up")
+    region, _village = seed_initial_region(db_session, campaign.id)
+    innkeeper = _npc_by_role(db_session, campaign.id, "estalajadeiro")
+    innkeeper.activity = NPCActivity.WORKING.value
+    character = create_character(
+        db_session,
+        campaign.id,
+        "Logan",
+        region.id,
+        innkeeper.workplace_location_id,
+    )
+    npc_service.meet_npc(db_session, campaign.id, character.id, innkeeper.id)
+    db_session.flush()
+
+    active = npc_service.get_active_interlocutor(
+        db_session,
+        campaign.id,
+        character.id,
+        innkeeper.workplace_location_id,
+    )
+    assert active is not None
+    assert active.id == innkeeper.id

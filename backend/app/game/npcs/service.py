@@ -63,6 +63,13 @@ def _effective_npc_location_expression():
     )
 
 
+def effective_npc_location_id(npc: NPC) -> str:
+    """Authoritative Python-side counterpart of the SQL projection above."""
+    if npc.activity == NPCActivity.WORKING.value and npc.workplace_location_id:
+        return npc.workplace_location_id
+    return npc.location_id
+
+
 def npcs_at_location(
     db: Session,
     location_id: str,
@@ -345,7 +352,8 @@ def meet_npc(db: Session, campaign_id: str, character_id: str, npc_id: str) -> N
         raise ValueError(f"Unknown NPC {npc_id}")
 
     character = db.get(Character, character_id)
-    location = db.get(Location, npc.location_id)
+    effective_location_id = effective_npc_location_id(npc)
+    location = db.get(Location, effective_location_id)
     first_meeting = (
         get_character_npc_relationship(db, campaign_id, character_id, npc_id) is None
     )
@@ -359,7 +367,7 @@ def meet_npc(db: Session, campaign_id: str, character_id: str, npc_id: str) -> N
             "npc_id": npc_id,
             "npc_name": npc.name,
             "character_name": character.name if character else "um forasteiro",
-            "location_id": npc.location_id,
+            "location_id": effective_location_id,
             "location_name": location.name if location else "local desconhecido",
         },
     )
@@ -400,6 +408,10 @@ def _knower_location_id(
         ):
             return None
 
+        # Knowledge simulation still selects social pairs by the persisted
+        # base location.  Keep its validation on that same authority until a
+        # future simulation redesign; S1.2 changes player-visible presence,
+        # not the Phase 7 social scheduler.
         return npc.location_id
 
     if (
@@ -630,7 +642,7 @@ def get_active_interlocutor(
     if (
         npc is None
         or npc.campaign_id != campaign_id
-        or npc.location_id != location_id
+        or effective_npc_location_id(npc) != location_id
         or not npc.alive
         or npc.activity == NPCActivity.RESTING.value
     ):

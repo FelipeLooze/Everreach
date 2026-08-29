@@ -194,7 +194,8 @@ npm run build
 `scripts/start-everreach.ps1` sobe os serviços habilitados da pilha local e abre o jogo no navegador padrão. Ele detecta o que já está rodando (via os próprios health checks de cada serviço), inicia só o que falta, evita duplicar processos e nunca derruba nem reinicia um serviço que já existia antes dele. Com `COMFYUI_ENABLED=false`, o launcher ignora o ComfyUI. Quando nenhum dos papéis `INTENT_LLM_PROVIDER`, `NARRATIVE_LLM_PROVIDER` e `REGENERATION_LLM_PROVIDER` usa `ollama`, ele também ignora o Ollama. Backend e frontend continuam locais.
 
 1. Execute uma vez: `powershell -ExecutionPolicy Bypass -File scripts\create-everreach-shortcuts.ps1` — cria os atalhos **Everreach** e **Stop Everreach** na Área de Trabalho.
-2. Depois, dê duplo clique em **Everreach** sempre que quiser jogar.
+2. Depois, dê duplo clique em **Everreach** sempre que quiser jogar. O atalho usa
+   `-CoreOnly`: inicia apenas backend e frontend, nunca Ollama ou ComfyUI.
 3. Use **Stop Everreach** para encerrar apenas os serviços que o launcher iniciou.
 
 Detalhes de implementação, rastreamento de processos e como reportar problemas de inicialização estão comentados diretamente em `scripts/start-everreach.ps1`, `scripts/stop-everreach.ps1` e `scripts/lib/common.ps1`.

@@ -89,9 +89,9 @@ $wsh = New-Object -ComObject WScript.Shell
 
 $everreachLnk = $wsh.CreateShortcut((Join-Path $desktop "Everreach.lnk"))
 $everreachLnk.TargetPath = $powershellExe
-$everreachLnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$startScript`""
+$everreachLnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$startScript`" -CoreOnly"
 $everreachLnk.WorkingDirectory = $script:RepoRoot
-$everreachLnk.Description = "Start the local Everreach stack and open the game"
+$everreachLnk.Description = "Start Everreach backend and frontend, without local AI services"
 if ($iconLocation) { $everreachLnk.IconLocation = $iconLocation }
 $everreachLnk.Save()
 Write-Host "Created shortcut: $($everreachLnk.FullName)" -ForegroundColor Green

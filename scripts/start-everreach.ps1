@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-    Starts the local Everreach stack (Ollama, ComfyUI, backend, frontend)
-    and opens the game in the default browser.
+    Starts the enabled Everreach services and opens the game in the
+    default browser.
 
 .DESCRIPTION
     Idempotent: a service already answering its own health check is left
@@ -21,9 +21,14 @@
 .PARAMETER NoBrowser
     Start the stack but do not open a browser tab. Useful for
     development when you only want the servers running.
+
+.PARAMETER CoreOnly
+    Start only backend and frontend. This is the mode used by the Desktop
+    shortcut, so it never launches Ollama or ComfyUI regardless of .env.
 #>
 param(
-    [switch]$NoBrowser
+    [switch]$NoBrowser,
+    [switch]$CoreOnly
 )
 
 . "$PSScriptRoot\lib\common.ps1"
@@ -35,8 +40,9 @@ Write-Host ""
 $services = Get-EverreachServiceDefinitions
 $state = Read-LauncherState
 $results = [ordered]@{}
+$serviceKeys = if ($CoreOnly) { @("backend", "frontend") } else { @("ollama", "comfyui", "backend", "frontend") }
 
-foreach ($key in @("ollama", "comfyui", "backend", "frontend")) {
+foreach ($key in $serviceKeys) {
     $svc = $services[$key]
     if (-not $svc.Enabled) {
         $state.Remove($key)
@@ -97,7 +103,7 @@ foreach ($key in @("ollama", "comfyui", "backend", "frontend")) {
 Write-LauncherState -State $state
 
 Write-Host ""
-foreach ($key in @("ollama", "comfyui", "backend", "frontend")) {
+foreach ($key in $serviceKeys) {
     $svc = $services[$key]
     $label = $svc.Label.PadRight(12)
     $status = $results[$key]
@@ -115,15 +121,19 @@ if (-not $backendReady -or -not $frontendReady) {
     exit 1
 }
 
-if ($results["comfyui"] -eq "DISABLED BY CONFIG") {
-    Write-Host "Note: ComfyUI is disabled in backend/.env." -ForegroundColor DarkGray
-} elseif ($results["comfyui"] -notlike "READY*") {
-    Write-Host "Note: ComfyUI is unavailable  -  visual generation will be unavailable, gameplay is unaffected." -ForegroundColor Yellow
-}
-if ($results["ollama"] -eq "DISABLED BY CONFIG") {
-    Write-Host "Note: local Ollama is disabled; configured remote LLM providers will be used." -ForegroundColor DarkGray
-} elseif ($results["ollama"] -notlike "READY*") {
-    Write-Host "Note: Ollama is unavailable  -  narration will fall back to mechanical/introductory text (narrator_unavailable)." -ForegroundColor Yellow
+if ($CoreOnly) {
+    Write-Host "Local AI services skipped: Ollama and ComfyUI." -ForegroundColor DarkGray
+} else {
+    if ($results["comfyui"] -eq "DISABLED BY CONFIG") {
+        Write-Host "Note: ComfyUI is disabled in backend/.env." -ForegroundColor DarkGray
+    } elseif ($results["comfyui"] -notlike "READY*") {
+        Write-Host "Note: ComfyUI is unavailable  -  visual generation will be unavailable, gameplay is unaffected." -ForegroundColor Yellow
+    }
+    if ($results["ollama"] -eq "DISABLED BY CONFIG") {
+        Write-Host "Note: local Ollama is disabled; configured remote LLM providers will be used." -ForegroundColor DarkGray
+    } elseif ($results["ollama"] -notlike "READY*") {
+        Write-Host "Note: Ollama is unavailable  -  narration will fall back to mechanical/introductory text (narrator_unavailable)." -ForegroundColor Yellow
+    }
 }
 
 if (-not $NoBrowser) {

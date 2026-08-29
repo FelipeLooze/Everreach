@@ -19,6 +19,11 @@ from app.schemas.story import (
 )
 from app.services.event_log import log_event
 from app.services.story_log import get_story_log
+from app.services.action_undo import (
+    checkpoint_is_current,
+    latest_available_checkpoint,
+    refresh_checkpoint_after_cosmetic_change,
+)
 
 router = APIRouter(prefix="/api/campaigns", tags=["story"])
 
@@ -116,6 +121,9 @@ def regenerate_last_narrative(
             detail="A regeneração por IA está desativada ou indisponível",
         ) from exc
 
+    compatible_checkpoint = latest_available_checkpoint(db, campaign_id, character_id)
+    if compatible_checkpoint is not None and not checkpoint_is_current(db, compatible_checkpoint):
+        compatible_checkpoint = None
     log_event(
         db,
         campaign_id,
@@ -128,6 +136,7 @@ def regenerate_last_narrative(
             "feedback": body.feedback,
         },
     )
+    refresh_checkpoint_after_cosmetic_change(db, compatible_checkpoint)
     db.commit()
 
     effective_entry = next(

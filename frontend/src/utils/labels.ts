@@ -76,6 +76,8 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   CAMPAIGN_CREATED: "Campanha criada",
   WORLD_STARTED: "Primeira Chegada",
   STORY_EXCHANGE: "Troca narrativa",
+  STORY_REGENERATED: "Mensagem regenerada",
+  ACTION_UNDONE: "Última ação desfeita",
   CHARACTER_CREATED: "Personagem criado",
   PLAYER_MOVED: "Você se moveu",
   TRAVEL_INCIDENT: "Incidente durante a viagem",

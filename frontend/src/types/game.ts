@@ -133,6 +133,16 @@ export interface StoryLog {
   entries: StoryEntry[];
 }
 
+export interface ActionUndoStatus {
+  available: boolean;
+  action_text: string | null;
+  mechanical_summary: string | null;
+}
+
+export interface ActionUndoResponse {
+  state: GameState;
+}
+
 export interface StoryRegenerationResponse {
   entry: StoryEntry;
 }

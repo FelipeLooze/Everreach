@@ -705,6 +705,52 @@ select {
   background: rgba(7, 8, 10, 0.72);
 }
 
+.narrative-revision-actions {
+  border-top: 1px solid rgba(180, 145, 90, 0.18);
+  background: rgba(7, 8, 10, 0.72);
+}
+
+.narrative-revision-actions .regenerate-narrative-trigger,
+.narrative-revision-actions .regenerate-narrative-form {
+  border-top: 0;
+  background: transparent;
+}
+
+.undo-last-action-button {
+  margin: 0 18px 10px;
+  color: #d6a39b;
+  border-color: rgba(178, 80, 67, 0.5);
+}
+
+.undo-last-action-form {
+  display: grid;
+  gap: 9px;
+  margin: 0 18px 12px;
+  padding: 14px;
+  border: 1px solid rgba(178, 80, 67, 0.45);
+  background: rgba(48, 17, 15, 0.35);
+}
+
+.undo-last-action-form p {
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.undo-last-action-form textarea {
+  min-height: 70px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid rgba(178, 80, 67, 0.35);
+  background: rgba(21, 22, 25, 0.95);
+  color: var(--text);
+}
+
+.undo-last-action-form > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .regenerate-narrative-trigger {
   display: flex;
   justify-content: flex-end;

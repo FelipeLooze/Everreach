@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { postAction } from "@/api/actions";
+import { getActionUndoStatus, postAction, undoLastAction } from "@/api/actions";
 import { getCharacterSheet } from "@/api/character";
 import { startWorld } from "@/api/campaigns";
 import { getStoryLog, regenerateLastNarrative } from "@/api/story";
@@ -12,6 +12,7 @@ import { GameSidebar } from "@/features/game/GameSidebar";
 import { NarrativeLog, type NarrativeEntry } from "@/features/game/NarrativeLog";
 import { RegenerateNarrative } from "@/features/game/RegenerateNarrative";
 import { StoryLogPanel } from "@/features/game/StoryLogPanel";
+import { UndoLastAction } from "@/features/game/UndoLastAction";
 import { InventoryPanel } from "@/features/inventory/InventoryPanel";
 import { JournalPanel } from "@/features/journal/JournalPanel";
 import { MapPanel } from "@/features/map/MapPanel";
@@ -19,7 +20,7 @@ import { QuestPanel } from "@/features/quests/QuestPanel";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
 import { useGameState } from "@/hooks/useGameState";
 import { useGameStore } from "@/stores/useGameStore";
-import type { CharacterTechnique, StoryEntry } from "@/types/game";
+import type { ActionUndoStatus, CharacterTechnique, StoryEntry } from "@/types/game";
 
 type PanelKind = "map" | "inventory" | "character" | "quests" | "journal" | "log" | "settings" | "combat" | null;
 
@@ -43,6 +44,12 @@ export function GameScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [startingWorld, setStartingWorld] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [undoing, setUndoing] = useState(false);
+  const [undoStatus, setUndoStatus] = useState<ActionUndoStatus>({
+    available: false,
+    action_text: null,
+    mechanical_summary: null,
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const [techniques, setTechniques] = useState<CharacterTechnique[]>([]);
 
@@ -64,6 +71,13 @@ export function GameScreen() {
       .catch(() => setTechniques([]));
   }, [campaignId, characterId]);
 
+  useEffect(() => {
+    if (!campaignId || !characterId) return;
+    getActionUndoStatus(campaignId, characterId)
+      .then(setUndoStatus)
+      .catch(() => setUndoStatus({ available: false, action_text: null, mechanical_summary: null }));
+  }, [campaignId, characterId, state?.opening_narrative]);
+
   if (!campaignId || !characterId) {
     return <p>Nenhuma campanha ativa. Comece uma nova primeiro.</p>;
   }
@@ -75,6 +89,11 @@ export function GameScreen() {
     try {
       const result = await postAction(campaignId, characterId, text, techniqueId);
       setState(result.state);
+      setUndoStatus({
+        available: true,
+        action_text: text,
+        mechanical_summary: result.mechanical_summary,
+      });
       const persistedEntries: StoryEntry[] = [
         { id: nextId(), kind: "player", text, created_at: new Date().toISOString() },
         { id: nextId(), kind: "narrator", text: result.narrative, created_at: new Date().toISOString() },
@@ -140,6 +159,28 @@ export function GameScreen() {
     }
   };
 
+  const handleUndo = async (reason: string) => {
+    setUndoing(true);
+    setActionError(null);
+    try {
+      const result = await undoLastAction(campaignId, characterId, reason);
+      setState(result.state);
+      const story = await getStoryLog(campaignId, characterId);
+      setStoryEntries(story.entries);
+      setEntries([
+        ...latestExchange(story.entries),
+        { id: nextId(), kind: "system", text: "[A última ação foi desfeita.]" },
+      ]);
+      setUndoStatus({ available: false, action_text: null, mechanical_summary: null });
+      return true;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Não foi possível desfazer a ação.");
+      return false;
+    } finally {
+      setUndoing(false);
+    }
+  };
+
   const worldStarted = Boolean(state?.region && state.location);
 
   return (
@@ -149,7 +190,7 @@ export function GameScreen() {
         <section className="game-main">
           {loading && !state && <p className="game-feedback">Carregando o mundo…</p>}
           {error && <p className="panel-error game-feedback">{error}</p>}
-          <NarrativeLog entries={entries} pending={submitting || startingWorld || regenerating} />
+          <NarrativeLog entries={entries} pending={submitting || startingWorld || regenerating || undoing} />
           {actionError && <p className="panel-error action-error">{actionError}</p>}
           {state && !worldStarted && (
             <div className="world-start">
@@ -162,14 +203,23 @@ export function GameScreen() {
           {worldStarted && (
             <>
               {entries.some((entry) => entry.kind === "narrator") && (
-                <RegenerateNarrative
-                  onRegenerate={handleRegenerate}
-                  disabled={submitting || regenerating}
-                />
+                <div className="narrative-revision-actions">
+                  <RegenerateNarrative
+                    onRegenerate={handleRegenerate}
+                    disabled={submitting || regenerating || undoing}
+                  />
+                  {undoStatus.available && undoStatus.action_text && (
+                    <UndoLastAction
+                      actionText={undoStatus.action_text}
+                      onUndo={handleUndo}
+                      disabled={submitting || regenerating || undoing}
+                    />
+                  )}
+                </div>
               )}
               <ActionInput
                 onSubmit={handleAction}
-                disabled={submitting || regenerating || state?.character.status !== "ALIVE"}
+                disabled={submitting || regenerating || undoing || state?.character.status !== "ALIVE"}
                 techniques={techniques}
               />
             </>

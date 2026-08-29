@@ -2,6 +2,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
+from app.db.models.action_checkpoint import ActionCheckpoint
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.combat import (
     CombatAction,
@@ -96,6 +97,10 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     campaign = db.get(Campaign, campaign_id)
     if campaign is None:
         return False
+
+    db.query(ActionCheckpoint).filter(
+        ActionCheckpoint.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
 
     region_ids = [row[0] for row in db.query(Region.id).filter(Region.campaign_id == campaign_id).all()]
     location_ids = [row[0] for row in db.query(Location.id).filter(Location.region_id.in_(region_ids)).all()]

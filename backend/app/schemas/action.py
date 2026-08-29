@@ -29,3 +29,17 @@ class ActionResponse(BaseModel):
     intent_type: str
     warnings: list[str]
     state: GameStateResponse
+
+
+class ActionUndoStatusResponse(BaseModel):
+    available: bool
+    action_text: str | None = None
+    mechanical_summary: str | None = None
+
+
+class ActionUndoRequest(BaseModel):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
+
+
+class ActionUndoResponse(BaseModel):
+    state: GameStateResponse

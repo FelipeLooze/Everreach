@@ -1,4 +1,5 @@
 from app.db.models.boundary_barrier import BoundaryBarrier
+from app.db.models.action_checkpoint import ActionCheckpoint
 from app.db.models.boundary_route import BoundaryRoute
 from app.db.models.business import Business
 from app.db.models.campaign import Campaign, WorldTime
@@ -131,6 +132,7 @@ from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
+    "ActionCheckpoint",
     "BoundaryBarrier",
     "BoundaryRoute",
     "Business",

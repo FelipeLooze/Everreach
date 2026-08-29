@@ -1,5 +1,5 @@
 import { api } from "@/api/client";
-import type { ActionResponse, GameState } from "@/types/game";
+import type { ActionResponse, ActionUndoResponse, ActionUndoStatus, GameState } from "@/types/game";
 
 export const getState = (campaignId: string, characterId: string) =>
   api.get<GameState>(`/campaigns/${campaignId}/state?character_id=${characterId}`);
@@ -15,3 +15,18 @@ export const postAction = (
     action_key: crypto.randomUUID(),
     technique_id: techniqueId ?? null,
   });
+
+export const getActionUndoStatus = (campaignId: string, characterId: string) =>
+  api.get<ActionUndoStatus>(
+    `/campaigns/${campaignId}/actions/undo-status?character_id=${encodeURIComponent(characterId)}`,
+  );
+
+export const undoLastAction = (
+  campaignId: string,
+  characterId: string,
+  reason: string,
+) =>
+  api.post<ActionUndoResponse>(
+    `/campaigns/${campaignId}/actions/undo-last?character_id=${encodeURIComponent(characterId)}`,
+    { reason },
+  );

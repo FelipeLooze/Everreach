@@ -221,6 +221,8 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
 | POST | `/api/campaigns/{campaign_id}/start?character_id=...` | Iniciar mundo e obter introdução |
 | GET | `/api/campaigns/{campaign_id}/state?character_id=...` | Obter GameState |
 | POST | `/api/campaigns/{campaign_id}/actions?character_id=...` | Resolver ação textual ou uso explícito e idempotente de técnica |
+| GET | `/api/campaigns/{campaign_id}/actions/undo-status?character_id=...` | Consultar se a última ação ainda pode ser desfeita |
+| POST | `/api/campaigns/{campaign_id}/actions/undo-last?character_id=...` | Restaurar o checkpoint anterior à última ação |
 | GET | `/api/campaigns/{campaign_id}/character?character_id=...` | Ficha do personagem |
 | GET | `/api/campaigns/{campaign_id}/character/progression?character_id=...` | Contexto de progressão visível no System |
 | GET | `/api/campaigns/{campaign_id}/inventory?character_id=...` | Inventário |
@@ -245,6 +247,10 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
 - Event Log estruturado e introdução narrativa persistida.
 - Última troca restaurada após atualizar a página e painel com o log narrativo completo.
 - Regeneração manual da última resposta com feedback, sem repetir a ação nem alterar o resultado mecânico.
+- Desfazer seguro da última ação, com motivo e confirmação explícitos. O backend restaura o
+  checkpoint completo anterior — incluindo inventário, recursos, tempo, localização e combate —
+  e recusa a operação caso outra mudança persistente tenha ocorrido depois. Uma regeneração
+  puramente textual não invalida esse checkpoint.
 - Painel de configurações com saída para o menu inicial sem apagar a campanha. A exclusão
   permanente continua disponível somente na lista de campanhas do menu inicial.
 - Atributos, perícias, técnicas e inventário extensíveis.

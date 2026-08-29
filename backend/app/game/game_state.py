@@ -12,6 +12,7 @@ from app.db.models.simulated_player import SimulatedPlayer
 from app.db.models.skill import Technique
 from app.db.models.campaign import WorldTime
 from app.db.models.event import WorldEvent
+from app.services.story_log import get_effective_narrative_for_event
 from app.core.enums import EventType
 from app.game.npcs.service import npcs_at_location
 from app.game.players.service import (
@@ -80,6 +81,11 @@ def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameSt
         .first()
     )
     opening_payload = json.loads(opening_event.payload_json) if opening_event else {}
+    effective_opening_narrative = (
+        get_effective_narrative_for_event(db, opening_event)
+        if opening_event is not None
+        else None
+    )
 
     return GameStateSnapshot(
         campaign_id=campaign_id,
@@ -93,6 +99,10 @@ def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameSt
         techniques=list_character_techniques(db, character_id),
         inventory=build_system_inventory(db, character.id),
         active_encounter=build_active_encounter_snapshot(db, character.id),
-        opening_narrative=opening_payload.get("narrative"),
-        opening_narrator_unavailable=bool(opening_payload.get("narrator_unavailable", False)),
+        opening_narrative=effective_opening_narrative,
+        opening_narrator_unavailable=(
+            False
+            if effective_opening_narrative != opening_payload.get("narrative")
+            else bool(opening_payload.get("narrator_unavailable", False))
+        ),
     )

@@ -45,22 +45,42 @@ def _story_events_query(db: Session, campaign_id: str, character_id: str):
         .filter(
             WorldEvent.campaign_id == campaign_id,
             WorldEvent.actor_id == character_id,
-            WorldEvent.event_type.in_((EventType.WORLD_STARTED, EventType.STORY_EXCHANGE)),
+            WorldEvent.event_type.in_(
+                (EventType.WORLD_STARTED, EventType.STORY_EXCHANGE, EventType.STORY_REGENERATED)
+            ),
         )
     )
 
 
 def _entries_from_events(events: list[WorldEvent]) -> list[StoryEntry]:
     entries: list[StoryEntry] = []
+    narrator_entry_indexes: dict[str, int] = {}
     for event in events:
         try:
             payload = json.loads(event.payload_json)
         except json.JSONDecodeError:
             continue
 
+        if event.event_type == EventType.STORY_REGENERATED:
+            target_event_id = payload.get("target_event_id")
+            narrative = payload.get("narrative")
+            target_index = narrator_entry_indexes.get(str(target_event_id))
+            if target_index is not None and narrative:
+                previous = entries[target_index]
+                entries[target_index] = StoryEntry(
+                    id=previous.id,
+                    kind=previous.kind,
+                    text=str(narrative),
+                    created_at=previous.created_at,
+                    npc_id=previous.npc_id,
+                    npc_name=previous.npc_name,
+                )
+            continue
+
         if event.event_type == EventType.WORLD_STARTED:
             narrative = payload.get("narrative")
             if narrative:
+                narrator_entry_indexes[event.id] = len(entries)
                 entries.append(
                     StoryEntry(
                         id=f"{event.id}:narrator",
@@ -83,6 +103,7 @@ def _entries_from_events(events: list[WorldEvent]) -> list[StoryEntry]:
                 )
             )
         if narrative:
+            narrator_entry_indexes[event.id] = len(entries)
             entries.append(
                 StoryEntry(
                     id=f"{event.id}:narrator",
@@ -112,11 +133,37 @@ def get_recent_story_log(
     character_id: str,
     event_limit: int = 4,
 ) -> list[StoryEntry]:
-    events = (
-        _story_events_query(db, campaign_id, character_id)
-        .order_by(WorldEvent.created_at.desc(), WorldEvent.id.desc())
-        .limit(event_limit)
+    # Revisions are overlays on append-only source events. Reconstruct the
+    # effective story first, then keep a compact recent window.
+    entries = get_story_log(db, campaign_id, character_id)
+    return entries[-(event_limit * 2):]
+
+
+def get_effective_narrative_for_event(
+    db: Session,
+    event: WorldEvent,
+) -> str | None:
+    """Return an event's latest narrative without mutating the source event."""
+    try:
+        payload = json.loads(event.payload_json)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    narrative = payload.get("narrative")
+    revisions = (
+        db.query(WorldEvent)
+        .filter(
+            WorldEvent.campaign_id == event.campaign_id,
+            WorldEvent.actor_id == event.actor_id,
+            WorldEvent.event_type == EventType.STORY_REGENERATED,
+        )
+        .order_by(WorldEvent.created_at.asc(), WorldEvent.id.asc())
         .all()
     )
-    events.reverse()
-    return _entries_from_events(events)
+    for revision in revisions:
+        try:
+            revision_payload = json.loads(revision.payload_json)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if revision_payload.get("target_event_id") == event.id and revision_payload.get("narrative"):
+            narrative = revision_payload["narrative"]
+    return str(narrative) if narrative else None

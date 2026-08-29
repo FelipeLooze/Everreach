@@ -178,7 +178,8 @@ function Get-EverreachServiceDefinitions {
     }
     $intentProvider = if ($configured.ContainsKey("INTENT_LLM_PROVIDER")) { $configured["INTENT_LLM_PROVIDER"] } else { "ollama" }
     $narrativeProvider = if ($configured.ContainsKey("NARRATIVE_LLM_PROVIDER")) { $configured["NARRATIVE_LLM_PROVIDER"] } else { "ollama" }
-    $ollamaEnabled = ($intentProvider -eq "ollama" -or $narrativeProvider -eq "ollama")
+    $regenerationProvider = if ($configured.ContainsKey("REGENERATION_LLM_PROVIDER")) { $configured["REGENERATION_LLM_PROVIDER"] } else { "disabled" }
+    $ollamaEnabled = ($intentProvider -eq "ollama" -or $narrativeProvider -eq "ollama" -or $regenerationProvider -eq "ollama")
     $comfyuiEnabled = ($configured.ContainsKey("COMFYUI_ENABLED") -and $configured["COMFYUI_ENABLED"] -match '^(?i:true|1|yes|on)$')
 
     return @{

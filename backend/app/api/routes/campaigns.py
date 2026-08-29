@@ -212,6 +212,7 @@ def start_world(
             "narrative": narrative,
             "narrator_unavailable": narrator_unavailable,
             "arrival_kind": "FIRST_ARRIVAL",
+            "mechanical_summary": mechanical_intro,
         },
     )
     db.commit()

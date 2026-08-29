@@ -133,6 +133,10 @@ export interface StoryLog {
   entries: StoryEntry[];
 }
 
+export interface StoryRegenerationResponse {
+  entry: StoryEntry;
+}
+
 export interface CharacterAttribute {
   key: string;
   name: string;

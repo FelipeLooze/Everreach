@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { postAction } from "@/api/actions";
 import { getCharacterSheet } from "@/api/character";
 import { startWorld } from "@/api/campaigns";
-import { getStoryLog } from "@/api/story";
+import { getStoryLog, regenerateLastNarrative } from "@/api/story";
 import { Panel } from "@/components/Panel";
 import { StatusBar } from "@/components/StatusBar";
 import { CharacterSheetPanel } from "@/features/character/CharacterSheetPanel";
@@ -10,6 +10,7 @@ import { CombatPanel } from "@/features/combat/CombatPanel";
 import { ActionInput } from "@/features/game/ActionInput";
 import { GameSidebar } from "@/features/game/GameSidebar";
 import { NarrativeLog, type NarrativeEntry } from "@/features/game/NarrativeLog";
+import { RegenerateNarrative } from "@/features/game/RegenerateNarrative";
 import { StoryLogPanel } from "@/features/game/StoryLogPanel";
 import { InventoryPanel } from "@/features/inventory/InventoryPanel";
 import { JournalPanel } from "@/features/journal/JournalPanel";
@@ -41,6 +42,7 @@ export function GameScreen() {
   const [activePanel, setActivePanel] = useState<PanelKind>(null);
   const [submitting, setSubmitting] = useState(false);
   const [startingWorld, setStartingWorld] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [techniques, setTechniques] = useState<CharacterTechnique[]>([]);
 
@@ -121,6 +123,23 @@ export function GameScreen() {
     }
   };
 
+  const handleRegenerate = async (feedback: string) => {
+    setRegenerating(true);
+    setActionError(null);
+    try {
+      await regenerateLastNarrative(campaignId, characterId, feedback);
+      const story = await getStoryLog(campaignId, characterId);
+      setStoryEntries(story.entries);
+      setEntries(latestExchange(story.entries));
+      return true;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Não foi possível regenerar a mensagem.");
+      return false;
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const worldStarted = Boolean(state?.region && state.location);
 
   return (
@@ -130,7 +149,7 @@ export function GameScreen() {
         <section className="game-main">
           {loading && !state && <p className="game-feedback">Carregando o mundo…</p>}
           {error && <p className="panel-error game-feedback">{error}</p>}
-          <NarrativeLog entries={entries} pending={submitting || startingWorld} />
+          <NarrativeLog entries={entries} pending={submitting || startingWorld || regenerating} />
           {actionError && <p className="panel-error action-error">{actionError}</p>}
           {state && !worldStarted && (
             <div className="world-start">
@@ -141,11 +160,19 @@ export function GameScreen() {
             </div>
           )}
           {worldStarted && (
-            <ActionInput
-              onSubmit={handleAction}
-              disabled={submitting || state?.character.status !== "ALIVE"}
-              techniques={techniques}
-            />
+            <>
+              {entries.some((entry) => entry.kind === "narrator") && (
+                <RegenerateNarrative
+                  onRegenerate={handleRegenerate}
+                  disabled={submitting || regenerating}
+                />
+              )}
+              <ActionInput
+                onSubmit={handleAction}
+                disabled={submitting || regenerating || state?.character.status !== "ALIVE"}
+                techniques={techniques}
+              />
+            </>
           )}
         </section>
         {state && <GameSidebar state={state} campaignId={campaignId} />}

@@ -38,6 +38,8 @@ frontend/
 - Python 3.11 ou mais recente.
 - Node.js 20.19 ou mais recente e npm.
 - Ollama é opcional. Sem ele, o jogo usa respostas mecânicas ou introduções de reserva e informa `narrator_unavailable: true`.
+- O modo local atual deixa intenção e narração automáticas desativadas. O OpenRouter é usado
+  somente quando o jogador solicita explicitamente a regeneração da última mensagem.
 
 ## Backend local
 
@@ -76,6 +78,10 @@ ollama serve
 ```
 
 As opções `OLLAMA_BASE_URL`, `OLLAMA_MODEL` e `OLLAMA_TIMEOUT_SECONDS` ficam em `backend/.env`. Toda comunicação HTTP com Ollama está isolada em `app/ai/llm_service.py`.
+
+Para operar sem chamadas automáticas de IA, use `INTENT_LLM_PROVIDER=disabled` e
+`NARRATIVE_LLM_PROVIDER=disabled`. A regeneração manual possui configuração independente em
+`REGENERATION_LLM_PROVIDER` e `REGENERATION_LLM_MODEL`.
 
 O narrador recebe separadamente o contexto atual, até seis mensagens recentes, a entrada
 exata do jogador e os fatos mecânicos já resolvidos. Ele continua a cena em tempo real e
@@ -185,7 +191,7 @@ npm run build
 
 ## Desenvolvimento / Inicialização local em um clique
 
-`scripts/start-everreach.ps1` sobe os serviços habilitados da pilha local e abre o jogo no navegador padrão. Ele detecta o que já está rodando (via os próprios health checks de cada serviço), inicia só o que falta, evita duplicar processos e nunca derruba nem reinicia um serviço que já existia antes dele. Com `COMFYUI_ENABLED=false`, o launcher ignora o ComfyUI. Quando `INTENT_LLM_PROVIDER` e `NARRATIVE_LLM_PROVIDER` não são `ollama`, ele também ignora o Ollama. Backend e frontend continuam locais.
+`scripts/start-everreach.ps1` sobe os serviços habilitados da pilha local e abre o jogo no navegador padrão. Ele detecta o que já está rodando (via os próprios health checks de cada serviço), inicia só o que falta, evita duplicar processos e nunca derruba nem reinicia um serviço que já existia antes dele. Com `COMFYUI_ENABLED=false`, o launcher ignora o ComfyUI. Quando nenhum dos papéis `INTENT_LLM_PROVIDER`, `NARRATIVE_LLM_PROVIDER` e `REGENERATION_LLM_PROVIDER` usa `ollama`, ele também ignora o Ollama. Backend e frontend continuam locais.
 
 1. Execute uma vez: `powershell -ExecutionPolicy Bypass -File scripts\create-everreach-shortcuts.ps1` — cria os atalhos **Everreach** e **Stop Everreach** na Área de Trabalho.
 2. Depois, dê duplo clique em **Everreach** sempre que quiser jogar.
@@ -222,6 +228,7 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
 | GET | `/api/campaigns/{campaign_id}/map?character_id=...` | Mapa conhecido pelo personagem |
 | GET | `/api/campaigns/{campaign_id}/journal?character_id=...` | Eventos e memórias do personagem |
 | GET | `/api/campaigns/{campaign_id}/story?character_id=...` | Histórico narrativo do personagem |
+| POST | `/api/campaigns/{campaign_id}/story/regenerate?character_id=...` | Regenerar somente a última mensagem com feedback editorial |
 
 ## Funcionalidades do MVP
 
@@ -237,6 +244,7 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
 - World Tick com simulação detalhada, relevante e abstrata.
 - Event Log estruturado e introdução narrativa persistida.
 - Última troca restaurada após atualizar a página e painel com o log narrativo completo.
+- Regeneração manual da última resposta com feedback, sem repetir a ação nem alterar o resultado mecânico.
 - Painel de configurações com saída para o menu inicial sem apagar a campanha. A exclusão
   permanente continua disponível somente na lista de campanhas do menu inicial.
 - Atributos, perícias, técnicas e inventário extensíveis.

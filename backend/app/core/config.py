@@ -112,6 +112,11 @@ class Settings(BaseSettings):
     intent_llm_model: str = ""
     narrative_llm_provider: str = "ollama"
     narrative_llm_model: str = ""
+    # Manual, user-triggered rewriting is intentionally separate from the
+    # automatic turn pipeline.  This lets a local setup disable intent and
+    # narration while still offering an explicit regeneration action.
+    regeneration_llm_provider: str = "disabled"
+    regeneration_llm_model: str = ""
 
 
 @lru_cache

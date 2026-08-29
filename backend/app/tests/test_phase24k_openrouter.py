@@ -13,11 +13,13 @@ import httpx
 import pytest
 
 from app.ai.llm_service import (
+    DisabledLLMService,
     LLMService,
     LLMServiceError,
     OllamaLLMService,
     OpenRouterLLMService,
     build_llm_service,
+    build_regeneration_llm_service,
     build_role_llm_services,
 )
 from app.core.config import Settings
@@ -463,6 +465,33 @@ def test_unknown_provider_raises_clearly():
     settings = Settings(intent_llm_provider="groq")
     with pytest.raises(LLMServiceError, match="Unknown LLM provider"):
         build_role_llm_services(settings)
+
+
+def test_disabled_automatic_roles_make_no_provider_available():
+    settings = Settings(
+        intent_llm_provider="disabled",
+        intent_llm_model="",
+        narrative_llm_provider="disabled",
+        narrative_llm_model="",
+    )
+    intent_service, narrative_service = build_role_llm_services(settings)
+
+    assert isinstance(intent_service, DisabledLLMService)
+    assert isinstance(narrative_service, DisabledLLMService)
+    with pytest.raises(LLMServiceError, match="disabled"):
+        intent_service.generate("system", "prompt")
+
+
+def test_regeneration_provider_is_independent_from_disabled_automatic_roles():
+    settings = Settings(
+        intent_llm_provider="disabled",
+        narrative_llm_provider="disabled",
+        regeneration_llm_provider="openrouter",
+        regeneration_llm_model="nvidia/nemotron-3-ultra-550b-a55b:free",
+        openrouter_api_key="sk-or-test",
+    )
+
+    assert isinstance(build_regeneration_llm_service(settings), OpenRouterLLMService)
 
 
 # --- English reasoning-leak guard (app.ai.narrator) — confirmed via a

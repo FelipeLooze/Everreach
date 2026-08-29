@@ -542,6 +542,7 @@ def resolve_action(
             "technique_id": technique_id,
             "player_text": text,
             "narrative": narrative_validation.final_text,
+            "mechanical_summary": mechanical_summary,
             "narrator_unavailable": narrator_unavailable,
             # Phase 24D — the backend already resolved this deterministically
             # (context_npc, above); persisting it is the only way a LATER

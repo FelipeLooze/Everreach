@@ -111,6 +111,21 @@ class LLMService(ABC):
         return None
 
 
+class DisabledLLMService(LLMService):
+    """A configured no-network service for intentionally disabled AI roles."""
+
+    def generate(self, system: str, prompt: str) -> str:
+        raise LLMServiceError("LLM generation is disabled for this role.")
+
+    @property
+    def provider_name(self) -> str:
+        return "disabled"
+
+    @property
+    def model_name(self) -> str:
+        return "disabled"
+
+
 class OllamaLLMService(LLMService):
     """Talks to a local Ollama server. This is the ONLY place that knows about Ollama's
     HTTP API — swapping to llama.cpp / LM Studio / another OpenAI-compatible server later
@@ -575,6 +590,8 @@ def _build_openrouter_service(settings: Settings, model: str) -> OpenRouterLLMSe
 
 def _build_service_for_role(settings: Settings, provider: str, model: str) -> LLMService:
     normalized = (provider or "ollama").strip().lower()
+    if normalized in {"disabled", "none", "off"}:
+        return DisabledLLMService()
     if normalized == "openrouter":
         if not model:
             raise LLMServiceError(
@@ -585,7 +602,9 @@ def _build_service_for_role(settings: Settings, provider: str, model: str) -> LL
         return _build_openrouter_service(settings, model)
     if normalized == "ollama":
         return _build_ollama_service(settings, model or settings.ollama_model)
-    raise LLMServiceError(f"Unknown LLM provider: {provider!r} (expected 'ollama' or 'openrouter')")
+    raise LLMServiceError(
+        f"Unknown LLM provider: {provider!r} (expected 'disabled', 'ollama' or 'openrouter')"
+    )
 
 
 def build_llm_service(settings: Settings | None = None) -> LLMService:
@@ -643,3 +662,13 @@ def build_role_llm_services(settings: Settings | None = None) -> tuple[LLMServic
 
     set_llm_release_hook(_release_all)
     return intent_service, narrative_service
+
+
+def build_regeneration_llm_service(settings: Settings | None = None) -> LLMService:
+    """Build the service used only by explicit narrative regeneration."""
+    settings = settings or get_settings()
+    return _build_service_for_role(
+        settings,
+        settings.regeneration_llm_provider,
+        settings.regeneration_llm_model,
+    )

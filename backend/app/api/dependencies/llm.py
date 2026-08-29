@@ -1,9 +1,15 @@
 from functools import lru_cache
 
-from app.ai.llm_service import LLMService, build_llm_service, build_role_llm_services
+from app.ai.llm_service import (
+    LLMService,
+    build_llm_service,
+    build_regeneration_llm_service,
+    build_role_llm_services,
+)
 
 _narrative_override: LLMService | None = None
 _intent_override: LLMService | None = None
+_regeneration_override: LLMService | None = None
 
 
 def set_llm_service_override(service: LLMService | None) -> None:
@@ -12,9 +18,10 @@ def set_llm_service_override(service: LLMService | None) -> None:
     service — the pre-Phase-24K behavior every existing test already
     relies on (one fake standing in for the whole pipeline). Use
     set_role_llm_service_overrides for a role-specific override."""
-    global _narrative_override, _intent_override
+    global _narrative_override, _intent_override, _regeneration_override
     _narrative_override = service
     _intent_override = service
+    _regeneration_override = service
 
 
 def set_role_llm_service_overrides(
@@ -39,6 +46,11 @@ def _cached_role_defaults() -> tuple[LLMService, LLMService]:
     return build_role_llm_services()
 
 
+@lru_cache
+def _cached_regeneration_default() -> LLMService:
+    return build_regeneration_llm_service()
+
+
 def get_llm_service() -> LLMService:
     """Back-compat single-service accessor for callers unaffected by
     Phase 24K's intent/narrative role split (world-gen content helpers
@@ -59,3 +71,9 @@ def get_narrative_llm_service() -> LLMService:
     if _narrative_override is not None:
         return _narrative_override
     return _cached_role_defaults()[1]
+
+
+def get_regeneration_llm_service() -> LLMService:
+    if _regeneration_override is not None:
+        return _regeneration_override
+    return _cached_regeneration_default()

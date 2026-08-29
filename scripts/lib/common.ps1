@@ -163,13 +163,28 @@ function Stop-OwnedProcess {
 function Get-EverreachServiceDefinitions {
     $backendDir = Join-Path $script:RepoRoot "backend"
     $frontendDir = Join-Path $script:RepoRoot "frontend"
+    $envFile = Join-Path $backendDir ".env"
     $ollamaExe = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
     $viteJs = Join-Path $frontendDir "node_modules\vite\bin\vite.js"
     $backendPython = Join-Path $backendDir ".venv\Scripts\python.exe"
 
+    $configured = @{}
+    if (Test-Path -LiteralPath $envFile) {
+        foreach ($line in Get-Content -LiteralPath $envFile) {
+            if ($line -match '^\s*([A-Z][A-Z0-9_]*)=(.*)$') {
+                $configured[$matches[1]] = $matches[2].Trim()
+            }
+        }
+    }
+    $intentProvider = if ($configured.ContainsKey("INTENT_LLM_PROVIDER")) { $configured["INTENT_LLM_PROVIDER"] } else { "ollama" }
+    $narrativeProvider = if ($configured.ContainsKey("NARRATIVE_LLM_PROVIDER")) { $configured["NARRATIVE_LLM_PROVIDER"] } else { "ollama" }
+    $ollamaEnabled = ($intentProvider -eq "ollama" -or $narrativeProvider -eq "ollama")
+    $comfyuiEnabled = ($configured.ContainsKey("COMFYUI_ENABLED") -and $configured["COMFYUI_ENABLED"] -match '^(?i:true|1|yes|on)$')
+
     return @{
         ollama = @{
             Label        = "Ollama"
+            Enabled      = $ollamaEnabled
             HealthUrl    = "http://127.0.0.1:11434/api/version"
             Port         = 11434
             Required     = $false
@@ -182,6 +197,7 @@ function Get-EverreachServiceDefinitions {
         }
         comfyui = @{
             Label        = "ComfyUI"
+            Enabled      = $comfyuiEnabled
             HealthUrl    = "http://127.0.0.1:8188/system_stats"
             Port         = 8188
             Required     = $false
@@ -200,6 +216,7 @@ function Get-EverreachServiceDefinitions {
         }
         backend = @{
             Label        = "Backend"
+            Enabled      = $true
             HealthUrl    = "http://127.0.0.1:8000/api/health"
             Port         = 8000
             Required     = $true
@@ -212,6 +229,7 @@ function Get-EverreachServiceDefinitions {
         }
         frontend = @{
             Label        = "Frontend"
+            Enabled      = $true
             HealthUrl    = "http://127.0.0.1:5173/"
             Port         = 5173
             Required     = $true

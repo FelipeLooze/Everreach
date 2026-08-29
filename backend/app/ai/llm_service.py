@@ -589,14 +589,17 @@ def _build_service_for_role(settings: Settings, provider: str, model: str) -> LL
 
 
 def build_llm_service(settings: Settings | None = None) -> LLMService:
-    """The single default LLMService — used by callers outside the
-    per-turn intent/narrative pipeline (world-gen content helpers: class/
-    technique/quest/organization generators). Phase 24K's role split
-    (see build_role_llm_services) does not affect this: always plain
-    Ollama with settings.ollama_model, byte-for-byte the same as before
-    this phase, so those call sites keep their exact pre-24K behavior."""
+    """Build the default service used outside the per-turn role split.
+
+    It follows the narrative provider so disabling local Ollama also covers
+    economic and world-generation helpers; no hidden local call path remains.
+    """
     settings = settings or get_settings()
-    service = _build_ollama_service(settings, settings.ollama_model)
+    service = _build_service_for_role(
+        settings,
+        settings.narrative_llm_provider,
+        settings.narrative_llm_model,
+    )
     # Phase 23D-Q.2 — the coordinator calls this back right before a
     # VISUAL_TASK runs, so ComfyUI gets the full VRAM budget instead of
     # competing with a resident LLM. Registered generically (works for

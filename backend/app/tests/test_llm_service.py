@@ -136,6 +136,8 @@ def test_build_llm_service_wires_temperature_and_keep_alive_from_settings():
     settings = Settings(
         ollama_base_url="http://127.0.0.1:11434", ollama_model="test-model",
         ollama_timeout_seconds=5.0, ollama_temperature=0.9, ollama_keep_alive="1h",
+        intent_llm_provider="ollama", intent_llm_model="",
+        narrative_llm_provider="ollama", narrative_llm_model="",
     )
     service = build_llm_service(settings)
 
@@ -158,6 +160,8 @@ def test_build_llm_service_registers_the_release_hook_with_the_coordinator():
     settings = Settings(
         ollama_base_url="http://127.0.0.1:11434", ollama_model="test-model",
         ollama_timeout_seconds=5.0,
+        intent_llm_provider="ollama", intent_llm_model="",
+        narrative_llm_provider="ollama", narrative_llm_model="",
     )
     service = build_llm_service(settings)
 

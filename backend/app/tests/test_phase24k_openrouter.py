@@ -17,6 +17,7 @@ from app.ai.llm_service import (
     LLMServiceError,
     OllamaLLMService,
     OpenRouterLLMService,
+    build_llm_service,
     build_role_llm_services,
 )
 from app.core.config import Settings
@@ -396,6 +397,7 @@ def test_provider_model_selection_for_narrative_role_builds_openrouter():
         ollama_base_url="http://127.0.0.1:11434",
         ollama_model="qwen2.5:14b-instruct-q4_K_M",
         intent_llm_provider="ollama",
+        intent_llm_model="",
         narrative_llm_provider="openrouter",
         narrative_llm_model="nvidia/nemotron-3-ultra-550b-a55b:free",
         openrouter_api_key="sk-or-test",
@@ -424,10 +426,25 @@ def test_provider_model_selection_for_intent_role_builds_openrouter():
     assert isinstance(narrative_service, OpenRouterLLMService)
 
 
-def test_both_roles_default_to_ollama_when_unconfigured_back_compat():
+def test_default_service_follows_remote_narrative_provider_when_ollama_is_disabled():
+    settings = Settings(
+        narrative_llm_provider="openrouter",
+        narrative_llm_model="nvidia/nemotron-3-ultra-550b-a55b:free",
+        openrouter_api_key="sk-or-test",
+    )
+    service = build_llm_service(settings)
+    assert isinstance(service, OpenRouterLLMService)
+    assert service.model_name == "nvidia/nemotron-3-ultra-550b-a55b:free"
+
+
+def test_both_roles_support_explicit_ollama_back_compat():
     settings = Settings(
         ollama_base_url="http://127.0.0.1:11434",
         ollama_model="qwen2.5:14b-instruct-q4_K_M",
+        intent_llm_provider="ollama",
+        intent_llm_model="",
+        narrative_llm_provider="ollama",
+        narrative_llm_model="",
     )
     intent_service, narrative_service = build_role_llm_services(settings)
 

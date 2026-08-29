@@ -38,6 +38,11 @@ $results = [ordered]@{}
 
 foreach ($key in @("ollama", "comfyui", "backend", "frontend")) {
     $svc = $services[$key]
+    if (-not $svc.Enabled) {
+        $state.Remove($key)
+        $results[$key] = "DISABLED BY CONFIG"
+        continue
+    }
     $currentState = Test-ServiceState -HealthUrl $svc.HealthUrl -Port $svc.Port
 
     if ($currentState -eq "READY") {
@@ -110,10 +115,14 @@ if (-not $backendReady -or -not $frontendReady) {
     exit 1
 }
 
-if ($results["comfyui"] -notlike "READY*") {
+if ($results["comfyui"] -eq "DISABLED BY CONFIG") {
+    Write-Host "Note: ComfyUI is disabled in backend/.env." -ForegroundColor DarkGray
+} elseif ($results["comfyui"] -notlike "READY*") {
     Write-Host "Note: ComfyUI is unavailable  -  visual generation will be unavailable, gameplay is unaffected." -ForegroundColor Yellow
 }
-if ($results["ollama"] -notlike "READY*") {
+if ($results["ollama"] -eq "DISABLED BY CONFIG") {
+    Write-Host "Note: local Ollama is disabled; configured remote LLM providers will be used." -ForegroundColor DarkGray
+} elseif ($results["ollama"] -notlike "READY*") {
     Write-Host "Note: Ollama is unavailable  -  narration will fall back to mechanical/introductory text (narrator_unavailable)." -ForegroundColor Yellow
 }
 

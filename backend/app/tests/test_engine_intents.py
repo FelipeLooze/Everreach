@@ -521,6 +521,7 @@ def test_examine_narrator_receives_discoveries_in_same_turn(
         context,
         player_input="",
         recent_history="",
+        **_kwargs,
     ):
         captured["mechanical_summary"] = mechanical_summary
         captured["context"] = context

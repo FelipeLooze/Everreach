@@ -456,6 +456,7 @@ def resolve_action(
     )
     recent_history = context_builder.build_recent_history(recent_entries)
     canonical_facts = context_builder.build_canonical_facts(fresh_state)
+    settings = get_settings()
 
     narrator_unavailable = False
     try:
@@ -465,6 +466,7 @@ def resolve_action(
             fresh_context,
             player_input=text,
             recent_history=recent_history,
+            enforce_player_agency=settings.narrative_player_agency_guard_enabled,
         )
     except LLMServiceError:
         narrative_text = mechanical_summary
@@ -490,6 +492,7 @@ def resolve_action(
         location_id=character.location_id,
         active_npc_id=context_npc.id if context_npc is not None else None,
         active_npc_name=context_npc.name if context_npc is not None else None,
+        enforce_player_agency=settings.narrative_player_agency_guard_enabled,
     )
     narrative_validation = validate_narrative_proposal(
         db, campaign_id, narrative_proposal, llm_service
@@ -609,7 +612,6 @@ def resolve_action(
     # narrative_request_id automatically (app.core.logging's contextvar
     # filter), so this is the entry point for finding them, not a
     # duplicate of what they already contain.
-    settings = get_settings()
     log_narrative_request(
         narrative_request_id=current_narrative_request_id(),
         campaign_id=campaign_id,

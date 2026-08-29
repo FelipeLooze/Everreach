@@ -2184,6 +2184,7 @@ def narrate(
     mode: NarrationMode = "CONTINUATION",
     previous_narrative: str | None = None,
     revision_feedback: str | None = None,
+    enforce_player_agency: bool = True,
 ) -> str:
     """Render the next moment of a scene without changing authoritative game state.
 
@@ -2275,12 +2276,16 @@ def narrate(
         meta_violations = [] if empty_violations else _find_meta_awareness_violations(draft, simulated_player_names)
         agency_violations = (
             []
-            if empty_violations
+            if empty_violations or not enforce_player_agency
             else _protagonist_agency_violations(
                 draft, character_name, mode, is_observation_turn=is_observation_turn
             )
         )
-        turn_violations = [] if empty_violations else _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+        turn_violations = (
+            []
+            if empty_violations or not enforce_player_agency
+            else _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+        )
         unauthorized_combatant_violations = (
             [] if empty_violations else _find_unauthorized_combatant_violations(draft, context)
         )
@@ -2474,10 +2479,18 @@ def narrate(
         return safe
 
     remaining_style = _find_style_violations(draft) + _find_repetition_violations(draft, recent_history)
-    remaining_agency = _protagonist_agency_violations(
-        draft, character_name, mode, is_observation_turn=is_observation_turn
+    remaining_agency = (
+        _protagonist_agency_violations(
+            draft, character_name, mode, is_observation_turn=is_observation_turn
+        )
+        if enforce_player_agency
+        else []
     )
-    remaining_turn = _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+    remaining_turn = (
+        _fabricated_turn_violations(draft, character_name, active_interlocutor_name)
+        if enforce_player_agency
+        else []
+    )
     remaining_unauthorized_combatant = _find_unauthorized_combatant_violations(draft, context)
     remaining_unauthorized_speaker = _find_unauthorized_speaker_violations(
         draft, context, active_interlocutor_name
@@ -2763,7 +2776,7 @@ def narrate(
 
     # The filter removes canon/meta claims but should not be allowed to leak an
     # agency violation that survived due to sentence reshaping. Recheck once.
-    if filtered:
+    if filtered and enforce_player_agency:
         filtered_agency = _protagonist_agency_violations(
             filtered, character_name, mode, is_observation_turn=is_observation_turn
         )

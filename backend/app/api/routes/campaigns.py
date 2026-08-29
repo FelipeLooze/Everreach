@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService, LLMServiceError
 from app.api.dependencies.llm import get_narrative_llm_service
+from app.core.config import get_settings
 from app.db.database import get_db
 from app.db.models.campaign import Campaign
 from app.db.models.character import Character
@@ -192,6 +193,7 @@ def start_world(
             player_input="(nenhuma ação do jogador; abertura da campanha)",
             recent_history="(nenhum histórico; este é o primeiro instante)",
             mode="OPENING",
+            enforce_player_agency=get_settings().narrative_player_agency_guard_enabled,
         )
     except LLMServiceError:
         narrative = (

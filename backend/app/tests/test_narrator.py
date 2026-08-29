@@ -108,6 +108,23 @@ def test_narrator_applies_system_prompt_and_all_dynamic_sections():
     assert "AUTHORITATIVE MECHANICAL FACTS:" in prompt
 
 
+def test_narrator_can_leave_player_agency_for_manual_review():
+    draft = "Logan decide esperar e sorri."
+    llm = CapturingLLM(draft)
+
+    result = narrator.narrate(
+        llm,
+        mechanical_summary="Nenhuma mudança mecânica.",
+        context="CURRENT PLAYER\nName: Logan",
+        player_input="Olho em volta.",
+        recent_history="(nenhuma troca anterior nesta cena)",
+        enforce_player_agency=False,
+    )
+
+    assert result == draft
+    assert len(llm.calls) == 1
+
+
 def test_opening_mode_forbids_an_initial_player_action():
     llm = CapturingLLM()
 

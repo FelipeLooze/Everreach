@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.ai import context_builder, narrator
 from app.ai.llm_service import LLMService, LLMServiceError
 from app.api.dependencies.llm import get_regeneration_llm_service
+from app.core.config import get_settings
 from app.core.enums import EventType
 from app.db.database import get_db
 from app.db.models.character import Character
@@ -114,6 +115,7 @@ def regenerate_last_narrative(
             mode=mode,
             previous_narrative=previous_entry.text,
             revision_feedback=body.feedback,
+            enforce_player_agency=get_settings().narrative_player_agency_guard_enabled,
         )
     except LLMServiceError as exc:
         raise HTTPException(

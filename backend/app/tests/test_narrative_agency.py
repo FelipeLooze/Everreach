@@ -37,6 +37,19 @@ def test_invented_protagonist_decision_is_rejected(db_session):
     assert result.valid is False
 
 
+def test_player_agency_validator_can_be_disabled_for_manual_review(db_session):
+    campaign = create_campaign(db_session, "Revisao Manual De Agencia")
+    proposal = _proposal(
+        "Logan decide esperar e sorri.",
+        enforce_player_agency=False,
+    )
+
+    result = validate_narrative_proposal(db_session, campaign.id, proposal)
+
+    assert result.valid is True
+    assert result.final_text == proposal.text
+
+
 def test_invented_protagonist_emotion_is_rejected(db_session):
     campaign = create_campaign(db_session, "Emocao Inventada")
     proposal = _proposal("Logan confia em Osgar e sorri.")

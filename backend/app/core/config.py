@@ -112,6 +112,11 @@ class Settings(BaseSettings):
     intent_llm_model: str = ""
     narrative_llm_provider: str = "ollama"
     narrative_llm_model: str = ""
+    # The prompt still asks the narrator not to choose for the protagonist,
+    # but this optional guard controls the automatic regex/validator rewrite.
+    # Disable it when agency mistakes should be reviewed manually through the
+    # "regenerate last message" flow instead.
+    narrative_player_agency_guard_enabled: bool = True
     # Manual, user-triggered rewriting is intentionally separate from the
     # automatic turn pipeline.  This lets a local setup disable intent and
     # narration while still offering an explicit regeneration action.

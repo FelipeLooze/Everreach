@@ -36,6 +36,8 @@ def validate_player_agency(
     proposal: NarrativeProposal,
     claims: list[NarrativeClaim],
 ) -> list[Violation]:
+    if not proposal.enforce_player_agency:
+        return []
     return [
         Violation(
             claim_index=claim.index,

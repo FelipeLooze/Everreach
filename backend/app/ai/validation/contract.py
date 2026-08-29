@@ -103,6 +103,7 @@ class NarrativeProposal:
     location_id: str | None = None
     active_npc_id: str | None = None
     active_npc_name: str | None = None
+    enforce_player_agency: bool = True
 
 
 @dataclass(frozen=True)

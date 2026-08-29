@@ -9,9 +9,8 @@ as chegadas começaram, o que as causa ou se existe uma maneira de voltar.
 Os transportados possuem acesso a uma misteriosa Interface, mas Everreach não é um jogo.
 O mundo existe independentemente dela e continua mudando mesmo sem a presença do protagonista.
 
-O backend é a autoridade sobre o estado e as regras do mundo. O modelo local via Ollama
-interpreta intenções e escreve a narração, mas não altera o banco nem decide resultados
-mecânicos.
+O backend é a autoridade sobre o estado e as regras do mundo. O serviço de LLM configurado
+escreve a narração, mas não altera o banco nem decide resultados mecânicos.
 
 ## Estrutura
 
@@ -38,8 +37,8 @@ frontend/
 - Python 3.11 ou mais recente.
 - Node.js 20.19 ou mais recente e npm.
 - Ollama é opcional. Sem ele, o jogo usa respostas mecânicas ou introduções de reserva e informa `narrator_unavailable: true`.
-- O modo local atual deixa intenção e narração automáticas desativadas. O OpenRouter é usado
-  somente quando o jogador solicita explicitamente a regeneração da última mensagem.
+- O modo local atual deixa a interpretação de intenção por LLM desativada. O OpenRouter narra
+  automaticamente cada ação e também atende à regeneração manual da última mensagem.
 
 ## Backend local
 
@@ -82,6 +81,12 @@ As opções `OLLAMA_BASE_URL`, `OLLAMA_MODEL` e `OLLAMA_TIMEOUT_SECONDS` ficam e
 Para operar sem chamadas automáticas de IA, use `INTENT_LLM_PROVIDER=disabled` e
 `NARRATIVE_LLM_PROVIDER=disabled`. A regeneração manual possui configuração independente em
 `REGENERATION_LLM_PROVIDER` e `REGENERATION_LLM_MODEL`.
+
+Na configuração local atual, `NARRATIVE_PLAYER_AGENCY_GUARD_ENABLED=false` desliga somente a
+revisão automática que tenta detectar se o texto escolheu uma ação pelo protagonista. A regra
+continua no prompt do narrador, e eventuais erros editoriais podem ser corrigidos pelo jogador em
+**Regenerar última mensagem**, com feedback. Isso não desliga as proteções de cânone nem concede
+ao modelo autoridade para alterar inventário, combate ou qualquer estado persistente.
 
 O narrador recebe separadamente o contexto atual, até seis mensagens recentes, a entrada
 exata do jogador e os fatos mecânicos já resolvidos. Ele continua a cena em tempo real e

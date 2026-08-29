@@ -456,9 +456,19 @@ class _AgencyViolatingRevealLLM(LLMService):
         )
 
 
-def test_a_reveal_inside_a_rejected_draft_is_not_taught(client, db_session):
+def test_a_reveal_inside_a_rejected_draft_is_not_taught(client, db_session, monkeypatch):
     from app.api.dependencies.llm import set_llm_service_override
+    from app.core.config import Settings
     from app.db.models.location import Location as LocationModel
+
+    # This regression specifically verifies the opt-in automatic agency
+    # guard. Keep it explicit so a developer's local manual-review setting
+    # cannot silently change what this test exercises.
+    monkeypatch.setattr(
+        engine,
+        "get_settings",
+        lambda: Settings(narrative_player_agency_guard_enabled=True),
+    )
 
     campaign_resp = client.post("/api/campaigns", json={"name": "24J4 Rejected Reveal"})
     campaign_id = campaign_resp.json()["id"]

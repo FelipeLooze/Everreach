@@ -71,6 +71,37 @@ def test_role_reference_works_even_without_the_filler_words(db_session):
     assert elder.name in summary
 
 
+def test_natural_age_reference_resolves_the_village_elder(db_session):
+    campaign, region, village, character = _setup(db_session)
+    elder = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target="homem idoso",
+        raw_text="Ir falar com o homem idoso.",
+    )
+    summary, _ = engine._handle_talk(db_session, campaign.id, character, intent, state)
+
+    assert elder.name in summary
+    assert "Não há ninguém correspondente" not in summary
+
+
+def test_unique_local_reference_ignores_nearby_transportees(db_session):
+    campaign, region, village, character = _setup(db_session)
+    elder = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    npc, transported = engine._resolve_addressed_entity(
+        "Procurar alguém que parece ser dali e ir falar com ele.",
+        [elder],
+        state.nearby_simulated_players,
+    )
+
+    assert npc is elder
+    assert transported is None
+
+
 def test_role_head_word_match_does_not_falsely_match_on_filler_words(db_session):
     # The head-word fix must not become too loose: "vila" alone (part of
     # "ancião DA VILA") is an extremely common word that appears in

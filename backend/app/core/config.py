@@ -111,7 +111,7 @@ class Settings(BaseSettings):
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_timeout_seconds: float = 30.0
     groq_temperature: float = 0.0
-    groq_max_tokens: int | None = 500
+    groq_max_tokens: int | None = 1000
 
     # Phase 24K — intent parsing and narrative generation can each use a
     # different provider/model. Both default to "ollama" with an empty

@@ -1125,6 +1125,17 @@ _LEAVING_CLAUSE_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+_ROLE_REFERENCE_ALIASES = {
+    "anciao": ("idoso", "velho", "senhor idoso"),
+    "ancia": ("idosa", "velha", "senhora idosa"),
+}
+
+_LOCAL_INHABITANT_REFERENCE_PATTERN = re.compile(
+    r"\b(?:alguem\s+(?:que\s+)?(?:parec\w+\s+ser\s+)?(?:local|dali)|"
+    r"morador(?:a)?|habitante|nativ[oa])\b",
+    re.IGNORECASE,
+)
+
 
 def _resolve_addressed_entity(
     raw_text: str,
@@ -1204,11 +1215,21 @@ def _resolve_addressed_entity(
         head_no_accents = "".join(
             char for char in unicodedata.normalize("NFKD", head_word) if not unicodedata.combining(char)
         )
-        return re.search(rf"\b{re.escape(head_no_accents)}\b", raw_lower) is not None
+        references = (head_no_accents, *_ROLE_REFERENCE_ALIASES.get(head_no_accents.casefold(), ()))
+        return any(
+            re.search(rf"\b{re.escape(reference)}\b", raw_lower) is not None
+            for reference in references
+        )
 
     npc_matches = [
         npc for npc in nearby_npcs if _name_mentioned(npc.name) or _role_mentioned(npc.role)
     ]
+    if (
+        not npc_matches
+        and len(nearby_npcs) == 1
+        and _LOCAL_INHABITANT_REFERENCE_PATTERN.search(raw_lower)
+    ):
+        npc_matches = [nearby_npcs[0]]
     simulated_player_matches = [
         player for player in nearby_simulated_players if _name_mentioned(player.name)
     ]
@@ -1324,6 +1345,23 @@ def _handle_talk(
                 npc = person
             else:
                 simulated_player = person
+
+        # A missing proper-name target is genuinely unavailable; do not let a
+        # shared surname or role word silently redirect the conversation to a
+        # different nearby person. The fallback exists for descriptive LLM
+        # targets such as "homem idoso", which need deterministic role alias
+        # resolution against the player's raw words.
+        target_looks_like_proper_name = any(
+            word[:1].isupper() for word in literal_target.split()
+        )
+        if len(matches) == 0 and not target_looks_like_proper_name:
+            resolved_npc, resolved_player = _resolve_addressed_entity(
+                intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
+            )
+            if resolved_npc is not None:
+                npc = resolved_npc
+            elif resolved_player is not None:
+                simulated_player = resolved_player
 
     else:
         nearby_people = [

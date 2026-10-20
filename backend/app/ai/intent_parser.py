@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -107,6 +108,13 @@ def _decode_response(
         end = raw.rindex("}") + 1
         data = json.loads(raw[start:end])
     except (ValueError, json.JSONDecodeError):
+        partial = _decode_partial_response(raw)
+        if partial is not None:
+            logger.warning(
+                "intent parser: salvaged intent from truncated LLM response: %r",
+                raw,
+            )
+            return partial
         logger.warning(
             "intent parser: could not parse LLM response: %r",
             raw,
@@ -170,6 +178,52 @@ def _decode_response(
         _optional_text(data.get("pattern_key")),
         _optional_text(data.get("domains")),
         _optional_text(data.get("technique_type")),
+    )
+
+
+def _decode_partial_response(raw: str):
+    """Recover only explicit leading fields from a truncated JSON object.
+
+    This never guesses an intent: it accepts the same enum value the model
+    already emitted before its response was cut off. Missing optional fields
+    remain unset and movement pace stays conservative.
+    """
+    intent_match = re.search(r'"intent"\s*:\s*"([A-Z_]+)"', raw, re.IGNORECASE)
+    if intent_match is None:
+        return None
+    intent_value = intent_match.group(1).upper()
+    if intent_value not in _VALID_INTENTS:
+        return None
+
+    target = None
+    target_match = re.search(r'"target"\s*:\s*(null|"([^"\\]*(?:\\.[^"\\]*)*)")', raw)
+    if target_match is not None and target_match.group(1) != "null":
+        try:
+            target = _optional_text(json.loads(target_match.group(1)))
+        except json.JSONDecodeError:
+            target = None
+
+    pace = TravelPace.NORMAL
+    pace_match = re.search(r'"pace"\s*:\s*"([A-Z_]+)"', raw, re.IGNORECASE)
+    if pace_match is not None:
+        try:
+            pace = TravelPace(pace_match.group(1).upper())
+        except ValueError:
+            pass
+
+    return (
+        ActionIntentType(intent_value),
+        target,
+        pace,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
     )
 
 

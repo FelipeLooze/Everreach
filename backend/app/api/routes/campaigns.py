@@ -26,6 +26,7 @@ from app.schemas.campaign import (
 )
 from app.schemas.character import CharacterCreateRequest, CharacterResponse
 from app.game.discovery.service import get_location_discovery, record_location_visit
+from app.simulation import npc_simulation
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
@@ -145,6 +146,12 @@ def start_world(
         character.id,
     )
 
+    # Seeded NPCs start with a neutral activity. Resolve their routine at the
+    # current world time before the opening scene is built, otherwise the
+    # narrator may place workers in the square and the first action makes them
+    # appear to vanish when their workplace routine is finally evaluated.
+    npc_simulation.tick(db, campaign_id, minutes=1)
+
     db.commit()
     state = build_game_state(db, campaign_id, character_id)
     if state.opening_narrative:
@@ -177,7 +184,9 @@ def start_world(
         f"recém-chegados pode compor o fundo da Primeira Chegada. "
 
         f"Os habitantes nativos presentes testemunham o fenômeno, mas não recebem conhecimento "
-        f"automático sobre sua causa. "
+        f"automático sobre sua causa. Somente habitantes listados em VISIBLE NPCS podem ser "
+        f"individualizados; use o papel registrado como referência e não invente moradores "
+        f"distintos por aparência, roupa, ferramenta ou posição. "
 
         f"Não descreva esta chegada como jogo, login, logout, servidor, VR, VRMMORPG, "
         f"sincronização de jogo ou lançamento. "

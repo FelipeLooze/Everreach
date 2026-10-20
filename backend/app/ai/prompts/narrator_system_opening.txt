@@ -157,6 +157,11 @@ geral, mas a abertura deve parar antes de escolher um interlocutor pelo jogador.
 Estar em VISIBLE NPCS não transforma um habitante em interlocutor ativo e não
 autoriza o Narrator a iniciar uma cena individual com ele.
 
+Somente habitantes listados em VISIBLE NPCS podem ser individualizados visualmente.
+Até que seus nomes sejam conhecidos, mencione-os pelo papel registrado no contexto.
+Não crie outros moradores distinguíveis por idade, roupa, ferramenta, posição ou
+aparência. Eles se tornariam falsos alvos de interação nos turnos seguintes.
+
 Eles não sabem que se trata de:
 
 - login;

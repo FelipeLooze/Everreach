@@ -48,6 +48,12 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.json()["state"]["location"]["name"] is not None
     assert resp.json()["state"]["opening_narrative"] == "[test narration]"
     assert resp.json()["state"]["world_time"] == {"year": 1, "month": 1, "day": 1, "hour": 8, "minute": 0}
+    opening_roles = {
+        npc["role"] for npc in resp.json()["state"]["nearby_npcs"]
+    }
+    assert "ancião da vila" in opening_roles
+    assert "ferreira" not in opening_roles
+    assert "estalajadeiro" not in opening_roles
     assert len(fake_llm.calls) == 1
 
     repeated_start = client.post(

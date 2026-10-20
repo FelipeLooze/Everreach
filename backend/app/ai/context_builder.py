@@ -1627,6 +1627,11 @@ def build_narrative_context(
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
         ] or ["- none"]
     )
+    visible_lines.append(
+        "Only people listed in this section may be singled out in narration. "
+        "Before a name is learned, use the registered role as the stable player-facing reference; "
+        "never invent a physical description or a distinct local bystander."
+    )
     visible_lines.append("VISIBLE TRANSPORTED PEOPLE")
     visible_lines.extend(
         [

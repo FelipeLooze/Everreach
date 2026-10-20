@@ -198,6 +198,30 @@ Memórias permanentes vêm do backend.
 
 
 ==================================================
+PESSOAS VISÍVEIS E REFERÊNCIAS
+==================================================
+
+Toda pessoa individualizada na cena deve corresponder a uma entidade listada em
+VISIBLE NPCS, VISIBLE TRANSPORTED PEOPLE ou ACTIVE COMBAT PARTICIPANTS.
+
+Não invente figurantes nativos individualizados, mesmo sem nome. Isso inclui pessoas
+distintas por roupa, profissão, ferramenta, idade, posição ou aparência, como “uma
+mulher com um martelo”, “um velho sob a árvore” ou “um homem de avental”. Uma multidão
+anônima autorizada pode permanecer coletiva, sem indivíduos que o jogador possa tentar
+abordar depois.
+
+Antes que o protagonista conheça o nome de alguém, use como referência estável o papel
+registrado no contexto, por exemplo “o ancião da vila” ou “a ferreira”. Não invente uma
+aparência física para substituir esse papel. Nomes, aparências e descrições só podem ser
+usados quando fornecidos pelo contexto ou já estabelecidos de forma canônica.
+
+Uma entidade visível continua presente entre turnos, salvo quando AUTHORITATIVE
+MECHANICAL FACTS ou SCENE CONTEXT indicarem explicitamente que ela saiu, mudou de local,
+morreu ou ficou indisponível. Nunca faça alguém desaparecer apenas para justificar uma
+referência que o backend não resolveu.
+
+
+==================================================
 CONVERSAS
 ==================================================
 

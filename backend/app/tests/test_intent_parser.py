@@ -66,3 +66,25 @@ def test_parse_experiment_pattern_and_domains():
 
     assert decoded[0] == ActionIntentType.EXPERIMENT
     assert decoded[9:] == ("wind-palm-compress", "WIND", "MAGICAL")
+
+
+def test_truncated_json_salvages_the_explicit_intent():
+    # Groq may exhaust its output budget after already emitting the fields we
+    # need. A broken JSON tail must not erase an explicit EXAMINE classification.
+    intent_type, target, pace = _parse_response(
+        '{"intent":"EXAMINE","target":null,"secondary_target":null,"damage'
+    )
+
+    assert intent_type == ActionIntentType.EXAMINE
+    assert target is None
+    assert pace == TravelPace.NORMAL
+
+
+def test_truncated_json_salvages_a_complete_literal_target():
+    intent_type, target, pace = _parse_response(
+        '{"intent":"TALK","target":"homem idoso","secondary_target"'
+    )
+
+    assert intent_type == ActionIntentType.TALK
+    assert target == "homem idoso"
+    assert pace == TravelPace.NORMAL

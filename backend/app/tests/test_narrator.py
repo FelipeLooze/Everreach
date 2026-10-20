@@ -1696,6 +1696,15 @@ def test_opening_only_instructions_are_excluded_from_continuation_prompt():
     assert len(opening_prompt) - len(continuation_prompt) > 4000
 
 
+def test_opening_prompt_only_individualizes_persisted_visible_people():
+    opening_prompt = narrator._system_prompt_for("OPENING")
+
+    assert "Toda pessoa individualizada" in opening_prompt
+    assert "VISIBLE NPCS" in opening_prompt
+    assert "aparência física para substituir esse papel" in opening_prompt
+    assert "Nunca faça alguém desaparecer" in opening_prompt
+
+
 def test_opening_prompt_still_contains_every_base_instruction():
     # The split must never drop content, only relocate it — everything
     # in the CONTINUATION-applicable base still reaches OPENING mode too.

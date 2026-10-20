@@ -98,7 +98,7 @@ class Settings(BaseSettings):
     # None means "don't send max_tokens at all" — some OpenRouter models
     # reject an unsupported/unexpected optional parameter outright, so
     # this is opt-in, unlike Ollama's num_predict (always sent today).
-    openrouter_max_tokens: int | None = 500
+    openrouter_max_tokens: int | None = 2000
     # Optional OpenRouter attribution headers (HTTP-Referer/X-Title) —
     # not required for core functionality, only sent when non-empty.
     openrouter_http_referer: str = ""

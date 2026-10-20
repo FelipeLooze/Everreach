@@ -462,7 +462,7 @@ def test_openrouter_role_without_a_model_raises_clearly():
 
 
 def test_unknown_provider_raises_clearly():
-    settings = Settings(intent_llm_provider="groq")
+    settings = Settings(intent_llm_provider="bedrock")
     with pytest.raises(LLMServiceError, match="Unknown LLM provider"):
         build_role_llm_services(settings)
 

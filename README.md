@@ -37,8 +37,8 @@ frontend/
 - Python 3.11 ou mais recente.
 - Node.js 20.19 ou mais recente e npm.
 - Ollama é opcional. Sem ele, o jogo usa respostas mecânicas ou introduções de reserva e informa `narrator_unavailable: true`.
-- O modo local atual deixa a interpretação de intenção por LLM desativada. O OpenRouter narra
-  automaticamente cada ação e também atende à regeneração manual da última mensagem.
+- O modo local atual usa o Groq para interpretar a intenção. O OpenRouter narra automaticamente
+  cada ação e também atende à regeneração manual da última mensagem.
 
 ## Backend local
 
@@ -77,6 +77,27 @@ ollama serve
 ```
 
 As opções `OLLAMA_BASE_URL`, `OLLAMA_MODEL` e `OLLAMA_TIMEOUT_SECONDS` ficam em `backend/.env`. Toda comunicação HTTP com Ollama está isolada em `app/ai/llm_service.py`.
+
+## Groq e OpenRouter
+
+Os papéis remotos são independentes na configuração local:
+
+```dotenv
+GROQ_API_KEY=
+INTENT_LLM_PROVIDER=groq
+INTENT_LLM_MODEL=openai/gpt-oss-20b
+
+OPENROUTER_API_KEY=
+NARRATIVE_LLM_PROVIDER=openrouter
+NARRATIVE_LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+REGENERATION_LLM_PROVIDER=openrouter
+REGENERATION_LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+```
+
+Crie a chave do Groq em `https://console.groq.com/keys` e coloque somente o valor em
+`backend/.env`, que não é versionado. Sem essa chave, o interpretador degrada com segurança para
+`FREEFORM`; a narração do OpenRouter continua funcionando. O Groq apenas converte a frase do
+jogador em uma intenção estruturada; o backend ainda valida o alvo e resolve o resultado.
 
 Para operar sem chamadas automáticas de IA, use `INTENT_LLM_PROVIDER=disabled` e
 `NARRATIVE_LLM_PROVIDER=disabled`. A regeneração manual possui configuração independente em

@@ -104,6 +104,15 @@ class Settings(BaseSettings):
     openrouter_http_referer: str = ""
     openrouter_app_title: str = ""
 
+    # Groq is used for the small, latency-sensitive intent-classification
+    # role. It exposes an OpenAI-compatible Chat Completions endpoint but
+    # keeps its own credentials, limits, and model selection.
+    groq_api_key: str = ""
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    groq_timeout_seconds: float = 30.0
+    groq_temperature: float = 0.0
+    groq_max_tokens: int | None = 500
+
     # Phase 24K — intent parsing and narrative generation can each use a
     # different provider/model. Both default to "ollama" with an empty
     # model (falls back to ollama_model below) — an unmodified .env

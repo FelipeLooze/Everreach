@@ -393,6 +393,9 @@ class OpenRouterLLMService(LLMService):
         self._max_tokens = max_tokens
         self._http_referer = http_referer
         self._app_title = app_title
+        self._provider_display_name = "OpenRouter"
+        self._api_key_setting = "OPENROUTER_API_KEY"
+        self._exclude_reasoning = True
         self._last_generation_metadata: GenerationMetadata | None = None
 
     @property
@@ -412,8 +415,8 @@ class OpenRouterLLMService(LLMService):
             # Checked before any network call — never a bare 401 from a
             # request we should never have sent.
             raise LLMServiceError(
-                "OPENROUTER_API_KEY is not configured. Set it in the environment "
-                "before selecting the openrouter provider."
+                f"{self._api_key_setting} is not configured. Set it in the environment "
+                f"before selecting the {self.provider_name} provider."
             )
 
         headers = {"Authorization": f"Bearer {self._api_key}"}
@@ -442,8 +445,9 @@ class OpenRouterLLMService(LLMService):
             # return it in the response at all, closing this at its
             # actual source rather than trying to detect/strip a chain-
             # of-thought preamble out of already-returned content.
-            "reasoning": {"exclude": True},
         }
+        if self._exclude_reasoning:
+            payload["reasoning"] = {"exclude": True}
         if self._max_tokens is not None:
             payload["max_tokens"] = self._max_tokens
 
@@ -457,19 +461,20 @@ class OpenRouterLLMService(LLMService):
                     timeout=self._timeout,
                 )
         except httpx.ConnectError as exc:
-            logger.warning("OpenRouter unreachable: %s", exc)
-            raise LLMServiceError(f"Could not reach OpenRouter: {exc}") from exc
+            logger.warning("%s unreachable: %s", self._provider_display_name, exc)
+            raise LLMServiceError(f"Could not reach {self._provider_display_name}: {exc}") from exc
         except httpx.TimeoutException as exc:
-            logger.warning("OpenRouter request timed out: %s", exc)
-            raise LLMServiceError("OpenRouter took too long to respond.") from exc
+            logger.warning("%s request timed out: %s", self._provider_display_name, exc)
+            raise LLMServiceError(f"{self._provider_display_name} took too long to respond.") from exc
         latency_ms = (time.monotonic() - started) * 1000
 
         if response.status_code != 200:
             detail = _openrouter_error_detail(response)
             if response.status_code == 401:
-                logger.warning("OpenRouter authentication failed: %s", detail or "no detail")
+                logger.warning("%s authentication failed: %s", self._provider_display_name, detail or "no detail")
                 raise LLMServiceError(
-                    f"OpenRouter authentication failed: {detail or 'invalid or missing API key'}"
+                    f"{self._provider_display_name} authentication failed: "
+                    f"{detail or 'invalid or missing API key'}"
                 )
             if response.status_code == 429:
                 # Phase 24K — identified explicitly as RATE_LIMITED per
@@ -478,39 +483,54 @@ class OpenRouterLLMService(LLMService):
                 # never mistakes "quota exhausted" for "model answered
                 # with nothing."
                 logger.warning(
-                    "OpenRouter rate limit reached (model=%s): %s", self._model, detail or "no detail"
+                    "%s rate limit reached (model=%s): %s",
+                    self._provider_display_name,
+                    self._model,
+                    detail or "no detail",
                 )
                 raise LLMServiceError(
-                    f"OpenRouter rate limit reached for {self._model}: {detail or 'rate limited'}"
+                    f"{self._provider_display_name} rate limit reached for "
+                    f"{self._model}: {detail or 'rate limited'}"
                 )
             if response.status_code == 404:
-                logger.warning("OpenRouter model unavailable (model=%s): %s", self._model, detail)
+                logger.warning("%s model unavailable (model=%s): %s", self._provider_display_name, self._model, detail)
                 raise LLMServiceError(
-                    f"OpenRouter model unavailable ({self._model}): {detail or 'not found'}"
+                    f"{self._provider_display_name} model unavailable "
+                    f"({self._model}): {detail or 'not found'}"
                 )
             if response.status_code >= 500:
                 logger.warning(
-                    "OpenRouter server error %s (model=%s): %s", response.status_code, self._model, detail
+                    "%s server error %s (model=%s): %s",
+                    self._provider_display_name,
+                    response.status_code,
+                    self._model,
+                    detail,
                 )
                 raise LLMServiceError(
-                    f"OpenRouter server error ({response.status_code}): {detail or 'provider unavailable'}"
+                    f"{self._provider_display_name} server error "
+                    f"({response.status_code}): {detail or 'provider unavailable'}"
                 )
             logger.warning(
-                "OpenRouter request failed %s (model=%s): %s", response.status_code, self._model, detail
+                "%s request failed %s (model=%s): %s",
+                self._provider_display_name,
+                response.status_code,
+                self._model,
+                detail,
             )
             raise LLMServiceError(
-                f"OpenRouter request failed ({response.status_code}): {detail or 'unknown error'}"
+                f"{self._provider_display_name} request failed "
+                f"({response.status_code}): {detail or 'unknown error'}"
             )
 
         try:
             data = response.json()
         except (json.JSONDecodeError, ValueError) as exc:
-            logger.warning("OpenRouter returned a malformed (non-JSON) response: %s", exc)
-            raise LLMServiceError("OpenRouter returned a malformed response.") from exc
+            logger.warning("%s returned a malformed (non-JSON) response: %s", self._provider_display_name, exc)
+            raise LLMServiceError(f"{self._provider_display_name} returned a malformed response.") from exc
 
         if not isinstance(data, dict):
-            logger.warning("OpenRouter returned a non-object response body.")
-            raise LLMServiceError("OpenRouter returned an unexpected response shape.")
+            logger.warning("%s returned a non-object response body.", self._provider_display_name)
+            raise LLMServiceError(f"{self._provider_display_name} returned an unexpected response shape.")
 
         # Phase 24K — an error payload can arrive inside an otherwise-200
         # response (documented OpenRouter behavior for some upstream
@@ -520,27 +540,29 @@ class OpenRouterLLMService(LLMService):
         error = data.get("error")
         if error:
             message = error.get("message") if isinstance(error, dict) else str(error)
-            logger.warning("OpenRouter reported an error payload: %s", message)
-            raise LLMServiceError(f"OpenRouter error: {message}")
+            logger.warning("%s reported an error payload: %s", self._provider_display_name, message)
+            raise LLMServiceError(f"{self._provider_display_name} error: {message}")
 
         choices = data.get("choices")
         if not choices or not isinstance(choices, list):
-            logger.warning("OpenRouter response had no choices: keys=%s", list(data.keys()))
-            raise LLMServiceError("OpenRouter returned no completion choices.")
+            logger.warning("%s response had no choices: keys=%s", self._provider_display_name, list(data.keys()))
+            raise LLMServiceError(f"{self._provider_display_name} returned no completion choices.")
 
         first_choice = choices[0] if isinstance(choices[0], dict) else {}
         message = first_choice.get("message") if isinstance(first_choice.get("message"), dict) else {}
         content = message.get("content")
         if not isinstance(content, str) or not content.strip():
-            logger.warning("OpenRouter response had no assistant content.")
-            raise LLMServiceError("OpenRouter returned an empty completion (no assistant content).")
+            logger.warning("%s response had no assistant content.", self._provider_display_name)
+            raise LLMServiceError(
+                f"{self._provider_display_name} returned an empty completion (no assistant content)."
+            )
 
         usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
         finish_reason = first_choice.get("finish_reason")
         request_id = data.get("id")
 
         self._last_generation_metadata = GenerationMetadata(
-            provider="openrouter",
+            provider=self.provider_name,
             model=self._model,
             latency_ms=latency_ms,
             prompt_tokens=usage.get("prompt_tokens"),
@@ -550,8 +572,9 @@ class OpenRouterLLMService(LLMService):
             request_id=request_id if isinstance(request_id, str) else None,
         )
         logger.debug(
-            "OpenRouter generation metadata: model=%s finish_reason=%s prompt_tokens=%s "
+            "%s generation metadata: model=%s finish_reason=%s prompt_tokens=%s "
             "completion_tokens=%s total_tokens=%s latency_ms=%.0f request_id=%s",
+            self._provider_display_name,
             self._model,
             finish_reason,
             usage.get("prompt_tokens"),
@@ -561,6 +584,40 @@ class OpenRouterLLMService(LLMService):
             request_id,
         )
         return content.strip()
+
+
+class GroqLLMService(OpenRouterLLMService):
+    """Groq's OpenAI-compatible Chat Completions transport.
+
+    It deliberately reuses the proven response/error handling above while
+    omitting OpenRouter-only request fields such as ``reasoning.exclude``.
+    Callers still see only the provider-neutral LLMService contract.
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        base_url: str = "https://api.groq.com/openai/v1",
+        timeout: float = 30.0,
+        temperature: float = 0.0,
+        max_tokens: int | None = 500,
+    ) -> None:
+        super().__init__(
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            timeout=timeout,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        self._provider_display_name = "Groq"
+        self._api_key_setting = "GROQ_API_KEY"
+        self._exclude_reasoning = False
+
+    @property
+    def provider_name(self) -> str:
+        return "groq"
 
 
 def _build_ollama_service(settings: Settings, model: str) -> OllamaLLMService:
@@ -588,6 +645,17 @@ def _build_openrouter_service(settings: Settings, model: str) -> OpenRouterLLMSe
     )
 
 
+def _build_groq_service(settings: Settings, model: str) -> GroqLLMService:
+    return GroqLLMService(
+        api_key=settings.groq_api_key,
+        model=model,
+        base_url=settings.groq_base_url,
+        timeout=settings.groq_timeout_seconds,
+        temperature=settings.groq_temperature,
+        max_tokens=settings.groq_max_tokens,
+    )
+
+
 def _build_service_for_role(settings: Settings, provider: str, model: str) -> LLMService:
     normalized = (provider or "ollama").strip().lower()
     if normalized in {"disabled", "none", "off"}:
@@ -600,10 +668,18 @@ def _build_service_for_role(settings: Settings, provider: str, model: str) -> LL
                 "not used here, per the exact-model-ID requirement."
             )
         return _build_openrouter_service(settings, model)
+    if normalized == "groq":
+        if not model:
+            raise LLMServiceError(
+                "A Groq model must be configured (e.g. INTENT_LLM_MODEL) "
+                "when provider=groq."
+            )
+        return _build_groq_service(settings, model)
     if normalized == "ollama":
         return _build_ollama_service(settings, model or settings.ollama_model)
     raise LLMServiceError(
-        f"Unknown LLM provider: {provider!r} (expected 'disabled', 'ollama' or 'openrouter')"
+        f"Unknown LLM provider: {provider!r} "
+        "(expected 'disabled', 'ollama', 'openrouter' or 'groq')"
     )
 
 

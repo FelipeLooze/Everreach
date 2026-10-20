@@ -66,3 +66,20 @@ def test_narration_underselling_a_resolved_success_is_not_rejected(db_session):
     result = validate_narrative_proposal(db_session, campaign.id, proposal)
 
     assert result.valid is True
+
+
+def test_failed_movement_cannot_be_narrated_as_arrival(db_session):
+    campaign = create_campaign(db_session, "Movimento Inventado")
+    proposal = _proposal(
+        "Logan contorna a praça, toma a rua da direita e entra na casa de pedra.",
+        mechanical_summary=(
+            "Nenhum lugar conhecido correspondente a 'casa de pedra' pode ser "
+            "alcançado a partir daqui."
+        ),
+        player_input="Ir até a casa de pedra.",
+    )
+
+    result = validate_narrative_proposal(db_session, campaign.id, proposal)
+
+    assert result.valid is False
+    assert "entra na casa" not in result.final_text.casefold()

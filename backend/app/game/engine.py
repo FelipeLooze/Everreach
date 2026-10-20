@@ -67,6 +67,7 @@ from app.game.skills.techniques import (
 from app.game.time import clock
 from app.game.travel import service as travel_service
 from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
+from app.game.world.local_knowledge import ensure_settlement_public_knowledge
 from app.services.event_log import log_event
 from app.services.story_log import get_recent_story_log
 from app.simulation import world_simulation
@@ -191,6 +192,12 @@ def resolve_action(
         )
     if character.region_id is None or character.location_id is None:
         raise WorldNotStartedError("Inicie o mundo antes de realizar uma ação.")
+
+    # Backfills old campaigns and keeps generated public service knowledge in
+    # sync before either the intent parser or narrator receives context.
+    ensure_settlement_public_knowledge(
+        db, campaign_id, character.location_id
+    )
 
     state = game_state.build_game_state(db, campaign_id, character_id)
 

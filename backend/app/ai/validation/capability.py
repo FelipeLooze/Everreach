@@ -26,10 +26,16 @@ from app.ai.validation.claims import ClaimCategory, NarrativeClaim
 from app.ai.validation.contract import NarrativeProposal, Violation, register_validator
 
 _SUCCESS_LANGUAGE = re.compile(
-    r"\b(consegue\w*|com sucesso|efetivamente|sem dificuldade|facilmente)\b", re.IGNORECASE
+    r"\b(consegue\w*|com sucesso|efetivamente|sem dificuldade|facilmente|"
+    r"viaja\w*|chega\w*|entra\w*|caminha\w*|segue\w*|dirige-se|"
+    r"afasta-se|contorna\w*|toma\s+(?:a|o)\s+(?:rua|estrada|trilha))\b",
+    re.IGNORECASE,
 )
 _FAILURE_LANGUAGE = re.compile(
-    r"\b(falha\w*|fracassa\w*|nao consegue\w*|erra\w*|em vao)\b", re.IGNORECASE
+    r"\b(falha\w*|fracassa\w*|nao consegue\w*|erra\w*|em vao|"
+    r"nenhum lugar conhecido|nao ha (?:uma )?rota|nao pode ser alcancad[oa]|"
+    r"pode ser alcancad[oa] a partir daqui)\b",
+    re.IGNORECASE,
 )
 
 

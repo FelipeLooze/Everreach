@@ -27,6 +27,7 @@ from app.schemas.campaign import (
 from app.schemas.character import CharacterCreateRequest, CharacterResponse
 from app.game.discovery.service import get_location_discovery, record_location_visit
 from app.simulation import npc_simulation
+from app.game.world.local_knowledge import ensure_settlement_public_knowledge
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
@@ -151,6 +152,7 @@ def start_world(
     # narrator may place workers in the square and the first action makes them
     # appear to vanish when their workplace routine is finally evaluated.
     npc_simulation.tick(db, campaign_id, minutes=1)
+    ensure_settlement_public_knowledge(db, campaign_id, village.id)
 
     db.commit()
     state = build_game_state(db, campaign_id, character_id)

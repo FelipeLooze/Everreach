@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Sequence
@@ -142,7 +143,7 @@ def relevant_known_facts(
     *,
     scene_subjects: Sequence[str],
     player_input: str,
-    limit: int = 6,
+    limit: int = 12,
 ) -> list[KnownFact]:
     """Fetch a small, deterministic set of facts relevant to the current scene.
 
@@ -169,6 +170,33 @@ def relevant_known_facts(
         return []
 
     ordering = []
+    normalized_input = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", player_input.casefold())
+        if not unicodedata.combining(char)
+    )
+    asks_current_place = bool(
+        re.search(
+            r"\bonde\s+(?:eu\s+)?(?:estou|estamos)\b|"
+            r"\b(?:nome|chama)\b.{0,30}\b(?:vila|lugar|regiao)\b|"
+            r"\b(?:qual|que)\b.{0,20}\b(?:vila|lugar|regiao)\b",
+            normalized_input,
+        )
+    )
+    if asks_current_place:
+        # These two facts answer the player's immediate question and must not
+        # be displaced by other scene facts merely because of a small limit.
+        ordering.append(
+            case(
+                (
+                    KnowledgeFact.fact_key.in_(
+                        ("settlement_name_known", "settlement_region_known")
+                    ),
+                    0,
+                ),
+                else_=1,
+            )
+        )
     if term_filters:
         ordering.append(case((or_(*term_filters), 0), else_=1))
     if scene_subjects:

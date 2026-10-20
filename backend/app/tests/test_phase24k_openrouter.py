@@ -701,6 +701,16 @@ def test_production_path_uses_a_different_service_per_role_and_reports_it(
 
     # Manual review must bypass both legacy automatic validation layers.
     from app.game import engine as engine_module
+    from app.core.config import Settings
+
+    monkeypatch.setattr(
+        engine_module,
+        "get_settings",
+        lambda: Settings(
+            narrative_player_agency_guard_enabled=False,
+            narrative_automatic_validation_enabled=False,
+        ),
+    )
 
     def unexpected_validation(*_args, **_kwargs):
         raise AssertionError("automatic narrative validation should be disabled")

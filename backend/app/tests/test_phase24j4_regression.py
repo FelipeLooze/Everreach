@@ -300,8 +300,20 @@ class _ExistenceDenialThenCorrectionLLM(LLMService):
         return f"— Não há nenhuma loja geral aqui — responde {self._elder_name}."
 
 
-def test_manual_review_preserves_first_narrative_draft(client, db_session):
+def test_manual_review_preserves_first_narrative_draft(client, db_session, monkeypatch):
     from app.api.dependencies.llm import set_llm_service_override
+    from app.core.config import Settings
+
+    # Manual review is now an explicit opt-out mode; production defaults to
+    # automatic validation again.
+    monkeypatch.setattr(
+        engine,
+        "get_settings",
+        lambda: Settings(
+            narrative_player_agency_guard_enabled=False,
+            narrative_automatic_validation_enabled=False,
+        ),
+    )
 
     campaign_resp = client.post("/api/campaigns", json={"name": "24J4 Existence Sequential"})
     campaign_id = campaign_resp.json()["id"]

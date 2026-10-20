@@ -262,3 +262,46 @@ def test_sequential_production_path_keeps_the_same_interlocutor(client, db_sessi
             assert elder["name"] in narrative
     finally:
         set_llm_service_override(None)
+
+
+def test_scene_description_target_continues_with_active_interlocutor(db_session):
+    # Live playtest: "Procurar alguém que parece ser local" established the
+    # elder as interlocutor, the narrator described him as standing "do lado
+    # oposto", and the next turn's target ("homem do lado oposto") matched no
+    # name or role. The engine answered "ninguém correspondente" while the
+    # elder was still there, so the narration made him vanish.
+    campaign, region, village, character = _setup(db_session)
+    elder = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    engine._handle_talk(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.TALK, target=None, raw_text="Falo com o ancião."),
+        build_game_state(db_session, campaign.id, character.id),
+    )
+    db_session.flush()
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target="homem do lado oposto",
+        raw_text='Ir falar com o homem do lado oposto "Ola, bom dia senhor, tudo bem?"',
+    )
+    summary, _ = engine._handle_talk(
+        db_session, campaign.id, character, intent,
+        build_game_state(db_session, campaign.id, character.id),
+    )
+
+    assert elder.name in summary
+    assert "Não há ninguém correspondente" not in summary
+
+
+def test_scene_description_target_without_interlocutor_asks_instead_of_denying(db_session):
+    campaign, region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target="homem do lado oposto",
+        raw_text='Ir falar com o homem do lado oposto "Ola, bom dia senhor, tudo bem?"',
+    )
+    summary, _ = engine._handle_talk(db_session, campaign.id, character, intent, state)
+
+    assert "Há mais de uma pessoa aqui" in summary

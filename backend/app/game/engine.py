@@ -1314,6 +1314,7 @@ def _handle_talk(
         if any(word.casefold() in raw_lower for word in target_words):
             literal_target = intent.target
 
+    resolve_from_nearby = not literal_target
     if literal_target:
         target_lower = literal_target.casefold()
 
@@ -1369,8 +1370,16 @@ def _handle_talk(
                 npc = resolved_npc
             elif resolved_player is not None:
                 simulated_player = resolved_player
+            else:
+                # A scene description the narrator itself offered ("o
+                # homem do lado oposto") names no role or name at all.
+                # Confirmed live: refusing it outright told the narrator
+                # "ninguém aqui" while the active interlocutor stood right
+                # there, so the narration made him vanish. Treat it like an
+                # untargeted address instead.
+                resolve_from_nearby = True
 
-    else:
+    if resolve_from_nearby:
         nearby_people = [
             ("npc", candidate)
             for candidate in state.nearby_npcs

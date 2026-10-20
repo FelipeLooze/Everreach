@@ -16,12 +16,18 @@ from app.db.models.combat import (
     CombatTacticalAction,
 )
 from app.db.models.attribute import AttributeEvidenceRecord
+from app.db.models.boundary_barrier import BoundaryBarrier
+from app.db.models.boundary_route import BoundaryRoute
+from app.db.models.business import Business
 from app.db.models.character_class import (
     CharacterClassOffer,
     ClassDefinition,
     ClassDefinitionDomain,
 )
+from app.db.models.currency import CurrencyHolding
 from app.db.models.event import WorldEvent
+from app.db.models.expedition import Expedition
+from app.db.models.group import Group, GroupInvite, GroupMember
 from app.db.models.defense import ActorCombatDefense
 from app.db.models.notice import Notice
 from app.db.models.organization import (
@@ -39,21 +45,27 @@ from app.db.models.organization import (
 from app.db.models.organization_reputation import OrganizationReputationRecord
 from app.db.models.local_economy import LocationEconomy
 from app.db.models.supply import LocalSupplyLevel
+from app.db.models.economic_value import EconomicCanonValue
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
     DomainEvidenceRecord,
     DomainSynergyRecord,
 )
-from app.db.models.item import ItemInstance
+from app.db.models.item import ItemInstance, ItemWearRecord
+from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.location import CharacterLocationDiscovery, Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
+from app.db.models.map import Map
+from app.db.models.map_annotation import MapAnnotation
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
 from app.db.models.recovery import CharacterRecovery
 from app.db.models.region import Region
+from app.db.models.region_materialization import RegionMaterializationRequest
+from app.db.models.regional_boundary import RegionalBoundary
 from app.db.models.relationship import (
     CharacterNPCRelationship,
     CharacterSimulatedPlayerRelationship,
@@ -75,6 +87,7 @@ from app.db.models.simulated_player_group import (
 from app.db.models.simulated_player_routine import SimulatedPlayerRoutine
 from app.db.models.regional_threat import RegionalThreat
 from app.db.models.settlement import Settlement
+from app.db.models.shop import Shop, ShopListing
 from app.db.models.subregion import Subregion
 from app.db.models.simulated_player_arrival import (
     ScheduledSimulatedPlayerArrival,
@@ -87,6 +100,11 @@ from app.db.models.skill import (
     TechniqueUseRecord,
 )
 from app.db.models.profession import CharacterProfession
+from app.db.models.technique_evidence import (
+    CharacterTechniquePatternEvidence,
+    TechniqueExperimentRecord,
+    TechniquePatternEvidenceRecord,
+)
 from app.db.models.progression_outcome import AppliedProgressionOutcome
 from app.db.models.visual_asset import VisualAsset
 from app.db.models.visual_generation_request import VisualGenerationRequest
@@ -100,6 +118,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
 
     db.query(ActionCheckpoint).filter(
         ActionCheckpoint.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(EconomicCanonValue).filter(
+        EconomicCanonValue.campaign_id == campaign_id
     ).delete(synchronize_session=False)
 
     region_ids = [row[0] for row in db.query(Region.id).filter(Region.campaign_id == campaign_id).all()]
@@ -124,6 +145,58 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
             SimulatedPlayer.campaign_id == campaign_id
         ).all()
     ]
+
+    # Campaign-scoped tables added after the original reset (economy,
+    # groups, maps, boundaries, technique evidence). Item-instance
+    # dependents go first: ItemInstance itself is bulk-deleted below.
+    item_instance_ids = db.query(ItemInstance.id).filter(ItemInstance.campaign_id == campaign_id)
+    shop_ids = db.query(Shop.id).filter(Shop.campaign_id == campaign_id)
+    db.query(ShopListing).filter(
+        or_(ShopListing.shop_id.in_(shop_ids), ShopListing.item_instance_id.in_(item_instance_ids))
+    ).delete(synchronize_session=False)
+    db.query(Shop).filter(Shop.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(ItemWearRecord).filter(
+        ItemWearRecord.item_instance_id.in_(item_instance_ids)
+    ).delete(synchronize_session=False)
+    db.query(Map).filter(Map.item_instance_id.in_(item_instance_ids)).delete(synchronize_session=False)
+    db.query(CurrencyHolding).filter(
+        CurrencyHolding.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(JobApplication).filter(
+        JobApplication.job_id.in_(db.query(Job.id).filter(Job.campaign_id == campaign_id))
+    ).delete(synchronize_session=False)
+    db.query(Job).filter(Job.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(Business).filter(Business.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(MapAnnotation).filter(
+        MapAnnotation.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    group_ids = db.query(Group.id).filter(Group.campaign_id == campaign_id)
+    db.query(Expedition).filter(Expedition.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(GroupInvite).filter(GroupInvite.group_id.in_(group_ids)).delete(synchronize_session=False)
+    db.query(GroupMember).filter(GroupMember.group_id.in_(group_ids)).delete(synchronize_session=False)
+    db.query(Group).filter(Group.campaign_id == campaign_id).delete(synchronize_session=False)
+    boundary_ids = db.query(RegionalBoundary.id).filter(RegionalBoundary.campaign_id == campaign_id)
+    db.query(BoundaryRoute).filter(BoundaryRoute.boundary_id.in_(boundary_ids)).delete(
+        synchronize_session=False
+    )
+    db.query(BoundaryBarrier).filter(BoundaryBarrier.boundary_id.in_(boundary_ids)).delete(
+        synchronize_session=False
+    )
+    db.query(RegionalBoundary).filter(
+        RegionalBoundary.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(RegionMaterializationRequest).filter(
+        RegionMaterializationRequest.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(TechniqueExperimentRecord).filter(
+        TechniqueExperimentRecord.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(TechniquePatternEvidenceRecord).filter(
+        TechniquePatternEvidenceRecord.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(CharacterTechniquePatternEvidence).filter(
+        CharacterTechniquePatternEvidence.character_id.in_(character_ids)
+    ).delete(synchronize_session=False)
 
     incapacitation_ids = [
         row[0]

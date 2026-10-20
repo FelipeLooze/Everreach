@@ -645,7 +645,9 @@ def test_ollama_service_now_also_reports_provider_and_model_name():
 # --- 17. no automatic fallback occurs ---
 
 
-def test_production_path_uses_a_different_service_per_role_and_reports_it(client, db_session):
+def test_production_path_uses_a_different_service_per_role_and_reports_it(
+    client, db_session, monkeypatch
+):
     """Drives the real /actions endpoint (intent parse -> engine ->
     narration -> validation -> persistence) with two DISTINCT fake
     LLMServices, one per role, proving app.game.engine actually threads
@@ -657,6 +659,9 @@ def test_production_path_uses_a_different_service_per_role_and_reports_it(client
     from app.api.dependencies.llm import set_role_llm_service_overrides
 
     class _IntentFake(LLMService):
+        def __init__(self) -> None:
+            self.calls = 0
+
         @property
         def provider_name(self) -> str:
             return "ollama"
@@ -666,9 +671,13 @@ def test_production_path_uses_a_different_service_per_role_and_reports_it(client
             return "qwen2.5:14b-instruct-q4_K_M"
 
         def generate(self, system: str, prompt: str) -> str:
+            self.calls += 1
             return '{"intent": "FREEFORM", "target": null}'
 
     class _NarrativeFake(LLMService):
+        def __init__(self) -> None:
+            self.calls = 0
+
         @property
         def provider_name(self) -> str:
             return "openrouter"
@@ -678,7 +687,8 @@ def test_production_path_uses_a_different_service_per_role_and_reports_it(client
             return "nvidia/nemotron-3-ultra-550b-a55b:free"
 
         def generate(self, system: str, prompt: str) -> str:
-            return "O vento sopra sobre a praça."
+            self.calls += 1
+            return "Logan sorri e decide caminhar sozinho."
 
     intent_fake = _IntentFake()
     narrative_fake = _NarrativeFake()
@@ -688,6 +698,15 @@ def test_production_path_uses_a_different_service_per_role_and_reports_it(client
     character_resp = client.post(f"/api/campaigns/{campaign_id}/characters", json={"name": "Logan"})
     character_id = character_resp.json()["id"]
     client.post(f"/api/campaigns/{campaign_id}/start?character_id={character_id}")
+
+    # Manual review must bypass both legacy automatic validation layers.
+    from app.game import engine as engine_module
+
+    def unexpected_validation(*_args, **_kwargs):
+        raise AssertionError("automatic narrative validation should be disabled")
+
+    monkeypatch.setattr(engine_module.narrative_validator, "validate", unexpected_validation)
+    monkeypatch.setattr(engine_module, "validate_narrative_proposal", unexpected_validation)
 
     set_role_llm_service_overrides(intent=intent_fake, narrative=narrative_fake)
     try:
@@ -699,7 +718,9 @@ def test_production_path_uses_a_different_service_per_role_and_reports_it(client
         set_role_llm_service_overrides(intent=None, narrative=None)
 
     assert resp.status_code == 200
-    assert resp.json()["narrative"] == "O vento sopra sobre a praça."
+    assert resp.json()["narrative"] == "Logan sorri e decide caminhar sozinho."
+    assert intent_fake.calls == 1
+    assert narrative_fake.calls == 1
 
 
 def test_narrative_role_failure_never_falls_back_to_the_intent_role_service():

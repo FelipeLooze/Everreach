@@ -90,6 +90,7 @@ INTENT_LLM_MODEL=openai/gpt-oss-20b
 OPENROUTER_API_KEY=
 NARRATIVE_LLM_PROVIDER=openrouter
 NARRATIVE_LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
+NARRATIVE_AUTOMATIC_VALIDATION_ENABLED=false
 REGENERATION_LLM_PROVIDER=openrouter
 REGENERATION_LLM_MODEL=nvidia/nemotron-3-ultra-550b-a55b:free
 ```
@@ -103,11 +104,11 @@ Para operar sem chamadas automáticas de IA, use `INTENT_LLM_PROVIDER=disabled` 
 `NARRATIVE_LLM_PROVIDER=disabled`. A regeneração manual possui configuração independente em
 `REGENERATION_LLM_PROVIDER` e `REGENERATION_LLM_MODEL`.
 
-Na configuração local atual, `NARRATIVE_PLAYER_AGENCY_GUARD_ENABLED=false` desliga somente a
-revisão automática que tenta detectar se o texto escolheu uma ação pelo protagonista. A regra
-continua no prompt do narrador, e eventuais erros editoriais podem ser corrigidos pelo jogador em
-**Regenerar última mensagem**, com feedback. Isso não desliga as proteções de cânone nem concede
-ao modelo autoridade para alterar inventário, combate ou qualquer estado persistente.
+Com `NARRATIVE_AUTOMATIC_VALIDATION_ENABLED=false`, cada narração usa exatamente uma chamada ao
+modelo e a primeira resposta é exibida sem julgamento, reescrita ou fallback textual automático.
+O jogador é o validador e pode usar **Regenerar última mensagem** com feedback. As regras continuam
+no prompt, enquanto inventário, combate e demais estados persistentes seguem sob autoridade do
+backend, nunca do texto do narrador. O interpretador de intenção do Groq também continua separado.
 
 O narrador recebe separadamente o contexto atual, até seis mensagens recentes, a entrada
 exata do jogador e os fatos mecânicos já resolvidos. Ele continua a cena em tempo real e

@@ -77,6 +77,23 @@ class HistoryItem:
     text: str
 
 
+def test_manual_review_returns_first_response_without_repair_or_retry():
+    raw_response = "Let me analyze the scene first. Logan sorri e decide caminhar sozinho."
+    llm = StubbornLLM(raw_response)
+
+    result = narrator.narrate(
+        llm,
+        mechanical_summary="Nenhuma mudança mecânica.",
+        context="CURRENT PLAYER\nName: Logan",
+        player_input="Olhar em volta",
+        recent_history="(sem histórico)",
+        automatic_validation=False,
+    )
+
+    assert result == raw_response
+    assert len(llm.calls) == 1
+
+
 def test_narrator_applies_system_prompt_and_all_dynamic_sections():
     llm = CapturingLLM()
 

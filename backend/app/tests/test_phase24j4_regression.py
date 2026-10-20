@@ -300,7 +300,7 @@ class _ExistenceDenialThenCorrectionLLM(LLMService):
         return f"— Não há nenhuma loja geral aqui — responde {self._elder_name}."
 
 
-def test_sequential_production_path_false_denial_gets_corrected(client, db_session):
+def test_manual_review_preserves_first_narrative_draft(client, db_session):
     from app.api.dependencies.llm import set_llm_service_override
 
     campaign_resp = client.post("/api/campaigns", json={"name": "24J4 Existence Sequential"})
@@ -323,7 +323,10 @@ def test_sequential_production_path_false_denial_gets_corrected(client, db_sessi
         )
         assert talk_resp.status_code == 200
         narrative = talk_resp.json()["narrative"]
-        assert "não há" not in narrative.casefold()
+        assert "não há" in narrative.casefold()
+        # One intent call plus one narration call; there is no automatic
+        # correction call. The player may request regeneration explicitly.
+        assert len(stub_llm.calls) == 2
     finally:
         set_llm_service_override(None)
 
@@ -467,7 +470,10 @@ def test_a_reveal_inside_a_rejected_draft_is_not_taught(client, db_session, monk
     monkeypatch.setattr(
         engine,
         "get_settings",
-        lambda: Settings(narrative_player_agency_guard_enabled=True),
+        lambda: Settings(
+            narrative_player_agency_guard_enabled=True,
+            narrative_automatic_validation_enabled=True,
+        ),
     )
 
     campaign_resp = client.post("/api/campaigns", json={"name": "24J4 Rejected Reveal"})

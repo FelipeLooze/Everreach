@@ -105,6 +105,7 @@ def regenerate_last_narrative(
         "Nenhum novo resultado mecânico foi autorizado."
     )
 
+    settings = get_settings()
     try:
         regenerated = narrator.narrate(
             llm_service,
@@ -115,7 +116,8 @@ def regenerate_last_narrative(
             mode=mode,
             previous_narrative=previous_entry.text,
             revision_feedback=body.feedback,
-            enforce_player_agency=get_settings().narrative_player_agency_guard_enabled,
+            enforce_player_agency=settings.narrative_player_agency_guard_enabled,
+            automatic_validation=settings.narrative_automatic_validation_enabled,
         )
     except LLMServiceError as exc:
         raise HTTPException(

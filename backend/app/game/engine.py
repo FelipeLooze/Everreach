@@ -455,7 +455,6 @@ def resolve_action(
         ),
     )
     recent_history = context_builder.build_recent_history(recent_entries)
-    canonical_facts = context_builder.build_canonical_facts(fresh_state)
     settings = get_settings()
 
     narrator_unavailable = False
@@ -467,52 +466,45 @@ def resolve_action(
             player_input=text,
             recent_history=recent_history,
             enforce_player_agency=settings.narrative_player_agency_guard_enabled,
+            automatic_validation=settings.narrative_automatic_validation_enabled,
         )
     except LLMServiceError:
         narrative_text = mechanical_summary
         narrator_unavailable = True
 
-    validation = narrative_validator.validate(narrative_text, canonical_facts)
+    final_narrative = narrative_text
+    narrative_warnings: list[str] = []
 
-    # Phase 19A — the new validation seam, alongside (not replacing) the
-    # existing narrative_validator check above. Currently always a
-    # pass-through (validate_narrative_proposal runs no real validators
-    # yet), so final_text always equals validation.text here — using it
-    # downstream now is zero-risk today and means 19D/19F+ won't require
-    # another engine.py rewiring once real repair logic lands.
-    narrative_proposal = NarrativeProposal(
-        text=validation.text,
-        mode="CONTINUATION",
-        context=fresh_context,
-        mechanical_summary=mechanical_summary,
-        player_input=text,
-        recent_history=recent_history,
-        character_name=character.name,
-        character_id=character.id,
-        location_id=character.location_id,
-        active_npc_id=context_npc.id if context_npc is not None else None,
-        active_npc_name=context_npc.name if context_npc is not None else None,
-        enforce_player_agency=settings.narrative_player_agency_guard_enabled,
-    )
-    narrative_validation = validate_narrative_proposal(
-        db, campaign_id, narrative_proposal, llm_service
-    )
-    final_grounded_text = narrator.enforce_authorized_price_answer(
-        narrative_validation.final_text,
-        fresh_context,
-        text,
-        context_npc.name if context_npc is not None else "",
-    )
-    if final_grounded_text != narrative_validation.final_text:
-        narrative_validation = replace(
-            narrative_validation,
-            valid=False,
-            final_text=final_grounded_text,
-            violations=[
-                *narrative_validation.violations,
-                "authorized current price was omitted after narrative validation",
-            ],
+    # Automatic narrative review is retained only as an opt-in diagnostic
+    # mode. In normal play the first OpenRouter answer is persisted exactly as
+    # returned; the player decides whether to regenerate it with feedback.
+    if settings.narrative_automatic_validation_enabled:
+        canonical_facts = context_builder.build_canonical_facts(fresh_state)
+        validation = narrative_validator.validate(narrative_text, canonical_facts)
+        narrative_proposal = NarrativeProposal(
+            text=validation.text,
+            mode="CONTINUATION",
+            context=fresh_context,
+            mechanical_summary=mechanical_summary,
+            player_input=text,
+            recent_history=recent_history,
+            character_name=character.name,
+            character_id=character.id,
+            location_id=character.location_id,
+            active_npc_id=context_npc.id if context_npc is not None else None,
+            active_npc_name=context_npc.name if context_npc is not None else None,
+            enforce_player_agency=settings.narrative_player_agency_guard_enabled,
         )
+        narrative_validation = validate_narrative_proposal(
+            db, campaign_id, narrative_proposal, llm_service
+        )
+        final_narrative = narrator.enforce_authorized_price_answer(
+            narrative_validation.final_text,
+            fresh_context,
+            text,
+            context_npc.name if context_npc is not None else "",
+        )
+        narrative_warnings = validation.warnings
 
     if context_npc is not None:
         _teach_facts_revealed_in_narration(
@@ -522,7 +514,7 @@ def resolve_action(
             fresh_state,
             context_npc,
             player_input=text,
-            narrated_text=narrative_validation.final_text,
+            narrated_text=final_narrative,
         )
 
     action_has_interlocutor = (
@@ -544,7 +536,7 @@ def resolve_action(
             "action_key": resolved_action_key,
             "technique_id": technique_id,
             "player_text": text,
-            "narrative": narrative_validation.final_text,
+            "narrative": final_narrative,
             "mechanical_summary": mechanical_summary,
             "narrator_unavailable": narrator_unavailable,
             # Phase 24D — the backend already resolved this deterministically
@@ -572,7 +564,7 @@ def resolve_action(
             character,
             action_npc,
             text,
-            narrative_validation.final_text,
+            final_narrative,
             importance=(
                 3
                 if intent.type == ActionIntentType.TALK
@@ -597,7 +589,7 @@ def resolve_action(
             character,
             action_simulated_player,
             text,
-            narrative_validation.final_text,
+            final_narrative,
             importance=(
                 3
                 if intent.type == ActionIntentType.TALK
@@ -637,12 +629,12 @@ def resolve_action(
         context_chars=len(fresh_context),
         estimated_tokens=len(fresh_context) // 4,
         narrator_unavailable=narrator_unavailable,
-        final_output=narrative_validation.final_text,
+        final_output=final_narrative,
         latency_ms=(time.monotonic() - _narrative_request_started_at) * 1000,
     )
 
     return ActionResult(
-        narrative=narrative_validation.final_text,
+        narrative=final_narrative,
         narrator_unavailable=narrator_unavailable,
         mechanical_summary=mechanical_summary,
         intent_type=intent.type.value,
@@ -654,7 +646,7 @@ def resolve_action(
         # reasons to the player. That information now goes through
         # app.ai.validation.trace's DEBUG-only log instead (called
         # inside validate_narrative_proposal).
-        warnings=[*mechanical_warnings, *validation.warnings],
+        warnings=[*mechanical_warnings, *narrative_warnings],
     )
 
 
@@ -674,12 +666,9 @@ def _teach_facts_revealed_in_narration(
     the backend already trusts (it's in the NPC's own NPC KNOWLEDGE) once
     the produced text shows it was genuinely said, not merely available.
 
-    Phase 24J.4 — order of operations, verified (not assumed): the caller
-    passes `narrative_validation.final_text`, i.e. the FINAL, already-
-    validated/repaired narration — never a raw pre-rejection draft. A
-    hallucinated claim that got rejected by the narrator's own repair
-    loop or by validate_narrative_proposal never reaches this function's
-    `narrated_text` at all, so it can never be taught.
+    This function cannot create arbitrary knowledge from prose: it only
+    promotes a fact that was already present in the active NPC's canonical
+    knowledge and whose authorized value appeared in the narration.
     """
     revealed_facts = context_builder.active_npc_relevant_facts(
         db,

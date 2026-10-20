@@ -185,6 +185,7 @@ def start_world(
         f"A narrativa deve terminar antes da primeira ação voluntária do protagonista."
     )
     narrator_unavailable = False
+    settings = get_settings()
     try:
         narrative = narrator.narrate(
             llm_service,
@@ -193,7 +194,8 @@ def start_world(
             player_input="(nenhuma ação do jogador; abertura da campanha)",
             recent_history="(nenhum histórico; este é o primeiro instante)",
             mode="OPENING",
-            enforce_player_agency=get_settings().narrative_player_agency_guard_enabled,
+            enforce_player_agency=settings.narrative_player_agency_guard_enabled,
+            automatic_validation=settings.narrative_automatic_validation_enabled,
         )
     except LLMServiceError:
         narrative = (

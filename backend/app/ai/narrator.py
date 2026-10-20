@@ -38,6 +38,7 @@ class RepairReasonCategory(StrEnum):
 
 
 class NarrationOutcome(StrEnum):
+    MANUAL_REVIEW = "MANUAL_REVIEW"
     ACCEPTED_FIRST_PASS = "ACCEPTED_FIRST_PASS"
     ACCEPTED_AFTER_REVISION = "ACCEPTED_AFTER_REVISION"
     REPAIRED_VIA_TRIM = "REPAIRED_VIA_TRIM"
@@ -2185,6 +2186,7 @@ def narrate(
     previous_narrative: str | None = None,
     revision_feedback: str | None = None,
     enforce_player_agency: bool = True,
+    automatic_validation: bool = True,
 ) -> str:
     """Render the next moment of a scene without changing authoritative game state.
 
@@ -2228,6 +2230,16 @@ def narrate(
 
     raw_response = call_llm(llm_service, system_prompt, prompt, purpose="NARRATIVE", attempt=1)
     logger.debug("RAW NARRATOR RESPONSE\n%s", raw_response)
+
+    # In the normal game flow the player is the narrative validator. Return
+    # the model's first answer without repairs, fallback substitutions or
+    # additional LLM calls. Regeneration is the explicit revision path.
+    if not automatic_validation:
+        final_response = raw_response.strip()
+        logger.debug("FINAL RESPONSE (manual player review)\n%s", final_response)
+        _log_narration_outcome(NarrationOutcome.MANUAL_REVIEW, attempt=1)
+        return final_response
+
     response = _strip_prompt_leak(raw_response)
     if response != raw_response.strip():
         logger.warning(

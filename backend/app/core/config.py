@@ -121,6 +121,9 @@ class Settings(BaseSettings):
     intent_llm_model: str = ""
     narrative_llm_provider: str = "ollama"
     narrative_llm_model: str = ""
+    # Disabled means one model call per narration. The player reviews the
+    # first answer and can explicitly regenerate it with feedback.
+    narrative_automatic_validation_enabled: bool = False
     # The prompt still asks the narrator not to choose for the protagonist,
     # but this optional guard controls the automatic regex/validator rewrite.
     # Disable it when agency mistakes should be reviewed manually through the

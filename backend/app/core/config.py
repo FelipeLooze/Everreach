@@ -123,7 +123,7 @@ class Settings(BaseSettings):
     narrative_llm_model: str = ""
     # Disabled means one model call per narration. The player reviews the
     # first answer and can explicitly regenerate it with feedback.
-    narrative_automatic_validation_enabled: bool = False
+    narrative_automatic_validation_enabled: bool = True
     # The prompt still asks the narrator not to choose for the protagonist,
     # but this optional guard controls the automatic regex/validator rewrite.
     # Disable it when agency mistakes should be reviewed manually through the

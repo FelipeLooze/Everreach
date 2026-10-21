@@ -109,8 +109,8 @@ def ensure_settlement_public_knowledge(
             fact_key=f"public_service_route:{connection.id}",
             subject=f"connection:{connection.id}",
             statement=(
-                f"{service.name} fica a {connection.direction} da praça de "
-                f"{settlement.name}."
+                f"Da praça de {settlement.name}, {service.name} fica a "
+                f"{connection.direction}."
             ),
         )
         workers = (
@@ -130,7 +130,7 @@ def ensure_settlement_public_knowledge(
                 fact_key=f"public_service_worker:{worker.id}",
                 subject=f"connection:{connection.id}",
                 statement=(
-                    f"{worker.name} trabalha como {worker.role} em {service.name}."
+                    f"Em {service.name}, {worker.name} trabalha como {worker.role}."
                 ),
             )
             for worker in workers

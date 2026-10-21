@@ -495,7 +495,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             campaign_id=campaign_id,
             subject=f"npc:{elder.id}",
             fact_key="osgar_born_in_cardal",
-            statement=f"{elder.name} nasceu em {village.name} e vive ali há décadas.",
+            statement=f"Há décadas {elder.name} vive em {village.name}, onde nasceu.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
@@ -507,13 +507,13 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
             campaign_id=campaign_id,
             subject=f"connection:{road_connection.id}",
             fact_key="osgar_knows_cardal_east_road",
-            statement=f"{road.name} sai de {village.name} para leste.",
+            statement=f"Para leste, {road.name} sai de {village.name}.",
         ),
         KnowledgeFact(
             campaign_id=campaign_id,
             subject=f"connection:{creek_connection.id}",
             fact_key="osgar_knows_cardal_south_creek",
-            statement=f"{creek.name} fica ao sul de {village.name} e é alcançado por uma trilha.",
+            statement=f"Ao sul de {village.name} fica {creek.name}, alcançado por uma trilha.",
         ),
     ]
     db.add_all(canonical_facts)

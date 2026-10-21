@@ -64,7 +64,10 @@ def test_local_elder_knows_real_service_route_and_worker(db_session):
 
 
 def test_service_reveal_discovers_destination_and_movement_updates_visible_people(db_session):
+    from app.game.discovery.service import record_location_visit
+
     campaign, _region, village, character = _setup(db_session)
+    record_location_visit(db_session, character.id, village.id, source="arrival")
     elder = (
         db_session.query(NPC)
         .filter(NPC.campaign_id == campaign.id, NPC.role == "ancião da vila")
@@ -121,6 +124,24 @@ def test_service_reveal_discovers_destination_and_movement_updates_visible_peopl
     assert blacksmith.id in {npc.id for npc in state.nearby_npcs}
     assert elder.id not in {npc.id for npc in state.nearby_npcs}
 
+    # Playtest: the route back was never known, so the player was stuck
+    # inside the forge ("Volto para a praça" was refused).
+    summary, _minutes = engine._handle_move(
+        db_session,
+        campaign.id,
+        character,
+        Intent(
+            type=ActionIntentType.MOVE,
+            target="praça",
+            raw_text="Volto para a praça.",
+        ),
+    )
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    assert character.location_id == village.id, summary
+    assert elder.id in {npc.id for npc in state.nearby_npcs}
+    assert blacksmith.id not in {npc.id for npc in state.nearby_npcs}
+
 
 def test_current_place_question_prioritizes_village_and_region_facts(db_session):
     campaign, region, _village, character = _setup(db_session)
@@ -143,3 +164,38 @@ def test_current_place_question_prioritizes_village_and_region_facts(db_session)
     assert "settlement_region_known" in keys
     assert any(region.name in fact.statement for fact in facts)
 
+
+
+def test_naming_village_and_region_reveals_no_route_or_worker_fact(db_session):
+    # Live playtest: the elder answered only "Ulhaven ... Vale das Águas
+    # Claras", yet the inn, forge and east road were all taught as revealed.
+    # The checker skips each statement's sentence-initial word, and the
+    # templates opened with the very entity being taught ("Estalagem de X
+    # fica...", "Trilha do Vale sai de X..."), leaving only the village and
+    # region names to match.
+    from app.ai.context_builder import fact_is_revealed_in_text
+    from app.game.npcs.service import KnownFact
+
+    campaign, region, village, _character = _setup(db_session)
+    narration = (
+        f"— {village.name}. A vila chama-se {village.name}. E a região... {region.name}."
+    )
+    facts = db_session.query(KnowledgeFact).filter(KnowledgeFact.campaign_id == campaign.id).all()
+
+    revealed = {
+        fact.fact_key
+        for fact in facts
+        if fact_is_revealed_in_text(
+            KnownFact(
+                subject=fact.subject,
+                fact_key=fact.fact_key,
+                statement=fact.statement,
+                source="",
+                certainty="",
+                discovered_at=None,
+            ),
+            narration,
+        )
+    }
+
+    assert revealed == {"settlement_name_known", "settlement_region_known"}

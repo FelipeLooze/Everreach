@@ -218,7 +218,7 @@ def create_regional_boundary(
                 campaign_id=campaign_id,
                 subject=f"boundary_route:{route.id}",
                 fact_key=route.knowledge_fact_key,
-                statement=f"{route.name} é uma possível passagem por {boundary.name}.",
+                statement=f"Uma possível passagem por {boundary.name} é {route.name}.",
                 is_secret=not route.is_publicly_known,
             )
         )

@@ -11,6 +11,7 @@ from app.core.enums import (
 )
 from app.db.models.location import Location, LocationConnection
 from app.game.discovery.service import (
+    discover_connection,
     get_connection_discovery,
     get_location_discovery,
     record_location_visit,
@@ -203,6 +204,15 @@ def move_character(
     )
 
     if connection_discovery is None:
+        # Saves anteriores à descoberta da rota de volta: conhecer o sentido
+        # inverso basta para refazer o caminho.
+        reverse_connection = find_connection(db, to_location_id, from_location_id)
+        if reverse_connection is not None and get_connection_discovery(
+            db, character.id, reverse_connection.id
+        ) is not None:
+            connection_discovery, _created = discover_connection(db, character.id, connection.id)
+
+    if connection_discovery is None:
         raise TravelError(
             "Você conhece o destino, mas não conhece uma rota utilizável até ele."
         )
@@ -330,6 +340,13 @@ def move_character(
         destination.id,
         source=f"travel:{connection.id}",
     )
+
+    # Quem acabou de percorrer a rota conhece o caminho de volta. Sem isso,
+    # entrar na ferraria pela praça deixava o personagem preso lá dentro
+    # (confirmado em playtest: "Volto para a praça" era recusado).
+    return_connection = find_connection(db, destination.id, from_location_id)
+    if return_connection is not None:
+        discover_connection(db, character.id, return_connection.id)
 
     # Registra o incidente ocorrido durante o percurso, se houver.
     if incident is not None:

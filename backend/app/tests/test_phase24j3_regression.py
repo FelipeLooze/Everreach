@@ -560,3 +560,27 @@ def test_sequential_production_path_conversation_exits_on_movement(client, db_se
         assert new_location_id != original_location_id
     finally:
         set_llm_service_override(None)
+
+
+def test_first_person_movement_phrasing_round_trip(db_session):
+    # Playtest: with the Intent Parser down (rate limit -> FREEFORM),
+    # "Volto para a praça" from the inn did nothing because the backstop
+    # only knew third-person verbs. No "olha" observation step here: the
+    # route back must be known simply from having walked in.
+    from app.game.discovery.service import record_location_visit
+
+    campaign, region, village, character = _setup(db_session)
+    record_location_visit(db_session, character.id, village.id, source="world_start")
+    _discover_all_connections(db_session, character, village)
+    inn = (
+        db_session.query(Location)
+        .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+        .filter(LocationConnection.from_location_id == village.id, Location.type == "inn")
+        .first()
+    )
+
+    for raw_text, expected in (("Vou até a estalagem", inn), ("Volto para a praça", village)):
+        state = build_game_state(db_session, campaign.id, character.id)
+        intent = Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=raw_text)
+        engine._apply_intent(db_session, campaign.id, character, intent, state)
+        assert character.location_id == expected.id, raw_text

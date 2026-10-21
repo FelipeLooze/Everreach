@@ -883,14 +883,17 @@ _OBSERVATION_CUE_PATTERN = re.compile(r"\bolha\b|\bobserva\b|\bexamina\b", re.IG
 # failure mode this whole phase exists to eliminate. Settlement services
 # are hub-and-spoke (a leaf location connects back to exactly one "village"
 # hub), so exiting one has an unambiguous, safe destination.
-_EXIT_PHRASE_PATTERN = re.compile(r"\bsai\b|\bsaiu\b|\bsair\b", re.IGNORECASE)
+_EXIT_PHRASE_PATTERN = re.compile(r"\bsai\b|\bsaio\b|\bsaiu\b|\bsair\b", re.IGNORECASE)
 
+# Third person ("Logan vai..."), first person ("Vou...", "Volto...") and
+# infinitive ("Ir até...") all occur in real play; first person was
+# confirmed live to be ignored when the Intent Parser fell back to FREEFORM.
 _MOVEMENT_PHRASE_PATTERN = re.compile(
-    r"\bvai\b.{0,20}\b(direcao|para|ate)\b"
-    r"|\bchega\b"
-    r"|\bentra\b.{0,15}\bn[ao]\b"
-    r"|\bcaminha\b.{0,20}\b(direcao|para|ate)\b"
-    r"|\b(volta|retorna)\b.{0,20}\b(direcao|para|ate)\b",
+    r"\b(vai|vou|ir)\b.{0,20}\b(direcao|para|ate)\b"
+    r"|\b(chega|chego|chegar)\b"
+    r"|\b(entra|entro|entrar)\b.{0,15}\bn[ao]\b"
+    r"|\b(caminha|caminho|caminhar)\b.{0,20}\b(direcao|para|ate)\b"
+    r"|\b(volta|volto|voltar|retorna|retorno|retornar)\b.{0,20}\b(direcao|para|ate)\b",
     re.IGNORECASE,
 )
 

@@ -206,7 +206,28 @@ SETTLEMENT_SERVICE_POOL = {
     "mine_entrance": ("Entrada da Mina", "mine_entrance", "O acesso principal aos túneis de extração de minério."),
     "barracks": ("Quartel", "barracks", "Onde os guardas locais se organizam e descansam."),
     "market_square": ("Praça do Mercado", "market_square", "Um espaço aberto tomado por barracas de comerciantes."),
+    "adventurers_guild": (
+        "Guilda de Aventureiros",
+        "adventurers_guild",
+        "Um salão onde aventureiros encontram contratos, registram feitos e formam grupos.",
+    ),
+    "merchants_guild": (
+        "Guilda de Comerciantes",
+        "merchants_guild",
+        "A sede local dos mercadores, onde rotas, cargas e acordos comerciais são organizados.",
+    ),
 }
+
+# The arrival settlement is the player's only guaranteed foothold in a new
+# world.  Its minimum infrastructure is deliberately stronger than that of a
+# procedurally generated village: a seed may vary everything around it, but it
+# must never strand a new character without these basic services.
+STARTING_SETTLEMENT_REQUIRED_SERVICES = (
+    "inn",
+    "blacksmith",
+    "adventurers_guild",
+    "merchants_guild",
+)
 
 SERVICES_BY_SETTLEMENT_TYPE = {
     "MAJOR_CITY": ["market_square", "inn", "tavern", "temple", "general_store", "blacksmith", "barracks", "notice_board"],

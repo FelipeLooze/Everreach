@@ -20,7 +20,16 @@ def test_every_major_settlement_gets_one_organization(db_session):
     settlements = db_session.query(Settlement).all()
     organizations = db_session.query(Organization).filter(Organization.campaign_id == campaign.id).all()
 
-    assert len(organizations) == len(settlements)
+    # Every settlement has its governing organization. The initial
+    # settlement additionally has the two service guilds guaranteed by the
+    # arrival-world contract.
+    settlement_location_ids = {settlement.location_id for settlement in settlements}
+    governing_organizations = [
+        organization
+        for organization in organizations
+        if organization.headquarters_location_id in settlement_location_ids
+    ]
+    assert len(governing_organizations) == len(settlements)
 
 
 def test_organization_type_matches_settlement_type(db_session):

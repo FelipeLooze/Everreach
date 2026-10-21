@@ -41,6 +41,10 @@ from app.game.visual.npc import set_npc_stable_identity
 from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
 from app.game.world.region_content import connect_locations, generate_region_settlements_and_infrastructure
+from app.game.world.content_pools import (
+    SETTLEMENT_SERVICE_POOL,
+    STARTING_SETTLEMENT_REQUIRED_SERVICES,
+)
 from app.game.world.generator import (
     choose_major_settlement_type,
     choose_minor_settlement_type,
@@ -400,8 +404,16 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         )
 
     village_service_rng = random.Random(derive_seed(anchor_subregion.generation_seed, "village_services"))
+    village_services = list(generate_settlement_services(SettlementType.VILLAGE))
+    present_service_types = {service_type for _name, service_type, _description in village_services}
+    for service_key in STARTING_SETTLEMENT_REQUIRED_SERVICES:
+        service = SETTLEMENT_SERVICE_POOL[service_key]
+        if service[1] not in present_service_types:
+            village_services.append(service)
+            present_service_types.add(service[1])
+
     village_service_locations = []
-    for service_name, service_type, service_description in generate_settlement_services(SettlementType.VILLAGE):
+    for service_name, service_type, service_description in village_services:
         village_service_locations.append(
             Location(
                 region_id=region.id,
@@ -429,6 +441,60 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     _service_location_by_type = {
         location.type: location for location in village_service_locations
     }
+
+    # These are canonical world organizations, not scenery invented by the
+    # narrator. Their headquarters point to the corresponding service
+    # locations, so organization, navigation and knowledge systems all refer
+    # to the same persisted places.
+    for guild_name, guild_type, service_type, leader_role, description in (
+        (
+            f"Guilda de Aventureiros de {village.name}",
+            OrganizationType.GUILD,
+            "adventurers_guild",
+            "mestre da guilda de aventureiros",
+            "Reúne aventureiros, publica contratos e registra expedições locais.",
+        ),
+        (
+            f"Guilda de Comerciantes de {village.name}",
+            OrganizationType.COMMERCIAL,
+            "merchants_guild",
+            "mestre da guilda de comerciantes",
+            "Coordena mercadores, caravanas e acordos comerciais da região.",
+        ),
+    ):
+        leader_name = generate_npc_name(starting_npc_rng, used_npc_names)
+        leader_personality, leader_backstory = generate_leader_flavor(starting_npc_rng)
+        leader = NPC(
+            campaign_id=campaign_id,
+            region_id=region.id,
+            location_id=village.id,
+            workplace_location_id=_service_location_by_type[service_type].id,
+            name=leader_name,
+            role=leader_role,
+            personality=leader_personality,
+            backstory=leader_backstory,
+        )
+        db.add(leader)
+        db.flush()
+        set_npc_stable_identity(
+            db, campaign_id, leader.id, generate_npc_appearance_traits(starting_npc_rng)
+        )
+        guild = create_organization(
+            db,
+            campaign_id,
+            guild_name,
+            organization_type=guild_type,
+            origin=OrganizationOrigin.NATIVE,
+            description=description,
+            visibility=OrganizationVisibility.PUBLIC,
+            headquarters_location_id=_service_location_by_type[service_type].id,
+            founder_type=CombatActorType.NPC,
+            founder_id=leader.id,
+        )
+        guildmaster_role = create_role(db, guild, "Mestre da Guilda", rank_order=0)
+        join_organization(
+            db, guild, CombatActorType.NPC, leader.id, role_id=guildmaster_role.id
+        )
     for npc, service_type in (
         (blacksmith, "blacksmith"),
         (innkeeper, "inn"),

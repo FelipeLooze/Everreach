@@ -10,7 +10,10 @@ an extra district layer; every other type attaches services directly.
 from app.core.enums import SettlementType
 from app.db.models.location import Location
 from app.db.models.settlement import Settlement
-from app.game.world.content_pools import SERVICES_BY_SETTLEMENT_TYPE
+from app.game.world.content_pools import (
+    SERVICES_BY_SETTLEMENT_TYPE,
+    STARTING_SETTLEMENT_REQUIRED_SERVICES,
+)
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -49,7 +52,44 @@ def test_every_major_settlement_gets_its_defined_services(db_session):
                 .all()
             )
 
-        assert len(services) == expected_service_count
+        if location.id == _village.id:
+            expected_types = set(SERVICES_BY_SETTLEMENT_TYPE["VILLAGE"])
+            expected_types.update(STARTING_SETTLEMENT_REQUIRED_SERVICES)
+            assert len(services) == len(expected_types)
+        else:
+            assert len(services) == expected_service_count
+
+
+def test_starting_settlement_guarantees_basic_services_and_real_guilds(db_session):
+    from app.core.enums import OrganizationType
+    from app.db.models.organization import Organization
+    from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
+
+    campaign = create_campaign(db_session, "Campanha Inicial")
+    _region, village = seed_initial_region(db_session, campaign.id)
+
+    services = db_session.query(Location).filter(Location.parent_location_id == village.id).all()
+    services_by_type = {service.type: service for service in services}
+    required_types = {
+        SETTLEMENT_SERVICE_POOL[key][1]
+        for key in STARTING_SETTLEMENT_REQUIRED_SERVICES
+    }
+    assert required_types <= services_by_type.keys()
+
+    guilds = (
+        db_session.query(Organization)
+        .filter(
+            Organization.campaign_id == campaign.id,
+            Organization.organization_type.in_([
+                OrganizationType.GUILD.value,
+                OrganizationType.COMMERCIAL.value,
+            ]),
+        )
+        .all()
+    )
+    headquarters = {organization.headquarters_location_id for organization in guilds}
+    assert services_by_type["adventurers_guild"].id in headquarters
+    assert services_by_type["merchants_guild"].id in headquarters
 
 
 def test_city_scale_settlements_get_seven_districts(db_session):

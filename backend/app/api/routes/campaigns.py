@@ -28,6 +28,10 @@ from app.schemas.character import CharacterCreateRequest, CharacterResponse
 from app.game.discovery.service import get_location_discovery, record_location_visit
 from app.simulation import npc_simulation
 from app.game.world.local_knowledge import ensure_settlement_public_knowledge
+from app.game.players.arrival_kit import (
+    TRANSPORTED_OUTFIT_APPEARANCE,
+    grant_transported_arrival_kit,
+)
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
@@ -146,6 +150,7 @@ def start_world(
         campaign_id,
         character.id,
     )
+    grant_transported_arrival_kit(db, character)
 
     # Seeded NPCs start with a neutral activity. Resolve their routine at the
     # current world time before the opening scene is built, otherwise the
@@ -185,6 +190,10 @@ def start_world(
         f"automaticamente conhecidos pelo protagonista. Além delas, uma multidão anônima de "
         f"recém-chegados pode compor o fundo da Primeira Chegada. "
 
+        f"Todos os Transportados, incluindo {character.name}, chegaram com a mesma roupa "
+        f"e a mesma mochila vazia. Aparência canônica: {TRANSPORTED_OUTFIT_APPEARANCE} "
+        f"Nenhum deles trouxe roupas, celulares, armas, ferramentas ou outros objetos da Terra. "
+
         f"Os habitantes nativos presentes testemunham o fenômeno, mas não recebem conhecimento "
         f"automático sobre sua causa. Somente habitantes listados em VISIBLE NPCS podem ser "
         f"individualizados; use o papel registrado como referência e não invente moradores "
@@ -212,7 +221,8 @@ def start_world(
         narrative = (
             "As vozes chegam antes que a visão se firme. Gritos, perguntas e passos se misturam "
             "em uma confusão crescente. Quando o mundo se torna nítido, há pedra sob os pés e "
-            "uma praça desconhecida tomada por pessoas que parecem ter chegado no mesmo instante. "
+            "uma praça desconhecida tomada por pessoas que parecem ter chegado no mesmo instante, "
+            "todas vestidas com túnicas claras de detalhes azul-escuros e mochilas iguais. "
             "Nas margens, habitantes locais observam o acontecimento. Nenhuma explicação acompanha a chegada."
         )
         narrator_unavailable = True

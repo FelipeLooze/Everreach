@@ -108,9 +108,13 @@ transportados pode ser descrita.
 - agrupando-se;
 - entrando em pânico;
 - permanecendo imóveis;
-- carregando objetos comuns de suas vidas anteriores;
+- usando o traje padronizado dos Transportados fornecido nos fatos mecânicos;
+- carregando apenas a mochila padronizada fornecida nos fatos mecânicos;
 
 quando isso for compatível com os fatos fornecidos.
+
+Transportados não chegam com roupas variadas, celulares, armas, ferramentas, malas ou
+outros objetos da Terra. Não substitua nem acrescente peças ao traje canônico fornecido.
 
 Não nomeie pessoas transportadas que não estejam em VISIBLE PLAYERS, VISIBLE TRANSPORTED
 ou estrutura equivalente fornecida pelo backend.

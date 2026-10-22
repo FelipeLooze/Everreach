@@ -52,6 +52,7 @@ from app.game.combat.context import build_active_encounter_snapshot
 from app.game.game_state import GameStateSnapshot
 from app.game.items.context import build_narrator_inventory_context
 from app.game.skills.technique_mastery import character_technique_mastery_tier
+from app.game.players.arrival_kit import transported_appearance
 from app.game.npcs.service import (
     KnownFact,
     effective_npc_location_id,
@@ -1667,7 +1668,7 @@ def build_narrative_context(
             (
                 f"- {_clip(player.name, 100)} "
                 f"(Level {player.level}; "
-                f"appearance={_clip(player.physical_description or 'unknown', 300)})"
+                f"appearance={_clip(transported_appearance(player.physical_description), 600)})"
             )
             for player in state.nearby_simulated_players[:MAX_VISIBLE_ENTITIES]
         ]
@@ -1754,7 +1755,7 @@ def build_narrative_context(
                 ),
                 (
                     "Physical description: "
-                    f"{_clip(active_transported.physical_description or 'unknown', 500)}"
+                    f"{_clip(transported_appearance(active_transported.physical_description), 800)}"
                 ),
                 (
                     "Personality: "

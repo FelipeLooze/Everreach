@@ -6,6 +6,13 @@ Pessoas do nosso mundo começaram misteriosamente a ser transportadas para Everr
 um mundo real habitado por povos, culturas e sociedades próprias. Ninguém sabe por que
 as chegadas começaram, o que as causa ou se existe uma maneira de voltar.
 
+Todos chegam vestindo o mesmo **Traje dos Transportados**: uma túnica bege de pano
+resistente, detalhes azul-escuros, calças terrosas, botas gastas e manto curto marcado
+por um símbolo discreto. Cada pessoa também recebe uma mochila compacta de couro com a
+mesma identidade visual, inicialmente vazia. O traje e a mochila são objetos físicos;
+o traje não oferece proteção de armadura. Nenhuma arma, armadura, ferramenta, moeda,
+consumível, celular ou objeto da Terra acompanha a chegada.
+
 Os transportados possuem acesso a uma misteriosa Interface, mas Everreach não é um jogo.
 O mundo existe independentemente dela e continua mudando mesmo sem a presença do protagonista.
 

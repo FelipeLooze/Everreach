@@ -47,6 +47,14 @@ def test_full_campaign_flow(client, fake_llm):
     assert resp.json()["narrator_unavailable"] is False
     assert resp.json()["state"]["location"]["name"] is not None
     assert resp.json()["state"]["opening_narrative"] == "[test narration]"
+    arrival_items = resp.json()["state"]["inventory"]["items"]
+    assert {item["name"] for item in arrival_items} == {
+        "Traje dos Transportados",
+        "Mochila dos Transportados",
+    }
+    assert {item["equipped_slot"] for item in arrival_items} == {"TORSO", "BACK"}
+    assert "mesma roupa" in opening_prompt
+    assert "celulares" in opening_prompt
     assert resp.json()["state"]["world_time"] == {"year": 1, "month": 1, "day": 1, "hour": 8, "minute": 0}
     opening_roles = {
         npc["role"] for npc in resp.json()["state"]["nearby_npcs"]
@@ -61,6 +69,7 @@ def test_full_campaign_flow(client, fake_llm):
     )
     assert repeated_start.status_code == 200
     assert repeated_start.json()["narrative"] == "[test narration]"
+    assert len(repeated_start.json()["state"]["inventory"]["items"]) == 2
     assert len(fake_llm.calls) == 1
 
     resp = client.get(f"/api/campaigns/{campaign_id}/state", params={"character_id": character_id})

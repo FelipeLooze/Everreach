@@ -84,6 +84,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   PLAYER_MET_NPC: "Você conheceu alguém",
   PLAYER_TALKED_TO_NPC: "Você conversou com alguém",
   PLAYER_GAINED_ITEM: "Você ganhou um item",
+  TRANSPORTED_ARRIVAL_KIT_GRANTED: "Traje de chegada recebido",
   ITEM_CONSUMED: "Item consumido",
   LOOT_RESOLVED: "Saque resolvido",
   PLAYER_LOST_ITEM: "Você perdeu um item",

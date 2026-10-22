@@ -81,10 +81,11 @@ REGRAS:
 - Inclua características como idade aparente, cabelo, olhos, pele, altura aproximada,
   porte físico e outros traços visualmente relevantes quando apropriado.
 - Evite metáforas e linguagem abstrata na descrição física.
+- Não descreva roupas, calçados, acessórios, mochila ou objetos carregados. Todos os
+  Transportados usam o mesmo traje e a mesma mochila canônicos, acrescentados pelo backend.
 - A descrição deve ser útil futuramente como base para gerar um retrato visual.
 - Não invente equipamentos raros, mágicos ou especiais.
-- Roupas simples podem ser descritas, mas não representam inventário ou equipamento
-  mecânico confirmado pelo sistema.
+- A pessoa não trouxe roupas, celular, armas, ferramentas ou objetos da Terra.
 """.strip()
 
 

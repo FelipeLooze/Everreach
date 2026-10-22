@@ -66,10 +66,14 @@ const TECHNIQUE_MASTERY_LABELS: Record<string, string> = {
 };
 
 const QUEST_STATUS_LABELS: Record<string, string> = {
+  AVAILABLE: "disponível",
   NOT_STARTED: "não iniciada",
   ACTIVE: "ativa",
   COMPLETED: "concluída",
   FAILED: "fracassada",
+  CANCELLED: "abandonada",
+  EXPIRED: "expirada",
+  RESOLVED_EXTERNALLY: "resolvida por outros",
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {

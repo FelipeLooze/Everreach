@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
@@ -35,6 +35,7 @@ class Quest(Base):
     sponsoring_organization_id: Mapped[str | None] = mapped_column(
         ForeignKey("organizations.id"), nullable=True
     )
+    xp_reward: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
 
 class QuestObjective(Base):
@@ -64,6 +65,7 @@ class CharacterQuest(Base):
     quest_id: Mapped[str] = mapped_column(ForeignKey("quests.id"), nullable=False)
     status: Mapped[str] = mapped_column(String, default=QuestStatus.NOT_STARTED)
     deadline_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reward_granted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class CharacterQuestObjective(Base):

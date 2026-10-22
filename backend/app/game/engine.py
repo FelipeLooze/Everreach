@@ -22,6 +22,7 @@ from app.core.enums import (
     KnowerType,
     KnowledgeCertainty,
     ObjectiveTriggerType,
+    QuestStatus,
     TravelIncidentKind,
 )
 from app.core.logging import current_narrative_request_id, get_logger, with_narrative_request_id
@@ -54,6 +55,7 @@ from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
+from app.game.quests.rewards import grant_pending_quest_completion_xp
 from app.game.relationships import service as relationship_service
 from app.game.progression.outcomes import resolve_progression_outcome
 from app.game.skills.technique_experimentation import (
@@ -268,6 +270,7 @@ def resolve_action(
         )
     else:
         intent = intent_parser.parse(intent_llm_service, text, context)
+        intent = _refine_explicit_quest_intent(intent)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     if technique_use is not None:
@@ -365,6 +368,18 @@ def resolve_action(
             state,
             action_key=resolved_action_key,
         )
+
+    granted_quest_xp = grant_pending_quest_completion_xp(
+        db,
+        llm_service,
+        campaign_id,
+        character,
+    )
+    if granted_quest_xp:
+        reward_lines = "; ".join(
+            f"{name}: +{amount:g} XP" for name, amount in granted_quest_xp
+        )
+        mechanical_summary = f"{mechanical_summary} Recompensa de missão: {reward_lines}."
 
     # Capture who this action involved before advancing world time.
     # The NPC may become unavailable during the tick that follows.
@@ -742,6 +757,36 @@ def _looks_like_dialogue(text: str) -> bool:
     )
 
 
+_EXPLICIT_QUEST_ACTION_PATTERN = re.compile(
+    r"^\s*(?P<verb>aceit(?:o|ar|e)|pego|pegar|abandono|abandonar|cancelo|cancelar)"
+    r"\s+(?:(?:a|o|essa|esta)\s+)?(?:miss[aã]o|contrato)\s+"
+    r"(?P<target>.+?)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _refine_explicit_quest_intent(intent: Intent) -> Intent:
+    """Deterministic backstop for explicit quest-management commands.
+
+    Groq remains the general intent interpreter, but accepting or abandoning a
+    named quest should not silently become FREEFORM during a transient model
+    failure. This only recognizes an explicit quest/contract noun.
+    """
+    if intent.type != ActionIntentType.FREEFORM:
+        return intent
+    match = _EXPLICIT_QUEST_ACTION_PATTERN.match(intent.raw_text or "")
+    if match is None:
+        return intent
+    verb = _strip_accents(match.group("verb")).casefold()
+    intent_type = (
+        ActionIntentType.ABANDON_QUEST
+        if verb.startswith(("abandon", "cancel"))
+        else ActionIntentType.ACCEPT_QUEST
+    )
+    target = match.group("target").strip(" \t\r\n\"'“”‘’.!")
+    return replace(intent, type=intent_type, target=target or None)
+
+
 def _apply_intent(
     db: Session,
     campaign_id: str,
@@ -751,6 +796,40 @@ def _apply_intent(
     *,
     action_key: str | None = None,
 ) -> tuple[str, int]:
+    if intent.type == ActionIntentType.ACCEPT_QUEST:
+        quest = quests_service.find_character_quest_by_name(
+            db,
+            campaign_id,
+            character.id,
+            intent.target,
+            status=QuestStatus.AVAILABLE,
+        )
+        if quest is None:
+            return "Nenhuma missão conhecida e disponível corresponde a esse nome.", 0
+        try:
+            quests_service.accept_known_quest(
+                db, campaign_id, character.id, quest.id
+            )
+        except quests_service.QuestLifecycleError as exc:
+            return str(exc), 0
+        return f"{character.name} aceita a missão '{quest.name}'.", 1
+    if intent.type == ActionIntentType.ABANDON_QUEST:
+        quest = quests_service.find_character_quest_by_name(
+            db,
+            campaign_id,
+            character.id,
+            intent.target,
+            status=QuestStatus.ACTIVE,
+        )
+        if quest is None:
+            return "Nenhuma missão ativa corresponde a esse nome.", 0
+        try:
+            quests_service.abandon_known_quest(
+                db, campaign_id, character.id, quest.id
+            )
+        except quests_service.QuestLifecycleError as exc:
+            return str(exc), 0
+        return f"{character.name} abandona a missão '{quest.name}'.", 1
     if intent.type == ActionIntentType.FREEFORM:
         # Phase 24J.3 — scoped narrowly to FREEFORM (not e.g. TALK, which
         # already resolves its own targets and may legitimately mention a
@@ -1801,6 +1880,14 @@ def _examine_notice_board_if_targeted(
         notices = read_notice_board(db, character.id, board.id)
     except NoticeBoardError:
         return None
+
+    quests_service.evaluate_objective_trigger(
+        db,
+        character.campaign_id,
+        character.id,
+        ObjectiveTriggerType.READ_NOTICE_BOARD,
+        subject_id=board.id,
+    )
 
     lines = [f"{character.name} lê o {board.name}."]
     if not notices:

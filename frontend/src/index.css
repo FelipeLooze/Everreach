@@ -1473,6 +1473,16 @@ select {
   font-size: 0.8rem;
 }
 
+.quest-list { display: flex; flex-direction: column; gap: 1.5rem; }
+.quest-list section > h3 { margin: 0 0 0.8rem; color: #d0b477; font-family: "Cinzel", Georgia, serif; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.quest-entry { margin-bottom: 1rem; padding: 1rem; border: 1px solid rgba(151, 107, 66, 0.35); background: rgba(29, 23, 20, 0.45); }
+.quest-entry h4 { margin: 0 0 0.65rem; color: var(--text-main); }
+.quest-entry ul { padding-left: 1.25rem; }
+.quest-action-button { padding: 0.55rem 0.9rem; border: 1px solid rgba(208, 180, 119, 0.75); background: rgba(112, 78, 40, 0.28); color: #d0b477; font-family: "Cinzel", Georgia, serif; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.quest-action-button:hover:not(:disabled) { background: rgba(151, 107, 66, 0.35); }
+.quest-action-button:disabled { opacity: 0.55; cursor: wait; }
+.quest-action-secondary { border-color: rgba(151, 107, 66, 0.55); color: var(--text-dim); }
+
 .objective-done {
   color: var(--text-dim);
   text-decoration: line-through;

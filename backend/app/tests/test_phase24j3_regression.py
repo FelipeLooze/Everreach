@@ -589,7 +589,8 @@ def test_first_person_movement_phrasing_round_trip(db_session):
 def test_examine_with_movement_phrasing_moves_first_then_examines(db_session):
     # Playtest: "Vou até o quadro de avisos e leio o que está pregado" was
     # classified EXAMINE; the character never left the square while the
-    # narration walked to the board and invented notices on it.
+    # narration walked to the board. The initial board now has one real,
+    # persisted community notice, so the summary must read that exact content.
     campaign, region, village, character = _setup(db_session)
     _discover_all_connections(db_session, character, village)
     board = (
@@ -608,4 +609,5 @@ def test_examine_with_movement_phrasing_moves_first_then_examines(db_session):
     summary, _ = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
     assert character.location_id == board.id
-    assert "Não há nenhum aviso pregado no quadro." in summary
+    assert "lê o Quadro de Avisos" in summary
+    assert "Orientação aos recém-chegados" in summary

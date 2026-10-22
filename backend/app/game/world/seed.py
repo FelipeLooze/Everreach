@@ -37,6 +37,7 @@ from app.game.players.service import (
     set_simulated_player_arrival_location_enabled,
     set_simulated_player_arrival_policy,
 )
+from app.game.quests.initial_content import seed_initial_quest_opportunities
 from app.game.visual.npc import set_npc_stable_identity
 from app.game.world.validation import validate_region_package
 from app.game.world.generation import CURRENT_REGION_GENERATION_VERSION, derive_seed
@@ -446,6 +447,8 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # narrator. Their headquarters point to the corresponding service
     # locations, so organization, navigation and knowledge systems all refer
     # to the same persisted places.
+    adventurers_guild = None
+    adventurers_guildmaster = None
     for guild_name, guild_type, service_type, leader_role, description in (
         (
             f"Guilda de Aventureiros de {village.name}",
@@ -495,6 +498,24 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         join_organization(
             db, guild, CombatActorType.NPC, leader.id, role_id=guildmaster_role.id
         )
+        if service_type == "adventurers_guild":
+            adventurers_guild = guild
+            adventurers_guildmaster = leader
+
+    if adventurers_guild is None or adventurers_guildmaster is None:
+        raise ValueError("A vila inicial precisa possuir uma Guilda de Aventureiros.")
+    seed_initial_quest_opportunities(
+        db,
+        campaign_id=campaign_id,
+        region=region,
+        village=village,
+        elder=elder,
+        village_organization=village_organization,
+        adventurers_guild=adventurers_guild,
+        guildmaster=adventurers_guildmaster,
+        guild_location=_service_location_by_type["adventurers_guild"],
+        public_board_location=_service_location_by_type["notice_board"],
+    )
     for npc, service_type in (
         (blacksmith, "blacksmith"),
         (innkeeper, "inn"),

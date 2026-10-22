@@ -21,11 +21,17 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.ai.llm_service import LLMService
 from app.core.enums import CharacterXPSource, ItemQuality
+from app.db.models.character import Character
 from app.db.models.item import ItemInstance
-from app.db.models.quest import Quest
+from app.db.models.quest import CharacterQuest, Quest
 from app.game.inventory.service import add_item
-from app.game.progression.outcomes import CharacterXPGain, ProgressionOutcome
+from app.game.progression.outcomes import (
+    CharacterXPGain,
+    ProgressionOutcome,
+    resolve_progression_outcome,
+)
 
 
 @dataclass(frozen=True)
@@ -76,3 +82,48 @@ def quest_completion_progression_outcome(
         outcome_key=outcome_key,
         character_xp=CharacterXPGain(amount=xp_amount, source=CharacterXPSource.IMPORTANT_OBJECTIVE),
     )
+
+
+def grant_pending_quest_completion_xp(
+    db: Session,
+    llm_service: LLMService,
+    campaign_id: str,
+    character: Character,
+) -> list[tuple[str, float]]:
+    """Apply each newly completed quest reward exactly once.
+
+    CharacterQuest.reward_granted records delivery while ProgressionOutcome's
+    outcome key provides a second idempotency boundary if a transaction is
+    retried between applying XP and marking the participation.
+    """
+    pending = (
+        db.query(CharacterQuest, Quest)
+        .join(Quest, Quest.id == CharacterQuest.quest_id)
+        .filter(
+            CharacterQuest.character_id == character.id,
+            CharacterQuest.status == "COMPLETED",
+            CharacterQuest.reward_granted.is_(False),
+        )
+        .all()
+    )
+    granted: list[tuple[str, float]] = []
+    for participation, quest in pending:
+        amount = max(0.0, float(quest.xp_reward or 0.0))
+        if amount:
+            outcome = quest_completion_progression_outcome(
+                quest,
+                outcome_key=f"quest-completed:{quest.id}",
+                xp_amount=amount,
+            )
+            resolve_progression_outcome(
+                db,
+                llm_service,
+                campaign_id,
+                character,
+                outcome,
+            )
+            granted.append((quest.name, amount))
+        participation.reward_granted = True
+    if pending:
+        db.flush()
+    return granted

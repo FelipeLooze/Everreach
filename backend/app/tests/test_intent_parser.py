@@ -41,6 +41,16 @@ def test_parse_invalid_pace_defaults_to_normal():
     assert pace == TravelPace.NORMAL
 
 
+def test_parse_accept_quest_keeps_player_facing_title_as_target():
+    intent_type, target, pace = _parse_response(
+        '{"intent":"ACCEPT_QUEST","target":"Relato da Primeira Chegada"}'
+    )
+
+    assert intent_type == ActionIntentType.ACCEPT_QUEST
+    assert target == "Relato da Primeira Chegada"
+    assert pace == TravelPace.NORMAL
+
+
 def test_parse_combat_details_without_granting_outcome_authority():
     from app.ai.intent_parser import _decode_response
 

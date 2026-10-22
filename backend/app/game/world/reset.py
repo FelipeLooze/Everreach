@@ -315,6 +315,12 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         synchronize_session=False
     )
 
+    # Notices may point at both a Quest and a LocationFeature. They must be
+    # removed before either parent; initial guild contracts make this path a
+    # normal save-deletion case rather than an empty-table edge case.
+    db.query(Notice).filter(Notice.campaign_id == campaign_id).delete(
+        synchronize_session=False
+    )
     db.query(QuestObjective).filter(QuestObjective.quest_id.in_(quest_ids)).delete(synchronize_session=False)
     db.query(Quest).filter(Quest.id.in_(quest_ids)).delete(synchronize_session=False)
 

@@ -1,9 +1,11 @@
+import unicodedata
 from typing import Sequence
 
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
     EventType,
+    NoticeStatus,
     ObjectiveTriggerType,
     QuestParticipationType,
     QuestSource,
@@ -45,6 +47,8 @@ def create_quest(
     deadline_world_minute: int | None = None,
     participation_type: QuestParticipationType = QuestParticipationType.OPEN,
     capacity: int | None = None,
+    xp_reward: float = 0.0,
+    sponsoring_organization_id: str | None = None,
 ) -> Quest:
     """The one authoritative way a Quest situation comes to exist in the
     world. Existence here is independent of any character's awareness or
@@ -68,6 +72,8 @@ def create_quest(
     to expose — no hidden mechanical data leaks through this."""
     if participation_type == QuestParticipationType.LIMITED and not capacity:
         raise QuestLifecycleError("Uma missão LIMITED precisa declarar sua capacidade.")
+    if xp_reward < 0:
+        raise QuestLifecycleError("A recompensa de XP de uma missão não pode ser negativa.")
     quest = Quest(
         region_id=region_id,
         name=name,
@@ -76,6 +82,8 @@ def create_quest(
         deadline_world_minute=deadline_world_minute,
         participation_type=participation_type,
         capacity=capacity,
+        xp_reward=xp_reward,
+        sponsoring_organization_id=sponsoring_organization_id,
     )
     db.add(quest)
     db.flush()
@@ -155,6 +163,145 @@ def start_quest(
             payload={"quest_id": quest_id},
         )
     return cq
+
+
+def accept_known_quest(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    quest_id: str,
+) -> CharacterQuest:
+    """Accept a quest only after the character actually discovered it."""
+    from app.game.quests.discovery import is_quest_known_to_character
+
+    character = db.get(Character, character_id)
+    quest = db.get(Quest, quest_id)
+    region = db.get(Region, quest.region_id) if quest is not None else None
+    if (
+        character is None
+        or character.campaign_id != campaign_id
+        or quest is None
+        or region is None
+        or region.campaign_id != campaign_id
+    ):
+        raise QuestLifecycleError("Missão ou personagem desconhecido nesta campanha.")
+    if not is_quest_known_to_character(db, campaign_id, character_id, quest_id):
+        raise QuestLifecycleError(
+            "Essa missão ainda não foi descoberta pelo personagem."
+        )
+
+    existing = (
+        db.query(CharacterQuest)
+        .filter(
+            CharacterQuest.character_id == character_id,
+            CharacterQuest.quest_id == quest_id,
+        )
+        .one_or_none()
+    )
+    if existing is not None:
+        if existing.status == QuestStatus.ACTIVE:
+            return existing
+        raise QuestLifecycleError(
+            f"Esta participação já está encerrada ({existing.status})."
+        )
+
+    participation = start_quest(db, character_id, quest_id)
+    if quest.participation_type == QuestParticipationType.CLAIMABLE:
+        _set_linked_notice_status(db, campaign_id, quest_id, NoticeStatus.CLAIMED)
+    return participation
+
+
+def abandon_known_quest(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    quest_id: str,
+) -> CharacterQuest:
+    participation = abandon_quest(db, campaign_id, character_id, quest_id)
+    quest = db.get(Quest, quest_id)
+    if quest is not None and quest.participation_type == QuestParticipationType.CLAIMABLE:
+        _set_linked_notice_status(db, campaign_id, quest_id, NoticeStatus.ACTIVE)
+    return participation
+
+
+def _normalized_name(value: str) -> str:
+    return "".join(
+        character
+        for character in unicodedata.normalize("NFKD", value).casefold()
+        if not unicodedata.combining(character)
+    ).strip()
+
+
+def find_character_quest_by_name(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    name: str | None,
+    *,
+    status: QuestStatus | None = None,
+) -> Quest | None:
+    """Resolve a player-facing quest title without exposing internal ids."""
+    if not name:
+        return None
+    needle = _normalized_name(name)
+    candidates = (
+        db.query(Quest)
+        .join(Region, Region.id == Quest.region_id)
+        .filter(Region.campaign_id == campaign_id)
+        .all()
+    )
+    for quest in candidates:
+        if status == QuestStatus.AVAILABLE:
+            from app.game.quests.discovery import is_quest_known_to_character
+
+            if quest.status != QuestStatus.AVAILABLE or not is_quest_known_to_character(
+                db, campaign_id, character_id, quest.id
+            ):
+                continue
+        elif status is not None:
+            participation = (
+                db.query(CharacterQuest)
+                .filter(
+                    CharacterQuest.character_id == character_id,
+                    CharacterQuest.quest_id == quest.id,
+                    CharacterQuest.status == status,
+                )
+                .one_or_none()
+            )
+            if participation is None:
+                continue
+        candidate = _normalized_name(quest.name)
+        if needle == candidate or needle in candidate or candidate in needle:
+            return quest
+    return None
+
+
+def _set_linked_notice_status(
+    db: Session,
+    campaign_id: str,
+    quest_id: str,
+    status: NoticeStatus,
+) -> None:
+    from app.db.models.notice import Notice
+
+    notices = db.query(Notice).filter(Notice.quest_id == quest_id).all()
+    for notice in notices:
+        if notice.status == status:
+            continue
+        notice.status = status
+        log_event(
+            db,
+            campaign_id,
+            EventType.NOTICE_UPDATED,
+            actor_type="world",
+            payload={
+                "notice_id": notice.id,
+                "quest_id": quest_id,
+                "new_status": status.value,
+            },
+        )
+    if notices:
+        db.flush()
 
 
 def _get_character_quest(db: Session, character_id: str, quest_id: str) -> CharacterQuest:
@@ -349,6 +496,18 @@ def complete_objective(db: Session, campaign_id: str, character_id: str, objecti
             )
             if cq and cq.status != QuestStatus.COMPLETED:
                 cq.status = QuestStatus.COMPLETED
+                quest = db.get(Quest, objective.quest_id)
+                if (
+                    quest is not None
+                    and quest.participation_type == QuestParticipationType.CLAIMABLE
+                ):
+                    quest.status = QuestStatus.COMPLETED
+                    _set_linked_notice_status(
+                        db,
+                        campaign_id,
+                        quest.id,
+                        NoticeStatus.COMPLETED,
+                    )
                 log_event(
                     db,
                     campaign_id,

@@ -16,7 +16,12 @@ organizational decision produced this, not a random generator.
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import NoticeCategory, OrganizationActionType, QuestSource
+from app.core.enums import (
+    NoticeCategory,
+    OrganizationActionType,
+    QuestParticipationType,
+    QuestSource,
+)
 from app.db.models.notice import Notice
 from app.db.models.organization import Organization, OrganizationNeed
 from app.db.models.quest import Quest
@@ -35,6 +40,7 @@ def publish_organization_notice(
     title: str,
     text: str,
     need_id: str | None = None,
+    quest_id: str | None = None,
     expires_world_minute: int | None = None,
 ) -> Notice:
     if need_id is not None:
@@ -49,10 +55,10 @@ def publish_organization_notice(
         category=category,
         title=title,
         text=text,
+        author_organization_id=organization.id,
+        quest_id=quest_id,
         expires_world_minute=expires_world_minute,
     )
-    notice.author_organization_id = organization.id
-    db.flush()
 
     record_organization_action(
         db, organization, OrganizationActionType.PUBLISH_NOTICE, f"Publicou aviso: {title}",
@@ -69,6 +75,8 @@ def sponsor_quest(
     *,
     objectives: tuple[str, ...] = (),
     deadline_world_minute: int | None = None,
+    participation_type: QuestParticipationType = QuestParticipationType.OPEN,
+    xp_reward: float = 0.0,
 ) -> Quest:
     quest = create_quest(
         db,
@@ -78,9 +86,10 @@ def sponsor_quest(
         source=QuestSource.ORGANIZATION_REQUEST,
         objectives=objectives,
         deadline_world_minute=deadline_world_minute,
+        participation_type=participation_type,
+        xp_reward=xp_reward,
+        sponsoring_organization_id=organization.id,
     )
-    quest.sponsoring_organization_id = organization.id
-    db.flush()
 
     record_organization_action(
         db, organization, OrganizationActionType.OTHER, f"Patrocinou a missão: {name}",

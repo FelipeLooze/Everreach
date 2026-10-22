@@ -38,6 +38,7 @@ def post_notice(
     title: str,
     text: str,
     author_npc_id: str | None = None,
+    author_organization_id: str | None = None,
     quest_id: str | None = None,
     expires_world_minute: int | None = None,
 ) -> Notice:
@@ -52,6 +53,7 @@ def post_notice(
         title=title,
         text=text,
         author_npc_id=author_npc_id,
+        author_organization_id=author_organization_id,
         quest_id=quest_id,
         posted_world_minute=get_world_time(db, campaign_id).total_minutes(),
         expires_world_minute=expires_world_minute,
@@ -62,8 +64,8 @@ def post_notice(
         db,
         campaign_id,
         EventType.NOTICE_POSTED,
-        actor_type="npc" if author_npc_id else "world",
-        actor_id=author_npc_id or "",
+        actor_type="npc" if author_npc_id else "organization" if author_organization_id else "world",
+        actor_id=author_npc_id or author_organization_id or "",
         payload={"notice_id": notice.id, "board_feature_id": board_feature_id, "category": category},
     )
     return notice

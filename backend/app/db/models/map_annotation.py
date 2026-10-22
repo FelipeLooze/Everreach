@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.ids import generate_id
@@ -26,6 +26,9 @@ class MapAnnotation(Base):
     """
 
     __tablename__ = "map_annotations"
+    __table_args__ = (
+        Index("ix_map_annotation_character", "character_id"),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("annotation"))
     campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)

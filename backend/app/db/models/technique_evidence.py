@@ -31,6 +31,11 @@ class CharacterTechniquePatternEvidence(Base):
     technique_type: Mapped[str] = mapped_column(String, nullable=False)
     depth: Mapped[float] = mapped_column(Float, default=0.0)
     evidence_count: Mapped[int] = mapped_column(Integer, default=0)
+    recognized_technique_id: Mapped[str | None] = mapped_column(
+        ForeignKey("techniques.id"), nullable=True
+    )
+    recognition_attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_recognition_attempt_depth: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class TechniquePatternEvidenceRecord(Base):

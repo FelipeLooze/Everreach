@@ -19,6 +19,7 @@ from app.game.skills.technique_naming import (
     _validate_identity_proposal,
     gather_technique_pattern_evidence_summary,
     propose_and_recognize_technique,
+    recognize_mature_pattern_if_ready,
 )
 from app.game.skills import techniques as technique_service
 from app.game.time import clock
@@ -253,6 +254,58 @@ def test_an_unavailable_llm_returns_none_without_crashing(db_session):
     )
 
     assert technique is None
+
+
+def test_mature_pattern_is_automatically_named_linked_and_not_named_twice(db_session):
+    campaign, character = _setup(db_session)
+    character.mana_current = 1000.0
+    passive_llm = PassiveLLM()
+
+    for index in range(5):
+        experiment = resolve_technique_experiment(
+            db_session,
+            campaign.id,
+            character,
+            raw_text="Eu comprimo vento na palma da mão.",
+            proposed_pattern_key="automatic-wind-compress",
+            proposed_domains="WIND",
+            proposed_technique_type="MAGICAL",
+            action_key=f"automatic-attempt-{index}",
+            rng=SequenceRng(20),
+        )
+        naming_llm = (
+            FixedLLM(
+                '{"name": "Pulso de Vento", "description": '
+                '"Uma liberação curta e controlada do vento comprimido."}'
+            )
+            if index == 4
+            else passive_llm
+        )
+        resolution = resolve_progression_outcome(
+            db_session,
+            naming_llm,
+            campaign.id,
+            character,
+            experiment.progression_outcome,
+        )
+        if index < 4:
+            assert resolution.techniques_recognized == ()
+            clock.advance_world_time(db_session, campaign.id, 25 * 60)
+
+    assert [technique.name for technique in resolution.techniques_recognized] == [
+        "Pulso de Vento"
+    ]
+    assert len(naming_llm.calls) == 1
+
+    linked = recognize_mature_pattern_if_ready(
+        db_session,
+        campaign.id,
+        character,
+        naming_llm,
+        pattern_key="automatic-wind-compress",
+    )
+    assert linked is None
+    assert len(naming_llm.calls) == 1
 
 
 def test_a_malformed_response_is_treated_as_no_proposal(db_session):

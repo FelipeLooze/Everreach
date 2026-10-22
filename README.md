@@ -520,6 +520,21 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   competência ou outros dados. A resolução, o valor de Sorte e os itens obtidos ficam persistidos
   e auditáveis. A 10P conecta `USE` e `LOOT` ao parser, Game Engine, API, painel, migrations,
   exclusão de campanha e checkpoints de desfazer, com testes ponta a ponta dos contratos.
+- **Fase 11 — Técnicas: COMPLETE (11A–11L concluídas).** Técnicas são entidades
+  canônicas distintas de skills, possuem tipo, domínios, origem, estado de aprendizagem e
+  maestria própria sem teto artificial. Conhecimento progride de `AWARE` para `LEARNING` e
+  `LEARNED`; somente técnicas aprendidas podem ser executadas. Uso real aumenta maestria e
+  confiabilidade com idempotência, sem transformar maestria em dano automático. Requisitos de
+  arma, custos, alcance, dano e condições de técnicas de combate pertencem ao Combat Engine.
+  Experimentação livre consome Mana ou Stamina, faz checagem autoritativa e acumula evidência
+  persistente por padrão com diminishing returns. Padrões híbridos exigem sinergia real entre
+  todos os domínios envolvidos. Ao se tornar reproduzível, o padrão entra automaticamente no
+  fluxo de descoberta: a LLM propõe apenas nome e descrição, o backend rejeita poderes, números,
+  elementos ou efeitos sem evidência e persiste o vínculo com a técnica reconhecida. Tentativas
+  de nomeação são limitadas e só voltam a ocorrer após nova evolução relevante, evitando chamadas
+  repetidas. Variantes podem registrar uma técnica-mãe sem formar uma árvore rígida; execução por
+  texto ou seleção explícita passa pelo Game Engine, e o Context Builder expõe ao Narrator apenas
+  técnicas realmente aprendidas e sua faixa compreensível de maestria.
 
 ## Fora do MVP
 

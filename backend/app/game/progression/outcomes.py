@@ -19,6 +19,7 @@ from app.core.logging import get_logger
 from app.db.models.character import Character
 from app.db.models.character_class import CharacterClassOffer
 from app.db.models.progression_outcome import AppliedProgressionOutcome
+from app.db.models.skill import Technique
 from app.game.attributes.service import award_attribute_development
 from app.game.classes.generator import (
     DynamicClassGenerationError,
@@ -146,6 +147,7 @@ class ProgressionResolution:
     applied: bool
     class_offers_created: tuple[CharacterClassOffer, ...] = ()
     class_offers_revealed: tuple[CharacterClassOffer, ...] = ()
+    techniques_recognized: tuple[Technique, ...] = ()
     warnings: tuple[str, ...] = field(default_factory=tuple)
 
 
@@ -228,6 +230,7 @@ def resolve_progression_outcome(
             context_key=gain.context_key,
             amount=gain.amount,
         )
+    pattern_keys: list[str] = []
     for gain in outcome.technique_patterns:
         award_technique_pattern_evidence(
             db,
@@ -242,6 +245,8 @@ def resolve_progression_outcome(
             context_key=gain.context_key,
             base_amount=gain.base_amount,
         )
+        if gain.pattern_key not in pattern_keys:
+            pattern_keys.append(gain.pattern_key)
     for gain in outcome.technique_masteries:
         award_technique_mastery(
             db,
@@ -282,13 +287,38 @@ def resolve_progression_outcome(
         )
     )
     db.flush()
-    return _evaluate_classes(
+    resolution = _evaluate_classes(
         db,
         llm_service,
         campaign_id,
         character,
         safe_to_notify=outcome.safe_to_notify,
         applied=True,
+    )
+    # Local import avoids a module cycle: technique naming ultimately uses
+    # ProgressionOutcome when a newly learned technique is later practised.
+    from app.game.skills.technique_naming import recognize_mature_pattern_if_ready
+
+    recognized = tuple(
+        technique
+        for pattern_key in pattern_keys
+        if (
+            technique := recognize_mature_pattern_if_ready(
+                db,
+                campaign_id,
+                character,
+                llm_service,
+                pattern_key=pattern_key,
+            )
+        )
+        is not None
+    )
+    return ProgressionResolution(
+        applied=resolution.applied,
+        class_offers_created=resolution.class_offers_created,
+        class_offers_revealed=resolution.class_offers_revealed,
+        techniques_recognized=recognized,
+        warnings=resolution.warnings,
     )
 
 

@@ -10,7 +10,10 @@ from app.ai.llm_service import LLMService, LLMServiceError
 from app.core.logging import get_logger
 from app.db.models.character import Character
 from app.db.models.skill import Technique
-from app.db.models.technique_evidence import TechniqueExperimentRecord
+from app.db.models.technique_evidence import (
+    CharacterTechniquePatternEvidence,
+    TechniqueExperimentRecord,
+)
 from app.game.skills.technique_evidence import technique_pattern_maturity
 from app.game.skills.techniques import (
     TechniqueRecognitionError,
@@ -32,6 +35,7 @@ _PROMPT_PATH = Path(__file__).parents[2] / "ai" / "prompts" / "technique_naming_
 _SYSTEM_PROMPT = _PROMPT_PATH.read_text(encoding="utf-8")
 
 _MAX_ATTEMPTS = 2
+_RECOGNITION_RETRY_DEPTH = 1.0
 
 _STATUS_EFFECT_TERMS = (
     "atordoa", "atordoado", "atordoante",
@@ -266,7 +270,7 @@ def propose_and_recognize_technique(
         violations = _validate_identity_proposal(proposal, summary)
         if not violations:
             try:
-                return recognize_technique_from_pattern(
+                technique = recognize_technique_from_pattern(
                     db,
                     campaign_id,
                     character,
@@ -274,6 +278,17 @@ def propose_and_recognize_technique(
                     name=proposal.name,
                     description=proposal.description,
                 )
+                evidence = (
+                    db.query(CharacterTechniquePatternEvidence)
+                    .filter(
+                        CharacterTechniquePatternEvidence.character_id == character.id,
+                        CharacterTechniquePatternEvidence.pattern_key == summary.pattern_key,
+                    )
+                    .one()
+                )
+                evidence.recognized_technique_id = technique.id
+                db.flush()
+                return technique
             except TechniqueRecognitionError:
                 logger.warning(
                     "technique naming: recognition rejected a validated proposal for %s",
@@ -290,3 +305,54 @@ def propose_and_recognize_technique(
         _MAX_ATTEMPTS,
     )
     return None
+
+
+def recognize_mature_pattern_if_ready(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    llm_service: LLMService,
+    *,
+    pattern_key: str,
+) -> Technique | None:
+    """Complete the playable discovery loop without spamming the LLM.
+
+    A mature pattern gets one naming attempt when it first becomes eligible.
+    If the provider is unavailable or both proposals are rejected, another
+    attempt is allowed only after at least one additional point of real
+    pattern evidence. Once linked, the persisted technique is returned and
+    no model call is made again. A non-None return therefore always means
+    "recognized now".
+    """
+    maturity = technique_pattern_maturity(db, character.id, pattern_key)
+    evidence = (
+        db.query(CharacterTechniquePatternEvidence)
+        .filter(
+            CharacterTechniquePatternEvidence.character_id == character.id,
+            CharacterTechniquePatternEvidence.pattern_key == maturity.pattern_key,
+        )
+        .one_or_none()
+    )
+    if evidence is None or not maturity.mature:
+        return None
+    if evidence.recognized_technique_id is not None:
+        return None
+    if (
+        evidence.last_recognition_attempt_depth is not None
+        and maturity.depth - evidence.last_recognition_attempt_depth < _RECOGNITION_RETRY_DEPTH
+    ):
+        return None
+
+    # Persist the attempt before invoking the provider. The surrounding game
+    # transaction commits it even when naming gracefully returns None.
+    evidence.recognition_attempt_count += 1
+    evidence.last_recognition_attempt_depth = maturity.depth
+    db.flush()
+    technique = propose_and_recognize_technique(
+        db,
+        campaign_id,
+        character,
+        llm_service,
+        pattern_key=maturity.pattern_key,
+    )
+    return technique

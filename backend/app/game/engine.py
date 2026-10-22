@@ -302,6 +302,11 @@ def resolve_action(
             character,
             experiment.progression_outcome,
         )
+        if progression.techniques_recognized:
+            discovered_names = ", ".join(
+                technique.name for technique in progression.techniques_recognized
+            )
+            mechanical_summary += f" Nova técnica reconhecida: {discovered_names}."
         mechanical_warnings.extend(progression.warnings)
     elif intent.type == ActionIntentType.TECHNIQUE:
         resolved_action_key = resolved_action_key or generate_id("action")

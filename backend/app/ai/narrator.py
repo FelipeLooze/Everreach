@@ -2176,7 +2176,98 @@ def _safe_hard_failure_fallback(mode: NarrationMode, npc_name: str = "") -> str:
     return "Nada acontece de imediato."
 
 
+_PROTAGONIST_NAME_LINE = re.compile(r"^CURRENT PLAYER\nName: (?P<name>.+?) \(", re.MULTILINE)
+_SECOND_PERSON = re.compile(r"\b[Vv]ocê\b")
+# Mechanical readouts the narrator sometimes copies straight from SCENE
+# CONTEXT ("São 08:16.", "(distância 0.2)", "Stamina") — confirmed in
+# playtest. Only ever matched outside spoken dialogue.
+_UI_READOUT = re.compile(
+    r"\b\d{1,2}:\d{2}\b|\(\s*dist[aâ]ncia|\bdist[aâ]ncia\s+\d|\b(?:stamina|xp|hp)\b",
+    re.IGNORECASE,
+)
+_QUOTED_SPEECH = re.compile(r'("[^"\n]*"|“[^”\n]*”)')
+# SCENE CONTEXT's placeholder for a destination whose name is still hidden;
+# copied verbatim it reads like a map label ("a trilha que leva ao local
+# desconhecido a leste").
+_UNKNOWN_PLACE_LABEL = re.compile(r"\b(local|locais) desconhecid(?:o|os)\b", re.IGNORECASE)
+
+
+def _polish_narration_segment(segment: str, protagonist_name: str | None) -> str:
+    pieces = _QUOTED_SPEECH.split(segment)
+    for index in range(0, len(pieces), 2):
+        piece = pieces[index]
+        if protagonist_name:
+            piece = _SECOND_PERSON.sub(protagonist_name, piece)
+            piece = _UNKNOWN_PLACE_LABEL.sub(
+                lambda match: (
+                    "lugares" if match.group(1).lower() == "locais" else "lugar"
+                ) + f" que {protagonist_name} ainda não conhece",
+                piece,
+            )
+        sentences = re.split(r"(?<=[.!?])(\s+)", piece)
+        piece = "".join(
+            sentence
+            for position, sentence in enumerate(sentences)
+            if position % 2 == 1 or not _UI_READOUT.search(sentence)
+        )
+        pieces[index] = piece
+    return "".join(pieces)
+
+
+def polish_player_facing_text(text: str, protagonist_name: str | None) -> str:
+    """Deterministic last pass over accepted narration, outside spoken lines:
+    second person ("Você chega...") becomes the protagonist's name — the
+    prompt asks for third person and Portuguese "você" already takes
+    third-person verbs, so the sentence stays grammatical — and sentences
+    carrying mechanical readouts are dropped.
+
+    Dialogue is the odd-numbered "—"-separated parts of a paragraph (the
+    codebase's "— fala — verbo. — fala" convention) plus quoted text; it is
+    never touched, since an NPC may rightly say "você".
+    """
+    polished_paragraphs = []
+    for paragraph in re.split(r"\n\s*\n", text):
+        parts = paragraph.split("—")
+        for index in range(0, len(parts), 2):
+            parts[index] = _polish_narration_segment(parts[index], protagonist_name)
+        polished = re.sub(r"[ \t]{2,}", " ", "—".join(parts)).strip()
+        if polished and polished != "—":
+            polished_paragraphs.append(polished)
+    result = "\n\n".join(polished_paragraphs)
+    return result if result.strip() else text
+
+
 def narrate(
+    llm_service: LLMService,
+    mechanical_summary: str,
+    context: str,
+    player_input: str,
+    recent_history: str,
+    mode: NarrationMode = "CONTINUATION",
+    previous_narrative: str | None = None,
+    revision_feedback: str | None = None,
+    enforce_player_agency: bool = True,
+    automatic_validation: bool = True,
+) -> str:
+    name_match = _PROTAGONIST_NAME_LINE.search(context)
+    return polish_player_facing_text(
+        _narrate_draft(
+            llm_service,
+            mechanical_summary,
+            context,
+            player_input,
+            recent_history,
+            mode=mode,
+            previous_narrative=previous_narrative,
+            revision_feedback=revision_feedback,
+            enforce_player_agency=enforce_player_agency,
+            automatic_validation=automatic_validation,
+        ),
+        name_match.group("name") if name_match else None,
+    )
+
+
+def _narrate_draft(
     llm_service: LLMService,
     mechanical_summary: str,
     context: str,

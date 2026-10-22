@@ -1541,7 +1541,8 @@ def build_narrative_context(
     world_section = "\n".join(
         [
             "CURRENT WORLD",
-            f"Time: Ano {wt.year}, Mês {wt.month}, Dia {wt.day}, {wt.hour:02d}:{wt.minute:02d}",
+            f"Time: Ano {wt.year}, Mês {wt.month}, Dia {wt.day}, {wt.hour:02d}:{wt.minute:02d} "
+            "(only for light and period of day; never state a clock time in the narration)",
             f"Region: {state.region.name}" if state.region else "Region: unknown",
         ]
     )

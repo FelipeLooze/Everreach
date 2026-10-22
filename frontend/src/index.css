@@ -2125,3 +2125,15 @@ select {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
+
+.social-panel { display: flex; flex-direction: column; gap: 1.6rem; }
+.social-panel section > h3 { margin: 0 0 0.8rem; color: #d0b477; font-family: "Cinzel", Georgia, serif; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.social-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.9rem; }
+.social-card { padding: 1rem; border: 1px solid rgba(151, 107, 66, 0.35); background: rgba(29, 23, 20, 0.45); }
+.social-card h4 { margin: 0; color: var(--text-main); }
+.social-card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.social-card-heading > span { color: var(--text-dim); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.social-card dl { display: grid; gap: 0.45rem; margin: 0.9rem 0 0; }
+.social-card dl > div { display: grid; grid-template-columns: minmax(85px, 0.35fr) 1fr; gap: 0.75rem; }
+.social-card dt { color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; }
+.social-card dd { margin: 0; color: var(--text-main); }

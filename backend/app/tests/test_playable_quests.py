@@ -2,6 +2,7 @@ from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService
 from app.core.enums import (
     ActionIntentType,
+    CombatActorType,
     NoticeStatus,
     ObjectiveTriggerType,
     QuestStatus,
@@ -17,6 +18,11 @@ from app.game.notices.service import read_notice_board
 from app.game.quests.rewards import grant_pending_quest_completion_xp
 from app.game.quests.service import evaluate_objective_trigger
 from app.game.quests.initial_content import ensure_initial_quest_opportunities_for_campaign
+from app.game.organizations.reputation import (
+    organization_reputation_category,
+    organization_reputation_history,
+    organization_reputation_score,
+)
 
 
 class PassiveLLM(LLMService):
@@ -184,6 +190,26 @@ def test_two_initial_contracts_complete_from_real_triggers_and_reach_level_one(
         notice.status
         for notice in db_session.query(Notice).filter(Notice.quest_id.isnot(None)).all()
     } == {NoticeStatus.COMPLETED}
+    sponsor_id = quests["Relato da Primeira Chegada"].sponsoring_organization_id
+    assert sponsor_id is not None
+    assert organization_reputation_score(
+        db_session, sponsor_id, CombatActorType.CHARACTER, character.id
+    ) == 5
+    assert organization_reputation_category(5) == "RELIABLE"
+    assert len(
+        organization_reputation_history(
+            db_session, sponsor_id, CombatActorType.CHARACTER, character.id
+        )
+    ) == 2
+
+    # Reward delivery and its organizational consequence share the same
+    # CharacterQuest idempotency boundary.
+    assert grant_pending_quest_completion_xp(
+        db_session, PassiveLLM(), campaign["id"], character
+    ) == []
+    assert organization_reputation_score(
+        db_session, sponsor_id, CombatActorType.CHARACTER, character.id
+    ) == 5
 
 
 def test_undo_restores_quest_acceptance_knowledge_and_notice_state(

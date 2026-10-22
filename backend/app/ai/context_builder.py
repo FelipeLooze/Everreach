@@ -16,7 +16,7 @@ from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
-from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
+from app.db.models.organization import OrganizationMember, OrganizationRole
 from app.db.models.quest import CharacterQuestObjective, QuestObjective
 from app.db.models.shop import Shop, ShopListing
 from app.db.models.simulated_player import SimulatedPlayer
@@ -29,7 +29,6 @@ from app.core.enums import (
     MemoryOwnerType,
     NoticeStatus,
     OrganizationMembershipStatus,
-    OrganizationVisibility,
     ShopStatus,
     SimulatedPlayerStatus,
     connection_type_label_pt,
@@ -67,6 +66,7 @@ from app.game.relationships.service import (
 )
 from app.game.players.groups import active_group_for_player
 from app.game.organizations.reputation import organization_reputation_category, organization_reputation_score
+from app.game.organizations.visibility import visible_organizations_for_character
 from app.game.economy.currency import to_denominations
 from app.game.economy.local_economy import get_settlement_wealth, gold_circulates_normally
 from app.game.economy.pricing import PricingError, resolve_market_price
@@ -358,39 +358,15 @@ def _organization_leader_title(db: Session, organization_id: str) -> str | None:
 
 def _known_organizations_lines(db: Session, character) -> list[str]:
     """Phase 13N — visibility-gated the same way Phase 11L gated known
-    techniques: only organizations the character is actually a member of,
-    or PUBLIC ones headquartered right where the character currently is
-    (a visible local presence — "visible symbols", per the spec's
-    NARRATOR RULES), are shown at all. PRIVATE/SECRET organizations never
-    appear here just because they exist in the campaign."""
-    member_org_ids = {
-        member.organization_id
-        for member in db.query(OrganizationMember).filter(
-            OrganizationMember.member_type == CombatActorType.CHARACTER,
-            OrganizationMember.member_id == character.id,
-            OrganizationMember.status == OrganizationMembershipStatus.ACTIVE,
-        )
-    }
-    local_public = (
-        db.query(Organization)
-        .filter(
-            Organization.visibility == OrganizationVisibility.PUBLIC,
-            Organization.headquarters_location_id == character.location_id,
-        )
-        .all()
-        if character.location_id
-        else []
-    )
-    organizations = {
-        organization.id: organization
-        for organization in (
-            [db.get(Organization, org_id) for org_id in member_org_ids] + local_public
-        )
-        if organization is not None
-    }
+    techniques. Membership, a public local presence, or participation in
+    one of the organization's real contracts can establish knowledge.
+    PRIVATE/SECRET organizations never appear merely because they exist
+    in the campaign. The same boundary powers the player-facing Social
+    panel, preventing the UI and narrator from disagreeing."""
+    organizations = visible_organizations_for_character(db, character)
 
     lines = ["KNOWN ORGANIZATIONS"]
-    for organization in organizations.values():
+    for organization in organizations:
         member_row = (
             db.query(OrganizationMember)
             .filter(

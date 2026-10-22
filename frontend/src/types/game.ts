@@ -392,6 +392,44 @@ export interface Quest {
   objectives: QuestObjective[];
 }
 
+export interface OrganizationSummary {
+  id: string;
+  name: string;
+  organization_type: string;
+  description: string;
+  status: string;
+  origin: string;
+  formality: string;
+  transported_people_stance: string | null;
+  headquarters_name: string | null;
+  leader_name: string | null;
+  leader_title: string | null;
+  membership: "MEMBER" | "NON_MEMBER";
+  role: string | null;
+  reputation: string;
+  active_notices: number;
+}
+
+export interface SocialGroupMember {
+  actor_type: "CHARACTER" | "NPC" | "SIMULATED_PLAYER";
+  actor_id: string;
+  name: string;
+  leader: boolean;
+}
+
+export interface SocialGroup {
+  id: string;
+  name: string | null;
+  group_type: string;
+  purpose: string;
+  members: SocialGroupMember[];
+}
+
+export interface SocialState {
+  organizations: OrganizationSummary[];
+  active_group: SocialGroup | null;
+}
+
 // Phase 20A/20B/20C/20F — the character-specific Map View projection
 // (app.game.map.view.MapViewData). This is the single frontend map
 // read contract: precision is always present, so the frontend never

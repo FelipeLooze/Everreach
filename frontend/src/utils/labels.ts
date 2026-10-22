@@ -162,6 +162,33 @@ function translate(map: Record<string, string>, key: string): string {
 
 export const locationTypeLabel = (type: string) => translate(LOCATION_TYPE_LABELS, type);
 const CONNECTION_TYPE_LABELS: Record<string, string> = {PATH: "trilha",ROAD: "estrada",};
+const ORGANIZATION_TYPE_LABELS: Record<string, string> = {
+  GUILD: "Guilda",
+  COMMERCIAL: "Organização comercial",
+  RELIGIOUS: "Ordem religiosa",
+  MILITARY: "Organização militar",
+  POLITICAL: "Organização política",
+  CRIMINAL: "Organização criminosa",
+  ACADEMIC: "Organização acadêmica",
+  COMMUNITY: "Comunidade",
+  MERCENARY: "Companhia mercenária",
+  ARTISAN: "Corporação de artesãos",
+  TRAVEL: "Grupo de viagem",
+  EXPEDITION: "Expedição",
+  ESCORT: "Escolta",
+  WORK_CREW: "Equipe de trabalho",
+  HUNTING_PARTY: "Grupo de caça",
+  TEMPORARY_ALLIANCE: "Aliança temporária",
+  SEARCH_PARTY: "Grupo de busca",
+  OTHER: "Outro",
+};
+const ORGANIZATION_REPUTATION_LABELS: Record<string, string> = {
+  TRUSTED: "Muito confiável",
+  RELIABLE: "Confiável",
+  NEUTRAL: "Neutra",
+  DISTRUSTED: "Desconfiada",
+  HOSTILE: "Hostil",
+};
 export const characterAttributeLabel = (key: string) => translate(CHARACTER_ATTRIBUTE_LABELS, key);
 export const discoveryStatusLabel = (status: string) => translate(DISCOVERY_STATUS_LABELS, status);
 export const geographicPrecisionLabel = (precision: string) => translate(GEOGRAPHIC_PRECISION_LABELS, precision);
@@ -172,3 +199,5 @@ export const techniqueTypeLabel = (type: string) => translate(TECHNIQUE_TYPE_LAB
 export const techniqueMasteryLabel = (tier: string) => translate(TECHNIQUE_MASTERY_LABELS, tier);
 export const eventTypeLabel = (type: string) => translate(EVENT_TYPE_LABELS, type);
 export const connectionTypeLabel = (type: string) => translate(CONNECTION_TYPE_LABELS, type.toUpperCase());
+export const organizationTypeLabel = (type: string) => translate(ORGANIZATION_TYPE_LABELS, type);
+export const organizationReputationLabel = (reputation: string) => translate(ORGANIZATION_REPUTATION_LABELS, reputation);

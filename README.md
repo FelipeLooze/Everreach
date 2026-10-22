@@ -542,11 +542,25 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   repetidas. Variantes podem registrar uma técnica-mãe sem formar uma árvore rígida; execução por
   texto ou seleção explícita passa pelo Game Engine, e o Context Builder expõe ao Narrator apenas
   técnicas realmente aprendidas e sua faixa compreensível de maestria.
+- **Fase 12 — Missões: COMPLETE (12A–12L e integração jogável).** Missões possuem ciclo de
+  vida, objetivos autoritativos, participação, falha, consequências, recompensas e descoberta
+  separada da existência. A vila inicial oferece contratos reais por meio dos quadros público e
+  da Guilda de Aventureiros; ler o quadro revela oportunidades, aceitar altera o aviso, objetivos
+  de conversa e leitura avançam automaticamente, conclusão concede XP uma única vez e o painel
+  permite acompanhar, aceitar e abandonar missões conhecidas.
+- **Fase 13 — Grupos, Guildas e Organizações: COMPLETE (13A–13N e integração jogável).**
+  Grupos temporários preservam convites e consentimento; organizações persistentes possuem origem,
+  formalidade, papéis próprios, membros, reputação explicável, relações, objetivos, necessidades,
+  patrimônio, ações e conflitos. Organizações patrocinam as missões e avisos reais da Fase 12.
+  Contratos concluídos alteram a reputação com o patrocinador de forma idempotente. O painel
+  **Social** mostra somente o grupo atual e organizações legitimamente conhecidas, com sede,
+  liderança, vínculo, cargo, reputação e avisos ativos; a mesma regra de visibilidade limita o
+  contexto enviado ao Narrator.
 
 ## Fora do MVP
 
 - Geração procedural complexa e novas regiões automáticas.
 - Comportamentos sociais, econômicos e políticos profundos para NPCs e jogadores simulados.
-- Guildas, PvP, mercado e autenticação multiusuário.
+- PvP e autenticação multiusuário.
 - Mapa gráfico.
 - RAG, embeddings e sumarização automática de memórias.

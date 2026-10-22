@@ -9,6 +9,7 @@ from app.api.routes import (
     journal,
     map as map_routes,
     quests,
+    social,
     state,
     story,
     visual_assets,
@@ -36,6 +37,7 @@ app.include_router(map_routes.router)
 app.include_router(inventory.router)
 app.include_router(character.router)
 app.include_router(quests.router)
+app.include_router(social.router)
 app.include_router(journal.router)
 app.include_router(story.router)
 app.include_router(visual_assets.router)

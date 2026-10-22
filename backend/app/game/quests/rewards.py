@@ -2,10 +2,9 @@
 
 Distinguishes PROMISED reward (what was said — narrative only, no
 system-backed materialization) from ACTUAL reward (what a real backend
-system, today only Inventory, can actually grant). Currency, services,
-access, training, employment, lodging, favors and contracts have no
-backing system yet (Phase 14 Economy) — a PromisedReward for those stays
-descriptive text; nothing here invents currency out of thin air.
+system can actually grant). Inventory and progression are integrated
+here; other reward kinds must still be routed explicitly through their
+own authoritative systems rather than invented from narrative text.
 
 Character XP is not owned here either: quest completion emits a
 ProgressionOutcome (mirroring Phase 11's technique_progression_outcome)
@@ -22,11 +21,13 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.ai.llm_service import LLMService
-from app.core.enums import CharacterXPSource, ItemQuality
+from app.core.enums import CharacterXPSource, CombatActorType, ItemQuality
 from app.db.models.character import Character
 from app.db.models.item import ItemInstance
+from app.db.models.organization import Organization
 from app.db.models.quest import CharacterQuest, Quest
 from app.game.inventory.service import add_item
+from app.game.organizations.reputation import award_organization_reputation
 from app.game.progression.outcomes import (
     CharacterXPGain,
     ProgressionOutcome,
@@ -123,6 +124,22 @@ def grant_pending_quest_completion_xp(
                 outcome,
             )
             granted.append((quest.name, amount))
+        if quest.sponsoring_organization_id:
+            organization = db.get(Organization, quest.sponsoring_organization_id)
+            if organization is not None:
+                # A contract completed directly for its sponsor is its own
+                # witness (Phase 13G).  The small relevance-scaled change
+                # makes both initial contracts together establish a RELIABLE
+                # reputation without letting one trivial task do so alone.
+                reputation_delta = max(1, min(10, round(amount / 5)))
+                award_organization_reputation(
+                    db,
+                    organization,
+                    CombatActorType.CHARACTER,
+                    character.id,
+                    delta=reputation_delta,
+                    reason=f"Concluiu o contrato '{quest.name}'.",
+                )
         participation.reward_granted = True
     if pending:
         db.flush()

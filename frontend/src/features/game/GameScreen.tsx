@@ -18,11 +18,12 @@ import { JournalPanel } from "@/features/journal/JournalPanel";
 import { MapPanel } from "@/features/map/MapPanel";
 import { QuestPanel } from "@/features/quests/QuestPanel";
 import { SettingsPanel } from "@/features/settings/SettingsPanel";
+import { SocialPanel } from "@/features/social/SocialPanel";
 import { useGameState } from "@/hooks/useGameState";
 import { useGameStore } from "@/stores/useGameStore";
 import type { ActionUndoStatus, CharacterTechnique, StoryEntry } from "@/types/game";
 
-type PanelKind = "map" | "inventory" | "character" | "quests" | "journal" | "log" | "settings" | "combat" | null;
+type PanelKind = "map" | "inventory" | "character" | "quests" | "social" | "journal" | "log" | "settings" | "combat" | null;
 
 let entryCounter = 0;
 const nextId = () => `entry_${entryCounter++}`;
@@ -234,6 +235,7 @@ export function GameScreen() {
         <button onClick={() => setActivePanel("character")}><span>SKILLS</span></button>
         <button onClick={() => setActivePanel("map")}><span>MAPA</span></button>
         <button onClick={() => setActivePanel("quests")}><span>QUESTS</span></button>
+        <button onClick={() => setActivePanel("social")}><span>SOCIAL</span></button>
         <button onClick={() => setActivePanel("journal")}><span>DIÁRIO</span></button>
         <button onClick={() => setActivePanel("log")}><span>HISTÓRIA</span></button>
         <button onClick={() => setActivePanel("settings")}><span>SISTEMA</span></button>
@@ -262,6 +264,11 @@ export function GameScreen() {
       {activePanel === "quests" && (
         <Panel title="Missão" onClose={() => setActivePanel(null)}>
           <QuestPanel campaignId={campaignId} characterId={characterId} />
+        </Panel>
+      )}
+      {activePanel === "social" && (
+        <Panel title="Grupos e organizações" size="wide" onClose={() => setActivePanel(null)}>
+          <SocialPanel campaignId={campaignId} characterId={characterId} />
         </Panel>
       )}
       {activePanel === "journal" && (

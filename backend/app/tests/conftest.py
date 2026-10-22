@@ -26,6 +26,16 @@ class FakeLLMService(LLMService):
         return "[test narration]"
 
 
+@pytest.fixture(autouse=True)
+def _no_llm_fallbacks_from_dotenv(monkeypatch):
+    """Settings() also reads the developer's real .env; a configured
+    per-role fallback there would wrap every role service a test builds.
+    Environment variables take precedence over .env, so blank them."""
+    for role in ("INTENT", "NARRATIVE", "REGENERATION"):
+        monkeypatch.setenv(f"{role}_LLM_FALLBACK_PROVIDER", "")
+        monkeypatch.setenv(f"{role}_LLM_FALLBACK_MODEL", "")
+
+
 @pytest.fixture()
 def db_session():
     engine = create_engine(

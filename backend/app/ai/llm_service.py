@@ -428,6 +428,9 @@ class OpenRouterLLMService(LLMService):
         self._provider_display_name = "OpenRouter"
         self._api_key_setting = "OPENROUTER_API_KEY"
         self._exclude_reasoning = True
+        # Provider-specific request fields merged into the payload (e.g.
+        # NVIDIA's chat_template_kwargs). Empty for OpenRouter itself.
+        self._extra_payload: dict = {}
         self._last_generation_metadata: GenerationMetadata | None = None
 
     @property
@@ -482,6 +485,7 @@ class OpenRouterLLMService(LLMService):
             payload["reasoning"] = {"exclude": True}
         if self._max_tokens is not None:
             payload["max_tokens"] = self._max_tokens
+        payload.update(self._extra_payload)
 
         started = time.monotonic()
         try:
@@ -653,6 +657,98 @@ class GroqLLMService(OpenRouterLLMService):
         return "groq"
 
 
+class NvidiaLLMService(OpenRouterLLMService):
+    """NVIDIA Developer Program hosted models (build.nvidia.com), also an
+    OpenAI-compatible Chat Completions API.
+
+    Reasoning models there (Nemotron) return their trace in a separate
+    ``reasoning_content`` field, and this transport only ever reads
+    ``content`` — same guarantee as above. ``enable_thinking`` None sends
+    nothing and keeps the model's default; True/False is passed through
+    NVIDIA's documented ``chat_template_kwargs``.
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        base_url: str = "https://integrate.api.nvidia.com/v1",
+        timeout: float = 180.0,
+        temperature: float = 0.35,
+        max_tokens: int | None = 2000,
+        enable_thinking: bool | None = None,
+    ) -> None:
+        super().__init__(
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            timeout=timeout,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        self._provider_display_name = "NVIDIA"
+        self._api_key_setting = "NVIDIA_API_KEY"
+        self._exclude_reasoning = False
+        if enable_thinking is not None:
+            self._extra_payload = {"chat_template_kwargs": {"enable_thinking": enable_thinking}}
+
+    @property
+    def provider_name(self) -> str:
+        return "nvidia"
+
+
+class FallbackLLMService(LLMService):
+    """Primary provider first; on any LLMServiceError (rate limit, outage,
+    empty completion, model pulled from a free catalog) the same request goes
+    to the fallback. Both are meant to run the same model, so the player sees
+    no change in style. provider_name/model_name/metadata report whichever
+    one handled the latest call, so observability logs stay truthful.
+    """
+
+    def __init__(self, primary: LLMService, fallback: LLMService) -> None:
+        self._primary = primary
+        self._fallback = fallback
+        self._active = primary
+
+    def generate(self, system: str, prompt: str) -> str:
+        self._active = self._primary
+        try:
+            return self._primary.generate(system, prompt)
+        except LLMServiceError as exc:
+            logger.warning(
+                "%s/%s failed (%s); falling back to %s/%s",
+                self._primary.provider_name,
+                self._primary.model_name,
+                exc,
+                self._fallback.provider_name,
+                self._fallback.model_name,
+            )
+        self._active = self._fallback
+        return self._fallback.generate(system, prompt)
+
+    def embed(self, text: str) -> list[float]:
+        try:
+            return self._primary.embed(text)
+        except LLMServiceError:
+            return self._fallback.embed(text)
+
+    def release_gpu_residency(self) -> None:
+        self._primary.release_gpu_residency()
+        self._fallback.release_gpu_residency()
+
+    @property
+    def provider_name(self) -> str:
+        return self._active.provider_name
+
+    @property
+    def model_name(self) -> str:
+        return self._active.model_name
+
+    @property
+    def last_generation_metadata(self) -> GenerationMetadata | None:
+        return self._active.last_generation_metadata
+
+
 def _build_ollama_service(settings: Settings, model: str) -> OllamaLLMService:
     return OllamaLLMService(
         base_url=settings.ollama_base_url,
@@ -689,7 +785,37 @@ def _build_groq_service(settings: Settings, model: str) -> GroqLLMService:
     )
 
 
-def _build_service_for_role(settings: Settings, provider: str, model: str) -> LLMService:
+def _build_nvidia_service(settings: Settings, model: str, *, intent: bool) -> NvidiaLLMService:
+    return NvidiaLLMService(
+        api_key=settings.nvidia_api_key,
+        model=model,
+        base_url=settings.nvidia_base_url,
+        timeout=settings.nvidia_timeout_seconds,
+        temperature=settings.nvidia_intent_temperature if intent else settings.nvidia_temperature,
+        max_tokens=settings.nvidia_max_tokens,
+        enable_thinking=settings.nvidia_enable_thinking,
+    )
+
+
+def _build_with_fallback(
+    settings: Settings,
+    provider: str,
+    model: str,
+    fallback_provider: str,
+    fallback_model: str,
+    *,
+    intent: bool = False,
+) -> LLMService:
+    primary = _build_service_for_role(settings, provider, model, intent=intent)
+    if not (fallback_provider or "").strip():
+        return primary
+    fallback = _build_service_for_role(settings, fallback_provider, fallback_model, intent=intent)
+    return FallbackLLMService(primary, fallback)
+
+
+def _build_service_for_role(
+    settings: Settings, provider: str, model: str, *, intent: bool = False
+) -> LLMService:
     normalized = (provider or "ollama").strip().lower()
     if normalized in {"disabled", "none", "off"}:
         return DisabledLLMService()
@@ -708,11 +834,18 @@ def _build_service_for_role(settings: Settings, provider: str, model: str) -> LL
                 "when provider=groq."
             )
         return _build_groq_service(settings, model)
+    if normalized == "nvidia":
+        if not model:
+            raise LLMServiceError(
+                "An NVIDIA model must be configured (e.g. NARRATIVE_LLM_MODEL) "
+                "when provider=nvidia."
+            )
+        return _build_nvidia_service(settings, model, intent=intent)
     if normalized == "ollama":
         return _build_ollama_service(settings, model or settings.ollama_model)
     raise LLMServiceError(
         f"Unknown LLM provider: {provider!r} "
-        "(expected 'disabled', 'ollama', 'openrouter' or 'groq')"
+        "(expected 'disabled', 'ollama', 'openrouter', 'groq' or 'nvidia')"
     )
 
 
@@ -723,10 +856,12 @@ def build_llm_service(settings: Settings | None = None) -> LLMService:
     economic and world-generation helpers; no hidden local call path remains.
     """
     settings = settings or get_settings()
-    service = _build_service_for_role(
+    service = _build_with_fallback(
         settings,
         settings.narrative_llm_provider,
         settings.narrative_llm_model,
+        settings.narrative_llm_fallback_provider,
+        settings.narrative_llm_fallback_model,
     )
     # Phase 23D-Q.2 — the coordinator calls this back right before a
     # VISUAL_TASK runs, so ComfyUI gets the full VRAM budget instead of
@@ -754,11 +889,20 @@ def build_role_llm_services(settings: Settings | None = None) -> tuple[LLMServic
     otherwise overwrite Ollama's real release hook with OpenRouter's
     no-op)."""
     settings = settings or get_settings()
-    intent_service = _build_service_for_role(
-        settings, settings.intent_llm_provider, settings.intent_llm_model
+    intent_service = _build_with_fallback(
+        settings,
+        settings.intent_llm_provider,
+        settings.intent_llm_model,
+        settings.intent_llm_fallback_provider,
+        settings.intent_llm_fallback_model,
+        intent=True,
     )
-    narrative_service = _build_service_for_role(
-        settings, settings.narrative_llm_provider, settings.narrative_llm_model
+    narrative_service = _build_with_fallback(
+        settings,
+        settings.narrative_llm_provider,
+        settings.narrative_llm_model,
+        settings.narrative_llm_fallback_provider,
+        settings.narrative_llm_fallback_model,
     )
 
     distinct_services = [intent_service]
@@ -776,8 +920,10 @@ def build_role_llm_services(settings: Settings | None = None) -> tuple[LLMServic
 def build_regeneration_llm_service(settings: Settings | None = None) -> LLMService:
     """Build the service used only by explicit narrative regeneration."""
     settings = settings or get_settings()
-    return _build_service_for_role(
+    return _build_with_fallback(
         settings,
         settings.regeneration_llm_provider,
         settings.regeneration_llm_model,
+        settings.regeneration_llm_fallback_provider,
+        settings.regeneration_llm_fallback_model,
     )

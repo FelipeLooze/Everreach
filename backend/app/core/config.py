@@ -113,6 +113,20 @@ class Settings(BaseSettings):
     groq_temperature: float = 0.0
     groq_max_tokens: int | None = 1000
 
+    # NVIDIA Developer Program hosted models (build.nvidia.com). One account
+    # key covers every model in the catalog; limits are per account.
+    nvidia_api_key: str = ""
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_timeout_seconds: float = 180.0
+    nvidia_temperature: float = 0.35
+    # Intent classification wants deterministic output, like Groq's 0.0.
+    nvidia_intent_temperature: float = 0.0
+    nvidia_max_tokens: int | None = 2000
+    # None sends nothing (model default: Nemotron reasons, but the trace
+    # comes back in reasoning_content and is never read). True/False sets
+    # chat_template_kwargs.enable_thinking.
+    nvidia_enable_thinking: bool | None = None
+
     # Phase 24K — intent parsing and narrative generation can each use a
     # different provider/model. Both default to "ollama" with an empty
     # model (falls back to ollama_model below) — an unmodified .env
@@ -134,6 +148,14 @@ class Settings(BaseSettings):
     # narration while still offering an explicit regeneration action.
     regeneration_llm_provider: str = "disabled"
     regeneration_llm_model: str = ""
+    # Optional per-role fallback, used when the primary raises (rate limit,
+    # outage, empty completion, model removed). Empty provider = none.
+    intent_llm_fallback_provider: str = ""
+    intent_llm_fallback_model: str = ""
+    narrative_llm_fallback_provider: str = ""
+    narrative_llm_fallback_model: str = ""
+    regeneration_llm_fallback_provider: str = ""
+    regeneration_llm_fallback_model: str = ""
 
 
 @lru_cache

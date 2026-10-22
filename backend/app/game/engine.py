@@ -71,7 +71,7 @@ from app.game.travel import service as travel_service
 from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
 from app.game.world.local_knowledge import ensure_settlement_public_knowledge
 from app.services.event_log import log_event
-from app.services.story_log import get_recent_story_log
+from app.services.story_log import SPEAKER_NARRATOR, get_recent_story_log
 from app.simulation import world_simulation
 from app.game.perception import service as perception_service
 
@@ -760,6 +760,8 @@ def _apply_intent(
         movement_target = _resolve_movement_target(db, character, intent.raw_text)
         if movement_target is not None:
             intent = replace(intent, type=ActionIntentType.MOVE, target=movement_target.name)
+        elif _LOOK_AROUND_PATTERN.search(_strip_accents(intent.raw_text or "").casefold()):
+            intent = replace(intent, type=ActionIntentType.EXAMINE, target=None)
     if intent.type == ActionIntentType.MOVE:
         summary, minutes = _handle_move(db, campaign_id, character, intent)
         # A compound utterance ("entra na estalagem e olha dentro") both
@@ -781,6 +783,19 @@ def _apply_intent(
     if intent.type == ActionIntentType.TALK:
         return _handle_talk(db, campaign_id, character, intent, state)
     if intent.type == ActionIntentType.EXAMINE:
+        # "Vou até o quadro de avisos e leio" is classified EXAMINE; without
+        # moving first the narration walked to the board while the character
+        # stayed in the square (confirmed in playtest).
+        movement_target = _resolve_movement_target(db, character, intent.raw_text)
+        if movement_target is not None and movement_target.id != character.location_id:
+            move_summary, move_minutes = _handle_move(
+                db, campaign_id, character,
+                replace(intent, type=ActionIntentType.MOVE, target=movement_target.name),
+            )
+            if character.location_id != movement_target.id:
+                return move_summary, move_minutes
+            examine_summary, examine_minutes = _handle_examine(db, campaign_id, character, intent)
+            return f"{move_summary} {examine_summary}", move_minutes + examine_minutes
         return _handle_examine(
             db,
             campaign_id,
@@ -903,7 +918,17 @@ _HUB_LOCATION_TYPE_LABELS_PT: dict[str, tuple[str, ...]] = {
     "village": ("praca central", "centro da vila", "praca", "vila"),
 }
 
-_OBSERVATION_CUE_PATTERN = re.compile(r"\bolha\b|\bobserva\b|\bexamina\b", re.IGNORECASE)
+_OBSERVATION_CUE_PATTERN = re.compile(
+    r"\b(?:olha|olho|observa|observo|examina|examino)\b", re.IGNORECASE
+)
+
+# "Olho ao redor" classified FREEFORM never ran observe_surroundings, so the
+# buildings around the square stayed undiscovered (confirmed in playtest).
+_LOOK_AROUND_PATTERN = re.compile(
+    r"\b(?:olha|olho|olhar|observa|observo|observar|examina|examino|examinar)\b"
+    r".{0,20}\b(?:ao redor|em volta|a volta|arredores|o lugar|a praca|a vila)\b",
+    re.IGNORECASE,
+)
 
 # Phase 24J.3 — a bare "sai da estalagem" (exit, no named destination)
 # names the ORIGIN, not a destination, so it can never match anything by
@@ -1284,6 +1309,91 @@ def _resolve_addressed_entity(
     return None, simulated_player_matches[0]
 
 
+# Words that describe almost anyone; they can't single out a person from the
+# narration the way a detail like "cajado" or "avental" can.
+_GENERIC_PERSON_WORDS = frozenset({
+    "senhor", "senhora", "homem", "mulher", "rapaz", "moca", "menino", "menina",
+    "pessoa", "alguem", "aquele", "aquela", "esse", "essa", "este", "esta",
+    "outro", "outra", "lado", "oposto", "perto", "ali", "aqui", "local",
+})
+
+
+# "Me aproximo de um dos recém-chegados" explicitly leaves the choice to the
+# game; answering "diga com qual deles" asked for names the player can't
+# know yet (confirmed in playtest).
+_ANY_NEWCOMER_PATTERN = re.compile(
+    r"\bum[a]? d[oa]s (?:outr[oa]s )?(?:recem[- ]chegad[oa]s|transportad[oa]s|forasteir[oa]s)\b"
+)
+
+
+def _any_newcomer(raw_text: str, nearby_simulated_players) -> "SimulatedPlayer | None":
+    if not nearby_simulated_players:
+        return None
+    if not _ANY_NEWCOMER_PATTERN.search(_strip_accents(raw_text).casefold()):
+        return None
+    social = [player for player in nearby_simulated_players if player.archetype == "SOCIAL"]
+    return sorted(social or nearby_simulated_players, key=lambda player: player.id)[0]
+
+
+def _resolve_by_narrated_description(
+    db: Session,
+    campaign_id: str,
+    character_id: str,
+    intent: Intent,
+    nearby_npcs,
+    nearby_simulated_players,
+) -> tuple["NPC | None", "SimulatedPlayer | None"]:
+    """Resolve a target the player picked out by a detail the narrator gave
+    ("o senhor de cajado") rather than by name or role.
+
+    Confirmed live: the opening narration described the elder as "o mais
+    velho ... apoia as mãos no cajado"; "Vou até o senhor de cajado" matched
+    nobody, so no interlocutor was recorded and the next question to him came
+    back as "Nada acontece de imediato." The detail words of the Intent
+    Parser's target (only those the player actually typed) are looked up in
+    recent narration, newest first, and the sentences holding them go through
+    the same deterministic name/role resolution. The newest narration that
+    identifies anyone decides: exactly one person, or nothing at all.
+    """
+    if not intent.target:
+        return None, None
+    raw_words = set(re.findall(r"\w+", _strip_accents(intent.raw_text).casefold()))
+    descriptors = {
+        word
+        for word in re.findall(r"\w+", _strip_accents(intent.target).casefold())
+        if len(word) >= 4 and word not in _GENERIC_PERSON_WORDS and word in raw_words
+    }
+    if not descriptors:
+        return None, None
+
+    narrations = [
+        entry.text
+        for entry in get_recent_story_log(db, campaign_id, character_id)
+        if entry.kind == SPEAKER_NARRATOR and entry.text
+    ]
+    for narration in reversed(narrations):
+        sentences = [
+            sentence
+            for sentence in re.split(r"(?<=[.!?])\s+|\n+", narration)
+            if descriptors & set(re.findall(r"\w+", _strip_accents(sentence).casefold()))
+        ]
+        if not sentences:
+            continue
+        resolved = {
+            result
+            for result in (
+                _resolve_addressed_entity(sentence, nearby_npcs, nearby_simulated_players)
+                for sentence in sentences
+            )
+            if result != (None, None)
+        }
+        if len(resolved) > 1:
+            return None, None
+        if resolved:
+            return next(iter(resolved))
+    return None, None
+
+
 def _implicit_freeform_interlocutor_switch(
     db: Session,
     campaign_id: str,
@@ -1312,6 +1422,12 @@ def _implicit_freeform_interlocutor_switch(
     npc, player = _resolve_addressed_entity(
         intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
     )
+    if npc is None and player is None:
+        npc, player = _resolve_by_narrated_description(
+            db, campaign_id, character.id, intent, state.nearby_npcs, state.nearby_simulated_players
+        )
+    if npc is None and player is None:
+        player = _any_newcomer(intent.raw_text, state.nearby_simulated_players)
     if npc is not None:
         npcs_service.meet_npc(db, campaign_id, character.id, npc.id)
         return npc, None
@@ -1402,6 +1518,11 @@ def _handle_talk(
             resolved_npc, resolved_player = _resolve_addressed_entity(
                 intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
             )
+            if resolved_npc is None and resolved_player is None:
+                resolved_npc, resolved_player = _resolve_by_narrated_description(
+                    db, campaign_id, character.id, intent,
+                    state.nearby_npcs, state.nearby_simulated_players,
+                )
             if resolved_npc is not None:
                 npc = resolved_npc
             elif resolved_player is not None:
@@ -1477,6 +1598,10 @@ def _handle_talk(
                         for candidate in state.nearby_simulated_players
                     ):
                         simulated_player = active_simulated_player
+                    elif (
+                        newcomer := _any_newcomer(intent.raw_text, state.nearby_simulated_players)
+                    ) is not None:
+                        simulated_player = newcomer
                     else:
                         return (
                             "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
@@ -1636,6 +1761,12 @@ def _handle_examine(
         lines.append(
             "Nenhum elemento adicional registrado pelo backend é perceptível."
         )
+
+    # Nothing posts notices to a bare notice-board location yet; say so, or
+    # the narrator fills the board with invented papers (seen in playtest).
+    location = db.get(Location, character.location_id)
+    if location is not None and location.type == "notice_board":
+        lines.append("Não há nenhum aviso pregado no quadro.")
 
     return " ".join(lines), 2
 

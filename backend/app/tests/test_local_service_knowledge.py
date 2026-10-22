@@ -199,3 +199,66 @@ def test_naming_village_and_region_reveals_no_route_or_worker_fact(db_session):
     }
 
     assert revealed == {"settlement_name_known", "settlement_region_known"}
+
+
+def _route_fact_for(db_session, campaign, service_word):
+    fact = (
+        db_session.query(KnowledgeFact)
+        .filter(
+            KnowledgeFact.campaign_id == campaign.id,
+            KnowledgeFact.fact_key.like("public_service_route:%"),
+            KnowledgeFact.statement.contains(service_word),
+        )
+        .one()
+    )
+    direction = fact.statement.rstrip(".").split()[-1]
+    return fact, direction
+
+
+def test_natural_short_directions_reveal_the_service_route(db_session):
+    # Playtest: "— O quadro está a nordeste." was said twice and the route
+    # was never learned, because the reveal check wanted the full
+    # "Quadro de Avisos de <vila>" name.
+    from app.ai.context_builder import fact_is_revealed_in_text
+    from app.game.npcs.service import KnownFact
+
+    campaign, _region, _village, _character = _setup(db_session)
+    fact, direction = _route_fact_for(db_session, campaign, "Estalagem")
+    wrong = "norte" if direction != "norte" else "sul"
+
+    def revealed(text):
+        return fact_is_revealed_in_text(
+            KnownFact(subject=fact.subject, fact_key=fact.fact_key, statement=fact.statement,
+                      source="", certainty="", discovered_at=None),
+            text,
+        )
+
+    assert revealed(f"— A estalagem? Fica a {direction}, depois das casas.")
+    assert not revealed(f"— A estalagem? Fica a {wrong}.")
+    assert not revealed(f"— A ferraria fica a {direction}.")
+
+
+def test_first_person_look_around_discovers_the_square_services(db_session):
+    # Playtest: "Olho ao redor tentando entender o que está acontecendo" was
+    # FREEFORM and never observed anything, so no building could be reached.
+    campaign, _region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    engine._apply_intent(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.FREEFORM, target=None,
+               raw_text="Olho ao redor tentando entender o que está acontecendo"),
+        state,
+    )
+
+    discovered = {
+        row.location_id
+        for row in db_session.query(CharacterLocationDiscovery).filter(
+            CharacterLocationDiscovery.character_id == character.id
+        )
+    }
+    services = {
+        location.id
+        for location in db_session.query(Location).filter(Location.parent_location_id == village.id)
+    }
+    assert services and services <= discovered

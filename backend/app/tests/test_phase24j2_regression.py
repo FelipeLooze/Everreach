@@ -305,3 +305,79 @@ def test_scene_description_target_without_interlocutor_asks_instead_of_denying(d
     summary, _ = engine._handle_talk(db_session, campaign.id, character, intent, state)
 
     assert "Há mais de uma pessoa aqui" in summary
+
+
+def _narrate_opening(db_session, campaign, character, narrative):
+    from app.core.enums import EventType
+    from app.services.event_log import log_event
+
+    log_event(
+        db_session, campaign.id, EventType.WORLD_STARTED,
+        actor_type="character", actor_id=character.id,
+        payload={"narrative": narrative},
+    )
+    db_session.flush()
+
+
+_OPENING_WITH_STAFF = (
+    "À sombra do alpendre, três figuras observam. O mais velho, barba rala e "
+    "manto surrado, apoia as duas mãos no cajado de nó torto. Ao lado dele, um "
+    "homem de túnica escura mantém os braços cruzados."
+)
+
+
+def test_target_picked_by_a_narrated_detail_resolves_the_described_npc(db_session):
+    # Live playtest: "Vou até o senhor de cajado" (classified MOVE) matched
+    # nobody, so the elder was never recorded as interlocutor and the next
+    # question to him came back as "Nada acontece de imediato."
+    campaign, region, village, character = _setup(db_session)
+    elder = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    _narrate_opening(db_session, campaign, character, _OPENING_WITH_STAFF)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(
+        type=ActionIntentType.MOVE,
+        target="senhor de cajado",
+        raw_text='Vou até o senhor de cajado. "Com licença, senhor. Onde estamos?"',
+    )
+    npc, player = engine._implicit_freeform_interlocutor_switch(
+        db_session, campaign.id, character, intent, state
+    )
+
+    assert npc is elder
+    assert player is None
+
+
+def test_narrated_detail_tied_to_no_named_or_role_person_resolves_nobody(db_session):
+    # "túnica escura" sits in a sentence that names no one; it must not be
+    # pinned on the elder just because he is described in the same paragraph.
+    campaign, region, village, character = _setup(db_session)
+    _narrate_opening(db_session, campaign, character, _OPENING_WITH_STAFF)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target="homem de túnica escura",
+        raw_text="Falo com o homem de túnica escura.",
+    )
+    summary, _ = engine._handle_talk(db_session, campaign.id, character, intent, state)
+
+    assert "Há mais de uma pessoa aqui" in summary
+
+
+def test_any_newcomer_reference_picks_a_transported_person(db_session):
+    # Playtest: "Me aproximo de um dos outros recém-chegados" was answered
+    # with "diga com qual deles", asking for names the player can't know.
+    campaign, region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+    assert len(state.nearby_simulated_players) > 1
+
+    intent = Intent(
+        type=ActionIntentType.TALK,
+        target=None,
+        raw_text='Me aproximo de um dos outros recém-chegados. "Ei, qual é o seu nome?"',
+    )
+    summary, _ = engine._handle_talk(db_session, campaign.id, character, intent, state)
+
+    assert "Há mais de uma pessoa aqui" not in summary
+    assert any(player.name in summary for player in state.nearby_simulated_players)

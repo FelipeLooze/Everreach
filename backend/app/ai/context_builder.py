@@ -1181,6 +1181,8 @@ def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
     reveal only means the player can ask again; teaching a fact that was
     not really said would be worse.
     """
+    if _service_route_is_revealed(fact, narrated_text):
+        return True
     names = _proper_nouns(fact.statement)
     if not names:
         return False
@@ -1188,6 +1190,32 @@ def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
     return all(
         re.search(rf"\b{re.escape(_normalized(name))}\b", normalized_text)
         for name in names
+    )
+
+
+_SERVICE_ROUTE_STATEMENT = re.compile(r"^Da praça de .+?, (?P<service>.+) fica a (?P<direction>[\wç-]+)\.$")
+
+
+def _service_route_is_revealed(fact: KnownFact, narrated_text: str) -> bool:
+    """A local naturally says "o quadro está a nordeste", never the full
+    "Quadro de Avisos de Ravhelm" (confirmed in playtest: the directions were
+    given twice and still never learned). The service's kind (its head word)
+    and the correct direction within one sentence or the next ("A estalagem?
+    Fica a leste.") count; the direction keeps two services of one kind (both
+    guilds) apart.
+    """
+    if not fact.fact_key.startswith("public_service_route:"):
+        return False
+    match = _SERVICE_ROUTE_STATEMENT.match(fact.statement)
+    if match is None:
+        return False
+    head_word = _normalized(match.group("service").split()[0])
+    direction = _normalized(match.group("direction"))
+    sentences = re.split(r"(?<=[.!?])\s+|\n+", _normalized(narrated_text))
+    return any(
+        re.search(rf"\b{re.escape(head_word)}\b", sentences[index])
+        and re.search(rf"\b{re.escape(direction)}\b", " ".join(sentences[index:index + 2]))
+        for index in range(len(sentences))
     )
 
 

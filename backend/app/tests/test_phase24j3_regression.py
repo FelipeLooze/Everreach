@@ -584,3 +584,28 @@ def test_first_person_movement_phrasing_round_trip(db_session):
         intent = Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=raw_text)
         engine._apply_intent(db_session, campaign.id, character, intent, state)
         assert character.location_id == expected.id, raw_text
+
+
+def test_examine_with_movement_phrasing_moves_first_then_examines(db_session):
+    # Playtest: "Vou até o quadro de avisos e leio o que está pregado" was
+    # classified EXAMINE; the character never left the square while the
+    # narration walked to the board and invented notices on it.
+    campaign, region, village, character = _setup(db_session)
+    _discover_all_connections(db_session, character, village)
+    board = (
+        db_session.query(Location)
+        .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+        .filter(LocationConnection.from_location_id == village.id, Location.type == "notice_board")
+        .one()
+    )
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    intent = Intent(
+        type=ActionIntentType.EXAMINE,
+        target="Quadro de Avisos",
+        raw_text="Vou até o quadro de avisos e leio o que está pregado",
+    )
+    summary, _ = engine._apply_intent(db_session, campaign.id, character, intent, state)
+
+    assert character.location_id == board.id
+    assert "Não há nenhum aviso pregado no quadro." in summary

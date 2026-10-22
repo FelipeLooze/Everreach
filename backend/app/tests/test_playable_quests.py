@@ -1,3 +1,4 @@
+import json
 from app.ai.intent_parser import Intent
 from app.ai.llm_service import LLMService
 from app.core.enums import (
@@ -247,3 +248,173 @@ def test_undo_restores_quest_acceptance_knowledge_and_notice_state(
         .one()
     )
     assert notice.status == NoticeStatus.ACTIVE
+
+
+def _accept_both_initial_contracts(db_session, campaign, character):
+    from app.game.quests.discovery import learn_about_quest_from_notice
+    from app.game.quests.service import accept_known_quest
+
+    quests = db_session.query(Quest).filter(Quest.name.in_(
+        ("Relato da Primeira Chegada", "Ronda dos Avisos")
+    )).all()
+    for quest in quests:
+        learn_about_quest_from_notice(db_session, campaign["id"], character.id, quest.id)
+        accept_known_quest(db_session, campaign["id"], character.id, quest.id)
+    db_session.flush()
+    return {quest.name: quest for quest in quests}
+
+
+def test_delivery_objective_waits_for_the_report_it_delivers(client, db_session):
+    # Audit: talking to the guildmaster BEFORE the elder ticked "leve o relato"
+    # and the quest then paid out on the elder conversation instead.
+    campaign, character = _started_world(client, db_session)
+    quests = _accept_both_initial_contracts(db_session, campaign, character)
+    elder = db_session.query(NPC).filter(NPC.role == "ancião da vila").one()
+    guildmaster = db_session.query(NPC).filter(
+        NPC.role == "mestre da guilda de aventureiros"
+    ).one()
+
+    early = evaluate_objective_trigger(
+        db_session, campaign["id"], character.id,
+        ObjectiveTriggerType.TALK_TO_NPC, subject_id=guildmaster.id,
+    )
+    assert early == []
+
+    def participation(name):
+        db_session.expire_all()
+        return db_session.query(CharacterQuest).filter(
+            CharacterQuest.character_id == character.id,
+            CharacterQuest.quest_id == quests[name].id,
+        ).one().status
+
+    evaluate_objective_trigger(
+        db_session, campaign["id"], character.id,
+        ObjectiveTriggerType.TALK_TO_NPC, subject_id=elder.id,
+    )
+    assert participation("Relato da Primeira Chegada") == QuestStatus.ACTIVE
+
+    evaluate_objective_trigger(
+        db_session, campaign["id"], character.id,
+        ObjectiveTriggerType.TALK_TO_NPC, subject_id=guildmaster.id,
+    )
+    assert participation("Relato da Primeira Chegada") == QuestStatus.COMPLETED
+    # The board report still requires reading the public board first.
+    assert participation("Ronda dos Avisos") == QuestStatus.ACTIVE
+
+
+def test_npc_naming_a_contract_reveals_it_to_the_player(client, db_session):
+    # Audit: a reveal required every capitalized word of the description
+    # ("Converse", "Leia"); it is now matched on the quoted title alone.
+    from app.ai.context_builder import fact_is_revealed_in_text
+    from app.db.models.knowledge import KnowledgeFact
+    from app.game.npcs.service import KnownFact
+
+    _started_world(client, db_session)
+    quest = db_session.query(Quest).filter(Quest.name == "Relato da Primeira Chegada").one()
+    fact = db_session.query(KnowledgeFact).filter(
+        KnowledgeFact.fact_key == f"quest:{quest.id}:exists"
+    ).one()
+    known = KnownFact(subject=fact.subject, fact_key=fact.fact_key, statement=fact.statement,
+                      source="", certainty="", discovered_at=None)
+
+    assert '"Relato da Primeira Chegada"' in fact.statement
+    assert fact_is_revealed_in_text(
+        known, "— Temos o Relato da Primeira Chegada, se quiser ajudar a guilda."
+    )
+    assert not fact_is_revealed_in_text(known, "— A guilda sempre tem trabalho para quem procura.")
+    legacy = KnownFact(subject=fact.subject, fact_key=fact.fact_key,
+                       statement="Relato da Primeira Chegada: Converse com o ancião.",
+                       source="", certainty="", discovered_at=None)
+    assert fact_is_revealed_in_text(legacy, "— Pegue o relato da primeira chegada.")
+
+
+def test_guildmasters_work_at_their_guilds_during_the_day(client, db_session):
+    # Audit: the guildmaster stood in the square and the guild was empty, so
+    # "voltar à guilda e entregar" found nobody.
+    from app.game.game_state import build_game_state
+    from app.game.npcs.service import effective_npc_location_id
+
+    campaign, character = _started_world(client, db_session)
+    guildmaster = db_session.query(NPC).filter(
+        NPC.role == "mestre da guilda de aventureiros"
+    ).one()
+
+    assert effective_npc_location_id(guildmaster) == guildmaster.workplace_location_id
+    character.location_id = guildmaster.workplace_location_id
+    db_session.flush()
+    state = build_game_state(db_session, campaign["id"], character.id)
+    assert guildmaster.id in {npc.id for npc in state.nearby_npcs}
+
+
+def test_actions_expire_notices_past_their_deadline(client, db_session):
+    from app.game.time.clock import get_world_time
+    from app.api.dependencies.llm import set_llm_service_override
+
+    campaign, character = _started_world(client, db_session)
+    notice = db_session.query(Notice).filter(Notice.status == NoticeStatus.ACTIVE).first()
+    notice.expires_world_minute = get_world_time(db_session, campaign["id"]).total_minutes() - 1
+    db_session.commit()
+
+    set_llm_service_override(PassiveLLM())
+    response = client.post(
+        f"/api/campaigns/{campaign['id']}/actions",
+        params={"character_id": character.id},
+        json={"text": "Espero um pouco."},
+    )
+
+    assert response.status_code == 200
+    db_session.expire_all()
+    assert db_session.get(Notice, notice.id).status == NoticeStatus.EXPIRED
+
+
+def test_asking_for_work_surfaces_the_guildmasters_contracts(client, db_session):
+    # Live check: with a title-only fact, "Tem algum trabalho?" shared no word
+    # with it, the narrator never saw the contracts and invented others.
+    from app.core.enums import KnowerType
+    from app.game.npcs.service import relevant_known_facts
+
+    campaign, _character = _started_world(client, db_session)
+    guildmaster = db_session.query(NPC).filter(
+        NPC.role == "mestre da guilda de aventureiros"
+    ).one()
+
+    for question in ("Tem algum trabalho para um recém-chegado?", "A guilda tem algum contrato aberto?"):
+        facts = relevant_known_facts(
+            db_session, campaign["id"], KnowerType.NPC, guildmaster.id,
+            scene_subjects=[], player_input=question,
+        )
+        titles = {fact.statement for fact in facts if fact.fact_key.startswith("quest:")}
+        assert any("Relato da Primeira Chegada" in title for title in titles), question
+
+
+def test_asking_the_guildmaster_about_work_lets_the_contracts_be_accepted(client, db_session):
+    # Live check: the guildmaster described both contracts by content, not
+    # title, so they were never registered as known and couldn't be accepted.
+    from app.game.quests.discovery import is_quest_known_to_character
+
+    campaign, character = _started_world(client, db_session)
+    guildmaster = db_session.query(NPC).filter(
+        NPC.role == "mestre da guilda de aventureiros"
+    ).one()
+    character.location_id = guildmaster.workplace_location_id
+    db_session.commit()
+
+    class GuildmasterTalk(LLMService):
+        def generate(self, system, prompt):
+            if "Ação do jogador" in prompt:
+                return json.dumps({"intent": "TALK", "target": guildmaster.name})
+            return "— Há dois contratos no quadro. Um é sobre a chegada de vocês."
+
+    llm = GuildmasterTalk()
+    engine.resolve_action(
+        db_session, llm, campaign["id"], character.id,
+        f'"{guildmaster.name}, tem algum trabalho para mim?"', intent_llm_service=llm,
+    )
+
+    quests = db_session.query(Quest).filter(Quest.name.in_(
+        ("Relato da Primeira Chegada", "Ronda dos Avisos")
+    )).all()
+    assert quests and all(
+        is_quest_known_to_character(db_session, campaign["id"], character.id, quest.id)
+        for quest in quests
+    )

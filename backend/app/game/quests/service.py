@@ -99,7 +99,14 @@ def create_quest(
                 campaign_id=region.campaign_id,
                 subject=f"quest:{quest.id}",
                 fact_key=quest_existence_fact_key(quest.id),
-                statement=f"{name}: {description}" if description else name,
+                # Job vocabulary on purpose: NPC facts surface by word overlap with
+                # the player's question ("tem trabalho?", "algum contrato?"). The
+                # description stays so the narrator doesn't invent the terms;
+                # revealing it is matched on the quoted title alone.
+                statement=(
+                    f'Há trabalho disponível, um contrato ou missão chamado "{name}"'
+                    + (f": {description}" if description else ".")
+                ),
             )
         )
         db.flush()
@@ -445,7 +452,36 @@ def resolve_quest_externally(db: Session, campaign_id: str, quest_id: str, *, no
     )
 
 
+def _objective_prerequisite_is_complete(
+    db: Session,
+    character_id: str,
+    objective: QuestObjective,
+) -> bool:
+    """Return whether an objective is currently unlocked for this character."""
+    if objective.prerequisite_objective_id is None:
+        return True
+    return (
+        db.query(CharacterQuestObjective)
+        .filter(
+            CharacterQuestObjective.character_id == character_id,
+            CharacterQuestObjective.objective_id
+            == objective.prerequisite_objective_id,
+            CharacterQuestObjective.completed.is_(True),
+        )
+        .first()
+        is not None
+    )
+
+
 def complete_objective(db: Session, campaign_id: str, character_id: str, objective_id: str) -> CharacterQuestObjective:
+    objective = db.get(QuestObjective, objective_id)
+    if objective is None:
+        raise QuestLifecycleError(f"Objetivo desconhecido: {objective_id}")
+    if not _objective_prerequisite_is_complete(db, character_id, objective):
+        raise QuestLifecycleError(
+            "Este objetivo ainda não está disponível; conclua o objetivo anterior primeiro."
+        )
+
     entry = (
         db.query(CharacterQuestObjective)
         .filter(
@@ -470,7 +506,6 @@ def complete_objective(db: Session, campaign_id: str, character_id: str, objecti
         payload={"objective_id": objective_id},
     )
 
-    objective = db.get(QuestObjective, objective_id)
     if objective:
         # Optional objectives (Phase 12C) never block quest completion —
         # only the required ones need to be in completed_ids below.
@@ -629,6 +664,8 @@ def evaluate_objective_trigger(
                 .first()
             )
             if already_done:
+                continue
+            if not _objective_prerequisite_is_complete(db, character_id, objective):
                 continue
             completed.append(complete_objective(db, campaign_id, character_id, objective.id))
     return completed

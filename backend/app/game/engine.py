@@ -54,6 +54,7 @@ from app.game.economy.economic_canon import (
 )
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
+from app.game.notices import service as notices_service
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.quests.rewards import grant_pending_quest_completion_xp
@@ -417,6 +418,8 @@ def resolve_action(
 
         quests_service.check_deadlines(db, campaign_id, character_id)
 
+        notices_service.expire_notices(db, campaign_id)
+
         ambush = combat_hostility.resolve_ambush_for_character(
             db,
             campaign_id,
@@ -546,6 +549,8 @@ def resolve_action(
             player_input=text,
             narrated_text=final_narrative,
         )
+        if _WORK_QUESTION_PATTERN.search(_strip_accents(text).casefold()):
+            _learn_quests_known_by_npc(db, campaign_id, character, context_npc)
 
     action_has_interlocutor = (
         action_npc is not None
@@ -678,6 +683,39 @@ def resolve_action(
         # inside validate_narrative_proposal).
         warnings=[*mechanical_warnings, *narrative_warnings],
     )
+
+
+_WORK_QUESTION_PATTERN = re.compile(
+    r"\b(?:trabalhos?|empregos?|servicos?|contratos?|miss(?:ao|oes)|tarefas?|oportunidades?)\b"
+)
+
+
+def _learn_quests_known_by_npc(
+    db: Session, campaign_id: str, character: Character, npc
+) -> None:
+    """Asking the person you're talking to about work tells you the open
+    contracts they know of. Confirmed live: the guildmaster described both
+    contracts accurately but by content, not title, so a title-based reveal
+    never registered them and they couldn't be accepted."""
+    from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+    from app.db.models.quest import Quest
+    from app.game.quests.discovery import learn_about_quest_from_npc
+
+    known_quest_facts = (
+        db.query(KnowledgeFact.fact_key)
+        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
+        .filter(
+            KnowledgeFact.campaign_id == campaign_id,
+            KnowledgeFact.fact_key.like("quest:%:exists"),
+            KnowledgeKnower.knower_type == KnowerType.NPC.value,
+            KnowledgeKnower.knower_id == npc.id,
+        )
+        .all()
+    )
+    for (fact_key,) in known_quest_facts:
+        quest = db.get(Quest, fact_key.split(":")[1])
+        if quest is not None and quest.status == QuestStatus.AVAILABLE:
+            learn_about_quest_from_npc(db, campaign_id, character.id, quest.id)
 
 
 def _teach_facts_revealed_in_narration(

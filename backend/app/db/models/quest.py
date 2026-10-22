@@ -53,6 +53,9 @@ class QuestObjective(Base):
     )
     trigger_subject_id: Mapped[str | None] = mapped_column(String, nullable=True)
     optional: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    prerequisite_objective_id: Mapped[str | None] = mapped_column(
+        ForeignKey("quest_objectives.id"), nullable=True
+    )
 
 
 class CharacterQuest(Base):

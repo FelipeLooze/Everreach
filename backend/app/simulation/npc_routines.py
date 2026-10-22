@@ -14,6 +14,8 @@ def activity_for_role(
         "ferreiro",
         "ferreira",
         "estalajadeiro",
+        "mestre da guilda de aventureiros",
+        "mestre da guilda de comerciantes",
     }:
         if 8 <= hour < 18:
             return NPCActivity.WORKING

@@ -1158,6 +1158,9 @@ def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
     reveal only means the player can ask again; teaching a fact that was
     not really said would be worse.
     """
+    quest_reveal = _quest_existence_is_revealed(fact, narrated_text)
+    if quest_reveal is not None:
+        return quest_reveal
     if _service_route_is_revealed(fact, narrated_text):
         return True
     names = _proper_nouns(fact.statement)
@@ -1168,6 +1171,33 @@ def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
         re.search(rf"\b{re.escape(_normalized(name))}\b", normalized_text)
         for name in names
     )
+
+
+_QUEST_EXISTENCE_FACT_KEY = re.compile(r"^quest:[^:]+:exists$")
+_QUOTED_QUEST_TITLE = re.compile(r'chamad[ao]\s+["“](?P<title>.+?)["”]', re.IGNORECASE)
+
+
+def _quest_existence_is_revealed(
+    fact: KnownFact,
+    narrated_text: str,
+) -> bool | None:
+    """Match a quest reveal by its title, not by every word in its objectives.
+
+    The fallback before ``:`` keeps facts created by older saves readable;
+    new facts use the quoted, description-free statement emitted by
+    ``create_quest``.
+    """
+    if _QUEST_EXISTENCE_FACT_KEY.fullmatch(fact.fact_key) is None:
+        return None
+    match = _QUOTED_QUEST_TITLE.search(fact.statement)
+    title = match.group("title") if match is not None else fact.statement.split(":", 1)[0]
+    normalized_title = _normalized(title.strip())
+    if not normalized_title:
+        return False
+    return re.search(
+        rf"\b{re.escape(normalized_title)}\b",
+        _normalized(narrated_text),
+    ) is not None
 
 
 _SERVICE_ROUTE_STATEMENT = re.compile(r"^Da praça de .+?, (?P<service>.+) fica a (?P<direction>[\wç-]+)\.$")

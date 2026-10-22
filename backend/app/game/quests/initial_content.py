@@ -214,8 +214,8 @@ def seed_initial_quest_opportunities(
         db,
         arrival_quest.id,
         (
-            (ObjectiveType.INVESTIGATION, ObjectiveTriggerType.TALK_TO_NPC, elder.id),
-            (ObjectiveType.DELIVERY, ObjectiveTriggerType.TALK_TO_NPC, guildmaster.id),
+            (ObjectiveType.INVESTIGATION, ObjectiveTriggerType.TALK_TO_NPC, elder.id, None),
+            (ObjectiveType.DELIVERY, ObjectiveTriggerType.TALK_TO_NPC, guildmaster.id, 0),
         ),
     )
     publish_organization_notice(
@@ -263,8 +263,8 @@ def seed_initial_quest_opportunities(
         db,
         liaison_quest.id,
         (
-            (ObjectiveType.OBSERVATION, ObjectiveTriggerType.READ_NOTICE_BOARD, public_board.id),
-            (ObjectiveType.DELIVERY, ObjectiveTriggerType.TALK_TO_NPC, guildmaster.id),
+            (ObjectiveType.OBSERVATION, ObjectiveTriggerType.READ_NOTICE_BOARD, public_board.id, None),
+            (ObjectiveType.DELIVERY, ObjectiveTriggerType.TALK_TO_NPC, guildmaster.id, 0),
         ),
     )
     publish_organization_notice(
@@ -299,7 +299,9 @@ def seed_initial_quest_opportunities(
 def _configure_objectives(
     db: Session,
     quest_id: str,
-    configurations: tuple[tuple[ObjectiveType, ObjectiveTriggerType, str], ...],
+    configurations: tuple[
+        tuple[ObjectiveType, ObjectiveTriggerType, str, int | None], ...
+    ],
 ) -> None:
     objectives = (
         db.query(QuestObjective)
@@ -309,10 +311,15 @@ def _configure_objectives(
     )
     if len(objectives) != len(configurations):
         raise ValueError("A configuração mecânica não corresponde aos objetivos da missão.")
-    for objective, (objective_type, trigger_type, subject_id) in zip(
+    for objective, (objective_type, trigger_type, subject_id, prerequisite_order) in zip(
         objectives, configurations, strict=True
     ):
         objective.objective_type = objective_type
         objective.trigger_type = trigger_type
         objective.trigger_subject_id = subject_id
+        objective.prerequisite_objective_id = (
+            objectives[prerequisite_order].id
+            if prerequisite_order is not None
+            else None
+        )
     db.flush()

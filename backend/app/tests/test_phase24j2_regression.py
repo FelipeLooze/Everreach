@@ -381,3 +381,57 @@ def test_any_newcomer_reference_picks_a_transported_person(db_session):
 
     assert "Há mais de uma pessoa aqui" not in summary
     assert any(player.name in summary for player in state.nearby_simulated_players)
+
+
+def _guild_masters_scene():
+    from types import SimpleNamespace
+
+    return [
+        SimpleNamespace(name="Garrick Sowerby", role="ancião da vila"),
+        SimpleNamespace(name="Ilya Draven", role="mestre da guilda de comerciantes"),
+        SimpleNamespace(name="Lena Kessler", role="mestre da guilda de aventureiros"),
+    ]
+
+
+def test_role_qualifier_tells_two_guild_masters_apart():
+    # Playtest (Phase 12): "a mulher da guilda de aventureiros" matched no
+    # one, and "mestre" alone fit both masters standing in the square.
+    npcs = _guild_masters_scene()
+
+    for text, expected in (
+        ('Vou até a mulher da guilda de aventureiros. "Tem trabalho?"', "Lena Kessler"),
+        ("Falo com o mestre dos aventureiros", "Lena Kessler"),
+        ("Falo com o mestre da guilda de comerciantes", "Ilya Draven"),
+        ("Falo com o velho ancião", "Garrick Sowerby"),
+    ):
+        npc, _ = engine._resolve_addressed_entity(text, npcs, [])
+        assert npc is not None and npc.name == expected, text
+
+    assert engine._resolve_addressed_entity("Qual o nome dessa vila?", npcs, []) == (None, None)
+
+
+def test_ambiguous_role_reference_asks_instead_of_continuing_old_conversation(db_session):
+    # Playtest: "Falo com o mestre da guilda" with both masters present fell
+    # back to the active interlocutor (the elder) and answered as him.
+    campaign, region, village, character = _setup(db_session)
+    elder = db_session.query(NPC).filter(NPC.role == "ancião da vila").first()
+    engine._handle_talk(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.TALK, target=None, raw_text="Falo com o ancião."),
+        build_game_state(db_session, campaign.id, character.id),
+    )
+    db_session.flush()
+    state = build_game_state(db_session, campaign.id, character.id)
+    masters = [npc for npc in state.nearby_npcs if npc.role.startswith("mestre")]
+    if len(masters) < 2:
+        import pytest
+        pytest.skip("seeded square has fewer than two masters")
+
+    summary, _ = engine._handle_talk(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.TALK, target=None, raw_text="Falo com o mestre da guilda"),
+        state,
+    )
+
+    assert elder.name not in summary
+    assert "Há mais de uma pessoa aqui" in summary

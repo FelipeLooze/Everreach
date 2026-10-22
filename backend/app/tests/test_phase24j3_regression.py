@@ -611,3 +611,33 @@ def test_examine_with_movement_phrasing_moves_first_then_examines(db_session):
     assert character.location_id == board.id
     assert "lê o Quadro de Avisos" in summary
     assert "Orientação aos recém-chegados" in summary
+
+
+def test_looking_around_a_board_with_postings_does_not_call_it_empty(db_session):
+    # Phase 12 put real notices on the public board; the "empty board" line
+    # added for bare boards kept firing next to an active posting.
+    from app.game.discovery.service import record_location_visit
+
+    campaign, region, village, character = _setup(db_session)
+    record_location_visit(db_session, character.id, village.id, source="world_start")
+    _discover_all_connections(db_session, character, village)
+    board = (
+        db_session.query(Location)
+        .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+        .filter(LocationConnection.from_location_id == village.id, Location.type == "notice_board")
+        .one()
+    )
+    state = build_game_state(db_session, campaign.id, character.id)
+    engine._apply_intent(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.MOVE, target=board.name, raw_text="Vou até o quadro de avisos"),
+        state,
+    )
+
+    summary, _ = engine._handle_examine(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.EXAMINE, target=None, raw_text="Olho ao redor"),
+    )
+
+    assert character.location_id == board.id
+    assert "Não há nenhum aviso pregado no quadro." not in summary

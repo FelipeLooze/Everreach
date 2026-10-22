@@ -21,6 +21,7 @@ from app.core.enums import (
     EventType,
     KnowerType,
     KnowledgeCertainty,
+    NoticeStatus,
     ObjectiveTriggerType,
     QuestStatus,
     TravelIncidentKind,
@@ -1277,6 +1278,18 @@ _ROLE_REFERENCE_ALIASES = {
     "ancia": ("idosa", "velha", "senhora idosa"),
 }
 
+_ROLE_FILLER_WORDS = frozenset({"da", "de", "do", "das", "dos", "e"})
+
+
+def _role_content_words(role: str) -> list[str]:
+    """Accent-stripped, casefolded words of a role, minus connectors."""
+    return [
+        word
+        for word in re.findall(r"\w+", _strip_accents(role).casefold())
+        if word not in _ROLE_FILLER_WORDS
+    ]
+
+
 _LOCAL_INHABITANT_REFERENCE_PATTERN = re.compile(
     r"\b(?:alguem\s+(?:que\s+)?(?:parec\w+\s+ser\s+)?(?:local|dali)|"
     r"morador(?:a)?|habitante|nativ[oa])\b",
@@ -1284,11 +1297,11 @@ _LOCAL_INHABITANT_REFERENCE_PATTERN = re.compile(
 )
 
 
-def _resolve_addressed_entity(
+def _addressed_candidates(
     raw_text: str,
     nearby_npcs,
     nearby_simulated_players,
-) -> tuple["NPC | None", "SimulatedPlayer | None"]:
+) -> tuple[list["NPC"], list["SimulatedPlayer"]]:
     """Phase 24J.1/24J.2 — does the player's own RAW text unambiguously
     name or role-reference exactly one nearby NPC or simulated player?
     Pure resolution, no persistence side effects (callers decide whether
@@ -1363,14 +1376,37 @@ def _resolve_addressed_entity(
             char for char in unicodedata.normalize("NFKD", head_word) if not unicodedata.combining(char)
         )
         references = (head_no_accents, *_ROLE_REFERENCE_ALIASES.get(head_no_accents.casefold(), ()))
-        return any(
+        if any(
             re.search(rf"\b{re.escape(reference)}\b", raw_lower) is not None
             for reference in references
-        )
+        ):
+            return True
+        # The qualifier alone ("a mulher da guilda de aventureiros") also
+        # identifies the role, but only when it carries two or more content
+        # words — "da vila" alone must stay unmatched (see above).
+        qualifier_words = _role_content_words(role)[1:]
+        return len(qualifier_words) >= 2 and re.search(
+            r"\b" + r"\W+(?:\w+\W+){0,2}?".join(map(re.escape, qualifier_words)) + r"\b",
+            raw_lower,
+        ) is not None
 
     npc_matches = [
         npc for npc in nearby_npcs if _name_mentioned(npc.name) or _role_mentioned(npc.role)
     ]
+    if len(npc_matches) > 1:
+        # Two roles sharing a head word ("mestre da guilda de aventureiros"
+        # / "...de comerciantes", confirmed in playtest) are told apart by
+        # how many of each role's words the player actually used.
+        def _role_score(npc) -> int:
+            return sum(
+                re.search(rf"\b{re.escape(word)}\b", raw_lower) is not None
+                for word in _role_content_words(npc.role)
+            )
+
+        best = max(_role_score(npc) for npc in npc_matches)
+        leaders = [npc for npc in npc_matches if _role_score(npc) == best]
+        if len(leaders) == 1:
+            npc_matches = leaders
     if (
         not npc_matches
         and len(nearby_npcs) == 1
@@ -1380,7 +1416,18 @@ def _resolve_addressed_entity(
     simulated_player_matches = [
         player for player in nearby_simulated_players if _name_mentioned(player.name)
     ]
+    return npc_matches, simulated_player_matches
 
+
+def _resolve_addressed_entity(
+    raw_text: str,
+    nearby_npcs,
+    nearby_simulated_players,
+) -> tuple["NPC | None", "SimulatedPlayer | None"]:
+    """The single nearby person the raw text addresses, or (None, None)."""
+    npc_matches, simulated_player_matches = _addressed_candidates(
+        raw_text, nearby_npcs, nearby_simulated_players
+    )
     if len(npc_matches) + len(simulated_player_matches) != 1:
         return None, None
     if npc_matches:
@@ -1646,10 +1693,22 @@ def _handle_talk(
             resolved_npc, resolved_player = _resolve_addressed_entity(
                 intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
             )
+            referenced_npcs, referenced_players = _addressed_candidates(
+                intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
+            )
             if resolved_npc is not None:
                 npc = resolved_npc
             elif resolved_player is not None:
                 simulated_player = resolved_player
+            elif len(referenced_npcs) + len(referenced_players) > 1:
+                # "Falo com o mestre da guilda" with two guild masters here
+                # named someone, just not one person; continuing the old
+                # conversation answered as the wrong NPC (seen in playtest).
+                return (
+                    "Há mais de uma pessoa aqui que corresponde a essa descrição. "
+                    "Diga com quem você quer falar.",
+                    0,
+                )
             else:
                 # No explicit reference this turn either — before asking
                 # for disambiguation, prefer an already-active
@@ -1841,11 +1900,23 @@ def _handle_examine(
             "Nenhum elemento adicional registrado pelo backend é perceptível."
         )
 
-    # Nothing posts notices to a bare notice-board location yet; say so, or
-    # the narrator fills the board with invented papers (seen in playtest).
+    # An empty board must say so, or the narrator fills it with invented
+    # papers (seen in playtest) — but only when no board here has an active
+    # notice; boards now carry real postings.
     location = db.get(Location, character.location_id)
     if location is not None and location.type == "notice_board":
-        lines.append("Não há nenhum aviso pregado no quadro.")
+        has_active_notice = (
+            db.query(Notice)
+            .join(LocationFeature, LocationFeature.id == Notice.board_feature_id)
+            .filter(
+                LocationFeature.location_id == location.id,
+                Notice.status == NoticeStatus.ACTIVE,
+            )
+            .first()
+            is not None
+        )
+        if not has_active_notice:
+            lines.append("Não há nenhum aviso pregado no quadro.")
 
     return " ".join(lines), 2
 

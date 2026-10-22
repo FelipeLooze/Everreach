@@ -409,7 +409,7 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   mínimo 1 HP sem reinserir o ator no combate encerrado. Cada teste e transição é idempotente e
   registrada no Event Log. Apenas dano devastador — dano final igual ou superior ao HP restante
   somado ao HP máximo — causa morte imediata, preservando a regra de uma única vida.
-- **Fase 10 — Inventário e Equipamento: COMPLETE (10A–10M concluídas).** `ItemDefinition`
+- **Fase 10 — Inventário e Equipamento: COMPLETE (10A–10P concluídas).** `ItemDefinition`
   representa o conceito canônico compartilhado de um item e `ItemInstance` representa um objeto
   físico único ou uma pilha intercambiável. Definições possuem chave mecânica estável, categoria
   validada e modo `STACKABLE` ou `UNIQUE`; instâncias únicas sempre possuem quantidade 1, enquanto
@@ -507,6 +507,19 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   fisicamente visível e itens mencionados na ação; pedidos explícitos de inventário recebem um
   resumo limitado a 12 entradas. Assim, o narrador conhece somente os objetos relevantes sem
   ganhar autoridade mecânica ou transformar o prompt em um espelho do banco.
+  A 10N adiciona perfis autoritativos de consumíveis para recuperação de HP, Mana, Stamina,
+  fome e sede. O comando `USE` resolve somente itens fisicamente possuídos, aplica apenas a
+  recuperação que realmente cabe nos máximos, não desperdiça o item quando nenhum efeito seria
+  possível, reduz pilhas e registra os efeitos aplicados no Event Log. Reenvios são
+  idempotentes mesmo quando a última unidade foi removida. Em combate, somente consumíveis de
+  acesso imediato ou rápido podem ser usados e o uso consome exatamente um turno.
+  A 10O introduz tabelas de loot extensíveis e atribuições por ator. Saquear exige um alvo morto
+  presente no mesmo local, transfere seus pertences físicos reais e pode materializar entradas
+  configuradas uma única vez. Sorte influencia exclusivamente a probabilidade das entradas
+  opcionais em um ponto percentual por ponto acima de 10, limitada a 100%; não altera quantidade,
+  competência ou outros dados. A resolução, o valor de Sorte e os itens obtidos ficam persistidos
+  e auditáveis. A 10P conecta `USE` e `LOOT` ao parser, Game Engine, API, painel, migrations,
+  exclusão de campanha e checkpoints de desfazer, com testes ponta a ponta dos contratos.
 
 ## Fora do MVP
 

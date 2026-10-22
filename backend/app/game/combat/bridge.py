@@ -57,6 +57,7 @@ from app.game.combat.turns import complete_current_turn, get_current_turn, roll_
 from app.game.inventory.service import list_inventory
 from app.game.items.equipment import equip_item, item_accessibility
 from app.game.items.interactions import resolve_item_interaction
+from app.game.items.consumables import ConsumableError, use_consumable
 from app.game.items.weapons import get_weapon_damage_profiles, resolve_weapon_attack
 
 
@@ -285,6 +286,41 @@ def handle_item_interaction_intent(
     else:
         lines.append(_encounter_end_summary(encounter))
 
+    return " ".join(lines), 0
+
+
+def handle_consumable_intent(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    intent: Intent,
+    *,
+    action_key: str | None,
+) -> tuple[str, int]:
+    """Using an accessible consumable costs exactly one combat turn."""
+    resolved_key = action_key or generate_id("action")
+    encounter = get_active_encounter_for_actor(db, CombatActorType.CHARACTER, character.id)
+    participant = _find_character_participant(db, encounter, character.id)
+    lines = _advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}")
+    if encounter.status != CombatEncounterStatus.ACTIVE.value:
+        return " ".join(lines) or _encounter_end_summary(encounter), 0
+    current_turn = get_current_turn(db, encounter)
+    if current_turn is None or current_turn.participant_id != participant.id:
+        return " ".join(lines) or f"{character.name} aguarda sua vez no combate.", 0
+    try:
+        result = use_consumable(
+            db, campaign_id, character, intent.target or "",
+            action_key=f"consume:{resolved_key}", in_combat=True,
+        )
+    except ConsumableError as exc:
+        lines.append(f"O consumível não pôde ser usado: {exc}")
+        return " ".join(lines), 0
+    complete_current_turn(
+        db, encounter, participant, completion_key=f"consume_turn:{resolved_key}"
+    )
+    lines.append(f"{character.name} {result.summary[0].lower() + result.summary[1:]}")
+    if encounter.status == CombatEncounterStatus.ACTIVE.value:
+        lines.extend(_advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after"))
     return " ".join(lines), 0
 
 

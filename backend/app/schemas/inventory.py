@@ -41,6 +41,15 @@ class ContainerProfileResponse(BaseModel):
     content_weight: float
 
 
+class ConsumableProfileResponse(BaseModel):
+    hp_restore: float
+    mana_restore: float
+    stamina_restore: float
+    hunger_restore: float
+    thirst_restore: float
+    use_minutes: int
+
+
 class InventoryItemResponse(BaseModel):
     item_instance_id: str
     item_id: str
@@ -62,6 +71,7 @@ class InventoryItemResponse(BaseModel):
     weapon: WeaponProfileResponse | None
     armor: ArmorProfileResponse | None
     tool: ToolProfileResponse | None
+    consumable: ConsumableProfileResponse | None
     # Phase 21O — the one piece of app.game.visual.item.ItemVisualSpec
     # not already covered by the fields above (material/quality/
     # condition/weapon family were all real Phase 10 Canon already

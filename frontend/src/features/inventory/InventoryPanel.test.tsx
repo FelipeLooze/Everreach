@@ -187,6 +187,29 @@ describe("InventoryPanel", () => {
     expect(card?.querySelector(".state-badge-danger")).toHaveTextContent("quebrada");
   });
 
+  it("mostra os efeitos autoritativos de um consumível", async () => {
+    mocks.getInventory.mockResolvedValue({
+      items: [{
+        item_instance_id: "instance_potion", item_id: "item_potion", name: "Poção Rubra",
+        type: "CONSUMABLE", quantity: 2, equipped: false, unit_weight: 0.2,
+        quality: "STANDARD", condition: null, material: null,
+        total_weight: 0.4, equipped_slot: null, accessibility: "QUICK",
+        allowed_slots: ["WAIST"], weapon: null, armor: null, tool: null,
+        consumable: {
+          hp_restore: 10, mana_restore: 0, stamina_restore: 2,
+          hunger_restore: 0, thirst_restore: 0, use_minutes: 1,
+        },
+      }],
+      total_weight: 0.4, carrying_capacity: 25, load_ratio: 0.016, encumbrance: "NORMAL",
+    });
+
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+    const card = (await screen.findByText("Poção Rubra")).closest(".inventory-item-card");
+    expect(card).toHaveTextContent("consumível");
+    expect(card).toHaveTextContent("HP +10");
+    expect(card).toHaveTextContent("Stamina +2");
+  });
+
   it("mostra a nota de ornamentação de assinatura quando o item tem uma", async () => {
     mocks.getInventory.mockResolvedValue({
       items: [{

@@ -202,6 +202,18 @@ function ItemCard({ item, campaignId }: { item: InventoryItem; campaignId: strin
           ferramenta para {item.tool.capabilities.map((capability) => toolCapabilityLabels[capability]).join(", ")}
         </p>
       )}
+
+      {item.consumable && (
+        <p className="inventory-item-detail">
+          consumível · efeitos {[
+            item.consumable.hp_restore > 0 && `HP +${item.consumable.hp_restore}`,
+            item.consumable.mana_restore > 0 && `Mana +${item.consumable.mana_restore}`,
+            item.consumable.stamina_restore > 0 && `Stamina +${item.consumable.stamina_restore}`,
+            item.consumable.hunger_restore > 0 && `Fome +${item.consumable.hunger_restore}`,
+            item.consumable.thirst_restore > 0 && `Sede +${item.consumable.thirst_restore}`,
+          ].filter(Boolean).join(", ")}
+        </p>
+      )}
     </article>
   );
 }

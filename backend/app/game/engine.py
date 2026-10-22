@@ -43,6 +43,8 @@ from app.game.items.interactions import (
     ITEM_INTERACTION_INTENTS,
     resolve_item_interaction,
 )
+from app.game.items.consumables import ConsumableError, use_consumable
+from app.game.items.loot import LootError, resolve_npc_loot
 from app.game.economy.economic_canon import (
     EconomicCanonError,
     materialize_economic_value,
@@ -791,6 +793,32 @@ def _apply_intent(
         return f"{character.name} espera, deixando o tempo passar.", 15
     if intent.type == ActionIntentType.SKILL_CHECK:
         return _handle_skill_check(db, campaign_id, character, intent)
+    if intent.type == ActionIntentType.USE:
+        if combat_bridge.get_active_encounter_for_actor(
+            db, CombatActorType.CHARACTER, character.id
+        ) is not None:
+            return combat_bridge.handle_consumable_intent(
+                db, campaign_id, character, intent, action_key=action_key
+            )
+        if not intent.target:
+            return "Nenhum consumível foi identificado.", 0
+        try:
+            result = use_consumable(
+                db, campaign_id, character, intent.target, action_key=action_key
+            )
+        except ConsumableError as exc:
+            return f"O consumível não pôde ser usado: {exc}", 0
+        return f"{character.name} {result.summary[0].lower() + result.summary[1:]}", 0 if result.replayed else result.use_minutes
+    if intent.type == ActionIntentType.LOOT:
+        if not intent.target:
+            return "Nenhum alvo para saque foi identificado.", 0
+        try:
+            result = resolve_npc_loot(
+                db, campaign_id, character, intent.target, action_key=action_key
+            )
+        except LootError as exc:
+            return f"O saque não pôde ser realizado: {exc}", 0
+        return f"{character.name} {result.summary[0].lower() + result.summary[1:]}", 0 if result.replayed else 2
     if intent.type in ITEM_INTERACTION_INTENTS:
         return _handle_item_interaction(
             db,

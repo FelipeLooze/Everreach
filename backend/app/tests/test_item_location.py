@@ -218,6 +218,7 @@ def test_inventory_api_reads_item_instances_as_the_authoritative_source(
             "weapon": None,
             "armor": None,
             "tool": None,
+                "consumable": None,
             "signature_ornamentation": None,
             "asset_ref": None,
         }

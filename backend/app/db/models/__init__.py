@@ -6,6 +6,7 @@ from app.db.models.campaign import Campaign, WorldTime
 from app.db.models.attribute import AttributeDefinition, AttributeEvidenceRecord
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.container import ItemContainerProfile
+from app.db.models.consumable import ItemConsumableProfile, ItemConsumptionRecord
 from app.db.models.combat import (
     CombatAction,
     CombatAutonomousDecision,
@@ -40,6 +41,7 @@ from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.local_economy import LocationEconomy
+from app.db.models.loot import ActorLootProfile, LootResolution, LootTable, LootTableEntry
 from app.db.models.economic_value import EconomicCanonValue
 from app.db.models.location import (
     CharacterConnectionDiscovery,
@@ -170,6 +172,8 @@ __all__ = [
     "ItemArmorProfile",
     "ItemEquipmentProfile",
     "ItemContainerProfile",
+    "ItemConsumableProfile",
+    "ItemConsumptionRecord",
     "Item",
     "ItemDefinition",
     "ItemInstance",
@@ -183,6 +187,10 @@ __all__ = [
     "CharacterLocationDiscovery",
     "LocalSupplyLevel",
     "LocationEconomy",
+    "LootTable",
+    "LootTableEntry",
+    "ActorLootProfile",
+    "LootResolution",
     "EconomicCanonValue",
     "Location",
     "LocationConnection",

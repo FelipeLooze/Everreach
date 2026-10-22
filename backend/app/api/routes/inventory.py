@@ -6,6 +6,7 @@ from app.db.models.character import Character
 from app.db.models.defense import ItemArmorProfile
 from app.db.models.equipment import ItemEquipmentProfile
 from app.db.models.container import ItemContainerProfile
+from app.db.models.consumable import ItemConsumableProfile
 from app.db.models.item import Item, ItemInstance
 from app.db.models.material import MaterialDefinition
 from app.db.models.tool import ItemToolProfile
@@ -26,6 +27,7 @@ from app.game.visual.item import build_item_visual_spec
 from app.schemas.inventory import (
     ArmorProfileResponse,
     ContainerProfileResponse,
+    ConsumableProfileResponse,
     InventoryItemResponse,
     InventoryResponse,
     MaterialResponse,
@@ -53,6 +55,7 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
         armor_profile = db.get(ItemArmorProfile, item.id)
         tool_profile = db.get(ItemToolProfile, item.id)
         container_profile = db.get(ItemContainerProfile, item.id)
+        consumable_profile = db.get(ItemConsumableProfile, item.id)
         parent = (
             db.get(ItemInstance, entry.location_ref)
             if entry.location_type == "CONTAINER" and entry.location_ref
@@ -138,6 +141,18 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                         )
                     )
                     if tool_profile is not None
+                    else None
+                ),
+                consumable=(
+                    ConsumableProfileResponse(
+                        hp_restore=consumable_profile.hp_restore,
+                        mana_restore=consumable_profile.mana_restore,
+                        stamina_restore=consumable_profile.stamina_restore,
+                        hunger_restore=consumable_profile.hunger_restore,
+                        thirst_restore=consumable_profile.thirst_restore,
+                        use_minutes=consumable_profile.use_minutes,
+                    )
+                    if consumable_profile is not None
                     else None
                 ),
                 signature_ornamentation=item_visual.signature_ornamentation,

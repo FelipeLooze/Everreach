@@ -25,6 +25,7 @@ from app.db.models.character_class import (
     ClassDefinitionDomain,
 )
 from app.db.models.currency import CurrencyHolding
+from app.db.models.consumable import ItemConsumptionRecord
 from app.db.models.event import WorldEvent
 from app.db.models.expedition import Expedition
 from app.db.models.group import Group, GroupInvite, GroupMember
@@ -44,6 +45,7 @@ from app.db.models.organization import (
 )
 from app.db.models.organization_reputation import OrganizationReputationRecord
 from app.db.models.local_economy import LocationEconomy
+from app.db.models.loot import ActorLootProfile, LootResolution
 from app.db.models.supply import LocalSupplyLevel
 from app.db.models.economic_value import EconomicCanonValue
 from app.db.models.domain import (
@@ -118,6 +120,15 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
 
     db.query(ActionCheckpoint).filter(
         ActionCheckpoint.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(ItemConsumptionRecord).filter(
+        ItemConsumptionRecord.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(LootResolution).filter(
+        LootResolution.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
+    db.query(ActorLootProfile).filter(
+        ActorLootProfile.campaign_id == campaign_id
     ).delete(synchronize_session=False)
     db.query(EconomicCanonValue).filter(
         EconomicCanonValue.campaign_id == campaign_id

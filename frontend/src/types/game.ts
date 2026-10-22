@@ -240,6 +240,7 @@ export interface InventoryItem {
   weapon: WeaponProfile | null;
   armor: ArmorProfile | null;
   tool: ToolProfile | null;
+  consumable?: ConsumableProfile | null;
   // Phase 21O — real per-definition Canon (app.game.visual.item), set
   // only for named/special items; null for the overwhelming majority
   // of ordinary items ("ordinary items should look ordinary").
@@ -333,6 +334,14 @@ export type ToolCapability =
   | "LOCKPICKING";
 export interface ToolProfile {
   capabilities: ToolCapability[];
+}
+export interface ConsumableProfile {
+  hp_restore: number;
+  mana_restore: number;
+  stamina_restore: number;
+  hunger_restore: number;
+  thirst_restore: number;
+  use_minutes: number;
 }
 export type WeaponReach = "NORMAL" | "LONG" | "RANGED";
 export type WeaponHandRequirement =

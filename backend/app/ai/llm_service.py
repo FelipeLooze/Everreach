@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import json
+import re
 import time
 
 import httpx
@@ -57,6 +58,19 @@ def _ollama_error_detail(response: httpx.Response) -> str | None:
 class LLMServiceError(Exception):
     """Raised when the configured LLM backend is unreachable or errors out.
     Callers must surface this clearly — never silently fabricate a response."""
+
+
+class LLMRateLimitError(LLMServiceError):
+    """HTTP 429. ``retry_after_seconds`` is the provider's own wait hint when
+    it gave one (Groq: "Please try again in 5.13s"), else None."""
+
+    def __init__(self, message: str, retry_after_seconds: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+
+
+class LLMEmptyCompletionError(LLMServiceError):
+    """A 200 response whose assistant content was empty."""
 
 
 class LLMService(ABC):
@@ -337,6 +351,24 @@ class OllamaLLMService(LLMService):
             logger.info("Could not release Ollama GPU residency: %s", exc)
 
 
+_RETRY_AFTER_IN_MESSAGE = re.compile(r"try again in (?:(\d+)m)?([\d.]+)(ms|s)\b", re.IGNORECASE)
+
+
+def _retry_after_seconds(response: httpx.Response, detail: str | None) -> float | None:
+    header = response.headers.get("retry-after")
+    if header:
+        try:
+            return float(header)
+        except ValueError:
+            pass
+    match = _RETRY_AFTER_IN_MESSAGE.search(detail or "")
+    if match is None:
+        return None
+    minutes, amount, unit = match.groups()
+    seconds = float(amount) / 1000 if unit.lower() == "ms" else float(amount)
+    return seconds + 60 * int(minutes or 0)
+
+
 def _openrouter_error_detail(response: httpx.Response) -> str | None:
     """Mirrors _ollama_error_detail's own reasoning: OpenRouter's error
     body shape is {"error": {"message": "...", "code": ..., ...}} (an
@@ -488,9 +520,10 @@ class OpenRouterLLMService(LLMService):
                     self._model,
                     detail or "no detail",
                 )
-                raise LLMServiceError(
+                raise LLMRateLimitError(
                     f"{self._provider_display_name} rate limit reached for "
-                    f"{self._model}: {detail or 'rate limited'}"
+                    f"{self._model}: {detail or 'rate limited'}",
+                    retry_after_seconds=_retry_after_seconds(response, detail),
                 )
             if response.status_code == 404:
                 logger.warning("%s model unavailable (model=%s): %s", self._provider_display_name, self._model, detail)
@@ -553,7 +586,7 @@ class OpenRouterLLMService(LLMService):
         content = message.get("content")
         if not isinstance(content, str) or not content.strip():
             logger.warning("%s response had no assistant content.", self._provider_display_name)
-            raise LLMServiceError(
+            raise LLMEmptyCompletionError(
                 f"{self._provider_display_name} returned an empty completion (no assistant content)."
             )
 

@@ -88,3 +88,69 @@ def test_truncated_json_salvages_a_complete_literal_target():
     assert intent_type == ActionIntentType.TALK
     assert target == "homem idoso"
     assert pace == TravelPace.NORMAL
+
+
+class _ScriptedLLM:
+    """Raises/returns each scripted step in turn; records the call count."""
+
+    def __init__(self, *steps):
+        from app.ai.llm_service import LLMService
+
+        class _Service(LLMService):
+            calls = 0
+            last_generation_metadata = None
+
+            def generate(inner, system, prompt):
+                inner.calls += 1
+                step = steps[inner.calls - 1]
+                if isinstance(step, Exception):
+                    raise step
+                return step
+
+        self.service = _Service()
+
+
+_TALK_JSON = '{"intent": "TALK", "target": null}'
+
+
+def test_intent_parser_retries_once_after_a_short_rate_limit(monkeypatch):
+    # Playtest: back-to-back turns hit Groq's 8k tokens/minute with a
+    # "try again in 5s" and every one of them fell straight to FREEFORM.
+    from app.ai import intent_parser
+    from app.ai.llm_service import LLMRateLimitError
+
+    sleeps = []
+    monkeypatch.setattr(intent_parser.time, "sleep", sleeps.append)
+    llm = _ScriptedLLM(LLMRateLimitError("rate limited", retry_after_seconds=5.13), _TALK_JSON)
+
+    intent = intent_parser.parse(llm.service, "Falo com o ancião.", "")
+
+    assert intent.type == ActionIntentType.TALK
+    assert llm.service.calls == 2
+    assert sleeps and 5.13 <= sleeps[0] < 6
+
+
+def test_intent_parser_retries_once_after_an_empty_completion(monkeypatch):
+    from app.ai import intent_parser
+    from app.ai.llm_service import LLMEmptyCompletionError
+
+    monkeypatch.setattr(intent_parser.time, "sleep", lambda _seconds: None)
+    llm = _ScriptedLLM(LLMEmptyCompletionError("empty"), _TALK_JSON)
+
+    assert intent_parser.parse(llm.service, "Falo com o ancião.", "").type == ActionIntentType.TALK
+    assert llm.service.calls == 2
+
+
+def test_intent_parser_does_not_wait_out_a_long_rate_limit(monkeypatch):
+    from app.ai import intent_parser
+    from app.ai.llm_service import LLMRateLimitError
+
+    sleeps = []
+    monkeypatch.setattr(intent_parser.time, "sleep", sleeps.append)
+    llm = _ScriptedLLM(LLMRateLimitError("daily quota", retry_after_seconds=3600))
+
+    intent = intent_parser.parse(llm.service, "Falo com o ancião.", "")
+
+    assert intent.type == ActionIntentType.FREEFORM
+    assert llm.service.calls == 1
+    assert sleeps == []

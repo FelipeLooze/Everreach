@@ -1,10 +1,16 @@
 import json
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
 from app.ai.llm_call import call_llm
-from app.ai.llm_service import LLMService, LLMServiceError
+from app.ai.llm_service import (
+    LLMEmptyCompletionError,
+    LLMRateLimitError,
+    LLMService,
+    LLMServiceError,
+)
 from app.core.enums import ActionIntentType, TravelPace
 from app.core.logging import get_logger
 
@@ -33,6 +39,29 @@ class Intent:
     technique_type: str | None = None
 
 
+# Each intent call sends ~4k prompt tokens and Groq's free tier allows 8k
+# tokens per minute, so back-to-back turns routinely hit a 429 with a wait
+# of a few seconds; Groq also occasionally returns an empty completion.
+# Either one used to drop the turn straight to FREEFORM (confirmed in
+# playtest). One retry is cheap for a classification call; a long wait is
+# not worth stalling the turn for.
+_MAX_RATE_LIMIT_WAIT_SECONDS = 8.0
+
+
+def _call_with_one_retry(llm_service: LLMService, prompt: str) -> str:
+    try:
+        return call_llm(llm_service, _SYSTEM_PROMPT, prompt, purpose="INTENT")
+    except LLMRateLimitError as exc:
+        wait = exc.retry_after_seconds
+        if wait is None or wait > _MAX_RATE_LIMIT_WAIT_SECONDS:
+            raise
+        logger.info("intent parser: rate limited, retrying in %.1fs", wait)
+        time.sleep(wait + 0.25)
+    except LLMEmptyCompletionError:
+        logger.info("intent parser: empty completion, retrying once")
+    return call_llm(llm_service, _SYSTEM_PROMPT, prompt, purpose="INTENT", attempt=2)
+
+
 def parse(llm_service: LLMService, text: str, context: str) -> Intent:
     """Ask the LLM to classify player intent. This NEVER decides game outcomes —
     it only produces a structured hint the Game Engine may use. If the LLM is
@@ -42,7 +71,7 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
     logger.debug("INTENT PARSER PROMPT\n%s", prompt)
 
     try:
-        raw = call_llm(llm_service, _SYSTEM_PROMPT, prompt, purpose="INTENT")
+        raw = _call_with_one_retry(llm_service, prompt)
     except LLMServiceError:
         logger.info("intent parser: LLM unavailable, falling back to FREEFORM")
         return Intent(type=ActionIntentType.FREEFORM, target=None, raw_text=text)

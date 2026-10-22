@@ -348,6 +348,11 @@ def move_character(
     if return_connection is not None:
         discover_connection(db, character.id, return_connection.id)
 
+    # Travel companions (Phase 13 groups) arrive together with the character.
+    from app.game.groups.companions import follow_character
+
+    follow_character(db, character, from_location_id)
+
     # Registra o incidente ocorrido durante o percurso, se houver.
     if incident is not None:
         log_event(

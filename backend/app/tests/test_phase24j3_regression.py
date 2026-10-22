@@ -641,3 +641,31 @@ def test_looking_around_a_board_with_postings_does_not_call_it_empty(db_session)
 
     assert character.location_id == board.id
     assert "Não há nenhum aviso pregado no quadro." not in summary
+
+
+def test_wild_places_can_be_reached_by_kind_before_their_name_is_known(db_session):
+    # Playtest: after seeing the forest from the square, "Seguimos pela
+    # trilha até a floresta" failed with "Nenhum lugar conhecido
+    # correspondente a 'floresta'" — only in-village services had labels.
+    from app.game.discovery.service import record_location_visit
+
+    campaign, region, village, character = _setup(db_session)
+    record_location_visit(db_session, character.id, village.id, source="world_start")
+    _discover_all_connections(db_session, character, village)
+    forest = (
+        db_session.query(Location)
+        .join(LocationConnection, LocationConnection.to_location_id == Location.id)
+        .filter(LocationConnection.from_location_id == village.id, Location.type == "forest")
+        .one()
+    )
+
+    for intent in (
+        Intent(type=ActionIntentType.MOVE, target="floresta", raw_text="Vou até a floresta"),
+        Intent(type=ActionIntentType.FREEFORM, target=None,
+               raw_text="Seguimos pela trilha até a floresta"),
+    ):
+        character.location_id = village.id
+        db_session.flush()
+        state = build_game_state(db_session, campaign.id, character.id)
+        engine._apply_intent(db_session, campaign.id, character, intent, state)
+        assert character.location_id == forest.id, intent.raw_text

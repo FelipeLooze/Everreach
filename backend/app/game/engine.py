@@ -55,6 +55,8 @@ from app.game.economy.economic_canon import (
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
 from app.game.notices import service as notices_service
+from app.game.organizations import registration as registration_service
+from app.game.groups import companions as companions_service
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.quests.rewards import grant_pending_quest_completion_xp
@@ -273,6 +275,7 @@ def resolve_action(
     else:
         intent = intent_parser.parse(intent_llm_service, text, context)
         intent = _refine_explicit_quest_intent(intent)
+        intent = _refine_explicit_membership_intent(intent)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     if technique_use is not None:
@@ -804,6 +807,59 @@ _EXPLICIT_QUEST_ACTION_PATTERN = re.compile(
 )
 
 
+# First-person requests to join or leave an organization. Asking HOW to join
+# ("como faço para me registrar?") stays a conversation.
+_JOIN_ORGANIZATION_PATTERN = re.compile(
+    r"\b(?:quero|gostaria de|desejo|vou|posso)\s+(?:me\s+)?"
+    r"(?:(?:registrar|inscrever|filiar|alistar)\b"
+    r"|(?:juntar|entrar)\s+(?:a|ao|para|n[ao])\s+(?:a\s+)?(?:guilda|ordem|organizacao|irmandade)\b)"
+    r"|\bme\s+(?:registro|inscrevo|filio|alisto)\b"
+    r"|\bassino\s+o\s+registro\b"
+)
+_LEAVE_ORGANIZATION_PATTERN = re.compile(
+    r"\b(?:quero|vou|desejo)\s+(?:sair|deixar|abandonar)\s+(?:d?[ao]s?\s+)?"
+    r"(?:guilda|ordem|organizacao|conselho)\b"
+    r"|\bsaio\s+d[ao]\s+(?:guilda|ordem|organizacao|conselho)\b"
+    r"|\bcancelo\s+(?:o\s+|meu\s+)?registro\b"
+)
+_HOW_TO_QUESTION_PATTERN = re.compile(
+    r"\bcomo\s+(?:faco|posso|eu|se|funciona|fazer)\b|\bquanto\s+custa\b"
+    r"|\bo\s+que\s+(?:preciso|e\s+preciso)\b|\bquais\s+(?:sao\s+)?(?:os\s+)?requisitos\b"
+)
+
+
+_INVITE_TO_GROUP_PATTERN = re.compile(
+    r"\bconvido\b"
+    r"|\b(?:quer|querem|topa|topam|gostaria de|aceita)\s+(?:vir|viajar|ir|seguir)\s+comigo\b"
+    r"|\bvamos\s+(?:viajar\s+|seguir\s+)?juntos\b|\bformar\s+um\s+grupo\b"
+    r"|\bme\s+acompanhar\b|\bviajar\s+comigo\b"
+)
+_LEAVE_GROUP_PATTERN = re.compile(
+    r"\b(?:saio|deixo)\s+do\s+grupo\b|\bdesfa(?:co|zer)\s+o\s+grupo\b"
+    r"|\bdispenso\s+o\s+grupo\b|\bcada\s+um\s+(?:segue|seguir)\s+seu\s+caminho\b"
+    r"|\bnos\s+separamos\b"
+)
+
+
+def _refine_explicit_membership_intent(intent: Intent) -> Intent:
+    """Deterministic backstop for joining/leaving an organization or a travel
+    group, which the Intent Parser may read as plain conversation."""
+    if intent.type not in (
+        ActionIntentType.FREEFORM, ActionIntentType.TALK, ActionIntentType.APPROACH
+    ):
+        return intent
+    text = _strip_accents(intent.raw_text or "").casefold()
+    if _LEAVE_GROUP_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.LEAVE_GROUP)
+    if _INVITE_TO_GROUP_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.INVITE_TO_GROUP)
+    if _LEAVE_ORGANIZATION_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.LEAVE_ORGANIZATION)
+    if _JOIN_ORGANIZATION_PATTERN.search(text) and not _HOW_TO_QUESTION_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.JOIN_ORGANIZATION)
+    return intent
+
+
 def _refine_explicit_quest_intent(intent: Intent) -> Intent:
     """Deterministic backstop for explicit quest-management commands.
 
@@ -835,6 +891,21 @@ def _apply_intent(
     *,
     action_key: str | None = None,
 ) -> tuple[str, int]:
+    if intent.type == ActionIntentType.INVITE_TO_GROUP:
+        return _handle_group_invite(db, campaign_id, character, intent, state)
+    if intent.type == ActionIntentType.LEAVE_GROUP:
+        change = companions_service.leave_character_group(db, character)
+        return change.summary, 0
+    if intent.type == ActionIntentType.JOIN_ORGANIZATION:
+        change = registration_service.register_with_organization(
+            db, campaign_id, character, " ".join(filter(None, (intent.target, intent.raw_text)))
+        )
+        return change.summary, 5 if change.changed else 0
+    if intent.type == ActionIntentType.LEAVE_ORGANIZATION:
+        change = registration_service.leave_organization(
+            db, campaign_id, character, " ".join(filter(None, (intent.target, intent.raw_text)))
+        )
+        return change.summary, 1 if change.changed else 0
     if intent.type == ActionIntentType.ACCEPT_QUEST:
         quest = quests_service.find_character_quest_by_name(
             db,
@@ -1036,6 +1107,30 @@ _HUB_LOCATION_TYPE_LABELS_PT: dict[str, tuple[str, ...]] = {
     "village": ("praca central", "centro da vila", "praca", "vila"),
 }
 
+# Wild places are usually seen before their name is known, so players refer
+# to them by kind ("vamos até a floresta"); confirmed in playtest as
+# "Nenhum lugar conhecido correspondente a 'floresta'". Same exactly-one
+# rule as above: two known forests resolve to nothing.
+_WILD_LOCATION_TYPE_LABELS_PT: dict[str, tuple[str, ...]] = {
+    "forest": ("floresta", "mata", "bosque"),
+    "river": ("rio", "riacho", "ribeirao", "corrego"),
+    "road": ("estrada",),
+    "clearing": ("clareira",),
+    "ruins": ("ruinas",),
+    "temple_ruins": ("ruinas do templo", "templo em ruinas"),
+    "fort_ruins": ("ruinas do forte", "forte em ruinas"),
+    "cave": ("caverna", "gruta"),
+    "hills": ("colinas", "morros"),
+    "mountain_range": ("montanhas", "serra"),
+    "plains": ("planicie", "campos"),
+    "marsh": ("pantano", "brejo"),
+    "coast": ("costa", "litoral", "praia"),
+    "mine_entrance": ("mina",),
+    "abandoned_mine": ("mina abandonada",),
+    "tower": ("torre",),
+}
+_PLACE_TYPE_LABELS_PT = {**_HUB_LOCATION_TYPE_LABELS_PT, **_WILD_LOCATION_TYPE_LABELS_PT}
+
 _OBSERVATION_CUE_PATTERN = re.compile(
     r"\b(?:olha|olho|observa|observo|examina|examino)\b", re.IGNORECASE
 )
@@ -1065,7 +1160,8 @@ _EXIT_PHRASE_PATTERN = re.compile(r"\bsai\b|\bsaio\b|\bsaiu\b|\bsair\b", re.IGNO
 # infinitive ("Ir até...") all occur in real play; first person was
 # confirmed live to be ignored when the Intent Parser fell back to FREEFORM.
 _MOVEMENT_PHRASE_PATTERN = re.compile(
-    r"\b(vai|vou|ir)\b.{0,20}\b(direcao|para|ate)\b"
+    r"\b(vai|vou|ir|vamos)\b.{0,20}\b(direcao|para|ate)\b"
+    r"|\b(segue|sigo|seguimos|seguir)\b.{0,25}\b(direcao|para|ate)\b"
     r"|\b(chega|chego|chegar)\b"
     r"|\b(entra|entro|entrar)\b.{0,15}\bn[ao]\b"
     r"|\b(caminha|caminho|caminhar)\b.{0,20}\b(direcao|para|ate)\b"
@@ -1130,8 +1226,8 @@ def _resolve_movement_target(db: Session, character: Character, raw_text: str) -
         if _mentioned(location.name)
         or (location.type in _LOCATION_TYPE_LABELS_PT and _mentioned(_LOCATION_TYPE_LABELS_PT[location.type]))
         or (
-            location.type in _HUB_LOCATION_TYPE_LABELS_PT
-            and any(_mentioned(label) for label in _HUB_LOCATION_TYPE_LABELS_PT[location.type])
+            location.type in _PLACE_TYPE_LABELS_PT
+            and any(_mentioned(label) for label in _PLACE_TYPE_LABELS_PT[location.type])
         )
     ]
     if len(matches) != 1:
@@ -1202,7 +1298,7 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
             if _strip_accents(label).casefold() == target_normalized
         ] + [
             location_type
-            for location_type, labels in _HUB_LOCATION_TYPE_LABELS_PT.items()
+            for location_type, labels in _PLACE_TYPE_LABELS_PT.items()
             if target_normalized in {_strip_accents(label).casefold() for label in labels}
         ]
         if matched_types:
@@ -1599,6 +1695,57 @@ def _implicit_freeform_interlocutor_switch(
         players_service.meet_simulated_player(db, campaign_id, character.id, player.id)
         return None, player
     return None, None
+
+
+def _handle_group_invite(
+    db: Session, campaign_id: str, character: Character, intent: Intent, state
+) -> tuple[str, int]:
+    """Who is being invited: a name the player used, then a reference in the
+    raw text, then whoever they are already talking to ("Quer vir comigo?")."""
+    target = _strip_accents(intent.target or "").casefold().strip()
+
+    def _named(people):
+        return [
+            person for person in people
+            if target and (
+                target in _strip_accents(person.name).casefold()
+                or _strip_accents(person.name).casefold().split()[0] in target.split()
+            )
+        ]
+
+    npc_hits, player_hits = _named(state.nearby_npcs), _named(state.nearby_simulated_players)
+    if len(npc_hits) + len(player_hits) != 1:
+        npc, player = _resolve_addressed_entity(
+            intent.raw_text, state.nearby_npcs, state.nearby_simulated_players
+        )
+        npc_hits, player_hits = ([npc] if npc else []), ([player] if player else [])
+    if not npc_hits and not player_hits:
+        active_player = players_service.get_active_simulated_player_interlocutor(
+            db, campaign_id, character.id, character.location_id
+        )
+        active_npc = npcs_service.get_active_interlocutor(
+            db, campaign_id, character.id, character.location_id
+        )
+        if active_player is not None and any(
+            candidate.id == active_player.id for candidate in state.nearby_simulated_players
+        ):
+            player_hits = [active_player]
+        elif active_npc is not None and any(
+            candidate.id == active_npc.id for candidate in state.nearby_npcs
+        ):
+            npc_hits = [active_npc]
+
+    if player_hits and not npc_hits:
+        change = companions_service.invite_simulated_player(
+            db, campaign_id, character, player_hits[0]
+        )
+    elif npc_hits and not player_hits:
+        change = companions_service.decline_for_duties(
+            character, npc_hits[0].name, db.get(Location, character.location_id)
+        )
+    else:
+        return "Diga quem você quer convidar para viajar junto.", 0
+    return change.summary, 1
 
 
 def _handle_talk(

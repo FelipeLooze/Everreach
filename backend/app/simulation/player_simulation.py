@@ -172,6 +172,11 @@ def tick(
         .order_by(SimulatedPlayer.id)
         .all()
     )
+    # Someone travelling with the protagonist follows them; autonomous goals
+    # would otherwise walk them out of the group.
+    from app.game.groups.companions import accompanies_a_character
+
+    players = [player for player in players if not accompanies_a_character(db, player)]
 
     active_scope = scope or build_simulation_scope(
         db,

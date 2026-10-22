@@ -548,14 +548,19 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   da Guilda de Aventureiros; ler o quadro revela oportunidades, aceitar altera o aviso, objetivos
   de conversa e leitura avançam automaticamente, conclusão concede XP uma única vez e o painel
   permite acompanhar, aceitar e abandonar missões conhecidas.
-- **Fase 13 — Grupos, Guildas e Organizações: COMPLETE (13A–13N e integração jogável).**
-  Grupos temporários preservam convites e consentimento; organizações persistentes possuem origem,
-  formalidade, papéis próprios, membros, reputação explicável, relações, objetivos, necessidades,
-  patrimônio, ações e conflitos. Organizações patrocinam as missões e avisos reais da Fase 12.
-  Contratos concluídos alteram a reputação com o patrocinador de forma idempotente. O painel
-  **Social** mostra somente o grupo atual e organizações legitimamente conhecidas, com sede,
-  liderança, vínculo, cargo, reputação e avisos ativos; a mesma regra de visibilidade limita o
-  contexto enviado ao Narrator.
+- **Fase 13 — Grupos, Guildas e Organizações: PARCIAL (13A–13N como sistemas; integração jogável
+  parcial).** Grupos temporários preservam convites e consentimento; organizações persistentes
+  possuem origem, formalidade, papéis próprios, membros, reputação explicável, relações, objetivos,
+  necessidades, patrimônio, ações e conflitos. Organizações patrocinam as missões e avisos reais da
+  Fase 12. **Ligado ao jogo:** contratos concluídos alteram a reputação com o patrocinador de forma
+  idempotente; o personagem se registra pessoalmente numa guilda (na sede, com a liderança presente)
+  e pode sair dela; convida transportados que já conhece para viajar junto (eles decidem, seguem o
+  personagem nas viagens e saem da simulação autônoma enquanto acompanham; moradores recusam por
+  suas obrigações); o painel **Social** mostra o grupo atual e organizações legitimamente
+  conhecidas, e a mesma regra de visibilidade limita o contexto enviado ao Narrator. **Ainda só como
+  sistema (sem chamada no jogo):** promoção e troca de cargo, mudança de liderança, relações entre
+  organizações, conflitos, patrimônio, ações autônomas das organizações e organizações fundadas por
+  jogadores. A taxa de registro aguarda a Fase 14 (Economia).
 
 ## Fora do MVP
 

@@ -342,6 +342,19 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
     ]
 
 
+def _travel_companion_lines(db: Session, character_id: str) -> list[str]:
+    """Transported people who accepted to travel with the protagonist."""
+    from app.db.models.character import Character
+    from app.game.groups.companions import companions_of
+
+    character = db.get(Character, character_id)
+    companions = companions_of(db, character) if character is not None else []
+    if not companions:
+        return []
+    names = ", ".join(companion.name for companion in companions)
+    return [f"Travel companions (accepted to travel with the protagonist and move with them): {names}"]
+
+
 def _organization_leader_title(db: Session, organization_id: str) -> str | None:
     row = (
         db.query(OrganizationMember, OrganizationRole)
@@ -1543,6 +1556,7 @@ def build_narrative_context(
             f"HP: {state.character.hp_current}/{state.character.hp_max}",
             f"Mana: {state.character.mana_current}/{state.character.mana_max}",
             f"Stamina: {state.character.stamina_current}/{state.character.stamina_max}",
+            *_travel_companion_lines(db, state.character.id),
         ]
     )
     world_section = "\n".join(

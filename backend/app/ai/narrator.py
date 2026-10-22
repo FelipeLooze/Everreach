@@ -1413,6 +1413,59 @@ def _direct_question_grounding_is_explicit_ignorance(context: str) -> bool:
     return "No confirmed answer available" in _direct_question_grounding_section(context)
 
 
+_UNITS_PT = (
+    "zero", "um", "dois", "tres", "quatro", "cinco", "seis", "sete", "oito", "nove",
+    "dez", "onze", "doze", "treze", "catorze", "quinze", "dezesseis", "dezessete",
+    "dezoito", "dezenove",
+)
+_TENS_PT = ("", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa")
+_HUNDREDS_PT = (
+    "", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos",
+    "seiscentos", "setecentos", "oitocentos", "novecentos",
+)
+
+
+def _spell_pt(number: int) -> str:
+    """Brazilian Portuguese cardinal (masculine, unaccented), 0..999999."""
+    if number < 20:
+        return _UNITS_PT[number]
+    if number < 100:
+        tens, units = divmod(number, 10)
+        return _TENS_PT[tens] + (f" e {_UNITS_PT[units]}" if units else "")
+    if number < 1000:
+        if number == 100:
+            return "cem"
+        hundreds, rest = divmod(number, 100)
+        return _HUNDREDS_PT[hundreds] + (f" e {_spell_pt(rest)}" if rest else "")
+    thousands, rest = divmod(number, 1000)
+    head = "mil" if thousands == 1 else f"{_spell_pt(thousands)} mil"
+    if not rest:
+        return head
+    joiner = " e " if rest < 100 or rest % 100 == 0 else " "
+    return head + joiner + _spell_pt(rest)
+
+
+def _mentions_bronze_amount(text: str, amount: int) -> bool:
+    """True when the text states this bronze amount the way a person would:
+    "15 bronze", "quinze bronzes", "duas moedas de bronze", "15 de bronze".
+
+    Confirmed live: Nemotron answered "— Quinze bronze." on every attempt and
+    a digits-only check rejected it until a robotic fallback replaced the
+    whole (correct) answer.
+    """
+    masculine = _spell_pt(amount)
+    feminine = re.sub(r"\bum\b", "uma", masculine)
+    feminine = re.sub(r"\bdois\b", "duas", feminine)
+    feminine = re.sub(r"entos\b", "entas", feminine)
+    spellings = {str(amount), f"{amount:,}".replace(",", "."), masculine, feminine}
+    alternatives = "|".join(re.escape(spelling) for spelling in sorted(spellings, key=len, reverse=True))
+    return re.search(
+        # "e " before it means it's the tail of a larger number ("cento e quinze").
+        rf"(?<![\w.])(?<!\be )(?<!\bmil )(?:{alternatives})(?:\s+(?:moedas?|pecas?|de|em))*\s+bronzes?\b",
+        _normalized(text),
+    ) is not None
+
+
 def _find_missing_authorized_price_answer_violations(
     text: str, context: str, player_input: str
 ) -> list[str]:
@@ -1430,7 +1483,7 @@ def _find_missing_authorized_price_answer_violations(
     if match is None:
         return []
     amount = match.group(1)
-    if re.search(rf"\b{re.escape(amount)}\s+bronze\b", text, re.IGNORECASE):
+    if _mentions_bronze_amount(text, int(amount)):
         return []
     return [
         "a pergunta direta de preço não foi respondida: informe explicitamente "

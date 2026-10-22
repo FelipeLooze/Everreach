@@ -406,3 +406,39 @@ def test_final_price_guard_survives_a_later_validator_rewrite():
         "Colm Corrin",
     )
     assert result == "— 8 bronze. — responde Colm Corrin."
+
+
+_FIFTEEN_BRONZE_CONTEXT = (
+    "DIRECT QUESTION GROUNDING\n"
+    "CURRENT OFFER: 15 bronze.\n"
+    "Authorized answer: 15 bronze."
+)
+
+
+def test_price_spelled_out_in_words_counts_as_answered():
+    # Bake-off: Nemotron answered "— Quinze bronze." on every attempt and the
+    # digits-only check replaced that answer with "— 15 bronze. — responde
+    # Lena Sowerby." after three wasted calls, on every model tested.
+    for answer in (
+        "— Quinze bronze. — A voz sai rouca. — Lâmina de ferro, cabo simples.",
+        "— São quinze moedas de bronze — diz ela.",
+        "— 15 de bronze, e nem um a menos.",
+        "— Quinze peças de bronze.",
+    ):
+        assert narrator.enforce_authorized_price_answer(
+            answer, _FIFTEEN_BRONZE_CONTEXT, "Quanto custa uma faca simples aqui?", "Lena Sowerby"
+        ) == answer
+
+
+def test_a_different_amount_in_words_is_still_rejected():
+    for answer in ("— Dezesseis bronze.", "— Cento e quinze bronze.", "— Quinze dias e trinta bronze."):
+        assert narrator.enforce_authorized_price_answer(
+            answer, _FIFTEEN_BRONZE_CONTEXT, "Quanto custa uma faca simples aqui?", "Lena Sowerby"
+        ) == "— 15 bronze. — responde Lena Sowerby."
+
+
+def test_feminine_and_large_amounts_in_words():
+    assert narrator._mentions_bronze_amount("Duas moedas de bronze.", 2)
+    assert narrator._mentions_bronze_amount("Duzentas moedas de bronze.", 200)
+    assert narrator._mentions_bronze_amount("Mil e duzentos bronzes.", 1200)
+    assert narrator._mentions_bronze_amount("1.200 bronze.", 1200)

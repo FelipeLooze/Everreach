@@ -5,7 +5,7 @@ apenas classifica a intenção.
 Responda com APENAS um objeto JSON, sem nenhum outro texto, neste formato exato
 (os valores de "intent" devem ficar em inglês, exatamente como abaixo — são um
 identificador interno do sistema, não texto para o jogador):
-{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "EXPERIMENT" | "TECHNIQUE" | "ATTACK" | "DEFEND" | "DODGE" | "APPROACH" | "RETREAT" | "DISENGAGE" | "FLEE" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "USE" | "LOOT" | "ACCEPT_QUEST" | "ABANDON_QUEST" | "JOIN_ORGANIZATION" | "LEAVE_ORGANIZATION" | "INVITE_TO_GROUP" | "LEAVE_GROUP" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "weapon": "<arma mencionada ou null>", "attack_type": "MELEE_ATTACK" | "RANGED_ATTACK" | null, "damage_profile": "SLASH" | "PIERCE" | "BLUNT" | null, "body_area": "HEAD" | "TORSO" | "ARMS" | "HANDS" | "LEGS" | "FEET" | null, "pattern_key": "<slug curto em inglês para a manobra tentada, ou null>", "domains": "<domínio ou domínios em inglês maiúsculo separados por + , ou null>", "technique_type": "PHYSICAL" | "MAGICAL" | "HYBRID" | null, "pace": "SLOW" | "NORMAL" | "FAST"}
+{"intent": "MOVE" | "TALK" | "EXAMINE" | "REST" | "WAIT" | "SKILL_CHECK" | "EXPERIMENT" | "TECHNIQUE" | "ATTACK" | "DEFEND" | "DODGE" | "APPROACH" | "RETREAT" | "DISENGAGE" | "FLEE" | "PICK_UP" | "DROP" | "GIVE" | "TAKE" | "EQUIP" | "UNEQUIP" | "STORE" | "RETRIEVE" | "MOVE_BETWEEN_CONTAINERS" | "USE" | "LOOT" | "ACCEPT_QUEST" | "ABANDON_QUEST" | "JOIN_ORGANIZATION" | "LEAVE_ORGANIZATION" | "INVITE_TO_GROUP" | "LEAVE_GROUP" | "FOUND_ORGANIZATION" | "RECRUIT_TO_ORGANIZATION" | "EXPEL_FROM_ORGANIZATION" | "FORMALIZE_ORGANIZATION" | "FREEFORM", "target": "<nome curto do alvo ou null>", "secondary_target": "<destinatário ou recipiente de destino, ou null>", "slot": "<slot corporal em inglês ou null>", "weapon": "<arma mencionada ou null>", "attack_type": "MELEE_ATTACK" | "RANGED_ATTACK" | null, "damage_profile": "SLASH" | "PIERCE" | "BLUNT" | null, "body_area": "HEAD" | "TORSO" | "ARMS" | "HANDS" | "LEGS" | "FEET" | null, "pattern_key": "<slug curto em inglês para a manobra tentada, ou null>", "domains": "<domínio ou domínios em inglês maiúsculo separados por + , ou null>", "technique_type": "PHYSICAL" | "MAGICAL" | "HYBRID" | null, "pace": "SLOW" | "NORMAL" | "FAST"}
 
 Guia:
 - MOVE: o jogador está tentando viajar até um lugar.
@@ -82,6 +82,14 @@ Guia:
   decide; você não decide se ela aceita.
 - LEAVE_GROUP: o jogador sai do grupo, desfaz o grupo ou se separa dos
   companheiros de viagem.
+- FOUND_ORGANIZATION: o jogador e seus companheiros fundam uma guilda ou bando
+  próprio. Use o nome escolhido para a guilda em "target".
+- RECRUIT_TO_ORGANIZATION: o jogador convida alguém para entrar na guilda dele.
+  Use a pessoa em "target".
+- EXPEL_FROM_ORGANIZATION: o jogador expulsa alguém da guilda dele. Use a pessoa
+  em "target".
+- FORMALIZE_ORGANIZATION: o jogador pede para registrar ou oficializar a guilda
+  que lidera junto a uma autoridade.
 - FREEFORM: qualquer outra coisa, ou texto puramente conversacional/descritivo sem
   uma ação mecânica clara.
 - "pace" representa o ritmo físico de deslocamento quando a intenção for MOVE.

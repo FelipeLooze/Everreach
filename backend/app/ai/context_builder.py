@@ -409,8 +409,18 @@ def _known_organizations_lines(db: Session, character) -> list[str]:
             .count()
         )
 
+        standing = (
+            "registered with a native authority"
+            if organization.formality == "FORMALLY_RECOGNIZED"
+            else "informal, not registered"
+        )
+        origin = (
+            f"founded by transported people ({organization.focus or 'GUILD'}), {standing}"
+            if organization.origin == "TRANSPORTED_CREATED"
+            else "native institution"
+        )
         lines.append(
-            f"- {organization.name} [{organization.organization_type}] — "
+            f"- {organization.name} [{organization.organization_type}; {origin}] — "
             f"headquarters: {'known' if organization.headquarters_location_id else 'unknown'}; "
             f"leader: {leader_title or 'unknown'}; "
             f"reputation with this character: {reputation}; "

@@ -57,6 +57,7 @@ from app.game.players import service as players_service
 from app.game.notices import service as notices_service
 from app.game.organizations import registration as registration_service
 from app.game.groups import companions as companions_service
+from app.game.organizations import player_guilds as guilds_service
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.quests.rewards import grant_pending_quest_completion_xp
@@ -818,8 +819,8 @@ _JOIN_ORGANIZATION_PATTERN = re.compile(
 )
 _LEAVE_ORGANIZATION_PATTERN = re.compile(
     r"\b(?:quero|vou|desejo)\s+(?:sair|deixar|abandonar)\s+(?:d?[ao]s?\s+)?"
-    r"(?:guilda|ordem|organizacao|conselho)\b"
-    r"|\bsaio\s+d[ao]\s+(?:guilda|ordem|organizacao|conselho)\b"
+    r"(?:(?:minha|nossa|meu|nosso)\s+)?(?:guilda|ordem|organizacao|conselho|bando)\b"
+    r"|\bsaio\s+d[ao]\s+(?:(?:minha|nossa|meu|nosso)\s+)?(?:guilda|ordem|organizacao|conselho|bando)\b"
     r"|\bcancelo\s+(?:o\s+|meu\s+)?registro\b"
 )
 _HOW_TO_QUESTION_PATTERN = re.compile(
@@ -841,6 +842,23 @@ _LEAVE_GROUP_PATTERN = re.compile(
 )
 
 
+_FOUND_ORGANIZATION_PATTERN = re.compile(
+    r"\b(?:fundamos|fundar|fundo|criamos|criar|crio)\b.{0,25}\b(?:guilda|bando|sociedade|companhia)\b"
+)
+_RECRUIT_PATTERN = re.compile(
+    r"\b(?:convido|chamo|recruto|convidar|chamar|recrutar)\b.{0,40}"
+    r"\b(?:para|pra)\s+(?:a\s+|o\s+|minha\s+|nossa\s+|meu\s+|nosso\s+)?(?:guilda|bando)\b"
+    r"|\brecruto\b"
+)
+_EXPEL_PATTERN = re.compile(
+    r"\b(?:expulso|expulsar|removo|remover)\b.{0,40}\b(?:guilda|bando)\b"
+)
+_FORMALIZE_PATTERN = re.compile(
+    r"\b(?:registr\w*|formaliz\w*|oficializ\w*)\s+(?:a\s+)?(?:minha|nossa)\s+guilda\b"
+    r"|\b(?:formaliz|oficializ)\w*\s+a\s+guilda\b"
+)
+
+
 def _refine_explicit_membership_intent(intent: Intent) -> Intent:
     """Deterministic backstop for joining/leaving an organization or a travel
     group, which the Intent Parser may read as plain conversation."""
@@ -849,10 +867,20 @@ def _refine_explicit_membership_intent(intent: Intent) -> Intent:
     ):
         return intent
     text = _strip_accents(intent.raw_text or "").casefold()
+    # Order matters: "convido o Bram para a guilda" is a recruitment before it
+    # is a travel invitation, and "registrar nossa guilda" is not joining one.
     if _LEAVE_GROUP_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.LEAVE_GROUP)
+    if _EXPEL_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.EXPEL_FROM_ORGANIZATION)
+    if _RECRUIT_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.RECRUIT_TO_ORGANIZATION)
     if _INVITE_TO_GROUP_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.INVITE_TO_GROUP)
+    if _FOUND_ORGANIZATION_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.FOUND_ORGANIZATION)
+    if _FORMALIZE_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.FORMALIZE_ORGANIZATION)
     if _LEAVE_ORGANIZATION_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.LEAVE_ORGANIZATION)
     if _JOIN_ORGANIZATION_PATTERN.search(text) and not _HOW_TO_QUESTION_PATTERN.search(text):
@@ -893,6 +921,18 @@ def _apply_intent(
 ) -> tuple[str, int]:
     if intent.type == ActionIntentType.INVITE_TO_GROUP:
         return _handle_group_invite(db, campaign_id, character, intent, state)
+    if intent.type in (
+        ActionIntentType.RECRUIT_TO_ORGANIZATION, ActionIntentType.EXPEL_FROM_ORGANIZATION
+    ):
+        return _handle_guild_membership(db, campaign_id, character, intent, state)
+    if intent.type == ActionIntentType.FOUND_ORGANIZATION:
+        change = guilds_service.found_guild(
+            db, campaign_id, character, intent.raw_text or "", name_hint=intent.target
+        )
+        return change.summary, 10 if change.changed else 0
+    if intent.type == ActionIntentType.FORMALIZE_ORGANIZATION:
+        change = guilds_service.formalize(db, campaign_id, character)
+        return change.summary, 15 if change.changed else 0
     if intent.type == ActionIntentType.LEAVE_GROUP:
         change = companions_service.leave_character_group(db, character)
         return change.summary, 0
@@ -1045,6 +1085,16 @@ def _apply_intent(
             state,
             action_key=action_key,
         )
+    if (
+        intent.type == ActionIntentType.APPROACH
+        and combat_bridge.get_active_encounter_for_actor(
+            db, CombatActorType.CHARACTER, character.id
+        ) is None
+    ):
+        # Outside combat, approaching someone starts a conversation
+        # ("Me aproximo de um dos recém-chegados"); it used to answer
+        # "não está em combate" (seen in playtest).
+        return _handle_talk(db, campaign_id, character, intent, state)
     if intent.type in combat_bridge.TACTICAL_INTENT_MAP:
         return combat_bridge.handle_combat_tactic_intent(
             db,
@@ -1697,11 +1747,12 @@ def _implicit_freeform_interlocutor_switch(
     return None, None
 
 
-def _handle_group_invite(
+def _resolve_target_person(
     db: Session, campaign_id: str, character: Character, intent: Intent, state
-) -> tuple[str, int]:
-    """Who is being invited: a name the player used, then a reference in the
-    raw text, then whoever they are already talking to ("Quer vir comigo?")."""
+) -> tuple[list, list]:
+    """Who an invitation/recruitment/expulsion is about: a name the player
+    used, then a reference in the raw text, then whoever they are already
+    talking to ("Quer vir comigo?")."""
     target = _strip_accents(intent.target or "").casefold().strip()
 
     def _named(people):
@@ -1734,7 +1785,13 @@ def _handle_group_invite(
             candidate.id == active_npc.id for candidate in state.nearby_npcs
         ):
             npc_hits = [active_npc]
+    return npc_hits, player_hits
 
+
+def _handle_group_invite(
+    db: Session, campaign_id: str, character: Character, intent: Intent, state
+) -> tuple[str, int]:
+    npc_hits, player_hits = _resolve_target_person(db, campaign_id, character, intent, state)
     if player_hits and not npc_hits:
         change = companions_service.invite_simulated_player(
             db, campaign_id, character, player_hits[0]
@@ -1745,6 +1802,24 @@ def _handle_group_invite(
         )
     else:
         return "Diga quem você quer convidar para viajar junto.", 0
+    return change.summary, 1
+
+
+def _handle_guild_membership(
+    db: Session, campaign_id: str, character: Character, intent: Intent, state
+) -> tuple[str, int]:
+    npc_hits, player_hits = _resolve_target_person(db, campaign_id, character, intent, state)
+    if npc_hits and not player_hits:
+        return (
+            f"{npc_hits[0].name} é morador daqui e não faz parte de guildas de Transportados.",
+            0,
+        )
+    if not player_hits:
+        return "Diga de quem você está falando.", 0
+    if intent.type == ActionIntentType.RECRUIT_TO_ORGANIZATION:
+        change = guilds_service.recruit(db, campaign_id, character, player_hits[0])
+    else:
+        change = guilds_service.expel(db, character, player_hits[0])
     return change.summary, 1
 
 

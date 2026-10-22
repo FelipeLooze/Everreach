@@ -434,6 +434,10 @@ class ActionIntentType(StrEnum):
     LEAVE_ORGANIZATION = "LEAVE_ORGANIZATION"
     INVITE_TO_GROUP = "INVITE_TO_GROUP"
     LEAVE_GROUP = "LEAVE_GROUP"
+    FOUND_ORGANIZATION = "FOUND_ORGANIZATION"
+    RECRUIT_TO_ORGANIZATION = "RECRUIT_TO_ORGANIZATION"
+    EXPEL_FROM_ORGANIZATION = "EXPEL_FROM_ORGANIZATION"
+    FORMALIZE_ORGANIZATION = "FORMALIZE_ORGANIZATION"
     FREEFORM = "FREEFORM"
     UNKNOWN = "UNKNOWN"
 
@@ -1119,6 +1123,18 @@ class OrganizationFormality(StrEnum):
 
     INFORMAL = "INFORMAL"
     FORMALLY_RECOGNIZED = "FORMALLY_RECOGNIZED"
+
+
+class GuildFocus(StrEnum):
+    """What a transported-founded guild is about. organization_type stays
+    the broad social category; two GUILD-type guilds (adventurers, hunters)
+    differ here."""
+
+    ADVENTURERS = "ADVENTURERS"
+    HUNTERS = "HUNTERS"
+    BANDITS = "BANDITS"
+    MERCHANTS = "MERCHANTS"
+    RESEARCHERS = "RESEARCHERS"
 
 
 class OrganizationVisibility(StrEnum):

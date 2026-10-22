@@ -48,7 +48,10 @@ def found_organization_from_group(
     description: str = "",
     visibility: OrganizationVisibility = OrganizationVisibility.PUBLIC,
     headquarters_location_id: str | None = None,
+    complete_group: bool = True,
 ) -> Organization:
+    """complete_group=False keeps the founding group active — a travel party
+    that founds a guild keeps travelling together."""
     if group.status != GroupStatus.ACTIVE:
         raise OrganizationError(
             f"Só um grupo ativo pode dar origem a uma organização (status atual: {group.status})."
@@ -82,7 +85,8 @@ def found_organization_from_group(
     db.flush()
 
     world_minute = get_world_time(db, group.campaign_id).total_minutes()
-    group.status = GroupStatus.COMPLETED_PURPOSE
+    if complete_group:
+        group.status = GroupStatus.COMPLETED_PURPOSE
     db.flush()
 
     log_event(

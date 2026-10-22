@@ -435,3 +435,20 @@ def test_ambiguous_role_reference_asks_instead_of_continuing_old_conversation(db
 
     assert elder.name not in summary
     assert "Há mais de uma pessoa aqui" in summary
+
+
+def test_approaching_someone_outside_combat_starts_a_conversation(db_session):
+    # Playtest: "Me aproximo de um dos recém-chegados" was parsed as the
+    # combat tactic APPROACH and answered "Logan não está em combate".
+    campaign, region, village, character = _setup(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+
+    summary, _ = engine._apply_intent(
+        db_session, campaign.id, character,
+        Intent(type=ActionIntentType.APPROACH, target=None,
+               raw_text='Me aproximo de um dos outros recém-chegados. "Oi, como você se chama?"'),
+        state,
+    )
+
+    assert "combate" not in summary
+    assert any(player.name in summary for player in state.nearby_simulated_players)

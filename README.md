@@ -557,10 +557,18 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   e pode sair dela; convida transportados que já conhece para viajar junto (eles decidem, seguem o
   personagem nas viagens e saem da simulação autônoma enquanto acompanham; moradores recusam por
   suas obrigações); o painel **Social** mostra o grupo atual e organizações legitimamente
-  conhecidas, e a mesma regra de visibilidade limita o contexto enviado ao Narrator. **Ainda só como
-  sistema (sem chamada no jogo):** promoção e troca de cargo, mudança de liderança, relações entre
-  organizações, conflitos, patrimônio, ações autônomas das organizações e organizações fundadas por
-  jogadores. A taxa de registro aguarda a Fase 14 (Economia).
+  conhecidas, e a mesma regra de visibilidade limita o contexto enviado ao Narrator.
+  **Guildas de Transportados (lado do jogador):** um grupo de viagem funda uma guilda própria
+  (aventureiros, caçadores, bando, comerciantes ou pesquisadores), cada companheiro decidindo se
+  entra; ela nasce informal (privada; bandos secretos), com até 5 membros, Mestre e Membros
+  Fundadores. O líder recruta e expulsa; recrutados decidem. Registrá-la no conselho do povoado
+  (com 3+ membros e reputação confiável do líder com uma instituição local) a torna formal e
+  pública, conhecida pelos NPCs da região e livre do limite de membros; bandos nunca podem ser
+  registrados. Um líder que sai passa a guilda adiante; sem membros, ela se dissolve. **Ainda só
+  como sistema (sem chamada no jogo):** guildas fundadas pelos Transportados simulados (planejado
+  para surgir lentamente, após meses de jogo), relações entre organizações, conflitos, patrimônio e
+  ações autônomas das organizações. Taxas e contratos publicados por guildas formais aguardam a
+  Fase 14 (Economia).
 
 ## Fora do MVP
 

@@ -9,6 +9,7 @@ record it. Only guilds take open registration for now; other kinds of
 organization have their own admission rules that no system models yet.
 """
 
+import re
 from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
@@ -221,7 +222,13 @@ def leave_organization(
     )
     if not memberships:
         return MembershipChange(f"{character.name} não é membro de nenhuma organização.", False)
-    organization = _pick([organization for _member, organization in memberships], raw_text)
+    organizations = [organization for _member, organization in memberships]
+    own = [org for org in organizations if org.origin == "TRANSPORTED_CREATED"]
+    if len(own) == 1 and re.search(
+        r"\b(?:minha|nossa)\s+guilda\b|\b(?:meu|nosso)\s+bando\b", _normalize(raw_text)
+    ):
+        organizations = own
+    organization = _pick(organizations, raw_text)
     if organization is None:
         return MembershipChange(
             f"{character.name} é membro de mais de uma organização; diga de qual quer sair.",
@@ -229,4 +236,7 @@ def leave_organization(
         )
     member = next(member for member, org in memberships if org.id == organization.id)
     set_membership_status(db, member, OrganizationMembershipStatus.LEFT)
-    return MembershipChange(f"{character.name} deixa {_the(organization)}.", True)
+    from app.game.organizations.player_guilds import handle_departure
+
+    aftermath = handle_departure(db, organization, member)
+    return MembershipChange(f"{character.name} deixa {_the(organization)}.{aftermath}", True)

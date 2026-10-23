@@ -114,8 +114,8 @@ def create_campaign(db: Session, name: str, world_seed: int | None = None) -> Ca
 
 def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location]:
     """Create the single starting region for a fresh campaign. Only ever called once,
-    when the player starts the world — later regions are created as the world progresses
-    (spec section 6), not implemented yet in the MVP."""
+    when the player starts the world — neighbouring regions are created later, when the
+    character approaches a regional boundary (app.game.world.neighbor_region)."""
     campaign = db.get(Campaign, campaign_id)
     if campaign.world_seed is None:
         # Self-heal saves created before Phase 15A introduced world_seed.

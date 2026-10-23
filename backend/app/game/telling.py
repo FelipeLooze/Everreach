@@ -128,9 +128,19 @@ def decide(db: Session, campaign_id: str, character_id: str, npc, player_input: 
             ((_shares_words(fact, question_words), fact) for fact in facts if fact not in chosen),
             key=lambda pair: (-pair[0], pair[1].fact_key),
         )
-        chosen += [fact for score, fact in scored if score > 0]
+        chosen += [fact for score, fact in scored if score >= _words_needed(db, fact)]
     chosen = list(dict.fromkeys(chosen))[:MAX_FACTS_PER_TURN]
     return Telling(chosen, {fact.fact_key: _offered_by(db, fact) for fact in chosen if _is_open_contract(db, fact)})
+
+
+def _words_needed(db: Session, fact: KnowledgeFact) -> int:
+    """Contracts and schedules have their own triggers (asked about work or
+    "when?"); by plain word overlap they need the player to name them — two
+    words of the title, not one. Playtest: "acabei de chegar, qual o nome do
+    senhor?" made the elder recite the "Relato da Primeira Chegada" contract."""
+    if _is_open_contract(db, fact) or fact.fact_key.endswith(":schedule"):
+        return 2
+    return 1
 
 
 def _offered_by(db: Session, fact: KnowledgeFact) -> str:
@@ -175,13 +185,25 @@ def is_stated(statement: str, narrated_text: str) -> bool:
     return bool(words) and sum(word in text for word in words) * 3 >= len(words) * 2
 
 
+def _spoken(db: Session, fact: KnowledgeFact, already_spoke: bool) -> str:
+    """The added line, said the way a person would. A contract statement is a
+    system sentence ("Há trabalho disponível, um contrato ou missão chamado
+    ..."); when the NPC already described it, only its name is missing."""
+    if _is_open_contract(db, fact):
+        title = re.search(r'"([^"]+)"', fact.statement)
+        if title:
+            return (f'Esse contrato se chama "{title.group(1)}".' if already_spoke
+                    else f'Há o contrato "{title.group(1)}".')
+    return fact.statement
+
+
 def tell(db: Session, campaign_id: str, character_id: str, npc, telling: Telling, narrated_text: str) -> str:
     """Add what the narration left out, then teach exactly what was told."""
     for fact in telling.facts:
         if not is_stated(fact.statement, narrated_text):
             already_spoke = "—" in narrated_text
             verb = "acrescenta" if already_spoke else "diz"
-            narrated_text = f"{narrated_text.rstrip()}\n\n— {fact.statement} — {verb} {npc.name}."
+            narrated_text = f"{narrated_text.rstrip()}\n\n— {_spoken(db, fact, already_spoke)} — {verb} {npc.name}."
         teach_fact(db, campaign_id, fact.fact_key, KnowerType.PLAYER, character_id,
                    source=f"revelado por {npc.name}", certainty=KnowledgeCertainty.CONFIRMED)
     return narrated_text

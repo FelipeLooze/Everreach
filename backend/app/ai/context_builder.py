@@ -12,6 +12,7 @@ from app.ai.conversational_act import (
     economic_service_asked_about,
     service_type_asked_about,
 )
+from app.db.models.event import WorldEvent
 from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
@@ -22,6 +23,7 @@ from app.db.models.shop import Shop, ShopListing
 from app.db.models.simulated_player import SimulatedPlayer
 from app.core.enums import (
     CombatActorType,
+    EventType,
     DiscoveryStatus,
     KnowerType,
     KnowledgeDocumentType,
@@ -362,6 +364,38 @@ def _first_meeting_note(db: Session, character, npc) -> str:
     if met is not None:
         return ""
     return "; has NEVER met the character — treats them as a stranger, never as someone known or returning"
+
+
+def _arrival_history_lines(db: Session, state) -> list[str]:
+    """When the First Arrival was and how many came after it. Before this the
+    fact lived only in the opening prompt, and in the very first conversation
+    the elder said transported people "têm aparecido com frequência"."""
+    started = (
+        db.query(WorldEvent.world_minute)
+        .filter(WorldEvent.campaign_id == state.campaign_id, WorldEvent.event_type == EventType.WORLD_STARTED.value)
+        .order_by(WorldEvent.world_minute)
+        .first()
+    )
+    if started is None:
+        return []
+    days = max(0, (state.world_time.total_minutes() - started[0]) // (24 * 60))
+    later = (
+        db.query(WorldEvent.id)
+        .filter(
+            WorldEvent.campaign_id == state.campaign_id,
+            WorldEvent.event_type == EventType.SIMULATED_PLAYER_WORLD_ARRIVAL.value,
+            WorldEvent.world_minute > started[0],
+        )
+        .count()
+    )
+    when = "today" if days == 0 else f"{days} day{'s' if days != 1 else ''} ago"
+    since = "no other arrival since" if later == 0 else f"{later} smaller arrival(s) since"
+    return [
+        f"Transported people: the First Arrival — the first time anyone was ever transported "
+        f"to this world — happened {when}; {since}. Before it, nobody here had ever seen a "
+        "transported person: never say they arrive often or have been arriving for a while "
+        "unless this line says so.",
+    ]
 
 
 def _transported_label(db: Session, character, player) -> str:
@@ -1784,6 +1818,7 @@ def build_narrative_context(
             f"Time: Ano {wt.year}, Mês {wt.month}, Dia {wt.day}, {wt.hour:02d}:{wt.minute:02d} "
             "(only for light and period of day; never state a clock time in the narration)",
             f"Region: {state.region.name}" if state.region else "Region: unknown",
+            *_arrival_history_lines(db, state),
         ]
     )
     spatial_knowledge_section = "\n".join(

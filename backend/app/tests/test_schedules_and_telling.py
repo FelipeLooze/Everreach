@@ -240,3 +240,47 @@ def test_asking_where_two_places_are_tells_those_places_only(db_session):
     assert "Ferraria" in statements and "Estalagem" in statements
     # "fica" is not a topic: the creek, which also "fica" somewhere, stays out.
     assert all(("Ferraria" in fact.statement) or ("Estalagem" in fact.statement) for fact in decided.facts)
+
+
+def test_introducing_yourself_does_not_recite_a_contract(db_session):
+    """The user's save: "Isso, acabei de chegar. Qual o nome do senhor?" made
+    the elder recite the "Relato da Primeira Chegada" contract."""
+    campaign, character = _world(db_session)
+    elder = _npc(db_session, campaign.id, "ancião da vila")
+
+    decided = telling.decide(
+        db_session, campaign.id, character.id, elder,
+        '"Isso, acabei de chegar. Qual o nome do senhor? Meu nome é Logan, prazer"',
+    )
+
+    assert not any(fact.fact_key.startswith("quest:") or fact.fact_key.endswith(":schedule") for fact in decided.facts)
+    # Naming the contract still brings it up.
+    named = telling.decide(db_session, campaign.id, character.id, elder, "E o relato da primeira chegada?")
+    assert any(fact.fact_key.startswith("quest:") for fact in named.facts)
+
+
+def test_a_described_contract_gets_only_its_name_added(db_session):
+    campaign, character = _world(db_session)
+    elder = _npc(db_session, campaign.id, "ancião da vila")
+    quest = _arrival(db_session)
+    described = "— Um contrato simples: conversar comigo e levar o relato ao mestre da guilda."
+
+    told = _tell(db_session, campaign, character, elder, "Tem trabalho por aqui?", described)
+
+    assert told.endswith(f'— Esse contrato se chama "{quest.name}". — acrescenta {elder.name}.')
+    assert "Há trabalho disponível" not in told
+
+
+def test_the_narrator_knows_this_is_the_first_arrival(db_session, client):
+    from app.ai.context_builder import build_context
+    from app.db.models.character import Character
+    from app.game.game_state import build_game_state
+
+    campaign = client.post("/api/campaigns", json={"name": "Primeira"}).json()
+    character_id = client.post(f"/api/campaigns/{campaign['id']}/characters", json={"name": "Logan"}).json()["id"]
+    client.post(f"/api/campaigns/{campaign['id']}/start", params={"character_id": character_id})
+    character = db_session.get(Character, character_id)
+
+    context = build_context(db_session, build_game_state(db_session, campaign["id"], character.id))
+
+    assert "First Arrival" in context and "happened today; no other arrival since" in context

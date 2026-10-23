@@ -32,7 +32,7 @@ from app.core.enums import (
 )
 from app.db.models.item import ItemInstance
 from app.db.models.shop import Shop, ShopListing
-from app.game.economy.pricing import resolve_market_price
+from app.game.economy.supply_demand import resolve_local_market_price
 from app.game.economy.economic_canon import item_subject, materialize_economic_value
 from app.game.economy.wallet import get_or_create_holding
 from app.game.economy.wallet import withdraw as wallet_withdraw
@@ -55,6 +55,7 @@ def create_shop(
     operator_id: str,
     *,
     location_id: str,
+    business_id: str | None = None,
     accepted_item_types: tuple[ItemType, ...] = (),
 ) -> Shop:
     if operator_type not in _SHOP_OPERATOR_TYPES:
@@ -66,6 +67,7 @@ def create_shop(
         name=name,
         operator_type=operator_type,
         operator_id=operator_id,
+        business_id=business_id,
         location_id=location_id,
         status=ShopStatus.OPEN,
         till_bronze=0,
@@ -156,7 +158,14 @@ def buy_from_shop(
     item = db.get(ItemInstance, listing.item_instance_id)
     if item is None:
         raise ShopError("Este item não existe mais.")
-    price = listing.asking_price_bronze if listing.asking_price_bronze is not None else resolve_market_price(db, item)
+    # A listing price is per unit.  Stackable goods stay on the shelf and
+    # transfer one real unit at a time instead of forcing the buyer to buy the
+    # entire stack.  Unique equipment follows the original ownership path.
+    price = (
+        listing.asking_price_bronze
+        if listing.asking_price_bronze is not None
+        else resolve_local_market_price(db, item, shop.location_id)
+    )
 
     buyer_holding = get_or_create_holding(db, shop.campaign_id, buyer_type, buyer_id)
     if price > 0:
@@ -164,15 +173,39 @@ def buy_from_shop(
         shop.till_bronze += price
         db.flush()
 
-    set_item_owner(db, item, owner_type=ItemOwnerType(buyer_type.value), owner_ref=buyer_id)
-    move_item_instance(db, item, location_type=ItemLocationType(buyer_type.value), location_ref=buyer_id)
-    db.delete(listing)
+    purchased_item = item
+    if item.quantity > 1:
+        from app.core.enums import ItemQuality
+        from app.game.items.service import create_item_instance
+
+        item.quantity -= 1
+        purchased_item = create_item_instance(
+            db,
+            item.definition,
+            quantity=1,
+            quality=ItemQuality(item.quality),
+            material=item.material,
+        )
+    else:
+        db.delete(listing)
+    set_item_owner(
+        db,
+        purchased_item,
+        owner_type=ItemOwnerType(buyer_type.value),
+        owner_ref=buyer_id,
+    )
+    move_item_instance(
+        db,
+        purchased_item,
+        location_type=ItemLocationType(buyer_type.value),
+        location_ref=buyer_id,
+    )
     db.flush()
 
     log_event(
         db, shop.campaign_id, EventType.TRANSACTION_COMPLETED,
         actor_type=buyer_type.lower(), actor_id=buyer_id,
-        payload={"shop_id": shop.id, "item_instance_id": item.id, "price_bronze": price},
+        payload={"shop_id": shop.id, "item_instance_id": purchased_item.id, "price_bronze": price},
     )
     return price
 
@@ -198,7 +231,12 @@ def sell_to_shop(
     if accepted and item.definition.type not in accepted:
         raise ShopError(f"'{shop.name}' não compra itens do tipo {item.definition.type}.")
 
-    price = price_bronze if price_bronze is not None else resolve_market_price(db, item)
+    unit_price = (
+        price_bronze
+        if price_bronze is not None
+        else resolve_local_market_price(db, item, shop.location_id)
+    )
+    price = unit_price * item.quantity
     if price > shop.till_bronze:
         raise ShopError(
             f"'{shop.name}' não tem fundos suficientes pra comprar isso "

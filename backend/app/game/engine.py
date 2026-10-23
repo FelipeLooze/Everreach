@@ -52,6 +52,8 @@ from app.game.economy.economic_canon import (
     materialize_economic_value,
     service_subject,
 )
+from app.game.economy.initial_content import ensure_initial_economy_for_campaign
+from app.game.economy.playable import resolve_economy_intent
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
 from app.game.notices import service as notices_service
@@ -207,6 +209,9 @@ def resolve_action(
     ensure_settlement_public_knowledge(
         db, campaign_id, character.location_id
     )
+    # Backfill the real Phase 14 content for saves created before this
+    # integration. This runs inside the action checkpoint and is idempotent.
+    ensure_initial_economy_for_campaign(db, campaign_id)
 
     state = game_state.build_game_state(db, campaign_id, character_id)
 
@@ -277,6 +282,7 @@ def resolve_action(
         intent = intent_parser.parse(intent_llm_service, text, context)
         intent = _refine_explicit_quest_intent(intent)
         intent = _refine_explicit_membership_intent(intent)
+        intent = _refine_explicit_economy_intent(intent)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     if technique_use is not None:
@@ -884,6 +890,100 @@ _GUILD_DIPLOMACY_PATTERN = re.compile(
 )
 
 
+_ECONOMY_INTENTS = {
+    ActionIntentType.BUY,
+    ActionIntentType.SELL,
+    ActionIntentType.APPLY_JOB,
+    ActionIntentType.WORK_JOB,
+    ActionIntentType.LEAVE_JOB,
+    ActionIntentType.PRODUCE,
+}
+
+
+def _quoted_values(text: str) -> list[str]:
+    return [
+        value.strip()
+        for value in re.findall(r'["“”]([^"“”]+)["“”]', text)
+        if value.strip()
+    ]
+
+
+def _after_economy_verb(text: str, pattern: str) -> str | None:
+    match = re.search(pattern, text, re.IGNORECASE)
+    if match is None:
+        return None
+    value = text[match.end():].strip(" \t\r\n:.-\"'“”")
+    value = re.sub(r"^(?:a|o|uma|um)\s+", "", value, flags=re.IGNORECASE)
+    return value or None
+
+
+def _refine_explicit_economy_intent(intent: Intent) -> Intent:
+    """Backstop for commands that commit the player's own economic action.
+
+    Questions about prices or work are deliberately not promoted: they remain
+    dialogue. The backend, never the parser, still decides whether the action
+    is physically and economically possible.
+    """
+    if intent.type in _ECONOMY_INTENTS:
+        return intent
+    if intent.type not in (ActionIntentType.FREEFORM, ActionIntentType.TALK):
+        return intent
+    raw = intent.raw_text or ""
+    text = _strip_accents(raw).casefold()
+    quoted = _quoted_values(raw)
+
+    if re.search(r"\b(?:compro|comprar|quero comprar|vou comprar)\b", text):
+        target = quoted[0] if quoted else _after_economy_verb(
+            raw, r"\b(?:compro|comprar|quero\s+comprar|vou\s+comprar)\b"
+        )
+        secondary = quoted[1] if len(quoted) > 1 else None
+        if target and not quoted:
+            parts = re.split(r"\s+(?:na|no|em)\s+", target, maxsplit=1, flags=re.IGNORECASE)
+            target, secondary = parts[0], parts[1] if len(parts) > 1 else None
+        return replace(intent, type=ActionIntentType.BUY, target=target, secondary_target=secondary)
+
+    if re.search(r"\b(?:vendo|vender|quero vender|vou vender)\b", text):
+        target = quoted[0] if quoted else _after_economy_verb(
+            raw, r"\b(?:vendo|vender|quero\s+vender|vou\s+vender)\b"
+        )
+        secondary = quoted[1] if len(quoted) > 1 else None
+        if target and not quoted:
+            parts = re.split(r"\s+para\s+", target, maxsplit=1, flags=re.IGNORECASE)
+            target, secondary = parts[0], parts[1] if len(parts) > 1 else None
+        return replace(intent, type=ActionIntentType.SELL, target=target, secondary_target=secondary)
+
+    if re.search(r"\b(?:candidato[- ]me|me candidato|aceito a vaga|quero a vaga|quero trabalhar como)\b", text):
+        target = quoted[0] if quoted else _after_economy_verb(
+            raw,
+            r"\b(?:candidato-me|me\s+candidato|aceito\s+a\s+vaga|quero\s+a\s+vaga|quero\s+trabalhar\s+como)(?:\s+(?:ao|a|de))?\b",
+        )
+        target = re.sub(
+            r"^(?:trabalho|emprego|vaga)\s+", "", target or "", flags=re.IGNORECASE
+        ) or None
+        return replace(intent, type=ActionIntentType.APPLY_JOB, target=target)
+
+    if re.search(r"\b(?:faco meu turno|cumpro meu turno|trabalho no emprego|trabalho como)\b", text):
+        target = quoted[0] if quoted else _after_economy_verb(
+            raw,
+            r"\b(?:faço\s+meu\s+turno|faco\s+meu\s+turno|cumpro\s+meu\s+turno|trabalho\s+no\s+emprego|trabalho\s+como)\b",
+        )
+        return replace(intent, type=ActionIntentType.WORK_JOB, target=target)
+
+    if re.search(r"\b(?:deixo o emprego|saio do emprego|peco demissao|abandono o trabalho)\b", text):
+        target = quoted[0] if quoted else _after_economy_verb(
+            raw,
+            r"\b(?:deixo\s+o\s+emprego|saio\s+do\s+emprego|peço\s+demissão|peco\s+demissao|abandono\s+o\s+trabalho)\b",
+        )
+        return replace(intent, type=ActionIntentType.LEAVE_JOB, target=target)
+
+    if re.search(r"\b(?:produzo|fabrico|confecciono|forjo|preparo rac)\b", text):
+        target = quoted[0] if quoted else _after_economy_verb(
+            raw, r"\b(?:produzo|fabrico|confecciono|forjo|preparo)\b"
+        )
+        return replace(intent, type=ActionIntentType.PRODUCE, target=target)
+    return intent
+
+
 def _refine_explicit_membership_intent(intent: Intent) -> Intent:
     """Deterministic backstop for joining/leaving an organization or a travel
     group, which the Intent Parser may read as plain conversation."""
@@ -948,6 +1048,19 @@ def _apply_intent(
     *,
     action_key: str | None = None,
 ) -> tuple[str, int]:
+    if intent.type in _ECONOMY_INTENTS:
+        if combat_bridge.get_active_encounter_for_actor(
+            db, CombatActorType.CHARACTER, character.id
+        ) is not None:
+            return "Não é possível negociar, trabalhar ou produzir durante um combate ativo.", 0
+        result = resolve_economy_intent(
+            db,
+            character,
+            intent.type,
+            intent.target,
+            intent.secondary_target,
+        )
+        return result.summary, result.minutes
     if intent.type == ActionIntentType.INVITE_TO_GROUP:
         return _handle_group_invite(db, campaign_id, character, intent, state)
     if intent.type in (

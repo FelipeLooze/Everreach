@@ -593,8 +593,27 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   alcançados e relações — só com organizações que o jogador também conhece; o Narrator recebe o
   mesmo recorte.
   **Ainda só como sistema (sem chamada no jogo):** conflitos, patrimônio e ações autônomas das
-  organizações. Taxas e contratos publicados por guildas formais
-  aguardam a Fase 14 (Economia).
+  organizações. Tributação detalhada e contratos econômicos avançados permanecem
+  expansões futuras, fora desta fundação.
+- **Fase 14 — Economia: COMPLETE (14A–14N e integração jogável).** Bronze é a unidade inteira
+  autoritativa, com exibição em Bronze/Prata/Ouro; carteiras, tesouros, caixas de negócios e caixas
+  de lojas são finitos e separados. Preços partem do valor de referência do item e respeitam
+  qualidade, condição e oferta local com modificadores limitados. Compra e venda transferem tanto
+  o dinheiro quanto a instância física real do item; pilhas em loja são vendidas uma unidade por
+  vez, sem estoque infinito. A vila inicial recebe ferraria, estalagem e entreposto persistentes,
+  todos com proprietário/operador, estoque inicial limitado e avisos públicos de trabalho.
+  O personagem continua chegando somente com o Traje dos Transportados e a mochila vazia, sem
+  arma, armadura ou dinheiro grátis. Ele pode conseguir seus primeiros recursos trabalhando,
+  vendendo saque e materiais ou, futuramente, por recompensas do mundo.
+  Empregos exigem presença física do empregador, candidatura explícita e vínculo ativo; turnos
+  consomem tempo, retiram salários do capital real do negócio e desenvolvem a profissão pertinente
+  com diminishing returns já existente. Produção consome insumos reais, exige o local correto e,
+  quando aplicável, uma ferramenta física adequada; as receitas iniciais permitem preparar rações,
+  trançar corda e forjar uma faca. O painel **Economia** mostra apenas comércio, vagas e receitas no
+  local atual e envia toda operação pelo fluxo normal de ações, narração, Event Log e desfazer.
+  Saves anteriores recebem o conteúdo econômico inicial de forma idempotente. Negócios,
+  organizações, perturbações econômicas, oferta/demanda e contexto do Narrator continuam usando
+  os serviços 14A–14N já existentes, sem uma economia paralela no frontend.
 
 ## Fora do MVP
 

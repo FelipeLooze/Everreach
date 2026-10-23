@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.item import ItemInstance
 from app.db.models.supply import LocalSupplyLevel
+from app.db.models.location import Location
 from app.game.economy.pricing import resolve_market_price
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
@@ -96,14 +97,19 @@ def resolve_local_market_price(db: Session, item_instance: ItemInstance, locatio
     base_price = resolve_market_price(db, item_instance)
     if base_price == 0:
         return 0
-    level = (
-        db.query(LocalSupplyLevel)
-        .filter(
-            LocalSupplyLevel.location_id == location_id,
+    level = None
+    current_id: str | None = location_id
+    visited: set[str] = set()
+    while current_id and current_id not in visited:
+        visited.add(current_id)
+        level = db.query(LocalSupplyLevel).filter(
+            LocalSupplyLevel.location_id == current_id,
             LocalSupplyLevel.item_definition_id == item_instance.definition_id,
-        )
-        .first()
-    )
+        ).first()
+        if level is not None:
+            break
+        location = db.get(Location, current_id)
+        current_id = location.parent_location_id if location else None
     if level is None:
         return base_price
     multiplier = supply_price_multiplier(level.supply_index)

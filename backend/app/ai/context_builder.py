@@ -69,7 +69,8 @@ from app.game.organizations.reputation import organization_reputation_category, 
 from app.game.organizations.visibility import visible_organizations_for_character
 from app.game.economy.currency import to_denominations
 from app.game.economy.local_economy import get_settlement_wealth, gold_circulates_normally
-from app.game.economy.pricing import PricingError, resolve_market_price
+from app.game.economy.pricing import PricingError
+from app.game.economy.supply_demand import resolve_local_market_price
 from app.game.economy.economic_canon import current_price, get_service_value
 from app.game.economy.wallet import total_carried_by_owner
 
@@ -565,9 +566,24 @@ def _nearby_shops_context_lines(db: Session, character) -> list[str]:
         lines.append("- none")
         return lines
     for shop in shops:
-        status_text = "open" if shop.status == ShopStatus.OPEN else "closed"
+        operator_available = True
+        if shop.operator_type == CombatActorType.NPC.value:
+            operator = db.get(NPC, shop.operator_id)
+            operator_available = bool(
+                operator
+                and operator.alive
+                and not operator.incapacitated
+                and effective_npc_location_id(operator) == shop.location_id
+            )
+        status_text = (
+            "open"
+            if shop.status == ShopStatus.OPEN and operator_available
+            else "unattended"
+            if shop.status == ShopStatus.OPEN
+            else "closed"
+        )
         lines.append(f"- {shop.name} [{status_text}]")
-        if shop.status != ShopStatus.OPEN:
+        if shop.status != ShopStatus.OPEN or not operator_available:
             continue
         listings = (
             db.query(ShopListing)
@@ -584,10 +600,11 @@ def _nearby_shops_context_lines(db: Session, character) -> list[str]:
                 price = listing.asking_price_bronze
             else:
                 try:
-                    price = resolve_market_price(db, item)
+                    price = resolve_local_market_price(db, item, shop.location_id)
                 except PricingError:
                     continue
-            lines.append(f"    - {item.definition.name}: {price} bronze")
+            quantity = f" ({item.quantity} em estoque)" if item.quantity > 1 else ""
+            lines.append(f"    - {item.definition.name}: {price} bronze por unidade{quantity}")
     lines.append(
         "Only these listed items and prices are for sale. Never invent stock, a price, "
         "or complete a transaction — the backend already decides all of that."

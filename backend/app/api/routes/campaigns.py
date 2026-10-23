@@ -32,6 +32,9 @@ from app.game.players.arrival_kit import (
     TRANSPORTED_OUTFIT_APPEARANCE,
     grant_transported_arrival_kit,
 )
+from app.game.economy.initial_content import ensure_initial_economy_for_campaign
+from app.game.economy.wallet import get_or_create_holding
+from app.core.enums import CombatActorType
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
@@ -151,6 +154,13 @@ def start_world(
         character.id,
     )
     grant_transported_arrival_kit(db, character)
+    # The protagonist still arrives with zero money. Creating the empty
+    # holding makes that persistent and explicit; all actual money must enter
+    # through wages, sales, rewards or later world systems.
+    get_or_create_holding(
+        db, campaign_id, CombatActorType.CHARACTER, character.id
+    )
+    ensure_initial_economy_for_campaign(db, campaign_id)
 
     # Seeded NPCs start with a neutral activity. Resolve their routine at the
     # current world time before the opening scene is built, otherwise the

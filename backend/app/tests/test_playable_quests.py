@@ -4,6 +4,7 @@ from app.ai.llm_service import LLMService
 from app.core.enums import (
     ActionIntentType,
     CombatActorType,
+    NoticeCategory,
     NoticeStatus,
     ObjectiveTriggerType,
     QuestStatus,
@@ -67,7 +68,15 @@ def test_initial_world_has_grounded_board_content_without_revealing_it_remotely(
     assert db_session.query(Quest).count() == 2
     assert db_session.query(OrganizationNeed).count() >= 2
     assert db_session.query(Notice).filter(Notice.board_feature_id == guild_board.id).count() == 2
-    assert db_session.query(Notice).filter(Notice.board_feature_id == public_board.id).count() == 1
+    public_notices = db_session.query(Notice).filter(
+        Notice.board_feature_id == public_board.id
+    )
+    assert public_notices.filter(
+        Notice.category == NoticeCategory.COMMUNITY_NOTICE.value
+    ).count() == 1
+    assert public_notices.filter(
+        Notice.category == NoticeCategory.JOB.value
+    ).count() == 3
 
     hidden = client.get(
         f"/api/campaigns/{campaign['id']}/quests",

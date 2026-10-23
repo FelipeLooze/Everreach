@@ -5,6 +5,7 @@ from app.api.routes import (
     actions,
     campaigns,
     character,
+    economy,
     inventory,
     journal,
     map as map_routes,
@@ -36,6 +37,7 @@ app.include_router(actions.router)
 app.include_router(map_routes.router)
 app.include_router(inventory.router)
 app.include_router(character.router)
+app.include_router(economy.router)
 app.include_router(quests.router)
 app.include_router(social.router)
 app.include_router(journal.router)

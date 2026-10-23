@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import JobApplicationStatus, JobStatus
@@ -25,6 +25,14 @@ class Job(Base):
     payment_frequency: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default=JobStatus.OPEN, nullable=False)
     capacity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # Playable Phase 14 integration: a job now carries enough persistent
+    # information for a real shift to consume world time and develop the
+    # profession it actually exercises.  These are properties of the work,
+    # not values guessed by the Narrator.
+    work_minutes: Mapped[int] = mapped_column(Integer, default=120, nullable=False)
+    profession_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    profession_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    profession_xp: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
 
 

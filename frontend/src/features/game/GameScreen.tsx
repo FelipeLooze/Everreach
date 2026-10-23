@@ -7,6 +7,7 @@ import { Panel } from "@/components/Panel";
 import { StatusBar } from "@/components/StatusBar";
 import { CharacterSheetPanel } from "@/features/character/CharacterSheetPanel";
 import { CombatPanel } from "@/features/combat/CombatPanel";
+import { EconomyPanel } from "@/features/economy/EconomyPanel";
 import { ActionInput } from "@/features/game/ActionInput";
 import { GameSidebar } from "@/features/game/GameSidebar";
 import { NarrativeLog, type NarrativeEntry } from "@/features/game/NarrativeLog";
@@ -23,7 +24,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { useGameStore } from "@/stores/useGameStore";
 import type { ActionUndoStatus, CharacterTechnique, StoryEntry } from "@/types/game";
 
-type PanelKind = "map" | "inventory" | "character" | "quests" | "social" | "journal" | "log" | "settings" | "combat" | null;
+type PanelKind = "map" | "inventory" | "economy" | "character" | "quests" | "social" | "journal" | "log" | "settings" | "combat" | null;
 
 let entryCounter = 0;
 const nextId = () => `entry_${entryCounter++}`;
@@ -232,6 +233,7 @@ export function GameScreen() {
       <nav className="action-bar" aria-label="Menu do jogo">
         <button onClick={() => setActivePanel("character")}><span>PERSONAGEM</span></button>
         <button onClick={() => setActivePanel("inventory")}><span>INVENTÁRIO</span></button>
+        <button onClick={() => setActivePanel("economy")}><span>ECONOMIA</span></button>
         <button onClick={() => setActivePanel("character")}><span>SKILLS</span></button>
         <button onClick={() => setActivePanel("map")}><span>MAPA</span></button>
         <button onClick={() => setActivePanel("quests")}><span>QUESTS</span></button>
@@ -254,6 +256,11 @@ export function GameScreen() {
       {activePanel === "inventory" && (
         <Panel title="Inventário" size="wide" onClose={() => setActivePanel(null)}>
           <InventoryPanel campaignId={campaignId} characterId={characterId} />
+        </Panel>
+      )}
+      {activePanel === "economy" && (
+        <Panel title="Economia local" size="wide" onClose={() => setActivePanel(null)}>
+          <EconomyPanel campaignId={campaignId} characterId={characterId} onAction={handleAction} />
         </Panel>
       )}
       {activePanel === "character" && (

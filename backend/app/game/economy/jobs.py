@@ -47,6 +47,10 @@ def create_job(
     payment_frequency: JobPaymentFrequency,
     location_id: str | None = None,
     capacity: int = 1,
+    work_minutes: int = 120,
+    profession_key: str | None = None,
+    profession_name: str | None = None,
+    profession_xp: float = 0.5,
 ) -> Job:
     if not title.strip():
         raise JobError("Um trabalho precisa de um título.")
@@ -54,6 +58,12 @@ def create_job(
         raise JobError("O salário precisa ser um inteiro não negativo de Bronze.")
     if capacity < 1:
         raise JobError("Um trabalho precisa de capacidade para ao menos um trabalhador.")
+    if not isinstance(work_minutes, int) or isinstance(work_minutes, bool) or work_minutes <= 0:
+        raise JobError("Um turno de trabalho precisa consumir minutos positivos.")
+    if profession_xp < 0:
+        raise JobError("A experiência profissional não pode ser negativa.")
+    if (profession_key is None) != (profession_name is None):
+        raise JobError("A profissão do trabalho precisa de chave e nome juntos.")
 
     world_minute = get_world_time(db, campaign_id).total_minutes()
     job = Job(
@@ -67,6 +77,10 @@ def create_job(
         payment_frequency=payment_frequency,
         status=JobStatus.OPEN,
         capacity=capacity,
+        work_minutes=work_minutes,
+        profession_key=profession_key.strip().upper() if profession_key else None,
+        profession_name=profession_name.strip() if profession_name else None,
+        profession_xp=float(profession_xp),
         created_world_minute=world_minute,
     )
     db.add(job)

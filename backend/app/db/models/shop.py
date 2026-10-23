@@ -23,6 +23,12 @@ class Shop(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     operator_type: Mapped[str] = mapped_column(String, nullable=False)
     operator_id: Mapped[str] = mapped_column(String, nullable=False)
+    # The retail operation belongs to a real Phase 14J Business.  Stock and
+    # the cash register remain on Shop; ownership, operating capital and jobs
+    # remain on Business.  This link is what joins those two existing models.
+    business_id: Mapped[str | None] = mapped_column(
+        ForeignKey("businesses.id"), nullable=True
+    )
     location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
     status: Mapped[str] = mapped_column(String, default=ShopStatus.OPEN, nullable=False)
     till_bronze: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

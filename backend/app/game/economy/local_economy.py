@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import SettlementWealthBand
 from app.db.models.local_economy import LocationEconomy
+from app.db.models.location import Location
 
 _TYPICAL_MERCHANT_LIQUIDITY_BRONZE = {
     SettlementWealthBand.POOR: 200,
@@ -46,7 +47,19 @@ def set_settlement_wealth(
 def get_settlement_wealth(db: Session, location_id: str) -> SettlementWealthBand:
     """Absence of a row reads as MODEST — an unremarkable default, not an
     omniscient claim about a settlement nobody has described yet."""
-    economy = db.query(LocationEconomy).filter(LocationEconomy.location_id == location_id).first()
+    economy = None
+    current_id: str | None = location_id
+    visited: set[str] = set()
+    # Shops and workshops are child locations of their settlement. Economic
+    # character belongs to the surrounding settlement, not a fake MODEST
+    # default created merely by stepping through a doorway.
+    while current_id and current_id not in visited:
+        visited.add(current_id)
+        economy = db.query(LocationEconomy).filter(LocationEconomy.location_id == current_id).first()
+        if economy is not None:
+            break
+        location = db.get(Location, current_id)
+        current_id = location.parent_location_id if location else None
     if economy is None:
         return SettlementWealthBand.MODEST
     return SettlementWealthBand(economy.wealth_band)

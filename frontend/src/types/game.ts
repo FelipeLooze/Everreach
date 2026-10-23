@@ -408,6 +408,10 @@ export interface OrganizationSummary {
   role: string | null;
   reputation: string;
   active_notices: number;
+  focus: string | null;
+  goal: { description: string; progress: number; target: number } | null;
+  goals_achieved: number;
+  relations: { organization_name: string; relation_type: string }[];
 }
 
 export interface SocialGroupMember {

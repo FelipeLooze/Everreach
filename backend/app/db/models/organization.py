@@ -127,6 +127,11 @@ class OrganizationGoal(Base):
     status: Mapped[str] = mapped_column(String, default=OrganizationGoalStatus.ACTIVE, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Measurable shared goals (transported guilds): what is counted, how
+    # much is needed, and how much the members have done since creation.
+    metric: Mapped[str | None] = mapped_column(String, nullable=True)
+    target: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    progress: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
 class OrganizationNeed(Base):

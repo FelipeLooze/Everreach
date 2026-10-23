@@ -871,6 +871,19 @@ _FORMALIZE_PATTERN = re.compile(
 )
 
 
+_GUILD_RANK_PATTERN = re.compile(
+    r"\b(?:promovo|promover|promova|rebaixo|rebaixar|rebaixe)\b"
+    r"|\b(?:passo|passar|entrego|entregar|transfiro|transferir)\s+(?:a\s+)?(?:lideranca|chefia|comando)\b"
+    r"|\bnomeio\b.{0,40}\b(?:oficial|lider|braco direito)\b"
+)
+_GUILD_DIPLOMACY_PATTERN = re.compile(
+    r"\b(?:proponho|propor|propomos|oferec\w*|firmar|firmamos|selar|selamos|fazer|quero)\b.{0,30}\balianca\b"
+    r"|\bnos\s+aliar\b|\bnos\s+aliamos\b"
+    r"|\b(?:rompo|romper|rompemos|desfaco|desfazer|encerro|encerrar)\b.{0,20}\balianca\b"
+    r"|\bdeclar\w*\b.{0,50}\briva(?:l|is|lidade)\b"
+)
+
+
 def _refine_explicit_membership_intent(intent: Intent) -> Intent:
     """Deterministic backstop for joining/leaving an organization or a travel
     group, which the Intent Parser may read as plain conversation."""
@@ -883,6 +896,10 @@ def _refine_explicit_membership_intent(intent: Intent) -> Intent:
     # is a travel invitation, and "registrar nossa guilda" is not joining one.
     if _LEAVE_GROUP_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.LEAVE_GROUP)
+    if _GUILD_DIPLOMACY_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.GUILD_DIPLOMACY)
+    if _GUILD_RANK_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.CHANGE_GUILD_RANK)
     if _EXPEL_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.EXPEL_FROM_ORGANIZATION)
     if _RECRUIT_PATTERN.search(text):
@@ -945,6 +962,10 @@ def _apply_intent(
     if intent.type == ActionIntentType.FORMALIZE_ORGANIZATION:
         change = guilds_service.formalize(db, campaign_id, character)
         return change.summary, 15 if change.changed else 0
+    if intent.type == ActionIntentType.CHANGE_GUILD_RANK:
+        return _handle_guild_rank(db, campaign_id, character, intent, state)
+    if intent.type == ActionIntentType.GUILD_DIPLOMACY:
+        return _handle_guild_diplomacy(db, campaign_id, character, intent, state)
     if intent.type == ActionIntentType.LEAVE_GROUP:
         change = companions_service.leave_character_group(db, character)
         return change.summary, 0
@@ -1833,6 +1854,62 @@ def _handle_guild_membership(
     else:
         change = guilds_service.expel(db, character, player_hits[0])
     return change.summary, 1
+
+
+def _handle_guild_rank(
+    db: Session, campaign_id: str, character: Character, intent: Intent, state
+) -> tuple[str, int]:
+    text = " ".join(filter(None, (intent.target, intent.raw_text)))
+    member = guilds_service.member_named(db, character, text)
+    if member is None:
+        _npc_hits, player_hits = _resolve_target_person(db, campaign_id, character, intent, state)
+        member = player_hits[0] if len(player_hits) == 1 else None
+    if member is None:
+        return "Diga qual membro da guilda você quer promover, rebaixar ou nomear líder.", 0
+    normalized = _strip_accents(intent.raw_text or "").casefold()
+    if re.search(r"\brebaix", normalized):
+        change = guilds_service.demote(db, character, member)
+    elif re.search(r"\b(?:lideranca|chefia|comando|lider)\b", normalized):
+        change = guilds_service.transfer_leadership(db, character, member)
+    else:
+        change = guilds_service.promote(db, character, member)
+    return change.summary, 1
+
+
+def _handle_guild_diplomacy(
+    db: Session, campaign_id: str, character: Character, intent: Intent, state
+) -> tuple[str, int]:
+    """The other guild is named, or is the guild of the transported person
+    the player is addressing. An alliance needs that guild's leader or a
+    founder standing here to accept."""
+    text = " ".join(filter(None, (intent.target, intent.raw_text)))
+    other = guilds_service.known_guild_named(db, character, text)
+    present = guilds_service.guilds_with_leadership_present(db, character.location_id)
+    if other is None:
+        _npc_hits, player_hits = _resolve_target_person(db, campaign_id, character, intent, state)
+        if len(player_hits) == 1:
+            other = guilds_service.transported_guild_of(
+                db, CombatActorType.SIMULATED_PLAYER, player_hits[0].id
+            )
+    if other is None and len(present) == 1:
+        other = present[0][0]
+    if other is None:
+        return "Diga com qual guilda (pelo nome) você quer tratar.", 0
+    normalized = _strip_accents(intent.raw_text or "").casefold()
+    if re.search(r"\b(?:rompo|romper|rompemos|desfaco|desfazer|encerro|encerrar)\b", normalized):
+        change = guilds_service.break_alliance(db, character, other)
+    elif re.search(r"\briva(?:l|is|lidade)\b", normalized):
+        change = guilds_service.declare_rivalry(db, character, other)
+    else:
+        envoy = next((player for organization, player in present if organization.id == other.id), None)
+        if envoy is None:
+            return (
+                f'Uma aliança com "{other.name}" precisa ser acertada com o líder ou um fundador '
+                "dela, frente a frente.",
+                0,
+            )
+        change = guilds_service.propose_alliance(db, campaign_id, character, other, envoy)
+    return change.summary, 5 if change.changed else 1
 
 
 def _handle_talk(

@@ -13,7 +13,11 @@ Guilds emerge slowly by design: none before GUILD_EMERGENCE_MIN_DAYS of
 world time; then, once a week, a travel group that has stayed together for
 GROUP_MIN_AGE_DAYS may found one, guilds recruit acquaintances standing
 with a member, and seasoned informal guilds register with the settlement
-council. Bandit crews never register.
+council. Bandit crews never register. Each week every guild's shared goal
+is recounted from what its members did, and neighbouring guilds settle into
+relations: same-trade rivals in one region, bandits hunted by hunters
+and adventurers of their region, alliances between leaders who know each
+other. Alliances involving the protagonist's guild are left to the player.
 """
 
 import random
@@ -27,6 +31,7 @@ from app.core.enums import (
     GuildFocus,
     OrganizationFormality,
     OrganizationOrigin,
+    OrganizationRelationType,
     OrganizationStatus,
     OrganizationType,
     OrganizationVisibility,
@@ -35,13 +40,15 @@ from app.core.enums import (
     SimulatedPlayerGoalType,
     SimulatedPlayerStatus,
 )
+from app.db.models.character import Character
 from app.db.models.location import Location
 from app.db.models.npc import NPC
 from app.db.models.organization import Organization
 from app.db.models.relationship import SimulatedPlayerRelationship
 from app.db.models.simulated_player import SimulatedPlayer, SimulatedPlayerPopulation
 from app.db.models.simulated_player_group import SimulatedPlayerGroup
-from app.game.organizations import player_guilds
+from app.game.organizations import guild_goals, player_guilds
+from app.game.organizations.relations import active_relations_between, establish_relation
 from app.game.organizations.roles import join_organization
 from app.game.organizations.service import create_organization
 from app.game.players.groups import active_group_members
@@ -60,6 +67,13 @@ FOUND_CHANCE = 0.25
 BANDIT_CHANCE = 0.3
 FORMALIZE_MIN_AGE_DAYS = 30
 FORMALIZE_CHANCE = 0.35
+RIVALRY_CHANCE = 0.1
+HOSTILITY_CHANCE = 0.3
+ALLIANCE_CHANCE = 0.15
+# Emergent grudges stay few: one rival per guild, at most two guilds
+# hunting the same bandit crew. The player may still declare more.
+MAX_EMERGENT_RIVALS = 1
+MAX_HUNTERS_PER_CREW = 2
 
 GUILD_NAMES = {
     GuildFocus.ADVENTURERS: (
@@ -105,6 +119,8 @@ class SocietySimulationResult:
     guilds_founded: int = 0
     recruits: int = 0
     guilds_formalized: int = 0
+    goals_achieved: int = 0
+    relations_formed: int = 0
 
 
 def tick(
@@ -118,15 +134,19 @@ def tick(
         _materialize_one(db, campaign_id, rng, world_minute)
         for world_minute in boundary_minutes_crossed(now, minutes, MATERIALIZE_INTERVAL_MINUTES)
     )
-    founded = recruits = formalized = 0
+    founded = recruits = formalized = achieved = relations = 0
+    weekly = False
     for world_minute in boundary_minutes_crossed(now, minutes, GUILD_INTERVAL_MINUTES):
+        weekly = True
         if world_minute < GUILD_EMERGENCE_MIN_DAYS * DAY:
             continue
         founded += _found_guilds(db, campaign_id, rng, world_minute)
         recruits += _recruit(db, campaign_id, rng)
         formalized += _formalize(db, campaign_id, rng, world_minute)
+        relations += _settle_relations(db, campaign_id, rng)
+    achieved = _update_goals(db, campaign_id, all_guilds=weekly)
     db.flush()
-    return SocietySimulationResult(materialized, founded, recruits, formalized)
+    return SocietySimulationResult(materialized, founded, recruits, formalized, achieved, relations)
 
 
 # --- Arrivals become people -------------------------------------------------
@@ -384,3 +404,135 @@ def _formalize(db: Session, campaign_id: str, rng: random.Random, world_minute: 
         player_guilds.publish_formal_guild(db, campaign_id, guild, authority, settlement.region_id)
         formalized += 1
     return formalized
+
+
+# --- Shared goals and relations between guilds --------------------------------
+
+
+def _active_guilds(db: Session, campaign_id: str) -> list[Organization]:
+    return (
+        db.query(Organization)
+        .filter(
+            Organization.campaign_id == campaign_id,
+            Organization.origin == OrganizationOrigin.TRANSPORTED_CREATED,
+            Organization.status == OrganizationStatus.ACTIVE,
+            Organization.focus.isnot(None),
+        )
+        .order_by(Organization.id)
+        .all()
+    )
+
+
+def _has_protagonist(db: Session, guild: Organization) -> bool:
+    return any(
+        member.member_type == CombatActorType.CHARACTER
+        for member in player_guilds._active_members(db, guild)
+    )
+
+
+def _update_goals(db: Session, campaign_id: str, *, all_guilds: bool) -> int:
+    """Weekly for every guild; the protagonist's own guild on every tick, so
+    its progress is never a week stale in the Social panel."""
+    achieved = 0
+    for guild in _active_guilds(db, campaign_id):
+        if all_guilds or _has_protagonist(db, guild):
+            achieved += guild_goals.update_goal(db, guild) is not None
+    return achieved
+
+
+def _leader(db: Session, guild: Organization):
+    for member in player_guilds._active_members(db, guild):
+        if player_guilds._rank_of(db, member) == player_guilds.LEADER_RANK:
+            model = Character if member.member_type == CombatActorType.CHARACTER else SimulatedPlayer
+            return member.member_type, db.get(model, member.member_id)
+    return None, None
+
+
+def _leaders_know_each_other(db: Session, campaign_id: str, first: SimulatedPlayer, second: SimulatedPlayer) -> bool:
+    pair = sorted((first.id, second.id))
+    relationship = (
+        db.query(SimulatedPlayerRelationship)
+        .filter(
+            SimulatedPlayerRelationship.campaign_id == campaign_id,
+            SimulatedPlayerRelationship.first_player_id.in_(pair),
+            SimulatedPlayerRelationship.second_player_id.in_(pair),
+        )
+        .first()
+    )
+    return relationship is not None and relationship.familiarity >= 1 and relationship.affinity > 0
+
+
+def _relation_count(db: Session, guild: Organization, relation_type: OrganizationRelationType) -> int:
+    from app.db.models.organization import OrganizationRelation
+    from app.core.enums import OrganizationRelationStatus
+
+    return db.query(OrganizationRelation).filter(
+        OrganizationRelation.status == OrganizationRelationStatus.ACTIVE,
+        OrganizationRelation.relation_type == relation_type,
+        (OrganizationRelation.organization_a_id == guild.id) | (OrganizationRelation.organization_b_id == guild.id),
+    ).count()
+
+
+def _settle_relations(db: Session, campaign_id: str, rng: random.Random) -> int:
+    formed = 0
+    guilds = _active_guilds(db, campaign_id)
+    leaders = {guild.id: _leader(db, guild) for guild in guilds}
+    settlements = {
+        guild.id: player_guilds._settlement_of(db, person.location_id) if person else None
+        for guild in guilds
+        for _type, person in [leaders[guild.id]]
+    }
+    for index, first in enumerate(guilds):
+        for second in guilds[index + 1:]:
+            if active_relations_between(db, first.id, second.id):
+                continue
+            here, there = settlements[first.id], settlements[second.id]
+            if here is None or there is None:
+                continue
+            bandits = [guild for guild in (first, second) if guild.focus == GuildFocus.BANDITS]
+            hunters = [
+                guild for guild in (first, second)
+                if guild.focus in (GuildFocus.HUNTERS, GuildFocus.ADVENTURERS)
+            ]
+            if len(bandits) == 1 and len(hunters) == 1:
+                if (
+                    here.region_id == there.region_id
+                    and _relation_count(db, bandits[0], OrganizationRelationType.HOSTILE) < MAX_HUNTERS_PER_CREW
+                    and rng.random() < HOSTILITY_CHANCE
+                ):
+                    establish_relation(
+                        db, hunters[0], bandits[0], OrganizationRelationType.HOSTILE,
+                        reason=f'"{hunters[0].name}" dá caça ao bando que ataca as estradas da região.',
+                    )
+                    formed += 1
+            elif bandits:
+                continue
+            elif first.focus == second.focus:
+                if (
+                    here.region_id == there.region_id
+                    and all(
+                        _relation_count(db, guild, OrganizationRelationType.RIVAL) < MAX_EMERGENT_RIVALS
+                        for guild in (first, second)
+                    )
+                    and rng.random() < RIVALRY_CHANCE
+                ):
+                    establish_relation(
+                        db, first, second, OrganizationRelationType.RIVAL,
+                        reason="Disputam o mesmo ofício na mesma região.",
+                    )
+                    formed += 1
+            else:
+                (first_type, first_leader), (second_type, second_leader) = leaders[first.id], leaders[second.id]
+                if (
+                    first_type == CombatActorType.SIMULATED_PLAYER
+                    and second_type == CombatActorType.SIMULATED_PLAYER
+                    and first_leader is not None and second_leader is not None
+                    and _leaders_know_each_other(db, campaign_id, first_leader, second_leader)
+                    and rng.random() < ALLIANCE_CHANCE
+                ):
+                    establish_relation(
+                        db, first, second, OrganizationRelationType.ALLIED,
+                        reason=f"Seus líderes, {first_leader.name} e {second_leader.name}, se conhecem.",
+                    )
+                    formed += 1
+    return formed

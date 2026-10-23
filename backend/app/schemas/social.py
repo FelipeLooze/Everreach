@@ -17,6 +17,21 @@ class OrganizationSummaryResponse(BaseModel):
     role: str | None
     reputation: str
     active_notices: int
+    focus: str | None = None
+    goal: "OrganizationGoalResponse | None" = None
+    goals_achieved: int = 0
+    relations: list["OrganizationRelationResponse"] = []
+
+
+class OrganizationGoalResponse(BaseModel):
+    description: str
+    progress: int
+    target: int
+
+
+class OrganizationRelationResponse(BaseModel):
+    organization_name: str
+    relation_type: str
 
 
 class GroupMemberResponse(BaseModel):
@@ -37,3 +52,6 @@ class ActiveGroupResponse(BaseModel):
 class SocialStateResponse(BaseModel):
     organizations: list[OrganizationSummaryResponse]
     active_group: ActiveGroupResponse | None
+
+
+OrganizationSummaryResponse.model_rebuild()

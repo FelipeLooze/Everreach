@@ -548,8 +548,8 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   da Guilda de Aventureiros; ler o quadro revela oportunidades, aceitar altera o aviso, objetivos
   de conversa e leitura avançam automaticamente, conclusão concede XP uma única vez e o painel
   permite acompanhar, aceitar e abandonar missões conhecidas.
-- **Fase 13 — Grupos, Guildas e Organizações: PARCIAL (13A–13N como sistemas; integração jogável
-  parcial).** Grupos temporários preservam convites e consentimento; organizações persistentes
+- **Fase 13 — Grupos, Guildas e Organizações: COMPLETE (13A–13N e integração jogável de grupos,
+  guildas, cargos, liderança, relações e objetivos compartilhados).** Grupos temporários preservam convites e consentimento; organizações persistentes
   possuem origem, formalidade, papéis próprios, membros, reputação explicável, relações, objetivos,
   necessidades, patrimônio, ações e conflitos. Organizações patrocinam as missões e avisos reais da
   Fase 12. **Ligado ao jogo:** contratos concluídos alteram a reputação com o patrocinador de forma
@@ -575,8 +575,25 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   Social e pode pedir para entrar a um líder ou fundador presente. Numa simulação de um ano, as
   primeiras guildas surgiram no dia 75, a primeira formalização no dia 105 e o ano terminou com 10
   guildas (4 formais).
-  **Ainda só como sistema (sem chamada no jogo):** relações entre organizações, conflitos,
-  patrimônio e ações autônomas das organizações. Taxas e contratos publicados por guildas formais
+  **Cargos e liderança:** Mestre (ou Líder do Bando), Oficial (Braço Direito), Membro Fundador e
+  Membro. O líder promove, rebaixa e passa a liderança ("Promovo o Bram a oficial", "Passo a
+  liderança para a Dessa"); oficiais e fundadores podem recrutar.
+  **Objetivos compartilhados:** toda guilda de Transportados persegue um objetivo mensurável:
+  primeiro chegar a 4 membros, depois o do foco (explorar lugares diferentes, incursões ao ermo,
+  chegadas em povoados para negociar), depois crescer mais. O progresso é contado do que os membros realmente fizeram desde
+  que o objetivo foi definido — viagens registradas (membros chegando juntos contam uma vez) ou o
+  tamanho da guilda —, nunca declarado. Cumprido, vira ALCANÇADO e um objetivo maior o substitui.
+  A guilda do jogador é recontada a cada ação; as demais, semanalmente.
+  **Relações entre guildas:** semanalmente, guildas do mesmo ofício na mesma região podem virar
+  rivais, caçadores/aventureiros passam a ser hostis a bandos da mesma região e guildas cujos
+  líderes se conhecem podem se aliar (no máximo uma rivalidade espontânea por guilda e duas
+  guildas caçando o mesmo bando). O líder jogador propõe aliança (o líder ou um fundador da
+  outra guilda, presente, decide), declara rivalidade (desfaz alianças) ou rompe uma aliança.
+  O painel Social mostra situação (informal/registrada), objetivo com progresso, objetivos já
+  alcançados e relações — só com organizações que o jogador também conhece; o Narrator recebe o
+  mesmo recorte.
+  **Ainda só como sistema (sem chamada no jogo):** conflitos, patrimônio e ações autônomas das
+  organizações. Taxas e contratos publicados por guildas formais
   aguardam a Fase 14 (Economia).
 
 ## Fora do MVP

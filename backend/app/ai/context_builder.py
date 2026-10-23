@@ -342,6 +342,22 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
     ]
 
 
+def _guild_progress_text(db: Session, organization, known_ids: set[str], *, member: bool) -> str:
+    """Members know their guild's shared goal; anyone who knows two
+    organizations may know how they stand with each other."""
+    from app.game.organizations import guild_goals
+    from app.game.organizations.player_guilds import known_relations
+
+    text = ""
+    goal = guild_goals.current_goal(db, organization) if member else None
+    if goal is not None and goal.target:
+        text += f"; shared goal: {goal.description} ({goal.progress}/{goal.target})"
+    relations = known_relations(db, organization, known_ids)
+    if relations:
+        text += "; relations: " + ", ".join(f"{relation_type} with {other.name}" for other, relation_type in relations)
+    return text
+
+
 def _transported_guild_line(db: Session, simulated_player_id: str) -> str:
     """The guild a transported person belongs to — they talk about it freely;
     talking with them is how the player learns it exists."""
@@ -391,6 +407,7 @@ def _known_organizations_lines(db: Session, character) -> list[str]:
     organizations = visible_organizations_for_character(db, character)
 
     lines = ["KNOWN ORGANIZATIONS"]
+    known_ids = {organization.id for organization in organizations}
     for organization in organizations:
         member_row = (
             db.query(OrganizationMember)
@@ -437,6 +454,7 @@ def _known_organizations_lines(db: Session, character) -> list[str]:
             f"leader: {leader_title or 'unknown'}; "
             f"reputation with this character: {reputation}; "
             f"membership: {membership_text}; known notices: {notice_count}"
+            + _guild_progress_text(db, organization, known_ids, member=member_row is not None)
         )
     if len(lines) == 1:
         lines.append("- none")

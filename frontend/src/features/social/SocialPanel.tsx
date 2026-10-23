@@ -3,6 +3,16 @@ import { getSocialState } from "@/api/social";
 import type { SocialState } from "@/types/game";
 import { organizationReputationLabel, organizationTypeLabel } from "@/utils/labels";
 
+const RELATION_LABELS: Record<string, string> = {
+  ALLIED: "Aliada",
+  FRIENDLY: "Amistosa",
+  NEUTRAL: "Neutra",
+  RIVAL: "Rival",
+  HOSTILE: "Hostil",
+  AT_WAR: "Em guerra",
+  TRADE_PARTNER: "Parceira comercial",
+};
+
 export function SocialPanel({ campaignId, characterId }: { campaignId: string; characterId: string }) {
   const [social, setSocial] = useState<SocialState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +84,31 @@ export function SocialPanel({ campaignId, characterId }: { campaignId: string; c
                     <dd>{organization.membership === "MEMBER" ? organization.role ?? "Membro" : "Não membro"}</dd>
                   </div>
                   <div><dt>Avisos ativos</dt><dd>{organization.active_notices}</dd></div>
+                  {organization.origin === "TRANSPORTED_CREATED" && (
+                    <div>
+                      <dt>Situação</dt>
+                      <dd>{organization.formality === "FORMALLY_RECOGNIZED" ? "Registrada" : "Informal"}</dd>
+                    </div>
+                  )}
+                  {organization.goal && (
+                    <div>
+                      <dt>Objetivo</dt>
+                      <dd>
+                        {organization.goal.description} ({organization.goal.progress}/{organization.goal.target})
+                        {organization.goals_achieved > 0 && ` — ${organization.goals_achieved} já alcançado(s)`}
+                      </dd>
+                    </div>
+                  )}
+                  {organization.relations.length > 0 && (
+                    <div>
+                      <dt>Relações</dt>
+                      <dd>
+                        {organization.relations
+                          .map((relation) => `${RELATION_LABELS[relation.relation_type] ?? relation.relation_type} de ${relation.organization_name}`)
+                          .join("; ")}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </article>
             ))}

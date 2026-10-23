@@ -24,6 +24,7 @@ from app.core.enums import (
     OrganizationFormality,
     OrganizationMembershipStatus,
     OrganizationOrigin,
+    OrganizationRelationType,
     OrganizationReputationCategory,
     OrganizationStatus,
     OrganizationType,
@@ -38,7 +39,9 @@ from app.db.models.organization import Organization, OrganizationMember, Organiz
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.groups.companions import _has_met, character_group, companions_of
 from app.game.npcs.service import teach_fact
+from app.game.organizations import guild_goals
 from app.game.organizations.registration import _leader_present
+from app.game.organizations.relations import active_relations_between, end_relation, establish_relation
 from app.game.organizations.reputation import (
     organization_reputation_category,
     organization_reputation_score,
@@ -53,6 +56,7 @@ from app.game.organizations.transported import (
 INFORMAL_MEMBER_CAP = 5
 FORMALIZE_MIN_MEMBERS = 3
 LEADER_RANK = 0
+OFFICER_RANK = 25
 FOUNDER_RANK = 50
 MEMBER_RANK = 100
 
@@ -149,6 +153,7 @@ def _role(db: Session, organization: Organization, rank: int) -> OrganizationRol
     bandits = organization.focus == GuildFocus.BANDITS
     title = {
         LEADER_RANK: "Líder do Bando" if bandits else "Mestre da Guilda",
+        OFFICER_RANK: "Braço Direito" if bandits else "Oficial",
         FOUNDER_RANK: "Membro Fundador",
         MEMBER_RANK: "Membro",
     }[rank]
@@ -217,6 +222,7 @@ def _staff_new_guild(
         if member_type == CombatActorType.SIMULATED_PLAYER:
             teach_fact(db, campaign_id, fact_key, KnowerType.SIMULATED_PLAYER, member_id,
                        source="membro_fundador", certainty=KnowledgeCertainty.CONFIRMED)
+    guild_goals.ensure_goal(db, organization)
     db.flush()
 
 
@@ -468,8 +474,197 @@ def handle_departure(db: Session, organization: Organization, departed: Organiza
         return ""
     successor = min(remaining, key=lambda member: (_rank_of(db, member), member.joined_world_minute))
     change_member_role(db, successor, _role(db, organization, LEADER_RANK).id)
-    name = db.get(SimulatedPlayer, successor.member_id)
-    return f" A liderança passa para {name.name if name else 'outro membro'}."
+    return f" A liderança passa para {_member_name(db, successor)}."
+
+
+def _member_name(db: Session, member: OrganizationMember) -> str:
+    model = Character if member.member_type == CombatActorType.CHARACTER else SimulatedPlayer
+    person = db.get(model, member.member_id)
+    return person.name if person is not None else "outro membro"
+
+
+def _membership_in(db: Session, organization: Organization, player: SimulatedPlayer) -> OrganizationMember | None:
+    return (
+        db.query(OrganizationMember)
+        .filter(
+            OrganizationMember.organization_id == organization.id,
+            OrganizationMember.member_type == CombatActorType.SIMULATED_PLAYER,
+            OrganizationMember.member_id == player.id,
+            OrganizationMember.status == OrganizationMembershipStatus.ACTIVE,
+        )
+        .first()
+    )
+
+
+def member_named(db: Session, character: Character, raw_text: str) -> SimulatedPlayer | None:
+    """A fellow guild member mentioned by name, even when not standing here
+    (a leader can promote someone who is away)."""
+    organization = transported_guild_of(db, CombatActorType.CHARACTER, character.id)
+    if organization is None:
+        return None
+    words = set(re.findall(r"\w+", _normalize(raw_text)))
+    hits = [
+        player
+        for member in _active_members(db, organization)
+        if member.member_type == CombatActorType.SIMULATED_PLAYER
+        and (player := db.get(SimulatedPlayer, member.member_id)) is not None
+        and _normalize(player.name).split()[0] in words
+    ]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _leader_change_target(db: Session, character: Character, player: SimulatedPlayer):
+    member, organization = _led_guild(db, character, max_rank=LEADER_RANK)
+    if member is None or organization is None:
+        return None, None, GuildChange("Só o líder da guilda decide os cargos.", False)
+    target = _membership_in(db, organization, player)
+    if target is None:
+        return None, None, GuildChange(f'{player.name} não é membro de "{organization.name}".', False)
+    return organization, target, None
+
+
+def promote(db: Session, character: Character, player: SimulatedPlayer) -> GuildChange:
+    organization, target, refusal = _leader_change_target(db, character, player)
+    if refusal is not None:
+        return refusal
+    role = _role(db, organization, OFFICER_RANK)
+    if _rank_of(db, target) <= OFFICER_RANK:
+        return GuildChange(f"{player.name} já é {role.title}.", False)
+    change_member_role(db, target, role.id)
+    return GuildChange(
+        f'{character.name} promove {player.name} a {role.title} de "{organization.name}". '
+        "Oficiais podem recrutar novos membros.",
+        True,
+    )
+
+
+def demote(db: Session, character: Character, player: SimulatedPlayer) -> GuildChange:
+    organization, target, refusal = _leader_change_target(db, character, player)
+    if refusal is not None:
+        return refusal
+    if _rank_of(db, target) >= MEMBER_RANK:
+        return GuildChange(f"{player.name} já é um membro sem cargo.", False)
+    change_member_role(db, target, _role(db, organization, MEMBER_RANK).id)
+    return GuildChange(f'{character.name} rebaixa {player.name} a membro de "{organization.name}".', True)
+
+
+def transfer_leadership(db: Session, character: Character, player: SimulatedPlayer) -> GuildChange:
+    organization, target, refusal = _leader_change_target(db, character, player)
+    if refusal is not None:
+        return refusal
+    own = _transported_membership(db, CombatActorType.CHARACTER, character.id)[0]
+    officer = _role(db, organization, OFFICER_RANK)
+    change_member_role(db, target, _role(db, organization, LEADER_RANK).id)
+    change_member_role(db, own, officer.id)
+    return GuildChange(
+        f'{character.name} passa a liderança de "{organization.name}" para {player.name} '
+        f"e fica como {officer.title}.",
+        True,
+    )
+
+
+# --- Diplomacy between guilds -------------------------------------------------
+
+HOSTILE_RELATION_TYPES = (
+    OrganizationRelationType.RIVAL, OrganizationRelationType.HOSTILE, OrganizationRelationType.AT_WAR
+)
+
+
+def relations_of_types(db: Session, first: Organization, second: Organization, types) -> list:
+    return [
+        relation for relation in active_relations_between(db, first.id, second.id)
+        if relation.relation_type in types
+    ]
+
+
+def known_relations(
+    db: Session, organization: Organization, known_ids: set[str]
+) -> list[tuple[Organization, str]]:
+    """Active relations with organizations the viewer also knows of — a
+    secret bando's name never leaks through its rival's relation list."""
+    from app.db.models.organization import OrganizationRelation
+    from app.core.enums import OrganizationRelationStatus
+
+    relations = db.query(OrganizationRelation).filter(
+        OrganizationRelation.status == OrganizationRelationStatus.ACTIVE,
+        (OrganizationRelation.organization_a_id == organization.id)
+        | (OrganizationRelation.organization_b_id == organization.id),
+    ).order_by(OrganizationRelation.established_world_minute)
+    result = []
+    for relation in relations:
+        other_id = (
+            relation.organization_b_id if relation.organization_a_id == organization.id
+            else relation.organization_a_id
+        )
+        if other_id in known_ids and (other := db.get(Organization, other_id)) is not None:
+            result.append((other, relation.relation_type))
+    return result
+
+
+def known_guild_named(db: Session, character: Character, raw_text: str) -> Organization | None:
+    """Another transported guild the protagonist knows of, named in the text."""
+    from app.game.organizations.visibility import visible_organizations_for_character
+
+    text = _normalize(raw_text)
+    hits = [
+        organization for organization in visible_organizations_for_character(db, character)
+        if organization.origin == OrganizationOrigin.TRANSPORTED_CREATED
+        and organization.status == OrganizationStatus.ACTIVE
+        and _normalize(organization.name) in text
+    ]
+    return hits[0] if len(hits) == 1 else None
+
+
+def propose_alliance(
+    db: Session, campaign_id: str, character: Character, other: Organization, envoy: SimulatedPlayer
+) -> GuildChange:
+    """The other guild's leader or founder, standing here, decides."""
+    member, own = _led_guild(db, character, max_rank=LEADER_RANK)
+    if member is None or own is None:
+        return GuildChange("Só o líder da guilda pode propor uma aliança.", False)
+    if other.id == own.id:
+        return GuildChange("Não é possível se aliar à própria guilda.", False)
+    if relations_of_types(db, own, other, (OrganizationRelationType.ALLIED,)):
+        return GuildChange(f'"{own.name}" e "{other.name}" já são aliadas.', False)
+    if relations_of_types(db, own, other, HOSTILE_RELATION_TYPES):
+        return GuildChange(f'{envoy.name} recusa: "{other.name}" é rival de "{own.name}".', False)
+    if (own.focus == GuildFocus.BANDITS) != (other.focus == GuildFocus.BANDITS):
+        return GuildChange(f"{envoy.name} recusa: não faz acordos com quem está do outro lado da lei.", False)
+    if not _has_met(db, campaign_id, character, envoy):
+        return GuildChange(f"{envoy.name} recusa: não conhece {character.name} o bastante.", False)
+    establish_relation(
+        db, own, other, OrganizationRelationType.ALLIED,
+        reason=f"Aliança acertada entre {character.name} e {envoy.name}.",
+    )
+    return GuildChange(f'{envoy.name} aceita: "{own.name}" e "{other.name}" agora são aliadas.', True)
+
+
+def declare_rivalry(db: Session, character: Character, other: Organization) -> GuildChange:
+    member, own = _led_guild(db, character, max_rank=LEADER_RANK)
+    if member is None or own is None:
+        return GuildChange("Só o líder da guilda pode declarar uma rivalidade.", False)
+    if other.id == own.id:
+        return GuildChange("Uma guilda não pode ser rival de si mesma.", False)
+    if relations_of_types(db, own, other, HOSTILE_RELATION_TYPES):
+        return GuildChange(f'"{own.name}" já é rival de "{other.name}".', False)
+    for alliance in relations_of_types(db, own, other, (OrganizationRelationType.ALLIED,)):
+        end_relation(db, alliance, reason="Rompida por declaração de rivalidade.")
+    establish_relation(
+        db, own, other, OrganizationRelationType.RIVAL, reason=f"Declarada por {character.name}."
+    )
+    return GuildChange(f'{character.name} declara "{other.name}" rival de "{own.name}".', True)
+
+
+def break_alliance(db: Session, character: Character, other: Organization) -> GuildChange:
+    member, own = _led_guild(db, character, max_rank=LEADER_RANK)
+    if member is None or own is None:
+        return GuildChange("Só o líder da guilda pode romper uma aliança.", False)
+    alliances = relations_of_types(db, own, other, (OrganizationRelationType.ALLIED,))
+    if not alliances:
+        return GuildChange(f'"{own.name}" não tem aliança com "{other.name}".', False)
+    for alliance in alliances:
+        end_relation(db, alliance, reason=f"Rompida por {character.name}.")
+    return GuildChange(f'{character.name} rompe a aliança de "{own.name}" com "{other.name}".', True)
 
 
 def guilds_with_leadership_present(

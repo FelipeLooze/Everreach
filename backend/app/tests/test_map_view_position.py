@@ -38,27 +38,6 @@ def test_position_matches_the_current_locations_own_precision(db_session):
     assert view.position_precision == GeographicPrecision.APPROXIMATE.value
 
 
-def test_position_prefers_a_precise_phase17_grant_over_the_fallback(db_session):
-    campaign = create_campaign(db_session, "Posicao Prefere Grant Preciso", world_seed=3)
-    region, village = seed_initial_region(db_session, campaign.id)
-    character = create_character(db_session, campaign.id, "Logan", region.id, village.id)
-    set_location_discovery(db_session, character.id, village.id, DiscoveryStatus.DISCOVERED)
-    character.location_id = village.id
-    ensure_geographic_fact(
-        db_session, campaign.id, "location", village.id,
-        GeographicKnowledgeAspect.ROUTE, "Conhece cada palmo do caminho até aqui.",
-    )
-    grant_fact_with_precision(
-        db_session, campaign.id,
-        geographic_fact_key("location", village.id, GeographicKnowledgeAspect.ROUTE),
-        KnowerType.PLAYER, character.id, precision=GeographicPrecision.PRECISE,
-    )
-
-    view = get_map_view(db_session, campaign.id, character.id)
-
-    assert view.position_precision == GeographicPrecision.PRECISE.value
-
-
 def test_position_is_none_when_current_location_never_made_it_into_the_map_view(db_session):
     """No exact marker rather than lying about position."""
     campaign = create_campaign(db_session, "Posicao Desconhecida", world_seed=4)

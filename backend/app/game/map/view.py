@@ -1,226 +1,27 @@
-"""Phase 20A — Player Map Data Contract.
+"""The player's map: a projection of world geography through what the
+character knows — never a second copy of the world.
 
-MapViewData is a PROJECTION (Campaign + Character + scope -> player-
-visible data), never a second copy of world geography. World geography
-stays authoritative in the existing Phase 15/16 Region/Subregion/
-Location structures; this module only decides what of it a specific
-character is allowed to see, and how precisely.
+One source decides what appears (simplification, 2026-10-23): the
+character's discovery tables (CharacterLocationDiscovery for places,
+CharacterConnectionDiscovery for routes), which every way of learning a
+place now writes — travel, exploration, rumors, shared routes, expeditions,
+what NPCs tell. Physical maps the character owns are the one other source:
+an item holding a frozen snapshot of past knowledge, which may go stale.
 
-Real pre-existing gap this module bridges rather than duplicates: two
-partially-disconnected geographic knowledge signals exist in the
-codebase today —
+- Precision comes from the discovery status: DISCOVERED (heard of, seen,
+  told) is APPROXIMATE, VISITED is PRECISE. Exact coordinates only ship
+  when PRECISE.
+- The name shows when the character knows it (visited, told, or a NAME
+  grant); hidden identities follow location_display_name.
+- scope ("world" | "region:{id}" | "subregion:{id}" | "settlement:{id}")
+  and the LOD filters (detail_level="far", viewport) narrow the list;
+  routes and annotations follow the locations that survive.
+- position_* is the character's own location, never more precise than any
+  other entry.
 
-1. CharacterLocationDiscovery/DiscoveryStatus (Phase 1/15) — set by
-   ordinary travel (app.game.travel.service.move_character) via
-   app.game.map.service.known_map. This is what actually gets
-   populated during normal play; it decides whether a location is
-   present in the view AT ALL (never included otherwise — Phase 20's
-   own "no omniscient frontend" rule — this module reuses known_map
-   for that decision rather than re-deriving it).
-2. KnowledgeFact/KnowledgeKnower with GeographicKnowledgeAspect/
-   GeographicPrecision (Phase 17A/17B) — set by the exploration/rumor/
-   route-sharing/expedition systems. This is the richer, intentional
-   signal, but ordinary travel never grants it (move_character has no
-   call into app.game.knowledge.geography at all).
-
-Precision here therefore prefers Phase 17's structured grant when one
-exists, and falls back to inferring precision from the older
-DiscoveryStatus otherwise (RUMORED -> VAGUE, DISCOVERED -> APPROXIMATE,
-VISITED/MAPPED -> PRECISE) — a character who only ever walked
-somewhere still gets a sensible map, and a character with real Phase 17
-geographic knowledge gets the more accurate signal.
-
-Exact coordinates (x/y) are only ever included when the resolved
-precision is PRECISE — vague/approximate knowledge never leaks the
-authoritative pin merely because the UI would find it convenient.
-
-Phase 20C — Knowledge-Aware Rendering.
-
-Extends 20A/20B to close the exact gap their own audit flagged: a
-location known ONLY through a Phase 17 EXISTENCE grant (an NPC saying
-"Arven is a large city far south", no travel involved) previously never
-appeared in the view at all, because get_map_view relied solely on
-known_map's CharacterLocationDiscovery join. _phase17_known_location_ids
-below adds that second, independent inclusion path — reusing the exact
-fact_key convention app.game.knowledge.geography already established
-("location:{id}:existence") rather than inventing a new query surface.
-
-known_aspects on MapViewLocation is the literal "Knowledge Aspects"
-section of the spec: EXISTENCE/NAME/DIRECTION/DISTANCE/ROUTE/... are
-never collapsed into one boolean — "knows place exists" must not
-silently become "knows exact map pin" anywhere in this module.
-
-Phase 20E — Hierarchical Map Levels.
-
-`scope` (already part of the 20A contract, unused until now) becomes a
-real filter: "world" (regions only, no location detail — the WORLD
-level never drills into geography), "region:{id}" (one Region's known
-locations only — the REGION level), "subregion:{id}" (one Subregion's
-known locations only). Settlement/district/local-area levels are 20I's
-job (independently-discoverable settlement interiors, a different
-concern from filtering this same flat knowledge-gated list). An
-unrecognized or not-yet-known scope target returns empty data rather
-than falling back to the unscoped view — silently ignoring an invalid
-scope would let a caller accidentally see more than requested.
-
-Phase 20F — Known Routes & Connections.
-
-"Knowing two places does not imply knowing the route between them" is
-already real in this codebase: CharacterConnectionDiscovery (gating
-app.game.travel.service.move_character itself) is tracked completely
-independently from CharacterLocationDiscovery/location Knowledge —
-known_map's own connections query already requires it. routes below
-just surfaces that existing, already-correct gate through the Map View
-contract instead of re-deriving anything. A route is only ever
-included once BOTH its endpoints survive the current scope — so
-scoping to one Region or Subregion (20E) automatically scopes routes
-too, and the "world" scope (no location detail) yields no routes
-either, with zero extra logic.
-
-Phase 20G — Physical Map Integration.
-
-Reuses Phase 17G/17F in full: a physical map is a frozen
-CartographicSurvey snapshot (app.game.knowledge.maps.map_content),
-taken once, never a live reference back to KnowledgeFact/
-KnowledgeKnower. A location covered ONLY by an owned map — no live
-CharacterLocationDiscovery row, no live Knowledge grant — now surfaces
-too (source="map"), built from that frozen snapshot instead of the
-live geography lookups every other path uses; this is the concrete
-mechanism behind "MAP DATA != CURRENT WORLD TRUTH" (spec): if the
-character's live knowledge is later revoked or the world changes, the
-owned map's info does not, because it was never wired to either.
-`source` on MapViewLocation ("discovery" / "knowledge" / "map" / "rumor")
-is the minimal provenance signal the spec's "MAP SOURCE PROVENANCE"
-section asks for; a location known through more than one channel keeps
-whichever live signal already included it (discovery/knowledge/map take
-precedence — a live signal is always at least as good as a frozen
-snapshot of past knowledge, and any of those is stronger than a rumor).
-
-Phase 20H — Rumors & Unconfirmed Locations.
-
-Reuses Phase 17C in full: app.game.knowledge.rumors stores a rumor as
-its OWN KnowledgeFact under the ":rumor:{rumor_key}" fact_key
-namespace, deliberately never overwriting the canonical aspect fact
-for the same (entity, aspect) — "LOGAN HAS HEARD THIS CLAIM" is never
-conflated with "THE THING DEFINITELY EXISTS". A location known ONLY
-through a rumored EXISTENCE (no canonical Phase 17 grant, no
-discovery, no owned map) previously never surfaced at all, because
-neither _phase17_known_location_ids' suffix match nor known_map's
-discovery join ever look inside the ":rumor:" namespace.
-source="rumor" locations deliberately reuse _build_map_view_location's
-ordinary live-lookup path rather than a rumor-specific one: since no
-canonical aspect grant exists for them, precision naturally falls back
-to DiscoveryStatus.RUMORED's own VAGUE mapping and known_aspects stays
-{EXISTENCE} — an honest reflection of "a claim was heard", nothing
-more, without needing to parse rumor precision/aspects separately.
-
-Phase 20I — Settlement & City Maps.
-
-"Knowing Arven exists does NOT mean knowing its internal layout"
-(spec) already holds structurally: every inclusion path in this module
-(discovery/knowledge/map/rumor) is per-location, keyed by that exact
-Location's own id — a district Location (Phase 15G's
-parent_location_id, the same hierarchy Region>Subregion>Settlement>
-District>Location>Sublocation>Interior reuses at every level) never
-rides in just because its parent settlement is known. Nothing needed
-fixing there. What 20I adds is the missing scope LEVEL to view it: a
-"settlement:{location_id}" scope (extending 20E's world/region/
-subregion) filters to the known child locations of one settlement —
-parent_location_id, exposed on MapViewLocation for exactly this.
-
-Phase 20J — Player Map Annotations.
-
-app.db.models.map_annotation.MapAnnotation is a plain, Knowledge-free
-table: writing "Dragon nest." here never creates a dragon nest ("PLAYER
-NOTE != WORLD TRUTH", spec, mandatory). app.game.map.annotations is the
-only writer, and it requires the target Location to already be visible
-on this exact function's own (unscoped) output before allowing a note
-to attach to it. Reading them back here is a plain, unconditional
-filter: an annotation only ever ships in the view if its target
-location survives the CURRENT scope — an annotation on a location that
-scope excludes disappears from the response along with it (it is not
-deleted; requesting the right scope, or none, brings it back).
-
-Phase 20K — Dynamic World Changes & Stale Knowledge.
-
-Reuses Phase 17H in full: app.game.knowledge.map_reliability.
-find_outdated_map_aspects already compares a physical map's frozen
-snapshot against the CURRENT canonical KnowledgeFact for the same
-fact_key — exactly the Bridge-of-Hal staleness the spec describes. A
-source="map" MapViewLocation now carries `stale=True` whenever any of
-its owned maps' aspects have drifted from current world truth this
-way. Live (non-map) Knowledge is deliberately left alone here: it only
-ever changes when something explicitly re-grants a fact to a knower
-(teach_fact/grant_fact_with_precision), an intentional, actor-driven
-event — there is no push mechanism anywhere in this codebase that
-force-updates a knower's belief, so "the player's map does not
-automatically become omniscient" already holds for every live grant
-without needing anything new here. Only the ONE narrow exception
-(update_geographic_fact_statement mutating a canonical fact in place,
-used exactly for the physical-map-staleness scenario 17H built) needed
-surfacing — and only for maps, since only maps freeze a comparable
-past snapshot to diff against.
-
-Phase 20L — Character Position & Navigation State.
-
-"Reuse existing Navigation/Knowledge systems rather than adding
-arbitrary state" (spec) — position_precision is deliberately the exact
-same value already computed for every other location's precision
-(_best_known_precision over the character's own current
-CharacterLocationDiscovery/Phase 17 grants for their OWN location),
-never a parallel PRECISE/APPROXIMATE/UNCERTAIN/LOST vocabulary of its
-own. Ordinary travel (app.game.travel.service.move_character) always
-sets VISITED on arrival, which the existing DiscoveryStatus fallback
-already maps to PRECISE — matching the spec's own "inside familiar
-Cardal: precise position" example for free, with zero new mechanic.
-No system in this codebase currently downgrades that (no storm/
-navigation-failure/lost mechanic exists yet) — spec's "storm + nav
-failure -> uncertain" and "lost -> no exact marker" examples describe
-gameplay mechanics Phase 20 does not own; when position_location_id
-is None (the character's current location never made it into their
-own Map View at all — should not normally happen, but is handled
-rather than assumed impossible), the map correctly shows no exact
-marker instead of lying.
-
-Phase 20N — Cartography & Exploration Integration.
-
-`provenance` on MapViewLocation is the spec's "PERSONAL CONFIRMATION"
-distinction (HEARD ABOUT/MAP-DERIVED/PERSONALLY OBSERVED/PERSONALLY
-TRAVELED/SURVEYED) — reusing raw material that already exists and is
-already rich: KnowledgeKnower.source, a free-text field every existing
-grant call site already populates meaningfully ("exploração ativa",
-"expedição", "percepção direta", f"revelado por {npc.name}", ...). No
-new provenance vocabulary is invented; this module just reads that
-field back for the exact EXISTENCE grant behind each location (the
-canonical one for source="knowledge", the ":rumor:" one for
-source="rumor") and surfaces it. source="discovery" locations have no
-KnowledgeKnower row at all (ordinary travel never writes an explicit
-EXISTENCE fact — see the top-of-file docstring), so provenance is the
-one literal constant here ("presença física" — they were physically
-there); source="map" locations get "mapa físico" (a physical map is
-its own, separate provenance channel, 17G/20G's domain, not a
-KnowledgeKnower grant at all).
-
-Phase 20O — Large-World Rendering / Level of Detail.
-
-Two additive, independent filters — never a second geometry system,
-never professional GIS complexity. `detail_level="far"` reuses Phase
-15F's own materialization_tier (1 = macro/fully-materialized, 2 = a
-named stub — minor settlements/POIs filled in only on demand): the
-FAR-ZOOM tier the spec describes ("Region boundaries, major cities")
-already exists as real generation data, so "far" simply keeps tier-1
-locations and drops tier-2 stubs, no new importance ranking invented.
-`viewport=(min_x, min_y, max_x, max_y)` keeps only PRECISE-positioned
-locations whose x/y falls inside those bounds — a location whose exact
-position isn't known (drawn on the frontend's deterministic uncertainty
-ring, never a real coordinate) has no position to test against a
-viewport at all, so it is never excluded by one. Both filters run
-after scope (20E) and before routes/annotations/position are computed
-from the final visible set, so a route or note pinned to an
-LOD-filtered-out location correctly disappears with it (same "gate
-visibility once, everything else follows" rule 20F/20J already use for
-scope) — recoverable the same way scope exclusions are, by asking for
-a wider viewport or a closer detail level, never a data loss.
+The richer per-aspect/precision geographic facts (Phase 17) remain what
+NPCs and organizations know and can share; the player's map no longer
+reads them through parallel paths.
 """
 from dataclasses import dataclass, field
 
@@ -229,22 +30,16 @@ from sqlalchemy.orm import Session
 from app.core.enums import DiscoveryStatus, GeographicKnowledgeAspect, GeographicPrecision, KnowerType
 from app.db.models.character import Character
 from app.db.models.item import ItemInstance
-from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.location import Location
 from app.db.models.map import Map
 from app.db.models.map_annotation import MapAnnotation
 from app.db.models.region import Region
-from app.game.knowledge.geography import (
-    geographic_fact_key,
-    geographic_knowledge_precision,
-    known_geographic_aspects,
-    precision_rank,
-)
+from app.game.discovery.service import get_location_discovery, location_display_name
+from app.game.knowledge.geography import geographic_fact_key, precision_rank
 from app.game.knowledge.map_reliability import find_outdated_map_aspects
 from app.game.knowledge.maps import map_content
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.map.service import known_map
-from app.game.discovery.service import get_location_discovery, location_display_name
 from app.game.npcs.service import knows
 
 _POSITION_ASPECTS = (
@@ -254,10 +49,12 @@ _POSITION_ASPECTS = (
 )
 
 _DISCOVERY_STATUS_PRECISION: dict[DiscoveryStatus, GeographicPrecision] = {
-    DiscoveryStatus.RUMORED: GeographicPrecision.VAGUE,
     DiscoveryStatus.DISCOVERED: GeographicPrecision.APPROXIMATE,
     DiscoveryStatus.VISITED: GeographicPrecision.PRECISE,
-    DiscoveryStatus.MAPPED: GeographicPrecision.PRECISE,
+}
+_PROVENANCE = {
+    DiscoveryStatus.DISCOVERED: "conhecido, não visitado",
+    DiscoveryStatus.VISITED: "presença física",
 }
 
 
@@ -308,22 +105,6 @@ class MapViewAnnotation:
 
 @dataclass(frozen=True)
 class MapViewData:
-    """Deliberately the smallest extensible shape for 20A — a future
-    subphase adds fields (LOD/viewport scoping), not restructures this
-    one.
-
-    20B adds `regions` — grouping metadata the interactive frontend needs
-    to render locations by region, gated by the same
-    explicitly_knows_name convention the old /map route already used.
-
-    20F adds `routes` — see module docstring.
-
-    20J adds `annotations` — see module docstring.
-
-    20L adds `position_location_id`/`position_precision` — the
-    character's own current position, never more certain than their
-    Map View already allows it to be for any other location."""
-
     campaign_id: str
     character_id: str
     scope: str | None
@@ -340,98 +121,6 @@ def _knows_name_aspect(
 ) -> bool:
     fact_key = geographic_fact_key("location", location_id, GeographicKnowledgeAspect.NAME)
     return knows(db, KnowerType.PLAYER, character_id, fact_key, campaign_id)
-
-
-def _best_known_precision(
-    db: Session,
-    campaign_id: str,
-    character_id: str,
-    location: Location,
-    discovery_status: DiscoveryStatus,
-) -> GeographicPrecision | None:
-    best: GeographicPrecision | None = None
-    for aspect in _POSITION_ASPECTS:
-        precision = geographic_knowledge_precision(
-            db, campaign_id, KnowerType.PLAYER, character_id, "location", location.id, aspect
-        )
-        if precision is not None and (best is None or precision_rank(precision) > precision_rank(best)):
-            best = precision
-    if best is not None:
-        return best
-    return _DISCOVERY_STATUS_PRECISION.get(discovery_status)
-
-
-def _phase17_known_location_ids(db: Session, campaign_id: str, character_id: str) -> set[str]:
-    """Locations the character knows EXIST purely through a Phase 17
-    Knowledge grant (an NPC report, a rumor, a shared map) — no
-    CharacterLocationDiscovery row required. See module docstring."""
-    prefix = "location:"
-    suffix = f":{GeographicKnowledgeAspect.EXISTENCE.value.lower()}"
-    rows = (
-        db.query(KnowledgeFact.fact_key)
-        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
-        .filter(
-            KnowledgeFact.campaign_id == campaign_id,
-            KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
-            KnowledgeKnower.knower_id == character_id,
-            KnowledgeFact.fact_key.like(f"{prefix}%{suffix}"),
-        )
-        .all()
-    )
-    ids = set()
-    for (fact_key,) in rows:
-        if not fact_key.startswith(prefix) or not fact_key.endswith(suffix):
-            continue
-        ids.add(fact_key[len(prefix):-len(suffix)])
-    return ids
-
-
-def _phase17_rumored_location_ids(db: Session, campaign_id: str, character_id: str) -> dict[str, str]:
-    """Locations the character has only ever heard a RUMORED EXISTENCE
-    claim about (app.game.knowledge.rumors' ":rumor:" fact_key
-    namespace) — distinct from _phase17_known_location_ids, which only
-    ever matches the canonical (confirmed) fact_key. See module
-    docstring. Maps location_id -> the matching rumor fact_key (the
-    first one found), so 20N's provenance lookup can reuse it directly
-    rather than re-deriving which rumor grant applies."""
-    prefix = "location:"
-    marker = f":{GeographicKnowledgeAspect.EXISTENCE.value.lower()}:rumor:"
-    rows = (
-        db.query(KnowledgeFact.fact_key)
-        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
-        .filter(
-            KnowledgeFact.campaign_id == campaign_id,
-            KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
-            KnowledgeKnower.knower_id == character_id,
-            KnowledgeFact.fact_key.like(f"{prefix}%{marker}%"),
-        )
-        .all()
-    )
-    by_location: dict[str, str] = {}
-    for (fact_key,) in rows:
-        if not fact_key.startswith(prefix) or marker not in fact_key:
-            continue
-        location_id = fact_key[len(prefix):].split(marker, 1)[0]
-        by_location.setdefault(location_id, fact_key)
-    return by_location
-
-
-def _grant_source(db: Session, campaign_id: str, character_id: str, fact_key: str) -> str | None:
-    """The free-text KnowledgeKnower.source behind one exact fact_key
-    grant to this character — the raw provenance text every existing
-    grant call site already populates (see module docstring)."""
-    row = (
-        db.query(KnowledgeKnower.source)
-        .join(KnowledgeFact, KnowledgeFact.id == KnowledgeKnower.fact_id)
-        .filter(
-            KnowledgeFact.campaign_id == campaign_id,
-            KnowledgeFact.fact_key == fact_key,
-            KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
-            KnowledgeKnower.knower_id == character_id,
-        )
-        .first()
-    )
-    return row[0] if row is not None else None
 
 
 def _owned_maps_by_location(db: Session, character_id: str) -> dict[str, list[Map]]:
@@ -504,11 +193,8 @@ def _build_map_view_location(
     character_id: str,
     location: Location,
     discovery_status: DiscoveryStatus,
-    *,
-    source: str = "discovery",
-    provenance: str | None = None,
 ) -> MapViewLocation:
-    precision = _best_known_precision(db, campaign_id, character_id, location, discovery_status)
+    precision = _DISCOVERY_STATUS_PRECISION[discovery_status]
     canonical_name_known = _knows_name_aspect(
         db, campaign_id, character_id, location.id
     ) or explicitly_knows_name(db, campaign_id, KnowerType.PLAYER, character_id, location.name)
@@ -517,17 +203,7 @@ def _build_map_view_location(
         location, discovery, canonical_name_known=canonical_name_known
     )
     exact_position_known = precision == GeographicPrecision.PRECISE
-
-    known_aspects = {
-        aspect.value
-        for aspect in known_geographic_aspects(
-            db, campaign_id, KnowerType.PLAYER, character_id, "location", location.id
-        )
-    }
-    # Appearing in the view at all always means EXISTENCE is known — true
-    # whether that came from a Phase 17 grant or from ordinary physical
-    # discovery/travel, which never writes an explicit EXISTENCE fact.
-    known_aspects.add(GeographicKnowledgeAspect.EXISTENCE.value)
+    known_aspects = {GeographicKnowledgeAspect.EXISTENCE.value}
     if display_name == location.name:
         known_aspects.add(GeographicKnowledgeAspect.NAME.value)
 
@@ -538,12 +214,12 @@ def _build_map_view_location(
         parent_location_id=location.parent_location_id,
         type=location.type,
         name=display_name,
-        precision=precision.value if precision is not None else None,
+        precision=precision.value,
         x=location.x if exact_position_known else None,
         y=location.y if exact_position_known else None,
         discovery_status=discovery_status.value,
-        source=source,
-        provenance=provenance,
+        source="discovery",
+        provenance=_PROVENANCE[discovery_status],
         materialization_tier=location.materialization_tier,
         known_aspects=sorted(known_aspects),
     )
@@ -629,56 +305,18 @@ def get_map_view(
 ) -> MapViewData:
     data = known_map(db, campaign_id, character_id, visited_only=visited_only)
 
-    locations: list[MapViewLocation] = []
-    seen_location_ids: set[str] = set()
-    for location in data["locations"]:
-        discovery_status = DiscoveryStatus(data["location_discovery"][location.id])
-        locations.append(
-            _build_map_view_location(
-                db, campaign_id, character_id, location, discovery_status, provenance="presença física"
-            )
+    locations: list[MapViewLocation] = [
+        _build_map_view_location(
+            db, campaign_id, character_id, location, DiscoveryStatus(data["location_discovery"][location.id])
         )
-        seen_location_ids.add(location.id)
-
+        for location in data["locations"]
+    ]
     regions_by_id = {region.id: region for region in data["regions"]}
 
-    phase17_only_ids = (
-        _phase17_known_location_ids(db, campaign_id, character_id) - seen_location_ids
-        if not visited_only else set()
-    )
-    if phase17_only_ids:
-        extra_locations = (
-            db.query(Location)
-            .join(Region, Region.id == Location.region_id)
-            .filter(Location.id.in_(phase17_only_ids), Region.campaign_id == campaign_id)
-            .order_by(Location.name)
-            .all()
-        )
-        for location in extra_locations:
-            # No CharacterLocationDiscovery row exists for this location —
-            # RUMORED is the closest existing status to "aware it exists,
-            # never physically encountered it".
-            existence_fact_key = geographic_fact_key(
-                "location", location.id, GeographicKnowledgeAspect.EXISTENCE
-            )
-            locations.append(
-                _build_map_view_location(
-                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED,
-                    source="knowledge",
-                    provenance=_grant_source(db, campaign_id, character_id, existence_fact_key),
-                )
-            )
-            if location.region_id not in regions_by_id:
-                region = db.get(Region, location.region_id)
-                if region is not None:
-                    regions_by_id[region.id] = region
-
+    # Owned physical maps: places known only from a map the character holds.
     included_location_ids = {location.id for location in locations}
     maps_by_location = _owned_maps_by_location(db, character_id)
-    map_only_ids = (
-        set(maps_by_location.keys()) - included_location_ids
-        if not visited_only else set()
-    )
+    map_only_ids = set(maps_by_location) - included_location_ids if not visited_only else set()
     if map_only_ids:
         map_only_locations = (
             db.query(Location)
@@ -690,36 +328,7 @@ def get_map_view(
         for location in map_only_locations:
             locations.append(
                 _build_map_view_location_from_maps(
-                    db, campaign_id, location, DiscoveryStatus.RUMORED, maps_by_location[location.id]
-                )
-            )
-            if location.region_id not in regions_by_id:
-                region = db.get(Region, location.region_id)
-                if region is not None:
-                    regions_by_id[region.id] = region
-
-    included_location_ids = {location.id for location in locations}
-    rumor_fact_key_by_location = {
-        location_id: fact_key
-        for location_id, fact_key in _phase17_rumored_location_ids(db, campaign_id, character_id).items()
-        if location_id not in included_location_ids
-    } if not visited_only else {}
-    if rumor_fact_key_by_location:
-        rumored_locations = (
-            db.query(Location)
-            .join(Region, Region.id == Location.region_id)
-            .filter(Location.id.in_(rumor_fact_key_by_location.keys()), Region.campaign_id == campaign_id)
-            .order_by(Location.name)
-            .all()
-        )
-        for location in rumored_locations:
-            locations.append(
-                _build_map_view_location(
-                    db, campaign_id, character_id, location, DiscoveryStatus.RUMORED,
-                    source="rumor",
-                    provenance=_grant_source(
-                        db, campaign_id, character_id, rumor_fact_key_by_location[location.id]
-                    ),
+                    db, campaign_id, location, DiscoveryStatus.DISCOVERED, maps_by_location[location.id]
                 )
             )
             if location.region_id not in regions_by_id:

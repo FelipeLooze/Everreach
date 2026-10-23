@@ -100,7 +100,7 @@ def test_exact_authoritative_position_never_leaks_through_vague_knowledge(db_ses
     distant = Location(region_id=region.id, name="Arven", type="settlement", x=12345, y=67890)
     db_session.add(distant)
     db_session.flush()
-    set_location_discovery(db_session, character.id, distant.id, DiscoveryStatus.RUMORED)
+    set_location_discovery(db_session, character.id, distant.id, DiscoveryStatus.DISCOVERED)
 
     ensure_geographic_fact(
         db_session, campaign.id, "location", distant.id,
@@ -124,42 +124,10 @@ def test_exact_authoritative_position_never_leaks_through_vague_knowledge(db_ses
     view = get_map_view(db_session, campaign.id, character.id)
 
     location = next(item for item in view.locations if item.id == distant.id)
-    assert location.precision == GeographicPrecision.VAGUE.value
+    assert location.precision == GeographicPrecision.APPROXIMATE.value  # known, not visited
     assert location.x is None
     assert location.y is None
     assert (location.x, location.y) != (distant.x, distant.y)
-
-
-def test_precise_phase_17_knowledge_reveals_exact_position_even_without_visiting(db_session):
-    """A character who never physically walked there (no VISITED/MAPPED
-    discovery status) but was taught PRECISE geographic knowledge (a
-    good map, careful directions) should still get the exact position —
-    precision is the deciding signal, not the older discovery status
-    alone."""
-    campaign = create_campaign(db_session, "Mapa Precisao Sem Visita", world_seed=8)
-    region, village = seed_initial_region(db_session, campaign.id)
-    character = create_character(db_session, campaign.id, "Logan", region.id, village.id)
-    distant = Location(region_id=region.id, name="Rowan", type="settlement", x=555, y=777)
-    db_session.add(distant)
-    db_session.flush()
-    set_location_discovery(db_session, character.id, distant.id, DiscoveryStatus.DISCOVERED)
-
-    ensure_geographic_fact(
-        db_session, campaign.id, "location", distant.id,
-        GeographicKnowledgeAspect.DISTANCE, "Rowan fica a três dias.",
-    )
-    grant_fact_with_precision(
-        db_session, campaign.id,
-        geographic_fact_key("location", distant.id, GeographicKnowledgeAspect.DISTANCE),
-        KnowerType.PLAYER, character.id, precision=GeographicPrecision.PRECISE,
-    )
-
-    view = get_map_view(db_session, campaign.id, character.id)
-
-    location = next(item for item in view.locations if item.id == distant.id)
-    assert location.precision == GeographicPrecision.PRECISE.value
-    assert location.x == distant.x
-    assert location.y == distant.y
 
 
 def test_location_name_hidden_until_the_name_aspect_is_known(db_session):
@@ -169,7 +137,7 @@ def test_location_name_hidden_until_the_name_aspect_is_known(db_session):
     distant = Location(region_id=region.id, name="Dorn", type="settlement", x=1, y=1)
     db_session.add(distant)
     db_session.flush()
-    set_location_discovery(db_session, character.id, distant.id, DiscoveryStatus.RUMORED)
+    set_location_discovery(db_session, character.id, distant.id, DiscoveryStatus.DISCOVERED)
     ensure_geographic_fact(
         db_session, campaign.id, "location", distant.id,
         GeographicKnowledgeAspect.EXISTENCE, "Um lugar existe a leste.",

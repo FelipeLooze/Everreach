@@ -1401,7 +1401,6 @@ def _resolve_movement_target(db: Session, character: Character, raw_text: str) -
                 (
                     DiscoveryStatus.DISCOVERED.value,
                     DiscoveryStatus.VISITED.value,
-                    DiscoveryStatus.MAPPED.value,
                 )
             ),
             Location.region_id == character.region_id,
@@ -1453,7 +1452,6 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
                     (
                         DiscoveryStatus.DISCOVERED.value,
                         DiscoveryStatus.VISITED.value,
-                        DiscoveryStatus.MAPPED.value,
                     )
                 ),
             )
@@ -1506,7 +1504,6 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
                         (
                             DiscoveryStatus.DISCOVERED.value,
                             DiscoveryStatus.VISITED.value,
-                            DiscoveryStatus.MAPPED.value,
                         )
                     ),
                 )

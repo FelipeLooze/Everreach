@@ -8,7 +8,6 @@ from app.db.models.campaign import Campaign
 from app.game.map.annotations import AnnotationError, create_annotation, delete_annotation
 from app.game.map.planning import plan_known_route
 from app.game.map.view import get_map_view
-from app.schemas.map import MapConnection, MapLocation, MapRegion, MapResponse
 from app.schemas.map_view import (
     CreateMapAnnotationRequest,
     DeleteMapAnnotationResponse,
@@ -158,54 +157,3 @@ def delete_map_annotation_route(
         raise HTTPException(status_code=404, detail="Anotação não encontrada")
     db.commit()
     return DeleteMapAnnotationResponse(deleted=True)
-
-
-@router.get("/{campaign_id}/map", response_model=MapResponse, deprecated=True)
-def get_map(
-    campaign_id: str,
-    character_id: str,
-    db: Session = Depends(get_db),
-):
-    _load_character(db, campaign_id, character_id)
-    logger.debug(
-        "legacy map projection campaign=%s character=%s source=map-view",
-        campaign_id,
-        character_id,
-    )
-    view = get_map_view(db, campaign_id, character_id, visited_only=True)
-
-    return MapResponse(
-        regions=[
-            MapRegion(
-                id=region.id,
-                name=region.name,
-                description=None,
-                discovery_status=region.discovery_status,
-            )
-            for region in view.regions
-        ],
-        locations=[
-            MapLocation(
-                id=location.id,
-                region_id=location.region_id,
-                name=location.name,
-                type=location.type,
-                x=location.x,
-                y=location.y,
-                discovery_status=location.discovery_status,
-            )
-            for location in view.locations
-        ],
-        connections=[
-            MapConnection(
-                from_location_id=route.from_location_id,
-                to_location_id=route.to_location_id,
-                direction=route.direction,
-                connection_type=route.connection_type,
-                distance=route.distance,
-                danger=route.danger,
-                travel_time_modifier=route.travel_time_modifier,
-            )
-            for route in view.routes
-        ],
-    )

@@ -40,6 +40,9 @@ _STOP_WORDS = frozenset({
     "quais", "quem", "aqui", "isso", "esse", "essa", "este", "esta", "pode", "posso", "sabe",
     "saber", "tudo", "bem", "obrigado", "obrigada", "favor", "muito", "pouco", "ainda", "mais",
     "tambem", "entao", "alguma", "algum", "alguem", "coisa", "falar", "dizer", "conta", "contar",
+    # Linking verbs match every statement ("onde fica a ferraria?" told
+    # the elder's line about the creek, which also "fica" somewhere).
+    "fica", "ficam", "existe", "existem", "tinha", "estao", "seria", "sera",
 })
 
 

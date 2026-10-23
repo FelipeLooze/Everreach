@@ -62,8 +62,9 @@ physical presence/travel-gating, a different concept from
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import GeographicKnowledgeAspect, GeographicPrecision, KnowerType, KnowledgeCertainty
+from app.core.enums import DiscoveryStatus, GeographicKnowledgeAspect, GeographicPrecision, KnowerType, KnowledgeCertainty
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.game.discovery.service import set_location_discovery
 from app.game.npcs.service import knows, teach_fact
 
 _PRECISION_RANK = {
@@ -182,6 +183,12 @@ def grant_fact_with_precision(
     if current_precision is None or precision_rank(precision) > precision_rank(current_precision):
         knower.precision = precision.value
         db.flush()
+
+    # The player's map reads one thing only: the discovery tables. Whatever
+    # way the player comes to know a place exists (exploration, a rumor, a
+    # shared route, an expedition), it is a known place from now on.
+    if knower_type == KnowerType.PLAYER and fact_key.startswith("location:"):
+        set_location_discovery(db, knower_id, fact_key.split(":")[1], DiscoveryStatus.DISCOVERED)
 
 
 def grant_geographic_knowledge(

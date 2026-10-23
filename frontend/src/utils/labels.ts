@@ -25,10 +25,8 @@ const CHARACTER_ATTRIBUTE_LABELS: Record<string, string> = {
 
 const DISCOVERY_STATUS_LABELS: Record<string, string> = {
   UNKNOWN: "desconhecido",
-  RUMORED: "rumor",
-  DISCOVERED: "descoberto",
+  DISCOVERED: "conhecido",
   VISITED: "visitado",
-  MAPPED: "mapeado",
 };
 
 const GEOGRAPHIC_PRECISION_LABELS: Record<string, string> = {
@@ -40,9 +38,7 @@ const GEOGRAPHIC_PRECISION_LABELS: Record<string, string> = {
 
 const MAP_LOCATION_SOURCE_LABELS: Record<string, string> = {
   discovery: "descoberta pessoal",
-  knowledge: "conhecimento pessoal",
   map: "mapa possuído",
-  rumor: "rumor não confirmado",
 };
 
 const NPC_ACTIVITY_LABELS: Record<string, string> = {

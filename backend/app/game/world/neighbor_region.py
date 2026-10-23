@@ -101,11 +101,11 @@ def materialize_neighbor_region(
         description=NEIGHBOR_REGION_DESCRIPTION,
         # 16U — the backend knows this Region in full the moment it's
         # generated, but nobody on the near side has actually been
-        # there. RUMORED (not UNKNOWN): the boundary's own publicly
+        # there. DISCOVERED (not UNKNOWN): the boundary's own publicly
         # known routes already imply *something* is known to exist
         # beyond it (spec's "Logan may know: some eastern kingdom lies
-        # beyond the mountains").
-        discovery_status=DiscoveryStatus.RUMORED,
+        # beyond the mountains"); its name stays gated by knowledge.
+        discovery_status=DiscoveryStatus.DISCOVERED,
         generation_seed=region_seed,
         generation_version=CURRENT_REGION_GENERATION_VERSION,
         climate_summary=climate_summary,

@@ -106,7 +106,7 @@ describe("InteractiveMap", () => {
             precision: "VAGUE",
             x: null,
             y: null,
-            discovery_status: "RUMORED",
+            discovery_status: "DISCOVERED",
           },
         ]}
       />,
@@ -137,7 +137,7 @@ describe("InteractiveMap", () => {
             precision: "VAGUE",
             x: null,
             y: null,
-            discovery_status: "RUMORED",
+            discovery_status: "DISCOVERED",
           },
         ]}
       />,
@@ -166,7 +166,7 @@ describe("InteractiveMap", () => {
             precision: "VAGUE",
             x: null,
             y: null,
-            discovery_status: "RUMORED",
+            discovery_status: "DISCOVERED",
           },
         ]}
       />,
@@ -247,7 +247,7 @@ describe("InteractiveMap", () => {
             precision: "VAGUE",
             x: null,
             y: null,
-            discovery_status: "RUMORED",
+            discovery_status: "DISCOVERED",
           },
         ]}
       />,

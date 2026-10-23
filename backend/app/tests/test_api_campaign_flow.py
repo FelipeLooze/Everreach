@@ -14,11 +14,11 @@ def test_full_campaign_flow(client, fake_llm):
     character_id = character["id"]
 
     resp = client.get(
-        f"/api/campaigns/{campaign_id}/map",
+        f"/api/campaigns/{campaign_id}/map-view",
         params={"character_id": character_id},
     )
     assert resp.status_code == 200
-    assert resp.json() == {"regions": [], "locations": [], "connections": []}
+    assert (resp.json()["regions"], resp.json()["locations"], resp.json()["routes"]) == ([], [], [])
 
     resp = client.get(f"/api/campaigns/{campaign_id}/quests", params={"character_id": character_id})
     assert resp.status_code == 200
@@ -123,13 +123,14 @@ def test_full_campaign_flow(client, fake_llm):
     assert all(memory["source_event_id"] for memory in resp.json()["memories"])
 
     resp = client.get(
-        f"/api/campaigns/{campaign_id}/map",
+        f"/api/campaigns/{campaign_id}/map-view",
         params={"character_id": character_id},
     )
     assert resp.status_code == 200
     map_data = resp.json()
     assert [r["name"] for r in map_data["regions"]] == [None]
-    assert all(location["name"] is not None for location in map_data["locations"])
+    visited = [location for location in map_data["locations"] if location["discovery_status"] == "VISITED"]
+    assert visited and all(location["name"] is not None for location in visited)
 
 
 def test_dead_character_action_returns_409(client):
@@ -260,7 +261,7 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
     assert state["region"]["name"] == region.name
 
     map_data = client.get(
-        f"/api/campaigns/{campaign_id}/map",
+        f"/api/campaigns/{campaign_id}/map-view",
         params={"character_id": character_id},
     ).json()
 

@@ -310,19 +310,8 @@ def move_character(
         else None
     )
 
-    newly_discovered = (
-        previous_status is None
-        or previous_status == DiscoveryStatus.RUMORED
-    )
-
-    first_visit = (
-        previous_status is None
-        or previous_status
-        in (
-            DiscoveryStatus.RUMORED,
-            DiscoveryStatus.DISCOVERED,
-        )
-    )
+    newly_discovered = previous_status is None
+    first_visit = previous_status in (None, DiscoveryStatus.DISCOVERED)
 
     character.stamina_current = max(
         0.0,

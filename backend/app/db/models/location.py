@@ -117,7 +117,7 @@ class CharacterLocationDiscovery(Base):
 
     status: Mapped[str] = mapped_column(
         String,
-        default=DiscoveryStatus.RUMORED,
+        default=DiscoveryStatus.DISCOVERED,
         nullable=False,
     )
 
@@ -140,10 +140,6 @@ class CharacterLocationDiscovery(Base):
     last_visited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     visit_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
 
-    mapped_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
-        nullable=True,
-    )
 
 class CharacterConnectionDiscovery(Base):
     """What one protagonist knows about one physical connection.

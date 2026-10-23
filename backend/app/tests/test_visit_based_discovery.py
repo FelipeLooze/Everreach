@@ -126,7 +126,9 @@ def test_default_map_view_excludes_mentioned_but_unvisited_location(client, db_s
     ).json()
     assert mentioned.id not in {row["id"] for row in normal["locations"]}
     assert mentioned.id in {row["id"] for row in rich["locations"]}
-    assert get_location_discovery(db_session, character["id"], mentioned.id) is None
+    # Mentioned is known, not visited — so the default (visited-only) map
+    # still leaves it out.
+    assert get_location_discovery(db_session, character["id"], mentioned.id).status == "DISCOVERED"
 
 
 def test_ordinary_visit_reveals_name_but_explicit_secret_identity_stays_masked(db_session):

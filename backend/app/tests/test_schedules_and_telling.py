@@ -225,3 +225,18 @@ def test_the_elder_is_found_by_his_white_beard_or_hair(db_session):
         npcs, players = engine._addressed_candidates(text, square_npcs, [])
         assert npcs == [elder] and players == []
     assert resolve_npc_appearance(db_session, campaign.id, elder.id)["hair_color"] == "white hair"
+
+
+def test_asking_where_two_places_are_tells_those_places_only(db_session):
+    from app.game.world.local_knowledge import ensure_settlement_public_knowledge
+
+    campaign, character = _world(db_session)
+    ensure_settlement_public_knowledge(db_session, campaign.id, character.location_id)
+    elder = _npc(db_session, campaign.id, "ancião da vila")
+
+    decided = telling.decide(db_session, campaign.id, character.id, elder, "Onde fica a ferraria e a estalagem?")
+
+    statements = " ".join(fact.statement for fact in decided.facts)
+    assert "Ferraria" in statements and "Estalagem" in statements
+    # "fica" is not a topic: the creek, which also "fica" somewhere, stays out.
+    assert all(("Ferraria" in fact.statement) or ("Estalagem" in fact.statement) for fact in decided.facts)

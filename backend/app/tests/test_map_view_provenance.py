@@ -23,52 +23,6 @@ def test_discovery_sourced_location_shows_physical_presence_as_provenance(db_ses
     assert location.provenance == "presença física"
 
 
-def test_knowledge_sourced_location_surfaces_the_real_grant_source(db_session):
-    campaign = create_campaign(db_session, "Provenance Conhecimento Real", world_seed=2)
-    region, village = seed_initial_region(db_session, campaign.id)
-    character = create_character(db_session, campaign.id, "Logan", region.id, village.id)
-    distant = Location(region_id=region.id, name="Arven", type="settlement", x=9, y=9)
-    db_session.add(distant)
-    db_session.flush()
-    ensure_geographic_fact(
-        db_session, campaign.id, "location", distant.id,
-        GeographicKnowledgeAspect.EXISTENCE, "Um povoado existe ao sul.",
-    )
-    grant_fact_with_precision(
-        db_session, campaign.id,
-        geographic_fact_key("location", distant.id, GeographicKnowledgeAspect.EXISTENCE),
-        KnowerType.PLAYER, character.id,
-        source="revelado por Mira", precision=GeographicPrecision.VAGUE,
-    )
-
-    view = get_map_view(db_session, campaign.id, character.id)
-
-    location = next(item for item in view.locations if item.id == distant.id)
-    assert location.provenance == "revelado por Mira"
-
-
-def test_rumor_sourced_location_surfaces_the_rumors_own_source(db_session):
-    campaign = create_campaign(db_session, "Provenance Rumor Real", world_seed=3)
-    region, village = seed_initial_region(db_session, campaign.id)
-    character = create_character(db_session, campaign.id, "Logan", region.id, village.id)
-    ruins = Location(region_id=region.id, name="Ruinas", type="generic")
-    db_session.add(ruins)
-    db_session.flush()
-    establish_rumor(
-        db_session, campaign.id, "location", ruins.id, GeographicKnowledgeAspect.EXISTENCE,
-        "cacador_1", "Ha ruinas a oeste.", RumorAccuracy.TRUE,
-    )
-    grant_rumor(
-        db_session, campaign.id, KnowerType.PLAYER, character.id, "location", ruins.id,
-        GeographicKnowledgeAspect.EXISTENCE, "cacador_1", source="npc:cacador_1",
-    )
-
-    view = get_map_view(db_session, campaign.id, character.id)
-
-    location = next(item for item in view.locations if item.id == ruins.id)
-    assert location.provenance == "npc:cacador_1"
-
-
 def test_map_sourced_location_shows_physical_map_as_provenance(db_session):
     campaign = create_campaign(db_session, "Provenance Mapa Fisico", world_seed=4)
     region, village = seed_initial_region(db_session, campaign.id)

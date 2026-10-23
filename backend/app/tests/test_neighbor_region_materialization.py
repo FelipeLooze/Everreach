@@ -44,14 +44,14 @@ def test_materialize_neighbor_region_produces_a_full_massive_region(db_session):
     assert len(threats) == len(subregions)
 
 
-def test_neighbor_region_starts_rumored_not_discovered(db_session):
+def test_neighbor_region_starts_known_not_visited(db_session):
     campaign = create_campaign(db_session, "Vizinha Rumor", world_seed=201)
     source_region, _village = seed_initial_region(db_session, campaign.id)
     boundary = create_regional_boundary(db_session, campaign.id, source_region.id)
 
     neighbor = materialize_neighbor_region(db_session, campaign.id, boundary, region_index=1)
 
-    assert neighbor.discovery_status == DiscoveryStatus.RUMORED.value
+    assert neighbor.discovery_status == DiscoveryStatus.DISCOVERED.value
 
 
 def test_neighbor_first_subregion_biome_continues_the_boundary_terrain(db_session):

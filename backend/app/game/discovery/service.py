@@ -11,10 +11,8 @@ logger = get_logger("game")
 
 
 _DISCOVERY_RANK = {
-    DiscoveryStatus.RUMORED: 1,
-    DiscoveryStatus.DISCOVERED: 2,
-    DiscoveryStatus.VISITED: 3,
-    DiscoveryStatus.MAPPED: 4,
+    DiscoveryStatus.DISCOVERED: 1,
+    DiscoveryStatus.VISITED: 2,
 }
 
 
@@ -45,8 +43,7 @@ def set_location_discovery(
 ) -> tuple[CharacterLocationDiscovery, bool]:
     """Create or advance one character's discovery state.
 
-    Discovery is monotonic:
-    RUMORED -> DISCOVERED -> VISITED -> MAPPED.
+    Discovery is monotonic: DISCOVERED -> VISITED.
 
     UNKNOWN is represented by the absence of a database row.
 
@@ -82,9 +79,6 @@ def set_location_discovery(
         if _DISCOVERY_RANK[target_status] >= _DISCOVERY_RANK[DiscoveryStatus.VISITED]:
             discovery.visited_at = now
 
-        if target_status == DiscoveryStatus.MAPPED:
-            discovery.mapped_at = now
-
         db.add(discovery)
         db.flush()
 
@@ -110,12 +104,6 @@ def set_location_discovery(
         >= _DISCOVERY_RANK[DiscoveryStatus.VISITED]
     ):
         discovery.visited_at = now
-
-    if (
-        discovery.mapped_at is None
-        and target_status == DiscoveryStatus.MAPPED
-    ):
-        discovery.mapped_at = now
 
     db.flush()
 
@@ -175,10 +163,7 @@ def record_location_visit(
     Knowledge or dialogue must never call this function.
     """
     before = get_location_discovery(db, character_id, location_id)
-    was_visited = before is not None and DiscoveryStatus(before.status) in {
-        DiscoveryStatus.VISITED,
-        DiscoveryStatus.MAPPED,
-    }
+    was_visited = before is not None and before.status == DiscoveryStatus.VISITED
     discovery, _changed = set_location_discovery(
         db, character_id, location_id, DiscoveryStatus.VISITED
     )
@@ -208,10 +193,7 @@ def location_display_name(
     """Common-case visited name with an explicit secret-identity exception."""
     if canonical_name_known:
         return location.name
-    visited = discovery is not None and DiscoveryStatus(discovery.status) in {
-        DiscoveryStatus.VISITED,
-        DiscoveryStatus.MAPPED,
-    }
+    visited = discovery is not None and discovery.status == DiscoveryStatus.VISITED
     if not visited:
         return None
     if location.identity_hidden:

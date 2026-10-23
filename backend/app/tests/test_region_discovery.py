@@ -56,7 +56,7 @@ def test_neighbor_region_name_stays_hidden_even_while_the_character_is_standing_
     assert response.region is not None
     assert response.region.id == neighbor.id
     assert response.region.name is None
-    assert response.region.discovery_status == "RUMORED"
+    assert response.region.discovery_status == "DISCOVERED"
 
 
 def test_granting_only_the_vague_rumor_does_not_reveal_the_real_name(db_session):

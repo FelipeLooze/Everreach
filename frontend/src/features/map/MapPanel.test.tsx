@@ -187,7 +187,7 @@ describe("MapPanel", () => {
           precision: "VAGUE",
           x: null,
           y: null,
-          discovery_status: "RUMORED",
+          discovery_status: "DISCOVERED",
         },
       ],
       routes: [],

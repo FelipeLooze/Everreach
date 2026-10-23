@@ -80,12 +80,12 @@ def test_location_discovery_only_moves_forward(db_session):
         db_session,
         character.id,
         village.id,
-        DiscoveryStatus.RUMORED,
+        DiscoveryStatus.DISCOVERED,
     )
 
     assert changed is True
-    assert discovery.status == DiscoveryStatus.RUMORED
-    assert discovery.discovered_at is None
+    assert discovery.status == DiscoveryStatus.DISCOVERED
+    assert discovery.discovered_at is not None
     assert discovery.visited_at is None
 
     discovery, changed = set_location_discovery(
@@ -109,17 +109,6 @@ def test_location_discovery_only_moves_forward(db_session):
 
     assert changed is False
     assert discovery.status == DiscoveryStatus.VISITED
-
-    discovery, changed = set_location_discovery(
-        db_session,
-        character.id,
-        village.id,
-        DiscoveryStatus.MAPPED,
-    )
-
-    assert changed is True
-    assert discovery.status == DiscoveryStatus.MAPPED
-    assert discovery.mapped_at is not None
 
 
 def test_world_start_marks_initial_location_as_visited(

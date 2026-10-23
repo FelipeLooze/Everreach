@@ -364,11 +364,14 @@ class ResourceGrowthSource(StrEnum):
 
 
 class DiscoveryStatus(StrEnum):
+    """What the player knows of a place: nothing, that it exists (heard of,
+    seen from afar, told), or that they have been there. Simplification
+    2026-10-23: RUMORED folded into DISCOVERED, MAPPED into VISITED — the
+    extra tiers were set almost nowhere and read as synonyms everywhere."""
+
     UNKNOWN = "UNKNOWN"
-    RUMORED = "RUMORED"
     DISCOVERED = "DISCOVERED"
     VISITED = "VISITED"
-    MAPPED = "MAPPED"
 
 
 class ConnectionType(StrEnum):

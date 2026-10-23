@@ -21,8 +21,8 @@ def known_map(
 
     Absence of CharacterLocationDiscovery means UNKNOWN.
 
-    RUMORED locations are included, but their exact coordinates should not
-    necessarily be exposed by the API.
+    Known-but-unvisited (DISCOVERED) locations are included, but their exact
+    coordinates should not necessarily be exposed by the API.
     """
 
     query = (
@@ -43,9 +43,7 @@ def known_map(
     )
     if visited_only:
         query = query.filter(
-            CharacterLocationDiscovery.status.in_(
-                (DiscoveryStatus.VISITED.value, DiscoveryStatus.MAPPED.value)
-            )
+            CharacterLocationDiscovery.status == DiscoveryStatus.VISITED.value
         )
     location_rows = query.order_by(Location.name).all()
 

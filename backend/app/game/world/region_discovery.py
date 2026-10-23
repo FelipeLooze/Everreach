@@ -5,7 +5,7 @@ know only a rumor. Do not automatically reveal Region name/cities/
 roads/culture/organizations/dangers") is already satisfied by reusing
 existing, unmodified machinery — no new code was needed for it:
 
-- Region.discovery_status starts RUMORED for a materialized neighbor
+- Region.discovery_status starts DISCOVERED for a materialized neighbor
   (16I), never DISCOVERED.
 - app.api.serializers.to_game_state_response already gates
   RegionSummary.name behind explicitly_knows_name (a per-character

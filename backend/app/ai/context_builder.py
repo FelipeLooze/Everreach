@@ -1761,16 +1761,6 @@ def build_narrative_context(
         {
             DiscoveryStatus.DISCOVERED,
             DiscoveryStatus.VISITED,
-            DiscoveryStatus.MAPPED,
-        },
-        all_player_facts,
-    )
-
-    rumored_location_lines = _location_discovery_lines(
-        db,
-        state,
-        {
-            DiscoveryStatus.RUMORED,
         },
         all_player_facts,
     )
@@ -1801,8 +1791,6 @@ def build_narrative_context(
             "PLAYER SPATIAL KNOWLEDGE",
             "KNOWN LOCATIONS",
             *(known_location_lines or ["- none"]),
-            "RUMORED LOCATIONS",
-            *(rumored_location_lines or ["- none"]),
         ]
     )
 

@@ -338,43 +338,6 @@ def test_remote_known_fact_is_retrieved_only_when_the_input_makes_it_relevant(db
     assert remote.statement in relevant_context
 
 
-def test_rumored_location_is_explicitly_marked_as_rumor(db_session):
-    campaign, character, state, _elder = _cardal_scene(db_session)
-
-    forest = (
-        db_session.query(Location)
-        .filter(
-            Location.subregion_id == state.location.subregion_id,
-            Location.type == "forest",
-        )
-        .first()
-    )
-
-    set_location_discovery(
-        db_session,
-        character.id,
-        forest.id,
-        DiscoveryStatus.RUMORED,
-    )
-
-    context = build_context(
-        db_session,
-        state,
-    )
-
-    spatial_section = context.split(
-        "PLAYER SPATIAL KNOWLEDGE",
-        1,
-    )[1].split(
-        "VISIBLE NPCS",
-        1,
-    )[0]
-
-    assert "RUMORED LOCATIONS" in spatial_section
-    assert "Local desconhecido [RUMORED]" in spatial_section
-    assert forest.name not in spatial_section
-
-
 def test_discovered_location_is_not_presented_as_rumor(db_session):
     campaign, character, state, _elder = _cardal_scene(db_session)
 

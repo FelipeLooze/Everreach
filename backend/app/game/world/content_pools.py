@@ -329,6 +329,9 @@ LEADER_TITLE_GENDER_BY_ORG_TYPE = {
 NPC_GIVEN_NAME_POOL_MASC = ["Thane", "Rowan", "Colm", "Dorian", "Garrick", "Aldric", "Perrin"]
 NPC_GIVEN_NAME_POOL_FEM = ["Ilya", "Sable", "Wren", "Astra", "Lena", "Nessa"]
 NPC_GIVEN_NAME_POOL = NPC_GIVEN_NAME_POOL_MASC + NPC_GIVEN_NAME_POOL_FEM
+# The three fixed transported people of the starting village (Phase 7),
+# kept out of the pools above; gender_for_name needs them too.
+FIXED_TRANSPORTED_GIVEN_NAME_GENDER = {"Corren": "M", "Dessa": "F", "Bram": "M"}
 NPC_FAMILY_NAME_POOL = [
     "Sernn", "Talbrook", "Ferrow", "Kessler",
     "Draven", "Wystan", "Corrin", "Hallow", "Brennig", "Sowerby", "Quill",

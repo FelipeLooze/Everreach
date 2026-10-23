@@ -52,6 +52,7 @@ from app.game.world.content_pools import (
     NPC_EYE_COLOR_POOL,
     NPC_FAMILY_NAME_POOL,
     NPC_GIVEN_NAME_POOL,
+    FIXED_TRANSPORTED_GIVEN_NAME_GENDER,
     NPC_GIVEN_NAME_POOL_FEM,
     NPC_GIVEN_NAME_POOL_MASC,
     NPC_HAIR_COLOR_POOL,
@@ -204,6 +205,19 @@ def _given_name_pool_for_gender(gender: str | None) -> list[str]:
     if gender == "F":
         return NPC_GIVEN_NAME_POOL_FEM
     return NPC_GIVEN_NAME_POOL
+
+
+def gender_for_name(name: str) -> str | None:
+    """"M"/"F" from the given-name pool a generated name was drawn from, or
+    None for a name outside every pool (a player-typed name, say). Lets the
+    narrator agree in gender ("a ferreira", "ele") without guessing from a
+    fantasy name."""
+    given = (name or "").split(" ", 1)[0]
+    if given in NPC_GIVEN_NAME_POOL_MASC:
+        return "M"
+    if given in NPC_GIVEN_NAME_POOL_FEM:
+        return "F"
+    return FIXED_TRANSPORTED_GIVEN_NAME_GENDER.get(given)
 
 
 def generate_npc_name(

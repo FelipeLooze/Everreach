@@ -4,6 +4,7 @@ import json
 from sqlalchemy.orm import Session
 
 from app.core.enums import (
+    connection_type_label_pt,
     EventType,
     KnowledgeCertainty,
     KnowerType,
@@ -47,6 +48,8 @@ from app.game.players.groups import (
 from app.game.players.knowledge import gather_local_knowledge
 from app.game.players.progression import apply_training
 from app.game.players.risk import acceptable_connections
+from app.game.npcs.service import teach_fact
+from app.game.world.local_knowledge import _ensure_fact
 
 
 logger = get_logger("game")
@@ -69,6 +72,11 @@ MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR
 # today's exact-every-hour behavior for any gap the game will realistically
 # produce — the rollback path asked for by the governing spec.
 LONG_GAP_BOUNDARY_THRESHOLD = 48
+
+# Once route sight let everyone leave any place, wanderers left nearly every
+# action opportunity (~1.8 trips a day each in a simulated year). A person
+# stays a few days wherever they arrive before setting out again.
+MIN_MINUTES_BETWEEN_DEPARTURES = 3 * 24 * 60
 
 
 def _hour_boundaries_crossed(
@@ -880,6 +888,37 @@ def _select_travel_connection(
 
     return r.choice(connections)
 
+def _learn_visible_routes(db: Session, campaign_id: str, player: SimulatedPlayer) -> None:
+    """Someone standing somewhere sees the roads, trails and rivers leading
+    out of it. Without this only the starting village had route facts, so a
+    transported person who reached any other place (or materialized there)
+    never left it again: three trips in a simulated year."""
+    origin = db.get(Location, player.location_id)
+    if origin is None:
+        return
+    for connection in db.query(LocationConnection).filter(
+        LocationConnection.from_location_id == player.location_id,
+        LocationConnection.active.is_(True),
+    ):
+        destination = db.get(Location, connection.to_location_id)
+        if destination is None:
+            continue
+        fact = _ensure_fact(
+            db,
+            campaign_id,
+            fact_key=f"visible_route:{connection.id}",
+            subject=f"connection:{connection.id}",
+            statement=(
+                f"Uma {connection_type_label_pt(connection.connection_type)} sai de "
+                f"{origin.name} em direção a {destination.name}."
+            ),
+        )
+        teach_fact(
+            db, campaign_id, fact.fact_key, KnowerType.SIMULATED_PLAYER, player.id,
+            source="rota visível", certainty=KnowledgeCertainty.BELIEVED,
+        )
+
+
 def _try_start_travel(
     db: Session,
     campaign_id: str,
@@ -887,6 +926,13 @@ def _try_start_travel(
     r: random.Random,
     opportunity_world_minute: int,
 ) -> bool:
+    if (
+        player.travel_started_world_minute is not None
+        and opportunity_world_minute - player.travel_started_world_minute < MIN_MINUTES_BETWEEN_DEPARTURES
+    ):
+        return False
+    if db is not None:
+        _learn_visible_routes(db, campaign_id, player)
     connections = _known_outgoing_connections(
         db,
         campaign_id,
@@ -1012,7 +1058,9 @@ def _complete_travel_if_due(
 
     player.travel_connection_id = None
     player.travel_destination_id = None
-    player.travel_started_world_minute = None
+    # travel_started_world_minute is kept as the last departure: it paces
+    # the next one (MIN_MINUTES_BETWEEN_DEPARTURES). Only the arrival minute
+    # marks someone as travelling.
     player.travel_arrival_world_minute = None
 
     log_event(

@@ -343,6 +343,12 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
     ]
 
 
+def _gender_note(name: str) -> str:
+    from app.game.world.generator import gender_for_name
+
+    return {"F": "; gender=female", "M": "; gender=male"}.get(gender_for_name(name), "")
+
+
 def _guild_progress_text(db: Session, organization, known_ids: set[str], *, member: bool) -> str:
     """Members know their guild's shared goal; anyone who knows two
     organizations may know how they stand with each other."""
@@ -1731,10 +1737,14 @@ def build_narrative_context(
         [
             (
                 f"- {_clip(npc.name, 100)} "
-                f"({_clip(npc.role, 120)}; activity={npc.activity})"
+                f"({_clip(npc.role, 120)}{_gender_note(npc.name)}; activity={npc.activity})"
             )
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
         ] or ["- none"]
+    )
+    visible_lines.append(
+        "When a person has a gender listed, make every Portuguese word about them agree "
+        "with it (ela/ele, a ferreira/o ferreiro, cansada/cansado)."
     )
     visible_lines.append(
         "Only people listed in this section may be singled out in narration. "
@@ -1746,7 +1756,7 @@ def build_narrative_context(
         [
             (
                 f"- {_clip(player.name, 100)} "
-                f"(Level {player.level}; "
+                f"(Level {player.level}{_gender_note(player.name)}; "
                 f"appearance={_clip(transported_appearance(player.physical_description), 600)})"
             )
             for player in state.nearby_simulated_players[:MAX_VISIBLE_ENTITIES]
@@ -1785,7 +1795,7 @@ def build_narrative_context(
         active_lines.extend(
             [
                 f"Name: {active_npc.name}",
-                f"Role: {active_npc.role}",
+                f"Role: {active_npc.role}{_gender_note(active_npc.name)}",
                 f"Location: {state.location.name if state.location else 'unknown'}",
                 "Visibility: private NPC context; not automatically known by the player.",
                 f"Personality: {_clip(active_npc.personality, 300)}",
@@ -1822,7 +1832,7 @@ def build_narrative_context(
     else:
         active_transported_lines.extend(
             [
-                f"Name: {active_transported.name}",
+                f"Name: {active_transported.name}{_gender_note(active_transported.name)}",
                 (
                     "Location: "
                     f"{state.location.name if state.location else 'unknown'}"

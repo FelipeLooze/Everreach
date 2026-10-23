@@ -236,6 +236,14 @@ def test_context_exposes_working_activity(
     )
 
     assert (
-        f"{blacksmith.name} (ferreira; activity=WORKING)"
+        f"{blacksmith.name} (ferreira; gender=female; activity=WORKING)"
         in context
     )
+
+def test_gender_comes_from_the_name_pool():
+    from app.game.world.generator import gender_for_name
+
+    assert gender_for_name("Astra Ferrow") == "F"
+    assert gender_for_name("Thane Quill") == "M"
+    assert gender_for_name("Dessa Marrow") == "F"
+    assert gender_for_name("Logan") is None

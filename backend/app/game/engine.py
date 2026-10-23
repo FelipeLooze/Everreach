@@ -60,6 +60,7 @@ from app.game.notices import service as notices_service
 from app.game.organizations import registration as registration_service
 from app.game.groups import companions as companions_service
 from app.game.organizations import player_guilds as guilds_service
+from app.game.travel import settlement_routes
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.quests.rewards import grant_pending_quest_completion_xp
@@ -1558,7 +1559,7 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
         return f"{character.name} já está em {destination.name}.", 0
 
     try:
-        travel_result = travel_service.move_character(
+        travel_result = settlement_routes.move_within_reach(
             db,
             campaign_id,
             character,

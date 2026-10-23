@@ -1724,24 +1724,37 @@ def _find_repetition_violations(text: str, recent_history: str) -> list[str]:
 _STALE_REPEAT_SIMILARITY_THRESHOLD = 0.85
 
 
+# Phase 14 playtest: after "Faço meu turno de novo" and "Compro o martelo"
+# Nemotron returned, word for word, its narration from TWO turns earlier —
+# the second time narrating a refusal ("Não tem, não leva") for a purchase
+# the backend had just completed. A near-verbatim copy of any recent turn is
+# a failure whatever the player did, not only after a direct question.
+_STALE_REPEAT_LOOKBACK = 3
+
+
 def _find_stale_repeated_response_violations(text: str, recent_history: str, player_input: str) -> list[str]:
-    if classify_conversational_act(player_input) not in _MUST_ADDRESS_ACTS:
+    past_responses = [
+        response for response in _recent_narrator_responses(recent_history)[-_STALE_REPEAT_LOOKBACK:]
+        if response.strip()
+    ]
+    normalized_text = _normalized(text)
+    if not any(
+        difflib.SequenceMatcher(None, normalized_text, _normalized(past)).ratio()
+        >= _STALE_REPEAT_SIMILARITY_THRESHOLD
+        for past in past_responses
+    ):
         return []
-    past_responses = _recent_narrator_responses(recent_history)
-    if not past_responses:
-        return []
-    most_recent = past_responses[-1]
-    if not most_recent.strip():
-        return []
-    similarity = difflib.SequenceMatcher(None, _normalized(text), _normalized(most_recent)).ratio()
-    if similarity >= _STALE_REPEAT_SIMILARITY_THRESHOLD:
+    if classify_conversational_act(player_input) in _MUST_ADDRESS_ACTS:
         return [
-            "a resposta repete quase literalmente o turno narrado imediatamente anterior sem "
+            "a resposta repete quase literalmente um turno narrado recente sem "
             "justificativa — o jogador fez uma pergunta direta e recebeu, de novo, essencialmente "
             "a mesma fala; isso não é uma escolha intencional do interlocutor, é falha em "
             "reconhecer que uma NOVA pergunta foi feita"
         ]
-    return []
+    return [
+        "a resposta copia quase literalmente um turno narrado recente; narre o que aconteceu "
+        "AGORA, segundo AUTHORITATIVE MECHANICAL FACTS, com palavras novas"
+    ]
 
 
 def _split_paragraphs(text: str) -> list[str]:
@@ -2885,15 +2898,18 @@ def _narrate_draft(
     remaining_stale_repeat = _find_stale_repeated_response_violations(draft, recent_history, player_input)
     if remaining_stale_repeat:
         grounded_fact = _direct_question_grounding_fact(context)
-        if grounded_fact and active_interlocutor_name:
+        asked = classify_conversational_act(player_input) in _MUST_ADDRESS_ACTS
+        if asked and grounded_fact and active_interlocutor_name:
             safe = f"— {grounded_fact} — responde {active_interlocutor_name}."
-        elif _direct_question_grounding_is_explicit_ignorance(context) and active_interlocutor_name:
+        elif asked and _direct_question_grounding_is_explicit_ignorance(context) and active_interlocutor_name:
             safe = f"— Não sei dizer ao certo — responde {active_interlocutor_name}."
-        else:
+        elif asked:
             safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        else:
+            safe = _format_failure_fallback(mode, active_interlocutor_name, mechanical_summary)
         logger.error(
-            "FALLBACK REASON: draft still repeated the immediately preceding response after "
-            "hard revisions, in reply to a direct question: %s\nFALLBACK:\n%s",
+            "FALLBACK REASON: draft still repeated a recent response after hard revisions: "
+            "%s\nFALLBACK:\n%s",
             remaining_stale_repeat,
             safe,
         )
@@ -2901,7 +2917,7 @@ def _narrate_draft(
             NarrationOutcome.FALLBACK,
             attempt=attempt,
             category=RepairReasonCategory.RELEVANCE,
-            reason="stale near-verbatim repeat of the previous turn in reply to a direct question",
+            reason="stale near-verbatim repeat of a recent turn",
         )
         return safe
 

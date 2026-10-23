@@ -19,6 +19,7 @@ from app.core.enums import (
     JobApplicationStatus,
     JobStatus,
     ShopStatus,
+    ToolCapability,
 )
 from app.db.models.business import Business
 from app.db.models.character import Character
@@ -58,6 +59,33 @@ def _matches(query: str | None, value: str) -> bool:
     needle = _normalized(query)
     candidate = _normalized(value)
     return bool(needle and (needle == candidate or needle in candidate or candidate in needle))
+
+
+# Player-facing: the raw enum ("HAMMERING") reached the screen in playtest.
+_TOOL_CAPABILITY_PT = {
+    ToolCapability.HAMMERING: "martelar",
+    ToolCapability.CUTTING: "cortar",
+    ToolCapability.MINING: "minerar",
+    ToolCapability.SAWING: "serrar",
+    ToolCapability.COOKING: "cozinhar",
+    ToolCapability.FISHING: "pescar",
+    ToolCapability.SEWING: "costurar",
+    ToolCapability.LOCKPICKING: "abrir fechaduras",
+}
+_ARTICLES = {"o", "a", "os", "as", "um", "uma", "meu", "minha", "esse", "essa", "este", "esta"}
+
+
+def _head_matches(query: str | None, value: str) -> bool:
+    """Same head noun: "martelo de volta" (from "vendo o martelo de volta")
+    is the "Martelo de Trabalho" when nothing matches more closely."""
+    words = [word for word in _normalized(query).split() if word not in _ARTICLES]
+    candidate = _normalized(value).split()
+    return bool(words and candidate and words[0] == candidate[0])
+
+
+def _closest(query: str | None, values: list, name) -> list:
+    exact = [value for value in values if _matches(query, name(value))]
+    return exact or [value for value in values if _head_matches(query, name(value))]
 
 
 def _operator_available(db: Session, shop: Shop) -> bool:
@@ -256,7 +284,12 @@ def build_economy_view(db: Session, character: Character) -> dict:
 
 
 def _select_shop(db: Session, character: Character, hint: str | None) -> Shop:
-    shops = [shop for shop in _nearby_shops(db, character) if hint is None or _matches(hint, shop.name)]
+    nearby = _nearby_shops(db, character)
+    shops = [shop for shop in nearby if hint is None or _matches(hint, shop.name)]
+    # "vendo o martelo para você" / "para a ferreira": a hint that names no
+    # shop, said where only one shop stands, still means that shop.
+    if not shops and len(nearby) == 1:
+        shops = nearby
     if len(shops) != 1:
         if not shops:
             raise ShopError("Não há uma loja correspondente aberta neste local.")
@@ -267,12 +300,34 @@ def _select_shop(db: Session, character: Character, hint: str | None) -> Shop:
 
 
 def _buy(db: Session, character: Character, target: str | None, shop_hint: str | None) -> EconomyActionResult:
+    # "uma ração de viagem e um odre de água": playtest charged only the
+    # water while the narration announced both. Each item is its own
+    # purchase; one that fails is reported, the others still go through.
+    parts = [part for part in re.split(r"\s*,\s*|\s+e\s+", target or "") if part.strip()]
+    if len(parts) > 1:
+        summaries, minutes, changed = [], 0, False
+        balance_before = total_carried_by_owner(db, CombatActorType.CHARACTER, character.id)
+        for part in parts:
+            try:
+                result = _buy(db, character, part, shop_hint)
+            except ShopError as exc:
+                summaries.append(f"Não compra {part.strip()}: {exc}")
+                continue
+            summaries.append(result.summary)
+            minutes, changed = minutes + result.minutes, True
+        if not changed:
+            raise ShopError(" ".join(summaries))
+        # Stated outright: the narrator summed 4 + 2 as "sete" in playtest.
+        spent = balance_before - total_carried_by_owner(db, CombatActorType.CHARACTER, character.id)
+        summaries.append(f"Total pago, já entregue: {spent} Bronze.")
+        return EconomyActionResult(" ".join(summaries), minutes, True)
     shop = _select_shop(db, character, shop_hint)
-    listings = []
+    offered = []
     for listing in db.query(ShopListing).filter(ShopListing.shop_id == shop.id).order_by(ShopListing.id).all():
         item = db.get(ItemInstance, listing.item_instance_id)
-        if item and _matches(target, item.definition.name):
-            listings.append((listing, item.definition.name))
+        if item:
+            offered.append((listing, item.definition.name))
+    listings = _closest(target, offered, lambda pair: pair[1])
     if not listings:
         raise ShopError("Esse item não está à venda nesta loja.")
     listing, item_name = listings[0]
@@ -290,7 +345,7 @@ def _sell(db: Session, character: Character, target: str | None, shop_hint: str 
         ItemInstance.location_type == ItemLocationType.CHARACTER.value,
         ItemInstance.location_ref == character.id,
     ).order_by(ItemInstance.id).all()
-    matches = [item for item in items if _matches(target, item.definition.name)]
+    matches = _closest(target, items, lambda item: item.definition.name)
     if not matches:
         raise ShopError("Você não carrega um item correspondente disponível para venda.")
     item = matches[0]
@@ -309,13 +364,17 @@ def _select_job(db: Session, character: Character, target: str | None, *, active
         Job.campaign_id == character.campaign_id,
         Job.location_id == character.location_id,
     ).order_by(Job.id).all()
-    candidates: list[tuple[Job, JobApplication | None]] = []
+    eligible: list[tuple[Job, JobApplication | None]] = []
     for job in jobs:
         application = _application(db, job.id, character.id)
         if active_only and (application is None or application.status != JobApplicationStatus.ACTIVE.value):
             continue
-        if _matches(target, job.title):
-            candidates.append((job, application))
+        eligible.append((job, application))
+    candidates = [(job, application) for job, application in eligible if _matches(target, job.title)]
+    # "Aceito a vaga" / "quero o trabalho" standing in the only workplace
+    # with one opening names no title — but there is nothing to choose.
+    if not candidates and len(eligible) == 1:
+        candidates = eligible
     if len(candidates) != 1:
         if not candidates:
             raise JobError("Nenhum trabalho correspondente está disponível neste local.")
@@ -382,7 +441,9 @@ def _produce(db: Session, character: Character, target: str | None) -> EconomyAc
     recipe = matches[0]
     tool_id = _tool_for_recipe(db, character, recipe)
     if recipe.required_tool is not None and tool_id is None:
-        raise ProductionError(f"A produção exige uma ferramenta capaz de {recipe.required_tool.value}.")
+        raise ProductionError(
+            f"A produção exige uma ferramenta para {_TOOL_CAPABILITY_PT.get(recipe.required_tool, 'o trabalho')}."
+        )
     produced = produce_goods(
         db,
         character.campaign_id,

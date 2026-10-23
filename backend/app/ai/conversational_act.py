@@ -244,7 +244,12 @@ _EXISTENCE_QUESTION_PATTERN = re.compile(
 # generic (e.g. "quantos quartos existem" asks a count, not a price).
 _PRICE_WORDS_PATTERN = re.compile(r"\bpre[çc]o\b|\bdi[áa]ria\b|\bvalor\b", re.IGNORECASE)
 _PRICE_QUANTITY_WORD = re.compile(r"\bquanto\b", re.IGNORECASE)
-_PRICE_VERB_PATTERN = re.compile(r"\bcusta\b|\b[ée]\b|\bfica\b|\bsai\b|\bvale\b", re.IGNORECASE)
+# "paga"/"ganha"/"recebe": a wage question; context_builder grounds those
+# separately (the job's pay), before any service price.
+_PRICE_VERB_PATTERN = re.compile(
+    r"\bcusta\b|\b[ée]\b|\bfica\b|\bsai\b|\bvale\b|\bpaga\b|\bpagam\b|\bganha\b|\brecebe\b",
+    re.IGNORECASE,
+)
 
 
 def is_price_question(player_input: str) -> bool:

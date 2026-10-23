@@ -552,6 +552,65 @@ def _local_economy_context_lines(db: Session, character) -> list[str]:
     ]
 
 
+def _settlement_jobs_context_lines(db: Session, character) -> list[str]:
+    """Openings posted in this settlement (the public board lists them, so
+    any local may mention them), with their real pay and shift length.
+    Playtest: asked about work, the elder and then the blacksmith promised
+    "a meal and a corner to sleep, bronze if the week was good" for a job
+    that pays a fixed 12 Bronze a shift — nothing told them the terms."""
+    from app.core.enums import JobApplicationStatus, JobStatus
+    from app.db.models.job import Job, JobApplication
+
+    if character.location_id is None:
+        return []
+    here = db.get(Location, character.location_id)
+    settlement = here
+    while settlement is not None and settlement.parent_location_id:
+        settlement = db.get(Location, settlement.parent_location_id)
+    if settlement is None:
+        return []
+    place_ids = {settlement.id} | {
+        location_id
+        for (location_id,) in db.query(Location.id).filter(Location.parent_location_id == settlement.id)
+    }
+    jobs = (
+        db.query(Job)
+        .filter(Job.campaign_id == character.campaign_id, Job.location_id.in_(place_ids))
+        .order_by(Job.id)
+        .all()
+    )
+    lines = ["WORK IN THIS SETTLEMENT"]
+    for job in jobs:
+        application = (
+            db.query(JobApplication)
+            .filter(
+                JobApplication.job_id == job.id,
+                JobApplication.applicant_type == CombatActorType.CHARACTER.value,
+                JobApplication.applicant_id == character.id,
+                JobApplication.status == JobApplicationStatus.ACTIVE.value,
+            )
+            .first()
+        )
+        if application is None and job.status != JobStatus.OPEN.value:
+            continue
+        workplace = db.get(Location, job.location_id)
+        standing = "the character already holds this job" if application else "open"
+        hours, minutes = divmod(job.work_minutes, 60)
+        shift = f"{hours}h{minutes:02d}" if minutes else f"{hours}h"
+        lines.append(
+            f"- {job.title} at {workplace.name if workplace else 'unknown'} [{standing}]: "
+            f"{job.wage_bronze} bronze per shift of {shift}. {job.description}"
+        )
+    if len(lines) == 1:
+        lines.append("- none")
+    lines.append(
+        "These are the only paid jobs here and their exact terms. Never promise meals, lodging, "
+        "other pay or other openings, and never hire the character in narration — "
+        "the backend does that when the character takes the job."
+    )
+    return lines
+
+
 def _nearby_shops_context_lines(db: Session, character) -> list[str]:
     """Phase 14N — only shops physically here (Phase 14G never assumed a
     global storefront menu), with only what a browsing customer would
@@ -1062,6 +1121,40 @@ def _direct_question_grounding_lines(
     # by a full-codebase search) — grounding an honest "no price
     # established" is just as important here as grounding a real number:
     # either way, the model is never left to invent one.
+    if _WAGE_QUESTION_PATTERN.search(_strip_accents_lower(player_input)) and state.location is not None:
+        from app.db.models.job import Job
+
+        jobs = (
+            db.query(Job)
+            .filter(Job.campaign_id == state.character.campaign_id, Job.location_id == state.location.id)
+            .order_by(Job.id)
+            .all()
+        )
+        if len(jobs) == 1 and _npc_is_present_at(active_npc, state.location.id):
+            job = jobs[0]
+            return [
+                "DIRECT QUESTION GROUNDING",
+                "The player is asking how much a job here PAYS.",
+                f"ECONOMIC SUBJECT: wage of {job.title} at {state.location.name}",
+                f"CURRENT OFFER: {job.wage_bronze} bronze.",
+                "SPEAKER KNOWS PRICE: yes.",
+                f"Authorized answer: {job.wage_bronze} bronze por turno de {_shift_length_pt(job.work_minutes)}.",
+                "The active interlocutor is the employer; state this pay plainly and promise "
+                "nothing else (no meals, lodging, bonuses or other pay).",
+            ]
+        if not jobs:
+            return [
+                "DIRECT QUESTION GROUNDING",
+                "The player is asking about pay for work here, but no paid job is posted at "
+                "this place. Never invent a wage or an opening.",
+            ]
+        return [
+            "DIRECT QUESTION GROUNDING",
+            "The player is asking how much work here pays. Only these jobs and wages exist:",
+            *(f"- {job.title}: {job.wage_bronze} bronze por turno de {_shift_length_pt(job.work_minutes)}." for job in jobs),
+            "Never invent another wage or promise anything else.",
+        ]
+
     if is_price_question(player_input):
         service_type = service_type_asked_about(player_input)
         service_key = economic_service_asked_about(player_input)
@@ -1121,6 +1214,26 @@ def _direct_question_grounding_lines(
                     ]
 
     return []
+
+
+# "Quanto paga?", "quanto se ganha?", "qual o salário?" — about work, not a
+# price; kept apart so the forge's wage is never answered with a repair price.
+_WAGE_QUESTION_PATTERN = re.compile(
+    r"\bquanto\b.{0,40}\b(?:paga|pagam|pago|ganha|ganho|recebe|recebo)\b|\bsalario\b"
+)
+
+
+def _shift_length_pt(minutes: int) -> str:
+    hours, rest = divmod(minutes, 60)
+    hours_text = f"{hours} hora" + ("s" if hours != 1 else "")
+    return f"{hours_text} e {rest} minutos" if rest else hours_text
+
+
+def _strip_accents_lower(text: str) -> str:
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", (text or "").casefold())
+        if not unicodedata.combining(char)
+    )
 
 
 def _scene_subjects(
@@ -1965,7 +2078,10 @@ def build_narrative_context(
     currency_lines = _currency_context_lines(db, state.character)
     regional_lines = _regional_context_lines(db, state.character)
     local_economy_lines = _local_economy_context_lines(db, state.character)
-    shop_lines = _nearby_shops_context_lines(db, state.character)
+    shop_lines = [
+        *_nearby_shops_context_lines(db, state.character),
+        *_settlement_jobs_context_lines(db, state.character),
+    ]
     input_canon_lines = [
         "PLAYER INPUT CANON CHECK",
         *_build_input_canon_check(db, state, player_input, npc_facts, player_facts),

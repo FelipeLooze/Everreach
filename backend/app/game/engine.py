@@ -918,6 +918,29 @@ def _after_economy_verb(text: str, pattern: str) -> str | None:
     return value or None
 
 
+_ECONOMY_VERB_PATTERN = re.compile(
+    r"\b(?:compro|comprar|vendo|vender|candidato|aceito|quero|trabalho|produzo|fabrico|forjo|deixo|saio)\b"
+)
+# Accepting the work an employer just described, in plain words.
+_APPLY_JOB_PHRASE_PATTERN = re.compile(
+    r"\b(?:quero|aceito|pego)\s+(?:o\s+)?(?:trabalho|emprego|servico)\b"
+    r"|\bquero\s+ser\s+(?:o\s+|a\s+)?(?:seu|sua|teu|tua)\s+ajudante\b"
+    r"|\bquero\s+trabalhar\s+(?:aqui|pra\s+(?:voce|senhora?)|para\s+(?:voce|o\s+senhor|a\s+senhora))\b"
+)
+
+
+_PRODUCTION_ATTEMPT_PATTERN = re.compile(
+    r"\b(?:produzo|fabrico|confecciono|forjo)\b"
+    r"|\b(?:tento|vou|quero|posso|comeco a)\s+(?:forjar|fabricar|produzir|confeccionar)\b"
+)
+
+
+def _unquoted_speech(raw: str) -> str:
+    """Speech marks removed, so text after a verb ('"Quero comprar a faca."')
+    reads as 'a faca', not as the rest of a quoted sentence."""
+    return re.sub(r'["“”]', "", raw)
+
+
 def _refine_explicit_economy_intent(intent: Intent) -> Intent:
     """Backstop for commands that commit the player's own economic action.
 
@@ -927,11 +950,23 @@ def _refine_explicit_economy_intent(intent: Intent) -> Intent:
     """
     if intent.type in _ECONOMY_INTENTS:
         return intent
-    if intent.type not in (ActionIntentType.FREEFORM, ActionIntentType.TALK):
-        return intent
     raw = intent.raw_text or ""
     text = _strip_accents(raw).casefold()
-    quoted = _quoted_values(raw)
+    # "Tento forjar uma faca" reads to the parser as an attempt (a skill
+    # check); with a production verb it is production. Only production: in
+    # "estou vendo a trilha", "vendo" is seeing, not selling.
+    if intent.type in (ActionIntentType.SKILL_CHECK, ActionIntentType.EXPERIMENT):
+        if not _PRODUCTION_ATTEMPT_PATTERN.search(text):
+            return intent
+    elif intent.type not in (ActionIntentType.FREEFORM, ActionIntentType.TALK):
+        return intent
+    # Dialogue is naturally quoted ('"Aceito a vaga de ajudante."'); only a
+    # quoted value without the verb itself names an item or a job.
+    quoted = [
+        value for value in _quoted_values(raw)
+        if not _ECONOMY_VERB_PATTERN.search(_strip_accents(value).casefold())
+    ]
+    raw = _unquoted_speech(raw)
 
     if re.search(r"\b(?:compro|comprar|quero comprar|vou comprar)\b", text):
         target = quoted[0] if quoted else _after_economy_verb(
@@ -953,7 +988,9 @@ def _refine_explicit_economy_intent(intent: Intent) -> Intent:
             target, secondary = parts[0], parts[1] if len(parts) > 1 else None
         return replace(intent, type=ActionIntentType.SELL, target=target, secondary_target=secondary)
 
-    if re.search(r"\b(?:candidato[- ]me|me candidato|aceito a vaga|quero a vaga|quero trabalhar como)\b", text):
+    if re.search(r"\b(?:candidato[- ]me|me candidato|aceito a vaga|quero a vaga|quero trabalhar como)\b", text) or (
+        _APPLY_JOB_PHRASE_PATTERN.search(text)
+    ):
         target = quoted[0] if quoted else _after_economy_verb(
             raw,
             r"\b(?:candidato-me|me\s+candidato|aceito\s+a\s+vaga|quero\s+a\s+vaga|quero\s+trabalhar\s+como)(?:\s+(?:ao|a|de))?\b",
@@ -977,9 +1014,11 @@ def _refine_explicit_economy_intent(intent: Intent) -> Intent:
         )
         return replace(intent, type=ActionIntentType.LEAVE_JOB, target=target)
 
-    if re.search(r"\b(?:produzo|fabrico|confecciono|forjo|preparo rac)\b", text):
+    if re.search(r"\b(?:produzo|fabrico|confecciono|forjo|preparo rac)\b", text) or re.search(
+        r"\b(?:tento|vou|quero|posso|comeco a)\s+(?:forjar|fabricar|produzir|confeccionar)\b", text
+    ):
         target = quoted[0] if quoted else _after_economy_verb(
-            raw, r"\b(?:produzo|fabrico|confecciono|forjo|preparo)\b"
+            raw, r"\b(?:produzo|fabrico|confecciono|forjo|preparo|forjar|fabricar|produzir|confeccionar)\b"
         )
         return replace(intent, type=ActionIntentType.PRODUCE, target=target)
     return intent

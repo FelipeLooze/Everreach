@@ -1,4 +1,6 @@
-"""Contracts and schedules are learned only when actually told (2026-10-23)."""
+"""Contracts and schedules are learned only when actually told (2026-10-23):
+the engine decides what an NPC tells, the narration must say it, and the
+player learns exactly that (app.game.telling)."""
 
 from app.core.enums import KnowerType, NPCActivity
 from app.db.models.job import Job
@@ -6,7 +8,7 @@ from app.db.models.location import LocationFeature
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.db.models.quest import Quest
-from app.game import schedules
+from app.game import schedules, telling
 from app.game.character.service import create_character
 from app.game.economy.initial_content import ensure_initial_economy_for_campaign
 from app.game.economy.playable import build_economy_view
@@ -39,15 +41,24 @@ def _npc(db_session, campaign_id, role):
     return db_session.query(NPC).filter(NPC.campaign_id == campaign_id, NPC.role == role).one()
 
 
+def _arrival(db_session):
+    return db_session.query(Quest).filter(Quest.name == "Relato da Primeira Chegada").one()
+
+
+def _tell(db_session, campaign, character, npc, question, said):
+    decided = telling.decide(db_session, campaign.id, character.id, npc, question)
+    return telling.tell(db_session, campaign.id, character.id, npc, decided, said)
+
+
 # --- Part 1: contracts are learned only when named ---------------------------
 
 
 def test_asking_about_work_teaches_only_the_contracts_actually_named(db_session):
     campaign, character = _world(db_session)
     elder = _npc(db_session, campaign.id, "ancião da vila")
-    (quest,) = discovery.open_quests_known_by_npc(db_session, campaign.id, elder.id)
+    quest = _arrival(db_session)
 
-    told = discovery.tell_contracts(db_session, campaign.id, character.id, elder, "— A forja precisa de braços.")
+    told = _tell(db_session, campaign, character, elder, "Sabe de algum trabalho?", "— A forja precisa de braços.")
 
     assert f'"{quest.name}"' in told and f"acrescenta {elder.name}" in told
     assert discovery.is_quest_known_to_character(db_session, campaign.id, character.id, quest.id)
@@ -56,10 +67,11 @@ def test_asking_about_work_teaches_only_the_contracts_actually_named(db_session)
 def test_a_contract_already_named_is_not_repeated(db_session):
     campaign, character = _world(db_session)
     elder = _npc(db_session, campaign.id, "ancião da vila")
-    (quest,) = discovery.open_quests_known_by_npc(db_session, campaign.id, elder.id)
+    quest = _arrival(db_session)
     said = f'— Fale com a guilda sobre o "{quest.name}".'
 
-    assert discovery.tell_contracts(db_session, campaign.id, character.id, elder, said) == said
+    assert _tell(db_session, campaign, character, elder, "Tem algum trabalho?", said) == said
+    assert discovery.is_quest_known_to_character(db_session, campaign.id, character.id, quest.id)
 
 
 # --- Part 2: when ---------------------------------------------------------------
@@ -103,10 +115,8 @@ def test_job_hours_are_unknown_until_the_notice_states_them_or_someone_tells(db_
     assert schedule_of(forge_job) == "das 8h às 18h"
     assert schedule_of(inn_job) == "desconhecido"  # the inn's notice does not say
 
-    told = schedules.tell_schedules(
-        db_session, campaign.id, character.id, innkeeper, "Que horas posso trabalhar aqui?", "— Quando quiser."
-    )
-    assert "das 8h às 18h" in told and f"explica {innkeeper.name}" in told
+    told = _tell(db_session, campaign, character, innkeeper, "Que horas posso trabalhar aqui?", "— Quando quiser.")
+    assert "das 8h às 18h" in told and f"acrescenta {innkeeper.name}" in told
     assert schedule_of(inn_job) == "das 8h às 18h"
 
 
@@ -125,10 +135,8 @@ def test_contract_schedule_on_the_notice_or_from_the_guildmaster(db_session, cli
 
     assert shown() == {arrival.name: "desconhecido", liaison.name: "desconhecido"}
 
-    schedules.tell_schedules(
-        db_session, campaign.id, character.id, guildmaster,
-        "Quando preciso fazer a Ronda dos Avisos?", "— Ainda hoje, antes do anoitecer.",
-    )
+    _tell(db_session, campaign, character, guildmaster,
+          "Quando preciso fazer a Ronda dos Avisos?", "— Ainda hoje, antes do anoitecer.")
     db_session.commit()
     assert shown()[liaison.name] == "ainda hoje, antes do anoitecer"
     assert not knows(db_session, KnowerType.PLAYER, character.id, schedules.quest_schedule_fact_key(arrival), campaign.id)
@@ -184,21 +192,22 @@ def test_an_npc_answer_after_a_beat_naming_the_player_as_object_is_kept():
 def test_the_added_contract_line_reads_naturally_when_nothing_was_said(db_session):
     campaign, character = _world(db_session)
     elder = _npc(db_session, campaign.id, "ancião da vila")
-    (quest,) = discovery.open_quests_known_by_npc(db_session, campaign.id, elder.id)
+    quest = _arrival(db_session)
 
-    told = discovery.tell_contracts(db_session, campaign.id, character.id, elder, "O ancião pensa um instante.")
+    told = _tell(db_session, campaign, character, elder, "Há trabalho por aqui?", "O ancião pensa um instante.")
 
-    assert f'— Há o contrato "{quest.name}" — diz {elder.name}.' in told
+    assert f'"{quest.name}"' in told and told.rstrip().endswith(f"— diz {elder.name}.")
 
 
 def test_a_contract_the_player_already_knows_is_not_announced_again(db_session):
     campaign, character = _world(db_session)
     elder = _npc(db_session, campaign.id, "ancião da vila")
-    (quest,) = discovery.open_quests_known_by_npc(db_session, campaign.id, elder.id)
+    quest = _arrival(db_session)
     discovery.learn_about_quest_from_npc(db_session, campaign.id, character.id, quest.id)
     said = "— Pode ser feito a qualquer hora do dia."
 
-    assert discovery.tell_contracts(db_session, campaign.id, character.id, elder, said) == said
+    assert _tell(db_session, campaign, character, elder, "E esse contrato, tem trabalho?", said).startswith(said)
+    assert f'"{quest.name}"' not in _tell(db_session, campaign, character, elder, "Mais algum trabalho?", "— Não.")
 
 
 def test_the_elder_is_found_by_his_white_beard_or_hair(db_session):

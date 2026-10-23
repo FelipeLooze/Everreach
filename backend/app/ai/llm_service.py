@@ -73,6 +73,10 @@ class LLMEmptyCompletionError(LLMServiceError):
     """A 200 response whose assistant content was empty."""
 
 
+class LLMTimeoutError(LLMServiceError):
+    """The provider never answered in time — not worth an immediate retry."""
+
+
 class LLMService(ABC):
     @abstractmethod
     def generate(self, system: str, prompt: str) -> str:
@@ -501,7 +505,7 @@ class OpenRouterLLMService(LLMService):
             raise LLMServiceError(f"Could not reach {self._provider_display_name}: {exc}") from exc
         except httpx.TimeoutException as exc:
             logger.warning("%s request timed out: %s", self._provider_display_name, exc)
-            raise LLMServiceError(f"{self._provider_display_name} took too long to respond.") from exc
+            raise LLMTimeoutError(f"{self._provider_display_name} took too long to respond.") from exc
         latency_ms = (time.monotonic() - started) * 1000
 
         if response.status_code != 200:

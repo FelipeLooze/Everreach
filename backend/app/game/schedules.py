@@ -16,16 +16,11 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import KnowerType, KnowledgeCertainty
 from app.db.models.job import Job
-from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+from app.db.models.knowledge import KnowledgeFact
 from app.db.models.quest import Quest
 from app.game.npcs.service import knows, teach_fact
 from app.game.world.local_knowledge import _ensure_fact
 
-_HOUR_WORDS = (
-    "zero", "uma", "duas", "tres", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez",
-    "onze", "doze", "treze", "catorze", "quinze", "dezesseis", "dezessete", "dezoito",
-    "dezenove", "vinte", "vinte e uma", "vinte e duas", "vinte e tres",
-)
 _SCHEDULE_QUESTION_PATTERN = re.compile(
     r"\bquando\b|\bque horas?\b|\bhorarios?\b|\ba partir de que\b|\bate que horas\b|\bque dia\b"
 )
@@ -119,69 +114,3 @@ def shift_refusal(job: Job, world_minute: int) -> str | None:
         f"Os turnos de '{job.title}' são {job_hours_text(job)} e um turno precisa começar até "
         f"as {latest}; agora são {now_hours}h{now_minutes:02d}."
     )
-
-
-# --- Telling schedules in conversation -------------------------------------
-
-
-def _schedules_known_by(db: Session, campaign_id: str, npc_id: str) -> list[KnowledgeFact]:
-    return (
-        db.query(KnowledgeFact)
-        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
-        .filter(
-            KnowledgeFact.campaign_id == campaign_id,
-            KnowledgeFact.fact_key.like("%:schedule"),
-            KnowledgeKnower.knower_type == KnowerType.NPC.value,
-            KnowledgeKnower.knower_id == npc_id,
-        )
-        .order_by(KnowledgeFact.fact_key)
-        .all()
-    )
-
-
-def schedules_npc_can_tell(db: Session, campaign_id: str, npc_id: str, player_input: str) -> list[KnowledgeFact]:
-    """Asked "when?", the NPC tells the schedules they know — the ones whose
-    job or contract the player named, or all of them when none is named."""
-    if not is_schedule_question(player_input):
-        return []
-    facts = _schedules_known_by(db, campaign_id, npc_id)
-    text = _normalized(player_input)
-    named = [
-        fact for fact in facts
-        if (title := re.search(r'"([^"]+)"', fact.statement)) and _title_words_named(title.group(1), text)
-    ]
-    return named or facts
-
-
-def _title_words_named(title: str, text: str) -> bool:
-    words = [word for word in re.findall(r"\w+", _normalized(title)) if len(word) > 3]
-    return any(re.search(rf"\b{re.escape(word)}\b", text) for word in words)
-
-
-def _schedule_is_stated(statement: str, narrated_text: str) -> bool:
-    text = _normalized(narrated_text)
-    hours = re.findall(r"\b(\d{1,2})h\b", statement)
-    if hours:
-        return all(
-            re.search(rf"\b{hour}\s*h|\b{hour}\s*horas|\b{_HOUR_WORDS[int(hour)]}\b", text)
-            for hour in hours
-        )
-    when = re.search(r"pode ser feito (.+?)\.?$", statement)
-    if not when:
-        return False
-    # The giver's own words vary ("a qualquer hora" for "a qualquer hora do
-    # dia"): every meaningful word said is enough, the exact phrase is not.
-    words = [word for word in re.findall(r"\w+", _normalized(when.group(1))) if len(word) > 3]
-    return bool(words) and all(re.search(rf"\b{re.escape(word)}\b", text) for word in words)
-
-
-def tell_schedules(
-    db: Session, campaign_id: str, character_id: str, npc, player_input: str, narrated_text: str
-) -> str:
-    """The schedule the NPC was asked about is said — added as one closing
-    line when the narration left it out — and only then learned."""
-    for fact in schedules_npc_can_tell(db, campaign_id, npc.id, player_input):
-        if not _schedule_is_stated(fact.statement, narrated_text):
-            narrated_text = f"{narrated_text.rstrip()}\n\n— {fact.statement} — explica {npc.name}."
-        teach_schedule(db, campaign_id, character_id, fact.fact_key, source=f"revelado por {npc.name}")
-    return narrated_text

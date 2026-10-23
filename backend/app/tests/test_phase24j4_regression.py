@@ -509,12 +509,15 @@ def test_a_reveal_inside_a_rejected_draft_is_not_taught(client, db_session, monk
             json={"text": f'Logan vai falar com {elder["name"]} "Qual o nome dessa vila?"'},
         )
         assert resp.status_code == 200
+        narrative = resp.json()["narrative"]
         # The agency-violating draft never survives to the player...
-        assert village.name not in resp.json()["narrative"]
-        # ...and because it never appears in the FINAL text, it must not
-        # have been taught either — this is the actual guarantee (a name
-        # that never reached the player must never become known).
+        assert "decide confiar" not in narrative
+        # ...but the question is still answered: since app.game.telling the
+        # engine decides what the elder tells and adds the line when the
+        # surviving text lacks it. The guarantee is unchanged — the player
+        # learns the name exactly when it reaches them in the final text.
         fact_keys = _player_fact_keys(db_session, character_id)
-        assert "settlement_name_known" not in fact_keys
+        assert ("settlement_name_known" in fact_keys) == (village.name in narrative)
+        assert village.name in narrative
     finally:
         set_llm_service_override(None)

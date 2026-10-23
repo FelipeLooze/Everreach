@@ -10,6 +10,7 @@ from app.ai.llm_service import (
     LLMRateLimitError,
     LLMService,
     LLMServiceError,
+    LLMTimeoutError,
 )
 from app.core.enums import ActionIntentType, TravelPace
 from app.core.logging import get_logger
@@ -62,6 +63,12 @@ def _call_with_one_retry(llm_service: LLMService, prompt: str) -> str:
         time.sleep(wait + 0.25)
     except LLMEmptyCompletionError:
         logger.info("intent parser: empty completion, retrying once")
+    except LLMTimeoutError:
+        raise
+    except LLMServiceError as exc:
+        # Free NVIDIA answers an occasional 500 that clears within a second;
+        # one more try is far cheaper than losing the turn's mechanics.
+        logger.info("intent parser: provider error (%s), retrying once", exc)
     return call_llm(llm_service, _SYSTEM_PROMPT, prompt, purpose="INTENT", attempt=2)
 
 

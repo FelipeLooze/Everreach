@@ -16,7 +16,7 @@ from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
-from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
+from app.db.models.organization import OrganizationMember, OrganizationRole
 from app.db.models.quest import CharacterQuestObjective, QuestObjective
 from app.db.models.shop import Shop, ShopListing
 from app.db.models.simulated_player import SimulatedPlayer
@@ -73,7 +73,6 @@ from app.game.schedules import (
     job_hours_text,
     player_knows_job_schedule,
     player_knows_quest_schedule,
-    schedules_npc_can_tell,
 )
 from app.game.economy.currency import to_denominations
 from app.game.economy.local_economy import get_settlement_wealth, gold_circulates_normally
@@ -594,51 +593,6 @@ def _quest_schedule_note(db: Session, character, quest) -> str:
     if player_knows_quest_schedule(db, character.campaign_id, character.id, quest):
         return f" — when: {quest.schedule_text}"
     return " — when: unknown to the character; never state a time for it"
-
-
-def _schedules_to_tell_lines(db: Session, state, active_npc, player_input: str) -> list[str]:
-    """Asked "when?", the active NPC states the schedules they know. The
-    engine adds the line if the narration leaves it out, and only then does
-    the player learn it (app.game.schedules.tell_schedules)."""
-    if active_npc is None:
-        return []
-    facts = schedules_npc_can_tell(db, state.character.campaign_id, active_npc.id, player_input)
-    if not facts:
-        return []
-    return [
-        f"SCHEDULE {active_npc.name.upper()} CAN TELL",
-        *(f"- {fact.statement}" for fact in facts),
-        f"{active_npc.name} was asked when: state exactly this, in natural words.",
-    ]
-
-
-def _contracts_to_tell_lines(db: Session, state, active_npc, player_input: str) -> list[str]:
-    """Asked about work, the active NPC names the open contracts they know.
-    The engine adds any the narration leaves out and teaches exactly the
-    ones named (app.game.quests.discovery.tell_contracts)."""
-    from app.game.quests.discovery import is_work_question, open_quests_known_by_npc
-
-    if active_npc is None or not is_work_question(player_input):
-        return []
-    quests = open_quests_known_by_npc(db, state.character.campaign_id, active_npc.id)
-    if not quests:
-        return []
-    def offered_by(quest) -> str:
-        # Playtest: with only "a guilda" in the description, the elder
-        # credited the adventurers' contract to the merchants' guild.
-        sponsor = db.get(Organization, quest.sponsoring_organization_id) if quest.sponsoring_organization_id else None
-        if sponsor is None:
-            return ""
-        leader = db.get(NPC, sponsor.founder_id) if sponsor.founder_type == CombatActorType.NPC.value else None
-        led_by = f", led by {leader.name}" if leader is not None else ""
-        return f" (offered by {sponsor.name}{led_by})"
-
-    return [
-        f"CONTRACTS {active_npc.name.upper()} CAN TELL",
-        *(f'- "{quest.name}"{offered_by(quest)}: {_clip(quest.description, 200)}' for quest in quests),
-        f"{active_npc.name} was asked about work: name each of these contracts by its exact "
-        "title, in quotes, alongside any paid jobs. Never invent other contracts.",
-    ]
 
 
 def _settlement_jobs_context_lines(db: Session, character) -> list[str]:
@@ -2188,8 +2142,6 @@ def build_narrative_context(
     shop_lines = [
         *_nearby_shops_context_lines(db, state.character),
         *_settlement_jobs_context_lines(db, state.character),
-        *_contracts_to_tell_lines(db, state, active_npc, player_input),
-        *_schedules_to_tell_lines(db, state, active_npc, player_input),
     ]
     input_canon_lines = [
         "PLAYER INPUT CANON CHECK",

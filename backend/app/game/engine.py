@@ -62,8 +62,7 @@ from app.game.organizations import registration as registration_service
 from app.game.groups import companions as companions_service
 from app.game.organizations import player_guilds as guilds_service
 from app.game.travel import settlement_routes
-from app.game.quests import discovery as quest_discovery
-from app.game import schedules
+from app.game import telling
 from app.ai import people_present
 from app.game.players.appearance import ensure_transported_features
 from app.game.notices.service import NoticeBoardError, read_notice_board
@@ -299,6 +298,14 @@ def resolve_action(
         intent = _refine_explicit_quest_intent(intent)
         intent = _refine_explicit_membership_intent(intent)
         intent = _refine_explicit_economy_intent(intent)
+        # With the parser unavailable a line spoken to whoever the player is
+        # already talking with stays a conversation, not "nothing applies".
+        if (
+            intent.type == ActionIntentType.FREEFORM
+            and (active_npc is not None or active_simulated_player is not None)
+            and _looks_like_dialogue(text)
+        ):
+            intent = replace(intent, type=ActionIntentType.TALK)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     if technique_use is not None:
@@ -513,6 +520,15 @@ def resolve_action(
             else None
         ),
     )
+    # What the NPC tells this turn is decided here, before narrating; the
+    # narrator must say it and the player learns exactly that (app.game.telling).
+    npc_telling = (
+        telling.decide(db, campaign_id, character.id, context_npc, text)
+        if context_npc is not None
+        else telling.Telling([], {})
+    )
+    if npc_telling.facts:
+        fresh_context = f"{fresh_context}\n\n" + "\n".join(npc_telling.context_lines(context_npc.name))
     recent_history = context_builder.build_recent_history(recent_entries)
     settings = get_settings()
 
@@ -580,23 +596,9 @@ def resolve_action(
             context_npc.name if context_npc is not None else "",
         )
 
-    if context_npc is not None and quest_discovery.is_work_question(text):
-        final_narrative = quest_discovery.tell_contracts(
-            db, campaign_id, character.id, context_npc, final_narrative
-        )
-    if context_npc is not None:
-        final_narrative = schedules.tell_schedules(
-            db, campaign_id, character.id, context_npc, text, final_narrative
-        )
-    if context_npc is not None:
-        _teach_facts_revealed_in_narration(
-            db,
-            campaign_id,
-            character,
-            fresh_state,
-            context_npc,
-            player_input=text,
-            narrated_text=final_narrative,
+    if context_npc is not None and not asking_who:
+        final_narrative = telling.tell(
+            db, campaign_id, character.id, context_npc, npc_telling, final_narrative
         )
     if context_simulated_player is not None:
         # A transported person talks about their guild freely — unless it is
@@ -741,55 +743,6 @@ def resolve_action(
         # inside validate_narrative_proposal).
         warnings=[*mechanical_warnings, *narrative_warnings],
     )
-
-
-def _teach_facts_revealed_in_narration(
-    db: Session,
-    campaign_id: str,
-    character: Character,
-    fresh_state,
-    context_npc,
-    *,
-    player_input: str,
-    narrated_text: str,
-) -> None:
-    """If the narrator actually voiced one of the active NPC's known facts,
-    mechanically teach that same fact to the player. The narrator itself
-    never gains authority to grant knowledge — this only promotes a fact
-    the backend already trusts (it's in the NPC's own NPC KNOWLEDGE) once
-    the produced text shows it was genuinely said, not merely available.
-
-    This function cannot create arbitrary knowledge from prose: it only
-    promotes a fact that was already present in the active NPC's canonical
-    knowledge and whose authorized value appeared in the narration.
-    """
-    revealed_facts = context_builder.active_npc_relevant_facts(
-        db,
-        fresh_state,
-        context_npc.id,
-        player_input=player_input,
-    )
-    for fact in revealed_facts:
-        revealed = context_builder.fact_is_revealed_in_text(fact, narrated_text)
-        logger.info(
-            "knowledge acquisition check: fact_key=%s subject=%s revealer=%s learner=%s "
-            "persisted=%s",
-            fact.fact_key,
-            fact.subject,
-            context_npc.id,
-            character.id,
-            revealed,
-        )
-        if revealed:
-            npcs_service.teach_fact(
-                db,
-                campaign_id,
-                fact.fact_key,
-                KnowerType.PLAYER,
-                character.id,
-                source=f"revelado por {context_npc.name}",
-                certainty=KnowledgeCertainty.CONFIRMED,
-            )
 
 
 def _estimate_talk_seconds(text: str) -> int:

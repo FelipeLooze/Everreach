@@ -51,7 +51,7 @@ from app.game.combat.context import build_active_encounter_snapshot
 from app.game.game_state import GameStateSnapshot
 from app.game.items.context import build_narrator_inventory_context
 from app.game.skills.technique_mastery import character_technique_mastery_tier
-from app.game.players.arrival_kit import transported_appearance
+from app.game.players.arrival_kit import TRANSPORTED_OUTFIT_APPEARANCE, transported_appearance
 from app.game.npcs.service import (
     KnownFact,
     effective_npc_location_id,
@@ -67,6 +67,8 @@ from app.game.relationships.service import (
 from app.game.players.groups import active_group_for_player
 from app.game.organizations.reputation import organization_reputation_category, organization_reputation_score
 from app.game.organizations.visibility import visible_organizations_for_character
+from app.ai.people_present import npc_appearance_pt
+from app.game.players.appearance import ensure_transported_features
 from app.game.schedules import (
     job_hours_text,
     player_knows_job_schedule,
@@ -1946,10 +1948,16 @@ def build_narrative_context(
             (
                 f"- {_clip(npc.name, 100)} "
                 f"({_clip(npc.role, 120)}{_gender_note(npc.name)}; activity={npc.activity}"
-                f"{_first_meeting_note(db, state.character, npc)})"
+                f"{_first_meeting_note(db, state.character, npc)}; "
+                f"appearance={npc_appearance_pt(db, state.character.campaign_id, npc)})"
             )
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
         ] or ["- none"]
+    )
+    visible_lines.append(
+        "Describe each person only with their listed appearance (hair, eyes, age) — the "
+        "player identifies people by what you describe, so never invent a beard, hair or eye "
+        "colour, scar or build that is not listed."
     )
     visible_lines.append(
         "When a person has a gender listed, make every Portuguese word about them agree "
@@ -1966,12 +1974,15 @@ def build_narrative_context(
             (
                 f"- {_transported_label(db, state.character, player)} "
                 f"(Level {player.level}{_gender_note(player.name)}; "
-                f"appearance={_clip(transported_appearance(player.physical_description), 600)})"
+                f"appearance={ensure_transported_features(db, player)} Wears the transported outfit.)"
             )
             for player in state.nearby_simulated_players[:MAX_VISIBLE_ENTITIES]
         ]
         or ["- none"]
     )
+    if state.nearby_simulated_players:
+        # Identical for everyone: stated once, not once per person.
+        visible_lines.append(f"The transported outfit: {TRANSPORTED_OUTFIT_APPEARANCE}")
     encounter_snapshot = build_active_encounter_snapshot(db, state.character.id)
     combat_lines = []
     if encounter_snapshot is not None:
@@ -2053,7 +2064,7 @@ def build_narrative_context(
                 ),
                 (
                     "Physical description: "
-                    f"{_clip(transported_appearance(active_transported.physical_description), 800)}"
+                    f"{_clip(transported_appearance(ensure_transported_features(db, active_transported)), 800)}"
                 ),
                 (
                     "Personality: "

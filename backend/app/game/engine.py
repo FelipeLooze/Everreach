@@ -64,6 +64,8 @@ from app.game.organizations import player_guilds as guilds_service
 from app.game.travel import settlement_routes
 from app.game.quests import discovery as quest_discovery
 from app.game import schedules
+from app.ai import people_present
+from app.game.players.appearance import ensure_transported_features
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.quests.rewards import grant_pending_quest_completion_xp
@@ -285,7 +287,15 @@ def resolve_action(
             raw_text=text,
         )
     else:
-        intent = intent_parser.parse(intent_llm_service, text, context)
+        intent = intent_parser.parse(
+            intent_llm_service,
+            text,
+            people_present.build_intent_context(
+                db, state, context,
+                active_npc_id=active_npc.id if active_npc else None,
+                active_player_id=active_simulated_player.id if active_simulated_player else None,
+            ),
+        )
         intent = _refine_explicit_quest_intent(intent)
         intent = _refine_explicit_membership_intent(intent)
         intent = _refine_explicit_economy_intent(intent)
@@ -507,19 +517,25 @@ def resolve_action(
     settings = get_settings()
 
     narrator_unavailable = False
-    try:
-        narrative_text = narrator.narrate(
-            llm_service,
-            mechanical_summary,
-            fresh_context,
-            player_input=text,
-            recent_history=recent_history,
-            enforce_player_agency=settings.narrative_player_agency_guard_enabled,
-            automatic_validation=settings.narrative_automatic_validation_enabled,
-        )
-    except LLMServiceError:
+    # Asking "com quem?" answers the turn by itself: no conversation was
+    # registered, so nobody may be narrated answering as if one were.
+    asking_who = mechanical_summary.startswith(WHO_DO_YOU_MEAN_PREFIX)
+    if asking_who:
         narrative_text = mechanical_summary
-        narrator_unavailable = True
+    else:
+        try:
+            narrative_text = narrator.narrate(
+                llm_service,
+                mechanical_summary,
+                fresh_context,
+                player_input=text,
+                recent_history=recent_history,
+                enforce_player_agency=settings.narrative_player_agency_guard_enabled,
+                automatic_validation=settings.narrative_automatic_validation_enabled,
+            )
+        except LLMServiceError:
+            narrative_text = mechanical_summary
+            narrator_unavailable = True
 
     final_narrative = narrative_text
     narrative_warnings: list[str] = []
@@ -527,7 +543,7 @@ def resolve_action(
     # Automatic narrative review is retained only as an opt-in diagnostic
     # mode. In normal play the first OpenRouter answer is persisted exactly as
     # returned; the player decides whether to regenerate it with feedback.
-    if settings.narrative_automatic_validation_enabled:
+    if settings.narrative_automatic_validation_enabled and not asking_who:
         canonical_facts = context_builder.build_canonical_facts(fresh_state)
         validation = narrative_validator.validate(narrative_text, canonical_facts)
         narrative_proposal = NarrativeProposal(
@@ -1927,6 +1943,10 @@ def _resolve_target_person(
     """Who an invitation/recruitment/expulsion is about: a name the player
     used, then a reference in the raw text, then whoever they are already
     talking to ("Quer vir comigo?")."""
+    chosen = people_present.person_for_ref(state, intent.person_ref)
+    if chosen is not None:
+        kind, person = chosen
+        return ([person], []) if kind == "npc" else ([], [person])
     target = _strip_accents(intent.target or "").casefold().strip()
 
     def _named(people):
@@ -2053,6 +2073,25 @@ def _handle_guild_diplomacy(
     return change.summary, 5 if change.changed else 1
 
 
+WHO_DO_YOU_MEAN_PREFIX = "Há mais de uma pessoa aqui."
+
+
+
+def _who_do_you_mean(db: Session, state) -> str:
+    """Asked instead of narrated: the narrator used to voice someone anyway
+    while the engine had registered no conversation (the user's own save:
+    two turns "answered" by the elder, none of them counted)."""
+    descriptions = []
+    for kind, person in people_present.present_people(state):
+        if kind == "npc":
+            descriptions.append(people_present.npc_appearance_pt(db, state.character.campaign_id, person))
+        else:
+            features = ensure_transported_features(db, person).rstrip(".")
+            descriptions.append(f"{features[:1].lower()}{features[1:]}, com o traje dos transportados")
+    listed = "; ".join(dict.fromkeys(descriptions))
+    return f"{WHO_DO_YOU_MEAN_PREFIX} Com quem você quer falar? Aqui estão: {listed}."
+
+
 def _handle_talk(
     db: Session,
     campaign_id: str,
@@ -2075,14 +2114,19 @@ def _handle_talk(
     # player wrote nothing of at all ("Como está?" -> target
     # "estalajadeiro") falls through to the deterministic nearby-count
     # logic below, same as if no target had been given.
+    chosen = people_present.person_for_ref(state, intent.person_ref)
+    if chosen is not None:
+        kind, person = chosen
+        npc, simulated_player = (person, None) if kind == "npc" else (None, person)
+
     literal_target = None
-    if intent.target:
+    if intent.target and chosen is None:
         raw_lower = intent.raw_text.casefold()
         target_words = [word for word in intent.target.split() if len(word) >= 3]
         if any(word.casefold() in raw_lower for word in target_words):
             literal_target = intent.target
 
-    resolve_from_nearby = not literal_target
+    resolve_from_nearby = not literal_target and chosen is None
     if literal_target:
         target_lower = literal_target.casefold()
 
@@ -2194,11 +2238,7 @@ def _handle_talk(
                 # "Falo com o mestre da guilda" with two guild masters here
                 # named someone, just not one person; continuing the old
                 # conversation answered as the wrong NPC (seen in playtest).
-                return (
-                    "Há mais de uma pessoa aqui que corresponde a essa descrição. "
-                    "Diga com quem você quer falar.",
-                    0,
-                )
+                return _who_do_you_mean(db, state), 0
             else:
                 # No explicit reference this turn either — before asking
                 # for disambiguation, prefer an already-active
@@ -2231,10 +2271,7 @@ def _handle_talk(
                     ) is not None:
                         simulated_player = newcomer
                     else:
-                        return (
-                            "Há mais de uma pessoa aqui. Diga com quem você quer falar.",
-                            0,
-                        )
+                        return _who_do_you_mean(db, state), 0
 
     if npc is None and simulated_player is None:
         return (

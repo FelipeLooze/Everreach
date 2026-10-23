@@ -37,6 +37,9 @@ class Intent:
     pattern_key: str | None = None
     domains: str | None = None
     technique_type: str | None = None
+    # "P2": who the player means, from the numbered PESSOAS PRESENTES list
+    # (app.ai.people_present). None when nobody or ambiguous.
+    person_ref: str | None = None
 
 
 # Each intent call sends ~4k prompt tokens and Groq's free tier allows 8k
@@ -96,6 +99,7 @@ def parse(llm_service: LLMService, text: str, context: str) -> Intent:
         type=intent_type,
         target=target,
         raw_text=text,
+        person_ref=_person_ref(raw),
         pace=pace,
         secondary_target=secondary_target,
         slot=slot,
@@ -114,6 +118,11 @@ def _parse_response(
 ) -> tuple[ActionIntentType, str | None, TravelPace]:
     intent_type, target, pace, *_details = _decode_response(raw)
     return intent_type, target, pace
+
+
+def _person_ref(raw: str) -> str | None:
+    match = re.search(r'"person"\s*:\s*"(P\d{1,2})"', raw or "", re.IGNORECASE)
+    return match.group(1).upper() if match else None
 
 
 def _decode_response(

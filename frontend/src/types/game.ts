@@ -390,6 +390,7 @@ export interface Quest {
   description: string;
   status: string;
   objectives: QuestObjective[];
+  schedule: string | null;
 }
 
 export interface EconomyListing {
@@ -423,6 +424,7 @@ export interface EconomyJob {
   wage_bronze: number;
   payment_frequency: string;
   work_minutes: number;
+  schedule: string;
   application_status: string | null;
   employer_available: boolean;
 }

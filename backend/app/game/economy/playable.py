@@ -38,6 +38,14 @@ from app.game.economy.wages import WageError, pay_wage
 from app.game.economy.wallet import total_carried_by_owner
 from app.game.items.tools import ToolError, validate_character_tool_use
 from app.game.npcs.service import effective_npc_location_id
+from app.game.schedules import (
+    job_hours_text,
+    job_schedule_fact_key,
+    player_knows_job_schedule,
+    shift_refusal,
+    teach_schedule,
+)
+from app.game.time.clock import get_world_time
 from app.game.professions.activities import award_crafting_xp, award_work_xp
 
 
@@ -248,6 +256,12 @@ def build_economy_view(db: Session, character: Character) -> dict:
                 "wage_bronze": job.wage_bronze,
                 "payment_frequency": job.payment_frequency,
                 "work_minutes": job.work_minutes,
+                "schedule": (
+                    "a qualquer hora" if job_hours_text(job) is None
+                    else job_hours_text(job)
+                    if player_knows_job_schedule(db, character.campaign_id, character.id, job)
+                    else "desconhecido"
+                ),
                 "application_status": application.status if application else None,
                 "employer_available": _job_employer_available(db, job),
             })
@@ -390,15 +404,25 @@ def _apply_for_job(db: Session, character: Character, target: str | None) -> Eco
         raise JobError("O empregador não está presente para receber uma candidatura agora.")
     application = existing or apply_to_job(db, job, CombatActorType.CHARACTER, character.id)
     resolve_application(db, application, hired=True, reason="Vaga aberta e candidato presente no estabelecimento.")
-    return EconomyActionResult(
-        f"{character.name} é contratado para o trabalho '{job.title}' em '{_employer_name(db, job)}'.",
-        10,
-        True,
-    )
+    summary = f"{character.name} é contratado para o trabalho '{job.title}' em '{_employer_name(db, job)}'."
+    hours = job_hours_text(job)
+    if hours:
+        # Whoever hires states the hours: the new hire knows them now.
+        teach_schedule(db, character.campaign_id, character.id, job_schedule_fact_key(job), "contratação")
+        now = get_world_time(db, character.campaign_id).total_minutes()
+        refusal = shift_refusal(job, now)
+        summary += f" Turnos {hours}; " + (
+            "um turno pode começar agora mesmo." if refusal is None
+            else f"o próximo turno começa às {job.shift_start_hour}h."
+        )
+    return EconomyActionResult(summary, 10, True)
 
 
 def _work(db: Session, character: Character, target: str | None) -> EconomyActionResult:
     job, application = _select_job(db, character, target, active_only=True)
+    refusal = shift_refusal(job, get_world_time(db, character.campaign_id).total_minutes())
+    if refusal is not None:
+        raise JobError(refusal)
     if not _job_employer_available(db, job):
         raise JobError("O estabelecimento não pode supervisionar nem pagar um turno agora.")
     amount = pay_wage(db, job, application, reason=f"Turno concluído: {job.title}.")

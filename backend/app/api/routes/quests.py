@@ -7,6 +7,7 @@ from app.db.models.character import Character
 from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
 from app.db.models.region import Region
 from app.game.quests.discovery import is_quest_known_to_character
+from app.game.schedules import player_knows_quest_schedule
 from app.game.quests.service import (
     QuestLifecycleError,
     abandon_known_quest,
@@ -50,6 +51,12 @@ def _quest_response(
         name=quest.name,
         description=quest.description,
         status=participation.status if participation is not None else quest.status,
+        schedule=(
+            None if not quest.schedule_text
+            else quest.schedule_text
+            if player_knows_quest_schedule(db, db.get(Character, character_id).campaign_id, character_id, quest)
+            else "desconhecido"
+        ),
         objectives=[
             QuestObjectiveResponse(
                 id=objective.id,

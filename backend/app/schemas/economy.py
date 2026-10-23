@@ -32,6 +32,8 @@ class EconomyJobResponse(BaseModel):
     wage_bronze: int
     payment_frequency: str
     work_minutes: int
+    # "das 8h às 18h", "a qualquer hora", or "desconhecido" until learned.
+    schedule: str
     application_status: str | None
     employer_available: bool
 

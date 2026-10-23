@@ -966,8 +966,9 @@ def _unauthorized_speaker_message(name: str) -> str:
         )
     return (
         f"'{name}' recebe fala atribuída sem ser o interlocutor ativo nem ter sido "
-        "apresentado entrando na cena; um NPC apenas visível é espectador — só pode "
-        "falar depois de uma cena explícita de chegada/aproximação/interrupção"
+        "apresentado entrando na cena; numa conversa em andamento, um espectador visível "
+        "pode no máximo um aparte curto — além disso, só depois de uma cena explícita de "
+        "chegada/aproximação/interrupção"
     )
 
 
@@ -1080,6 +1081,10 @@ def _scan_unauthorized_speakers(
     # from the same ongoing speaker are normal prose, not a new turn) —
     # exactly the pre-existing behavior, unchanged here.
     unattributed_quote_budget = 1
+    # Someone standing right there may chime in once while a conversation
+    # is going on (playtest: a bystander's natural aside was cut every
+    # time). One line, from one bystander — never a second exchange.
+    bystander_line_budget = 1 if active_interlocutor_name else 0
     for paragraph in paragraphs:
         if not _is_dialogue_paragraph(paragraph):
             normalized = _normalized(paragraph)
@@ -1107,6 +1112,10 @@ def _scan_unauthorized_speakers(
             else:
                 yield paragraph, _UNRESOLVED_TURN_SENTINEL
                 continue
+        if speaker and speaker not in authorized and bystander_line_budget > 0:
+            bystander_line_budget -= 1
+            yield paragraph, None
+            continue
         yield paragraph, (speaker if speaker and speaker not in authorized else None)
 
 
@@ -1975,9 +1984,26 @@ def _paragraph_establishes_speaker(paragraph: str, character_name: str, npc_name
         return _paragraph_attributed_speaker(paragraph, character_name, npc_name)
     if _mentions(paragraph, npc_name):
         return "npc"
-    if _mentions(paragraph, character_name):
+    if _mentions_as_subject(paragraph, character_name):
         return "player"
     return None
+
+
+_OBJECT_PREPOSITIONS = r"(?:de|da|do|para|pra|a|ao|com|sobre|por|em|contra|ate)"
+
+
+def _mentions_as_subject(paragraph: str, name: str) -> bool:
+    """Named other than as an object. Playtest: "O ancião ergue o queixo na
+    direção de Logan antes de responder." made Logan the one about to speak,
+    so the elder's own answer was cut as a fabricated player turn."""
+    if not name:
+        return False
+    first = re.escape(_normalized(name.split()[0]))
+    normalized = _normalized(paragraph)
+    return any(
+        not re.search(rf"\b{_OBJECT_PREPOSITIONS}\s+$", normalized[: match.start()])
+        for match in re.finditer(rf"\b{first}\b", normalized)
+    )
 
 
 def _find_fabricated_turn_start(
@@ -2013,10 +2039,12 @@ def _find_fabricated_turn_start(
         # A line that addresses the active NPC and speaks in the first person
         # cannot be that NPC's own continuation. Local models commonly insert
         # exactly this shape after a LOOK action: "— Obrigado, senhor. O que me
-        # aconselha?", then continue by making the NPC answer it.
+        # aconselha?", then continue by making the NPC answer it. ("seu" is
+        # left out: far more often a possessive, "o seu caminho", than a
+        # form of address.)
         normalized_paragraph = _normalized(paragraph)
         addresses_npc = re.search(
-            r"\b(?:senhor|senhora|seu|dona)\b",
+            r"\b(?:senhor|senhora|dona)\b",
             normalized_paragraph,
         ) or (
             npc_name

@@ -36,6 +36,10 @@ class Quest(Base):
         ForeignKey("organizations.id"), nullable=True
     )
     xp_reward: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    # When the work can be done, in the giver's words ("a qualquer hora do
+    # dia", "amanhã ao amanhecer"). Informational only. None: not set.
+    schedule_text: Mapped[str | None] = mapped_column(String, nullable=True)
+    schedule_on_notice: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class QuestObjective(Base):

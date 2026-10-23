@@ -98,7 +98,26 @@ def read_notice_board(db: Session, character_id: str, board_feature_id: str) -> 
     for notice in active_notices:
         if notice.quest_id is not None:
             learn_about_quest_from_notice(db, character.campaign_id, character_id, notice.quest_id)
+        _learn_schedule_stated_on(db, character, notice)
     return active_notices
+
+
+def _learn_schedule_stated_on(db: Session, character: Character, notice: Notice) -> None:
+    """A posting that states when the work happens teaches that schedule."""
+    from app.db.models.job import Job
+    from app.db.models.quest import Quest
+    from app.game.schedules import job_schedule_fact_key, quest_schedule_fact_key, teach_schedule
+
+    if notice.quest_id is not None:
+        quest = db.get(Quest, notice.quest_id)
+        if quest is not None and quest.schedule_on_notice:
+            teach_schedule(db, character.campaign_id, character.id, quest_schedule_fact_key(quest), "notice_board")
+    elif notice.category == NoticeCategory.JOB.value:
+        job = db.query(Job).filter(
+            Job.campaign_id == character.campaign_id, Job.title == notice.title
+        ).first()
+        if job is not None and job.schedule_on_notice:
+            teach_schedule(db, character.campaign_id, character.id, job_schedule_fact_key(job), "notice_board")
 
 
 def withdraw_notice(db: Session, campaign_id: str, notice_id: str, *, reason: str = "") -> Notice:

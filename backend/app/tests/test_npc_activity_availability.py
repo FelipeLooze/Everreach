@@ -236,7 +236,7 @@ def test_context_exposes_working_activity(
     )
 
     assert (
-        f"{blacksmith.name} (ferreira; gender=female; activity=WORKING)"
+        f"{blacksmith.name} (ferreira; gender=female; activity=WORKING; has NEVER met the character"
         in context
     )
 

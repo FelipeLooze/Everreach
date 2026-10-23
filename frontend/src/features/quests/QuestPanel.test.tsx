@@ -16,6 +16,7 @@ const availableQuest = {
   description: "Converse com o ancião.",
   status: "AVAILABLE",
   objectives: [{ id: "objective_1", description: "Falar com o ancião.", completed: false }],
+  schedule: "desconhecido",
 };
 
 describe("QuestPanel", () => {
@@ -34,6 +35,7 @@ describe("QuestPanel", () => {
     render(<QuestPanel campaignId="campaign_1" characterId="character_1" />);
 
     expect(await screen.findByText("Relato da Primeira Chegada", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("Quando: desconhecido")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Aceitar missão" }));
 
     await waitFor(() => {

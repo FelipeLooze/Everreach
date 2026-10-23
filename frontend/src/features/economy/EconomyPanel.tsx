@@ -108,7 +108,7 @@ export function EconomyPanel({ campaignId, characterId, onAction }: EconomyPanel
                     <strong>{job.title}</strong>
                     <span>{job.employer_name}</span>
                     <p>{job.description}</p>
-                    <small>{job.wage_bronze} Bronze por turno · {duration(job.work_minutes)}</small>
+                    <small>{job.wage_bronze} Bronze por turno · {duration(job.work_minutes)} · Horário: {job.schedule}</small>
                   </div>
                   <div className="economy-actions">
                     <button

@@ -1,4 +1,4 @@
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import JobApplicationStatus, JobStatus
@@ -34,6 +34,12 @@ class Job(Base):
     profession_name: Mapped[str | None] = mapped_column(String, nullable=True)
     profession_xp: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+    # When shifts may happen (hours of the day, end exclusive). None means
+    # any time. schedule_on_notice: the posted notice states the hours;
+    # otherwise the player learns them by asking (app.game.schedules).
+    shift_start_hour: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    shift_end_hour: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    schedule_on_notice: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class JobApplication(Base):

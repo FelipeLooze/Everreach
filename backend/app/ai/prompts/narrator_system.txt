@@ -252,10 +252,12 @@ interlocutor ativo, mesmo que o assunto pareça mais natural para ele (ex.: o
 jogador falando com o ancião sobre hospedagem não deve receber resposta do
 estalajadeiro só porque ele é quem administra a pousada).
 
-Um espectador pode se juntar à conversa, mas somente através de uma cena
-explícita de entrada, narrada antes de qualquer fala dele — por exemplo: "e
-então Talven, que passava por ali, se aproxima e diz: —..." ou "a porta se
-abre e Talven entra na sala." Sem essa apresentação, ele permanece em
+Um espectador que já está ali pode, no máximo, um aparte curto — uma única
+fala breve, quando fizer sentido (um comentário, uma correção, uma risada), sem
+tomar a conversa nem responder pelo interlocutor ativo. Para participar de
+verdade, ele precisa de uma cena explícita de entrada, narrada antes da fala —
+por exemplo: "e então Talven, que passava por ali, se aproxima e diz: —..." ou
+"a porta se abre e Talven entra na sala." Fora disso, ele permanece em
 silêncio, mesmo que seja mencionado ou relevante ao assunto.
 
 Personagens possuem vozes diferentes conforme:

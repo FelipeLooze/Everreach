@@ -23,6 +23,9 @@ class QuestResponse(BaseModel):
     description: str
     status: str
     objectives: list[QuestObjectiveResponse]
+    # When it can be done, as the character knows it: the giver's words,
+    # "desconhecido" until learned, or None when the contract sets no time.
+    schedule: str | None = None
 
 
 class QuestListResponse(BaseModel):

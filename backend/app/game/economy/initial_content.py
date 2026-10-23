@@ -52,6 +52,7 @@ from app.game.items.service import (
 from app.game.items.tools import configure_item_tool_profile
 from app.game.items.weapons import configure_item_weapon_profile
 from app.game.notices.service import post_notice
+from app.game.schedules import ensure_job_schedule, job_hours_text
 
 
 def _definition(
@@ -203,11 +204,14 @@ def _job(
     profession_key: str,
     profession_name: str,
     xp: float,
+    *,
+    hours: tuple[int, int],
+    hours_on_notice: bool,
 ) -> Job:
     existing = db.query(Job).filter(Job.campaign_id == campaign_id, Job.title == title).first()
     if existing is not None:
         return existing
-    return create_job(
+    job = create_job(
         db,
         campaign_id,
         EconomicActorType.BUSINESS,
@@ -223,6 +227,11 @@ def _job(
         profession_name=profession_name,
         profession_xp=xp,
     )
+    # The employer's own working hours (app.simulation.npc_routines).
+    job.shift_start_hour, job.shift_end_hour = hours
+    job.schedule_on_notice = hours_on_notice
+    db.flush()
+    return job
 
 
 def _post_job_notice(db: Session, campaign_id: str, job: Job, author: NPC) -> None:
@@ -242,6 +251,9 @@ def _post_job_notice(db: Session, campaign_id: str, job: Job, author: NPC) -> No
     if board is None:
         return
     workplace = db.get(Location, job.location_id)
+    hours, minutes = divmod(job.work_minutes, 60)
+    shift = f"{hours}h{minutes:02d}" if minutes else f"{hours} horas"
+    stated_hours = f" Turnos {job_hours_text(job)}." if job.schedule_on_notice and job_hours_text(job) else ""
     post_notice(
         db,
         campaign_id,
@@ -250,7 +262,7 @@ def _post_job_notice(db: Session, campaign_id: str, job: Job, author: NPC) -> No
         title=job.title,
         text=(
             f"{job.description} Apresente-se em {workplace.name if workplace else 'o estabelecimento'}; "
-            f"pagamento de {job.wage_bronze} Bronze por turno de {job.work_minutes} minutos."
+            f"pagamento de {job.wage_bronze} Bronze por turno de {shift}.{stated_hours}"
         ),
         author_npc_id=author.id,
     )
@@ -294,7 +306,7 @@ def ensure_initial_economy_for_campaign(
         _stock(db, forge_shop, blacksmith, items["knife"], 1)
         _stock(db, forge_shop, blacksmith, items["hammer"], 1)
         _stock(db, forge_shop, blacksmith, items["armor"], 1)
-    forge_job = _job(db, campaign_id, forge, "Ajudante de Ferreiro", "Auxiliar a ferreira em tarefas reais de forja e manutenção.", blacksmith.workplace_location_id, 12, 180, "BLACKSMITH", "Ferreiro", 0.8)
+    forge_job = _job(db, campaign_id, forge, "Ajudante de Ferreiro", "Auxiliar a ferreira em tarefas reais de forja e manutenção.", blacksmith.workplace_location_id, 12, 180, "BLACKSMITH", "Ferreiro", 0.8, hours=(8, 18), hours_on_notice=True)
 
     inn, inn_created = _business(
         db, campaign_id, f"Estalagem de {innkeeper.name}", BusinessType.INN, innkeeper, innkeeper.workplace_location_id
@@ -307,7 +319,7 @@ def ensure_initial_economy_for_campaign(
         _stock(db, inn_shop, innkeeper, items["ration"], 6)
         _stock(db, inn_shop, innkeeper, items["water"], 4)
         _stock(db, inn_shop, innkeeper, items["dried_meat"], 4)
-    inn_job = _job(db, campaign_id, inn, "Ajudante da Estalagem", "Ajudar no preparo, na limpeza e no atendimento da estalagem.", innkeeper.workplace_location_id, 8, 120, "COOK", "Cozinheiro", 0.5)
+    inn_job = _job(db, campaign_id, inn, "Ajudante da Estalagem", "Ajudar no preparo, na limpeza e no atendimento da estalagem.", innkeeper.workplace_location_id, 8, 120, "COOK", "Cozinheiro", 0.5, hours=(8, 18), hours_on_notice=False)
 
     market_owner_type = EconomicActorType.ORGANIZATION if merchant_organization else EconomicActorType.NPC
     market_owner_id = merchant_organization.id if merchant_organization else merchant.id
@@ -322,10 +334,11 @@ def ensure_initial_economy_for_campaign(
     if market_shop_created:
         for key, quantity in (("rope", 3), ("torch", 4), ("fiber", 9), ("iron", 6), ("wood", 6)):
             _stock(db, market_shop, merchant, items[key], quantity)
-    market_job = _job(db, campaign_id, market, "Auxiliar de Armazém", "Separar mercadorias e ajudar a registrar cargas do entreposto.", merchant.workplace_location_id, 10, 150, "MERCHANT", "Comerciante", 0.6)
+    market_job = _job(db, campaign_id, market, "Auxiliar de Armazém", "Separar mercadorias e ajudar a registrar cargas do entreposto.", merchant.workplace_location_id, 10, 150, "MERCHANT", "Comerciante", 0.6, hours=(8, 18), hours_on_notice=True)
 
     for job, author in ((forge_job, blacksmith), (inn_job, innkeeper), (market_job, merchant)):
         _post_job_notice(db, campaign_id, job, author)
+        ensure_job_schedule(db, campaign_id, job, author)
 
     created_any = any((forge_created, forge_shop_created, inn_created, inn_shop_created, market_created, market_shop_created))
     db.flush()

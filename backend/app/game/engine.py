@@ -62,6 +62,8 @@ from app.game.organizations import registration as registration_service
 from app.game.groups import companions as companions_service
 from app.game.organizations import player_guilds as guilds_service
 from app.game.travel import settlement_routes
+from app.game.quests import discovery as quest_discovery
+from app.game import schedules
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
 from app.game.quests.rewards import grant_pending_quest_completion_xp
@@ -553,6 +555,14 @@ def resolve_action(
         )
         narrative_warnings = validation.warnings
 
+    if context_npc is not None and quest_discovery.is_work_question(text):
+        final_narrative = quest_discovery.tell_contracts(
+            db, campaign_id, character.id, context_npc, final_narrative
+        )
+    if context_npc is not None:
+        final_narrative = schedules.tell_schedules(
+            db, campaign_id, character.id, context_npc, text, final_narrative
+        )
     if context_npc is not None:
         _teach_facts_revealed_in_narration(
             db,
@@ -563,8 +573,6 @@ def resolve_action(
             player_input=text,
             narrated_text=final_narrative,
         )
-        if _WORK_QUESTION_PATTERN.search(_strip_accents(text).casefold()):
-            _learn_quests_known_by_npc(db, campaign_id, character, context_npc)
     if context_simulated_player is not None:
         # A transported person talks about their guild freely — unless it is
         # a secret bandit crew.
@@ -708,39 +716,6 @@ def resolve_action(
         # inside validate_narrative_proposal).
         warnings=[*mechanical_warnings, *narrative_warnings],
     )
-
-
-_WORK_QUESTION_PATTERN = re.compile(
-    r"\b(?:trabalhos?|empregos?|servicos?|contratos?|miss(?:ao|oes)|tarefas?|oportunidades?)\b"
-)
-
-
-def _learn_quests_known_by_npc(
-    db: Session, campaign_id: str, character: Character, npc
-) -> None:
-    """Asking the person you're talking to about work tells you the open
-    contracts they know of. Confirmed live: the guildmaster described both
-    contracts accurately but by content, not title, so a title-based reveal
-    never registered them and they couldn't be accepted."""
-    from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
-    from app.db.models.quest import Quest
-    from app.game.quests.discovery import learn_about_quest_from_npc
-
-    known_quest_facts = (
-        db.query(KnowledgeFact.fact_key)
-        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
-        .filter(
-            KnowledgeFact.campaign_id == campaign_id,
-            KnowledgeFact.fact_key.like("quest:%:exists"),
-            KnowledgeKnower.knower_type == KnowerType.NPC.value,
-            KnowledgeKnower.knower_id == npc.id,
-        )
-        .all()
-    )
-    for (fact_key,) in known_quest_facts:
-        quest = db.get(Quest, fact_key.split(":")[1])
-        if quest is not None and quest.status == QuestStatus.AVAILABLE:
-            learn_about_quest_from_npc(db, campaign_id, character.id, quest.id)
 
 
 def _teach_facts_revealed_in_narration(

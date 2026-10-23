@@ -32,6 +32,8 @@ def test_quest_response_schema_exposes_only_player_facing_fields():
         "description",
         "status",
         "objectives",
+        # Player-facing and knowledge-gated: "desconhecido" until learned.
+        "schedule",
     }
 
 

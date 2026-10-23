@@ -29,6 +29,7 @@ from app.game.organizations.opportunities import (
     sponsor_quest,
 )
 from app.game.quests.service import quest_existence_fact_key
+from app.game.schedules import ensure_quest_schedule
 
 
 def ensure_initial_quest_opportunities_for_campaign(
@@ -218,13 +219,17 @@ def seed_initial_quest_opportunities(
             (ObjectiveType.DELIVERY, ObjectiveTriggerType.TALK_TO_NPC, guildmaster.id, 0),
         ),
     )
+    # The arrival report can be done any time and the notice says so; the
+    # notice round's timing is only known by asking the guildmaster.
+    arrival_quest.schedule_text = "a qualquer hora do dia"
+    arrival_quest.schedule_on_notice = True
     publish_organization_notice(
         db,
         adventurers_guild,
         guild_board.id,
         category=NoticeCategory.QUEST_REQUEST,
         title=arrival_quest.name,
-        text=arrival_quest.description,
+        text=f"{arrival_quest.description} Pode ser feito {arrival_quest.schedule_text}.",
         need_id=arrival_need.id,
         quest_id=arrival_quest.id,
     )
@@ -267,6 +272,7 @@ def seed_initial_quest_opportunities(
             (ObjectiveType.DELIVERY, ObjectiveTriggerType.TALK_TO_NPC, guildmaster.id, 0),
         ),
     )
+    liaison_quest.schedule_text = "ainda hoje, antes do anoitecer"
     publish_organization_notice(
         db,
         adventurers_guild,
@@ -282,6 +288,7 @@ def seed_initial_quest_opportunities(
         (arrival_quest, (guildmaster, elder)),
         (liaison_quest, (guildmaster,)),
     ):
+        ensure_quest_schedule(db, campaign_id, quest, informed_npcs)
         for npc in informed_npcs:
             teach_fact(
                 db,

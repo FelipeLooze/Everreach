@@ -54,6 +54,7 @@ export function QuestPanel({ campaignId, characterId }: { campaignId: string; ch
         {quest.name} <span className="quest-status">[{questStatusLabel(quest.status)}]</span>
       </h4>
       <p>{quest.description}</p>
+      {quest.schedule && <p className="quest-schedule">Quando: {quest.schedule}</p>}
       <ul>
         {quest.objectives.map((objective) => (
           <li key={objective.id} className={objective.completed ? "objective-done" : ""}>

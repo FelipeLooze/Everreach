@@ -16,7 +16,7 @@ from app.db.models.item import ItemInstance
 from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
-from app.db.models.organization import OrganizationMember, OrganizationRole
+from app.db.models.organization import Organization, OrganizationMember, OrganizationRole
 from app.db.models.quest import CharacterQuestObjective, QuestObjective
 from app.db.models.shop import Shop, ShopListing
 from app.db.models.simulated_player import SimulatedPlayer
@@ -67,6 +67,12 @@ from app.game.relationships.service import (
 from app.game.players.groups import active_group_for_player
 from app.game.organizations.reputation import organization_reputation_category, organization_reputation_score
 from app.game.organizations.visibility import visible_organizations_for_character
+from app.game.schedules import (
+    job_hours_text,
+    player_knows_job_schedule,
+    player_knows_quest_schedule,
+    schedules_npc_can_tell,
+)
 from app.game.economy.currency import to_denominations
 from app.game.economy.local_economy import get_settlement_wealth, gold_circulates_normally
 from app.game.economy.pricing import PricingError
@@ -343,6 +349,34 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
     ]
 
 
+def _first_meeting_note(db: Session, character, npc) -> str:
+    """Playtest: the innkeeper greeted a first-time visitor with "Volta
+    rápido", as if he were a regular. Say so when they have never met."""
+    from app.db.models.relationship import CharacterNPCRelationship
+
+    met = db.query(CharacterNPCRelationship.id).filter(
+        CharacterNPCRelationship.character_id == character.id,
+        CharacterNPCRelationship.npc_id == npc.id,
+    ).first()
+    if met is not None:
+        return ""
+    return "; has NEVER met the character — treats them as a stranger, never as someone known or returning"
+
+
+def _transported_label(db: Session, character, player) -> str:
+    """The name only once the character has met this person. Playtests kept
+    showing transported strangers called by name in narration, because the
+    name sat right here in the context."""
+    from app.game.groups.companions import _has_met
+
+    if _has_met(db, character.campaign_id, character, player):
+        return _clip(player.name, 100)
+    return (
+        "[a stranger whose name the character does not know — never name them; "
+        "describe them by appearance]"
+    )
+
+
 def _gender_note(name: str) -> str:
     from app.game.world.generator import gender_for_name
 
@@ -552,6 +586,59 @@ def _local_economy_context_lines(db: Session, character) -> list[str]:
     ]
 
 
+def _quest_schedule_note(db: Session, character, quest) -> str:
+    if not quest.schedule_text:
+        return ""
+    if player_knows_quest_schedule(db, character.campaign_id, character.id, quest):
+        return f" — when: {quest.schedule_text}"
+    return " — when: unknown to the character; never state a time for it"
+
+
+def _schedules_to_tell_lines(db: Session, state, active_npc, player_input: str) -> list[str]:
+    """Asked "when?", the active NPC states the schedules they know. The
+    engine adds the line if the narration leaves it out, and only then does
+    the player learn it (app.game.schedules.tell_schedules)."""
+    if active_npc is None:
+        return []
+    facts = schedules_npc_can_tell(db, state.character.campaign_id, active_npc.id, player_input)
+    if not facts:
+        return []
+    return [
+        f"SCHEDULE {active_npc.name.upper()} CAN TELL",
+        *(f"- {fact.statement}" for fact in facts),
+        f"{active_npc.name} was asked when: state exactly this, in natural words.",
+    ]
+
+
+def _contracts_to_tell_lines(db: Session, state, active_npc, player_input: str) -> list[str]:
+    """Asked about work, the active NPC names the open contracts they know.
+    The engine adds any the narration leaves out and teaches exactly the
+    ones named (app.game.quests.discovery.tell_contracts)."""
+    from app.game.quests.discovery import is_work_question, open_quests_known_by_npc
+
+    if active_npc is None or not is_work_question(player_input):
+        return []
+    quests = open_quests_known_by_npc(db, state.character.campaign_id, active_npc.id)
+    if not quests:
+        return []
+    def offered_by(quest) -> str:
+        # Playtest: with only "a guilda" in the description, the elder
+        # credited the adventurers' contract to the merchants' guild.
+        sponsor = db.get(Organization, quest.sponsoring_organization_id) if quest.sponsoring_organization_id else None
+        if sponsor is None:
+            return ""
+        leader = db.get(NPC, sponsor.founder_id) if sponsor.founder_type == CombatActorType.NPC.value else None
+        led_by = f", led by {leader.name}" if leader is not None else ""
+        return f" (offered by {sponsor.name}{led_by})"
+
+    return [
+        f"CONTRACTS {active_npc.name.upper()} CAN TELL",
+        *(f'- "{quest.name}"{offered_by(quest)}: {_clip(quest.description, 200)}' for quest in quests),
+        f"{active_npc.name} was asked about work: name each of these contracts by its exact "
+        "title, in quotes, alongside any paid jobs. Never invent other contracts.",
+    ]
+
+
 def _settlement_jobs_context_lines(db: Session, character) -> list[str]:
     """Openings posted in this settlement (the public board lists them, so
     any local may mention them), with their real pay and shift length.
@@ -597,16 +684,24 @@ def _settlement_jobs_context_lines(db: Session, character) -> list[str]:
         standing = "the character already holds this job" if application else "open"
         hours, minutes = divmod(job.work_minutes, 60)
         shift = f"{hours}h{minutes:02d}" if minutes else f"{hours}h"
+        if job_hours_text(job) is None:
+            when = "shifts at any time"
+        elif player_knows_job_schedule(db, character.campaign_id, character.id, job):
+            when = f"shifts {job_hours_text(job)}"
+        else:
+            when = "shift hours unknown to the character (the employer knows them)"
         lines.append(
             f"- {job.title} at {workplace.name if workplace else 'unknown'} [{standing}]: "
-            f"{job.wage_bronze} bronze per shift of {shift}. {job.description}"
+            f"{job.wage_bronze} bronze per shift of {shift}; {when}. {job.description}"
         )
     if len(lines) == 1:
         lines.append("- none")
     lines.append(
         "These are the only paid jobs here and their exact terms. Never promise meals, lodging, "
         "other pay or other openings, and never hire the character in narration — "
-        "the backend does that when the character takes the job."
+        "the backend does that when the character takes the job. A shift may start at any "
+        "moment inside its hours, right now included: never say work starts tomorrow, at dawn "
+        "or at any other time those hours don't say."
     )
     return lines
 
@@ -1850,7 +1945,8 @@ def build_narrative_context(
         [
             (
                 f"- {_clip(npc.name, 100)} "
-                f"({_clip(npc.role, 120)}{_gender_note(npc.name)}; activity={npc.activity})"
+                f"({_clip(npc.role, 120)}{_gender_note(npc.name)}; activity={npc.activity}"
+                f"{_first_meeting_note(db, state.character, npc)})"
             )
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
         ] or ["- none"]
@@ -1868,7 +1964,7 @@ def build_narrative_context(
     visible_lines.extend(
         [
             (
-                f"- {_clip(player.name, 100)} "
+                f"- {_transported_label(db, state.character, player)} "
                 f"(Level {player.level}{_gender_note(player.name)}; "
                 f"appearance={_clip(transported_appearance(player.physical_description), 600)})"
             )
@@ -2066,7 +2162,7 @@ def build_narrative_context(
     )
     quest_lines = ["ACTIVE QUESTS"]
     for link, quest in state.active_quests[:MAX_ACTIVE_QUESTS]:
-        quest_lines.append(f"- {_clip(quest.name, 160)} [{link.status}]")
+        quest_lines.append(f"- {_clip(quest.name, 160)} [{link.status}]{_quest_schedule_note(db, state.character, quest)}")
         quest_lines.extend(_quest_objective_lines(db, state.character.id, quest.id))
     if not state.active_quests:
         quest_lines.append("- none")
@@ -2081,6 +2177,8 @@ def build_narrative_context(
     shop_lines = [
         *_nearby_shops_context_lines(db, state.character),
         *_settlement_jobs_context_lines(db, state.character),
+        *_contracts_to_tell_lines(db, state, active_npc, player_input),
+        *_schedules_to_tell_lines(db, state, active_npc, player_input),
     ]
     input_canon_lines = [
         "PLAYER INPUT CANON CHECK",

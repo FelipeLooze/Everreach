@@ -23,6 +23,7 @@ const economy = {
     wage_bronze: 12,
     payment_frequency: "PER_TASK",
     work_minutes: 180,
+    schedule: "das 8h às 18h",
     application_status: "ACTIVE",
     employer_available: true,
   }],
@@ -42,7 +43,7 @@ describe("EconomyPanel", () => {
 
     expect(await screen.findByText("24 Bronze")).toBeInTheDocument();
     expect(screen.getByText("2 em estoque")).toBeInTheDocument();
-    expect(screen.getByText("12 Bronze por turno · 3 h")).toBeInTheDocument();
+    expect(screen.getByText("12 Bronze por turno · 3 h · Horário: das 8h às 18h")).toBeInTheDocument();
   });
 
   it("routes purchases and work through the normal player action flow", async () => {

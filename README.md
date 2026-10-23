@@ -614,6 +614,15 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   Saves anteriores recebem o conteúdo econômico inicial de forma idempotente. Negócios,
   organizações, perturbações econômicas, oferta/demanda e contexto do Narrator continuam usando
   os serviços 14A–14N já existentes, sem uma economia paralela no frontend.
+  **Quando:** cada emprego tem horário de turnos (o expediente do empregador); um turno precisa
+  caber nele, e fora dele a recusa diz o horário. Cada contrato pode ter um "quando" informativo
+  nas palavras de quem o oferece. Ambos só são conhecidos se o aviso os informa, se o empregador os
+  diz ao contratar ou depois que alguém que os sabe é perguntado ("quando?", "que horas?"); até lá
+  os painéis Economia e Missões mostram "desconhecido" e o Narrator não pode inventar horário.
+  **Descobrir conversando:** perguntado sobre trabalho, um NPC cita pelo nome os contratos que
+  conhece; o jogador aprende exatamente os contratos e horários ditos no texto final — se a
+  narração omitir algum que ele ainda não conhece, o jogo acrescenta a fala, nunca ensina algo não
+  dito.
 
 ## Fora do MVP
 

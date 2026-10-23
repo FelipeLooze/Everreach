@@ -1,3 +1,4 @@
+from app.simulation.society_simulation import SocietySimulationResult
 import random
 
 from app.simulation import world_simulation
@@ -39,6 +40,10 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
     def fake_group_tick(db, campaign_id, minutes):
         calls.append(("groups", campaign_id, minutes))
         return SimulatedPlayerGroupSimulationResult()
+
+    def fake_society_tick(db, campaign_id, minutes, rng=None):
+        calls.append(("society", campaign_id, minutes))
+        return SocietySimulationResult()
 
     def fake_player_tick(
         db,
@@ -127,6 +132,11 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
         "tick",
         fake_group_tick,
     )
+    monkeypatch.setattr(
+        world_simulation.society_simulation,
+        "tick",
+        fake_society_tick,
+    )
 
     monkeypatch.setattr(
         world_simulation.npc_simulation,
@@ -160,6 +170,7 @@ def test_world_tick_runs_subsystems_once_in_deterministic_order(
             45,
         ),
         ("groups", "campaign_1", 45),
+        ("society", "campaign_1", 45),
         (
             "players",
             "campaign_1",
@@ -220,6 +231,11 @@ def test_knowledge_opportunity_does_not_count_as_world_change(
         world_simulation.group_simulation,
         "tick",
         lambda *args, **kwargs: SimulatedPlayerGroupSimulationResult(),
+    )
+    monkeypatch.setattr(
+        world_simulation.society_simulation,
+        "tick",
+        lambda *args, **kwargs: SocietySimulationResult(),
     )
 
     monkeypatch.setattr(

@@ -555,6 +555,17 @@ def resolve_action(
         )
         if _WORK_QUESTION_PATTERN.search(_strip_accents(text).casefold()):
             _learn_quests_known_by_npc(db, campaign_id, character, context_npc)
+    if context_simulated_player is not None:
+        # A transported person talks about their guild freely — unless it is
+        # a secret bandit crew.
+        guild = guilds_service.transported_guild_of(
+            db, CombatActorType.SIMULATED_PLAYER, context_simulated_player.id
+        )
+        if guild is not None and guild.visibility != "SECRET":
+            npcs_service.teach_fact(
+                db, campaign_id, guilds_service.guild_fact_key(guild), KnowerType.PLAYER,
+                character.id, source="conversa_com_membro", certainty=KnowledgeCertainty.CONFIRMED,
+            )
 
     action_has_interlocutor = (
         action_npc is not None
@@ -813,7 +824,8 @@ _EXPLICIT_QUEST_ACTION_PATTERN = re.compile(
 _JOIN_ORGANIZATION_PATTERN = re.compile(
     r"\b(?:quero|gostaria de|desejo|vou|posso)\s+(?:me\s+)?"
     r"(?:(?:registrar|inscrever|filiar|alistar)\b"
-    r"|(?:juntar|entrar)\s+(?:a|ao|para|n[ao])\s+(?:a\s+)?(?:guilda|ordem|organizacao|irmandade)\b)"
+    r"|(?:juntar|entrar)\s+(?:a|ao|para|n[ao])\s+(?:a\s+|(?:sua|seu|tua|teu|vossa|vosso)\s+)?"
+    r"(?:guilda|ordem|organizacao|irmandade|companhia|sociedade|bando)\b)"
     r"|\bme\s+(?:registro|inscrevo|filio|alisto)\b"
     r"|\bassino\s+o\s+registro\b"
 )

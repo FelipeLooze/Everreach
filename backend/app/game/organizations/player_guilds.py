@@ -166,6 +166,83 @@ def _refusal(organization_focus: GuildFocus, player: SimulatedPlayer) -> str | N
     return None
 
 
+def guild_fact_key(organization: Organization) -> str:
+    return f"organization:{organization.id}:exists"
+
+
+def _ensure_guild_fact(db: Session, campaign_id: str, organization: Organization, statement: str) -> str:
+    """The existence fact players and NPCs learn; reveal is matched on the
+    quoted name (see context_builder._quoted_title_is_revealed)."""
+    fact = (
+        db.query(KnowledgeFact)
+        .filter(KnowledgeFact.campaign_id == campaign_id, KnowledgeFact.fact_key == guild_fact_key(organization))
+        .first()
+    )
+    if fact is None:
+        fact = KnowledgeFact(
+            campaign_id=campaign_id,
+            subject=f"organization:{organization.id}",
+            fact_key=guild_fact_key(organization),
+            statement=statement,
+        )
+        db.add(fact)
+    else:
+        fact.statement = statement
+    db.flush()
+    return fact.fact_key
+
+
+def _staff_new_guild(
+    db: Session,
+    campaign_id: str,
+    organization: Organization,
+    focus: GuildFocus,
+    *,
+    leader: tuple[CombatActorType, str],
+    founders: list[tuple[CombatActorType, str]],
+) -> None:
+    """Shared by the protagonist's founding and simulated founding: focus,
+    leader and founder roles, and the existence fact its members know."""
+    organization.focus = focus
+    join_organization(db, organization, leader[0], leader[1], role_id=_role(db, organization, LEADER_RANK).id)
+    founder_role = _role(db, organization, FOUNDER_RANK)
+    for member_type, member_id in founders:
+        join_organization(db, organization, member_type, member_id, role_id=founder_role.id)
+    kind = "bando" if focus == GuildFocus.BANDITS else "guilda"
+    fact_key = _ensure_guild_fact(
+        db, campaign_id, organization,
+        f'Existe a {kind} "{organization.name}", fundada por Transportados. {_FOCUS_DESCRIPTIONS[focus]}',
+    )
+    for member_type, member_id in (leader, *founders):
+        if member_type == CombatActorType.SIMULATED_PLAYER:
+            teach_fact(db, campaign_id, fact_key, KnowerType.SIMULATED_PLAYER, member_id,
+                       source="membro_fundador", certainty=KnowledgeCertainty.CONFIRMED)
+    db.flush()
+
+
+def publish_formal_guild(
+    db: Session, campaign_id: str, organization: Organization, authority: Organization, region_id: str | None
+) -> None:
+    """Formal recognition: public, and every native of the region knows it."""
+    formally_recognize_organization(db, organization)
+    organization.visibility = OrganizationVisibility.PUBLIC
+    fact_key = _ensure_guild_fact(
+        db, campaign_id, organization,
+        f'Existe a guilda "{organization.name}", fundada por Transportados e registrada '
+        f"no {authority.name}. {_FOCUS_DESCRIPTIONS[GuildFocus(organization.focus or GuildFocus.ADVENTURERS)]}",
+    )
+    for native in db.query(NPC).filter(
+        NPC.campaign_id == campaign_id, NPC.region_id == region_id, NPC.alive.is_(True)
+    ):
+        teach_fact(db, campaign_id, fact_key, KnowerType.NPC, native.id,
+                   source="registro_de_guilda", certainty=KnowledgeCertainty.CONFIRMED)
+
+
+def transported_guild_of(db: Session, member_type: CombatActorType, member_id: str) -> Organization | None:
+    row = _transported_membership(db, member_type, member_id)
+    return row[1] if row is not None else None
+
+
 def found_guild(
     db: Session,
     campaign_id: str,
@@ -232,17 +309,11 @@ def found_guild(
         ),
         complete_group=False,
     )
-    organization.focus = focus
-    join_organization(
-        db, organization, CombatActorType.CHARACTER, character.id,
-        role_id=_role(db, organization, LEADER_RANK).id,
+    _staff_new_guild(
+        db, campaign_id, organization, focus,
+        leader=(CombatActorType.CHARACTER, character.id),
+        founders=[(CombatActorType.SIMULATED_PLAYER, player.id) for player in founders],
     )
-    founder_role = _role(db, organization, FOUNDER_RANK)
-    for player in founders:
-        join_organization(
-            db, organization, CombatActorType.SIMULATED_PLAYER, player.id, role_id=founder_role.id
-        )
-    db.flush()
     summary = (
         f'{character.name} funda "{name}" com {", ".join(player.name for player in founders)}. '
         "A guilda nasce informal: conhecida apenas por seus membros."
@@ -376,26 +447,7 @@ def formalize(db: Session, campaign_id: str, character: Character) -> GuildChang
             False,
         )
 
-    formally_recognize_organization(db, organization)
-    organization.visibility = OrganizationVisibility.PUBLIC
-    fact = KnowledgeFact(
-        campaign_id=campaign_id,
-        subject=f"organization:{organization.id}",
-        fact_key=f"organization:{organization.id}:exists",
-        statement=(
-            f'Existe a guilda "{organization.name}", fundada por Transportados e registrada '
-            f"no {authority.name}."
-        ),
-    )
-    db.add(fact)
-    db.flush()
-    for native in db.query(NPC).filter(
-        NPC.campaign_id == campaign_id, NPC.region_id == character.region_id, NPC.alive.is_(True)
-    ):
-        teach_fact(
-            db, campaign_id, fact.fact_key, KnowerType.NPC, native.id,
-            source="registro_de_guilda", certainty=KnowledgeCertainty.CONFIRMED,
-        )
+    publish_formal_guild(db, campaign_id, organization, authority, character.region_id)
     return GuildChange(
         f'{registrar.name} registra "{organization.name}" no {authority.name}. A guilda passa a '
         "ser pública e pode crescer além de cinco membros.",
@@ -418,3 +470,54 @@ def handle_departure(db: Session, organization: Organization, departed: Organiza
     change_member_role(db, successor, _role(db, organization, LEADER_RANK).id)
     name = db.get(SimulatedPlayer, successor.member_id)
     return f" A liderança passa para {name.name if name else 'outro membro'}."
+
+
+def guilds_with_leadership_present(
+    db: Session, location_id: str
+) -> list[tuple[Organization, SimulatedPlayer]]:
+    """Transported guilds with a leader or founder standing here, who could
+    answer a request to join."""
+    best: dict[str, tuple[int, Organization, SimulatedPlayer]] = {}
+    for player in db.query(SimulatedPlayer).filter(SimulatedPlayer.location_id == location_id):
+        row = _transported_membership(db, CombatActorType.SIMULATED_PLAYER, player.id)
+        if row is None:
+            continue
+        rank = _rank_of(db, row[0])
+        if rank > FOUNDER_RANK:
+            continue
+        current = best.get(row[1].id)
+        if current is None or rank < current[0]:
+            best[row[1].id] = (rank, row[1], player)
+    return [(organization, player) for _rank, organization, player in best.values()]
+
+
+def request_membership(
+    db: Session, campaign_id: str, character: Character, organization: Organization, sponsor: SimulatedPlayer
+) -> GuildChange:
+    """The protagonist asks a transported guild's leader/founder to join."""
+    own = _transported_membership(db, CombatActorType.CHARACTER, character.id)
+    if own is not None and own[1].id == organization.id:
+        return GuildChange(f'{character.name} já é membro de "{organization.name}".', False)
+    if own is not None:
+        return GuildChange(
+            f'{sponsor.name} recusa: {character.name} já pertence a "{own[1].name}".', False
+        )
+    if not _has_met(db, campaign_id, character, sponsor):
+        return GuildChange(
+            f"{sponsor.name} recusa: não conhece {character.name} o bastante para aceitá-lo.", False
+        )
+    if (
+        organization.formality != OrganizationFormality.FORMALLY_RECOGNIZED
+        and len(_active_members(db, organization)) >= INFORMAL_MEMBER_CAP
+    ):
+        return GuildChange(
+            f'{sponsor.name} recusa: "{organization.name}" já está no limite de uma guilda informal.',
+            False,
+        )
+    join_organization(
+        db, organization, CombatActorType.CHARACTER, character.id,
+        role_id=_role(db, organization, MEMBER_RANK).id,
+    )
+    teach_fact(db, campaign_id, guild_fact_key(organization), KnowerType.PLAYER, character.id,
+               source="membro", certainty=KnowledgeCertainty.CONFIRMED)
+    return GuildChange(f'{sponsor.name} aceita {character.name} em "{organization.name}".', True)

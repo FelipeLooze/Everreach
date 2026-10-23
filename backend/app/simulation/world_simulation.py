@@ -9,6 +9,7 @@ from app.simulation import (
     knowledge_simulation,
     npc_simulation,
     player_simulation,
+    society_simulation,
 )
 from app.simulation.scope import build_simulation_scope
 
@@ -38,6 +39,8 @@ def tick(
         campaign_id,
         minutes,
     )
+
+    society_simulation.tick(db, campaign_id, minutes, rng=rng)
 
     player_result = player_simulation.tick(
         db,

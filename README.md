@@ -564,11 +564,20 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   Fundadores. O líder recruta e expulsa; recrutados decidem. Registrá-la no conselho do povoado
   (com 3+ membros e reputação confiável do líder com uma instituição local) a torna formal e
   pública, conhecida pelos NPCs da região e livre do limite de membros; bandos nunca podem ser
-  registrados. Um líder que sai passa a guilda adiante; sem membros, ela se dissolve. **Ainda só
-  como sistema (sem chamada no jogo):** guildas fundadas pelos Transportados simulados (planejado
-  para surgir lentamente, após meses de jogo), relações entre organizações, conflitos, patrimônio e
-  ações autônomas das organizações. Taxas e contratos publicados por guildas formais aguardam a
-  Fase 14 (Economia).
+  registrados. Um líder que sai passa a guilda adiante; sem membros, ela se dissolve.
+  **Guildas de Transportados simulados:** uma vez por semana, uma pessoa da população abstrata de
+  chegados vira um Transportado persistente (até 36 por campanha, gerado sem LLM). A partir de ~60
+  dias de mundo, toda semana um grupo de viagem que está junto há 14+ dias pode fundar uma guilda —
+  o tipo vem do perfil do líder; líderes ousados de grupos ousados às vezes formam bandos secretos.
+  Guildas recrutam conhecidos que estão com um membro e, com 30+ dias e 3+ membros, registram-se no
+  conselho do povoado (ou da região, se o povoado não tiver um) e ficam públicas. O jogador descobre
+  uma guilda conversando com um membro (bandos ficam em segredo) ou ouvindo seu nome, vê-a no painel
+  Social e pode pedir para entrar a um líder ou fundador presente. Numa simulação de um ano, as
+  primeiras guildas surgiram no dia 75, a primeira formalização no dia 105 e o ano terminou com 10
+  guildas (4 formais).
+  **Ainda só como sistema (sem chamada no jogo):** relações entre organizações, conflitos,
+  patrimônio e ações autônomas das organizações. Taxas e contratos publicados por guildas formais
+  aguardam a Fase 14 (Economia).
 
 ## Fora do MVP
 

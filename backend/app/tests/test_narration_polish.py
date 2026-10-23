@@ -71,3 +71,17 @@ def test_narrate_applies_the_polish_using_the_context_name(monkeypatch):
     context = "CURRENT PLAYER\nName: Logan (narrator metadata; NPCs do not know it automatically)\n"
 
     assert narrator.narrate(None, "", context, "", "") == "Logan chega à praça."
+
+
+def test_unusable_drafts_fall_back_to_the_mechanical_truth():
+    # Live: every draft leaked English reasoning while a guild leader had
+    # just accepted the player; the old fallback narrated her silence.
+    from app.ai.narrator import _format_failure_fallback
+
+    assert _format_failure_fallback(
+        "CONTINUATION", "Dessa Marrow", 'Dessa Marrow aceita Logan em "Caçadores do Véu".'
+    ) == 'Dessa Marrow aceita Logan em "Caçadores do Véu".'
+    assert "silêncio" in _format_failure_fallback(
+        "CONTINUATION", "Dessa Marrow",
+        'Logan tenta: "Oi". Nenhum sistema mecânico específico se aplica ainda.',
+    )

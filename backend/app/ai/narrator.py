@@ -2201,6 +2201,25 @@ def _build_current_turn_block(player_input: str, recent_history: str = "") -> st
     return "\n".join(lines)
 
 
+_GENERIC_MECHANICAL_SUMMARIES = (
+    "Nenhum sistema mecânico específico se aplica",
+    "Nenhuma mudança mecânica",
+)
+
+
+def _format_failure_fallback(mode: NarrationMode, npc_name: str, mechanical_summary: str) -> str:
+    """When every draft was unusable as text (empty, leaked reasoning), no
+    scene content was ever on the table, so the truthful mechanical summary
+    beats "X permanece em silêncio" — confirmed live: a guild leader accepted
+    the player (mechanics) while the fallback narrated her silence."""
+    summary = (mechanical_summary or "").strip()
+    if mode != "OPENING" and summary and not any(
+        generic in summary for generic in _GENERIC_MECHANICAL_SUMMARIES
+    ):
+        return summary
+    return _safe_hard_failure_fallback(mode, npc_name)
+
+
 def _safe_hard_failure_fallback(mode: NarrationMode, npc_name: str = "") -> str:
     """Return a deterministic response that cannot violate player agency or canon.
 
@@ -2223,7 +2242,7 @@ def _safe_hard_failure_fallback(mode: NarrationMode, npc_name: str = "") -> str:
     never itself violate anything — not a loosening of the guard above.
     """
     if mode == "OPENING":
-        return "O momento se estende, e Logan ainda não deu seu primeiro passo neste novo mundo."
+        return "O momento se estende; o primeiro passo neste novo mundo ainda não foi dado."
     if npc_name:
         return f"{npc_name} permanece em silêncio."
     return "Nada acontece de imediato."
@@ -2572,7 +2591,7 @@ def _narrate_draft(
     # From this point onward, no unresolved HARD violation is intentionally
     # returned to the player. Style remains non-blocking.
     if not draft.strip():
-        safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        safe = _format_failure_fallback(mode, active_interlocutor_name, mechanical_summary)
         logger.error(
             "FALLBACK REASON: response was empty after stripping leaked prompt/instruction "
             "text on every revision attempt. Returning deterministic safe fallback.\nFALLBACK:\n%s",
@@ -2600,7 +2619,7 @@ def _narrate_draft(
     # the empty-draft check immediately above.
     unresolved_empty_or_script_leak = _empty_response_violations(draft)
     if unresolved_empty_or_script_leak:
-        safe = _safe_hard_failure_fallback(mode, active_interlocutor_name)
+        safe = _format_failure_fallback(mode, active_interlocutor_name, mechanical_summary)
         logger.error(
             "FALLBACK REASON: draft still failed the empty/script-leak check after hard "
             "revisions: %s\nFALLBACK:\n%s",

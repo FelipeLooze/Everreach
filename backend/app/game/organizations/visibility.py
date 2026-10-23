@@ -96,6 +96,23 @@ def visible_organizations_for_character(
         )
     )
 
+    # A transported guild has no public seat: the character knows of it by
+    # having learned it exists (from a member, or an NPC naming it).
+    from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
+    from app.core.enums import KnowerType
+
+    organization_ids.update(
+        fact_key.split(":")[1]
+        for (fact_key,) in db.query(KnowledgeFact.fact_key)
+        .join(KnowledgeKnower, KnowledgeKnower.fact_id == KnowledgeFact.id)
+        .filter(
+            KnowledgeFact.campaign_id == character.campaign_id,
+            KnowledgeFact.fact_key.like("organization:%:exists"),
+            KnowledgeKnower.knower_type == KnowerType.PLAYER.value,
+            KnowledgeKnower.knower_id == character.id,
+        )
+    )
+
     if not organization_ids:
         return []
     return (

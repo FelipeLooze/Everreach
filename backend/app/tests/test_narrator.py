@@ -626,7 +626,7 @@ def test_opening_does_not_force_a_native_interlocutor_or_reveal_hidden_names():
 
     # Phase 24J.5 — the OPENING-specific fallback (never "Nada acontece de
     # imediato.", a nonsensical first line for the player to ever read).
-    assert result == "O momento se estende, e Logan ainda não deu seu primeiro passo neste novo mundo."
+    assert result == "O momento se estende; o primeiro passo neste novo mundo ainda não foi dado."
     assert "Cardal" not in result
     assert "Vale Verdejante" not in result
     assert len(llm.calls) == 3

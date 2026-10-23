@@ -135,6 +135,21 @@ def _open_membership(db: Session, organization: Organization, character: Charact
 def register_with_organization(
     db: Session, campaign_id: str, character: Character, raw_text: str
 ) -> MembershipChange:
+    # A transported guild has no counter to register at: its leader or a
+    # founder standing here decides ("quero entrar na sua guilda").
+    from app.game.organizations import player_guilds
+
+    reachable = player_guilds.guilds_with_leadership_present(db, character.location_id)
+    named_guilds = [pair for pair in reachable if _mentioned(pair[0], raw_text)]
+    if len(named_guilds) == 1 or (
+        len(reachable) == 1
+        and re.search(r"\b(?:sua|vossa|tua)\s+(?:guilda|companhia|sociedade)\b|\bseu\s+bando\b",
+                      _normalize(raw_text))
+    ):
+        organization, sponsor = named_guilds[0] if len(named_guilds) == 1 else reachable[0]
+        change = player_guilds.request_membership(db, campaign_id, character, organization, sponsor)
+        return MembershipChange(change.summary, change.changed)
+
     here = (
         db.query(Organization)
         .filter(

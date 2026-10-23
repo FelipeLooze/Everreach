@@ -342,6 +342,18 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
     ]
 
 
+def _transported_guild_line(db: Session, simulated_player_id: str) -> str:
+    """The guild a transported person belongs to — they talk about it freely;
+    talking with them is how the player learns it exists."""
+    from app.game.organizations.player_guilds import transported_guild_of
+
+    guild = transported_guild_of(db, CombatActorType.SIMULATED_PLAYER, simulated_player_id)
+    if guild is None:
+        return "Guild: none"
+    standing = "registered" if guild.formality == "FORMALLY_RECOGNIZED" else "informal"
+    return f'Guild: member of "{guild.name}" ({guild.focus or "GUILD"}, {standing}, founded by transported people)'
+
+
 def _travel_companion_lines(db: Session, character_id: str) -> list[str]:
     """Transported people who accepted to travel with the protagonist."""
     from app.db.models.character import Character
@@ -1196,8 +1208,10 @@ def fact_is_revealed_in_text(fact: KnownFact, narrated_text: str) -> bool:
     )
 
 
-_QUEST_EXISTENCE_FACT_KEY = re.compile(r"^quest:[^:]+:exists$")
-_QUOTED_QUEST_TITLE = re.compile(r'chamad[ao]\s+["“](?P<title>.+?)["”]', re.IGNORECASE)
+# Quest and transported-guild existence facts carry their public name in
+# quotes; naming it is what reveals them.
+_QUEST_EXISTENCE_FACT_KEY = re.compile(r"^(?:quest|organization):[^:]+:exists$")
+_QUOTED_QUEST_TITLE = re.compile(r'["“](?P<title>.+?)["”]')
 
 
 def _quest_existence_is_revealed(
@@ -1808,6 +1822,7 @@ def build_narrative_context(
                     f"risk tolerance={active_transported.risk_tolerance}; "
                     f"group_id={transported_group.id if transported_group else 'none'}"
                 ),
+                _transported_guild_line(db, active_transported.id),
                 (
                     "Relationship with player: not registered"
                     if transported_relationship is None

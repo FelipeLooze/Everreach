@@ -560,7 +560,10 @@ def test_a_leak_that_survives_every_revision_attempt_still_forces_the_safe_fallb
         "Logan olha ao redor",
         "(nenhum historico)",
     )
-    assert result == "Nada acontece de imediato."
+    # The leak never reaches the player; the truthful mechanical summary
+    # stands in for the unusable draft.
+    assert result == "Logan observa os arredores de Cardal."
+    assert " the " not in result
 
 
 def test_short_genuine_portuguese_line_with_no_diacritics_is_never_flagged():

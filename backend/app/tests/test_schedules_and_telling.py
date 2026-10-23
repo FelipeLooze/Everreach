@@ -199,3 +199,20 @@ def test_a_contract_the_player_already_knows_is_not_announced_again(db_session):
     said = "— Pode ser feito a qualquer hora do dia."
 
     assert discovery.tell_contracts(db_session, campaign.id, character.id, elder, said) == said
+
+
+def test_the_elder_is_found_by_his_white_beard_or_hair(db_session):
+    from app.game import engine
+    from app.game.visual.npc import resolve_npc_appearance
+
+    campaign, character = _world(db_session)
+    square_npcs = db_session.query(NPC).filter(NPC.location_id == character.location_id).all()
+    elder = _npc(db_session, campaign.id, "ancião da vila")
+
+    for text in (
+        'Ir falar com o homem de barba branca "Ola, bom dia, senhor. Tudo bem?"',
+        "Vou falar com o senhor de cabelos brancos: Ola senhor, bom dia, tudo bem?",
+    ):
+        npcs, players = engine._addressed_candidates(text, square_npcs, [])
+        assert npcs == [elder] and players == []
+    assert resolve_npc_appearance(db_session, campaign.id, elder.id)["hair_color"] == "white hair"

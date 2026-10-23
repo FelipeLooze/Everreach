@@ -356,9 +356,12 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # prompt. See NPC_HAIR_COLOR_POOL/NPC_EYE_COLOR_POOL in
     # content_pools.py.
     for npc in (elder, blacksmith, innkeeper):
-        set_npc_stable_identity(
-            db, campaign_id, npc.id, generate_npc_appearance_traits(starting_npc_rng)
-        )
+        traits = generate_npc_appearance_traits(starting_npc_rng)
+        if npc is elder:
+            # An elder reads as old in every narration ("o homem de barba
+            # branca"); a random "brown hair" made his portrait disagree.
+            traits["hair_color"] = "white hair"
+        set_npc_stable_identity(db, campaign_id, npc.id, traits)
 
     # Phase 15 follow-up — settlement parity: the starting village used to
     # be the only VILLAGE-type settlement in the whole region without a

@@ -1621,9 +1621,19 @@ _LEAVING_CLAUSE_PATTERN = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+# Age cues name the elder too. Playtest (the user's own save): "Ir falar com
+# o homem de barba branca" resolved nobody, so the conversation was never
+# registered and "qual o nome do senhor?" went unanswered next turn.
+_ELDER_APPEARANCE_CUES = (
+    "barba branca", "barbas brancas", "barba grisalha", "cabelo branco", "cabelos brancos",
+    "cabelo grisalho", "cabelos grisalhos", "grisalho", "de cajado", "com o cajado", "com cajado",
+)
 _ROLE_REFERENCE_ALIASES = {
-    "anciao": ("idoso", "velho", "senhor idoso"),
-    "ancia": ("idosa", "velha", "senhora idosa"),
+    "anciao": ("idoso", "velho", "senhor idoso", *_ELDER_APPEARANCE_CUES),
+    "ancia": (
+        "idosa", "velha", "senhora idosa", "grisalha", "cabelo branco", "cabelos brancos",
+        "de cajado", "com o cajado", "com cajado",
+    ),
 }
 
 _ROLE_FILLER_WORDS = frozenset({"da", "de", "do", "das", "dos", "e"})

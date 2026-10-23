@@ -53,6 +53,7 @@ from app.game.economy.economic_canon import (
     service_subject,
 )
 from app.game.economy.initial_content import ensure_initial_economy_for_campaign
+from app.game.quests.initial_content import ensure_initial_quest_opportunities_for_campaign
 from app.game.economy.playable import resolve_economy_intent
 from app.game.npcs import service as npcs_service
 from app.game.players import service as players_service
@@ -210,8 +211,10 @@ def resolve_action(
     ensure_settlement_public_knowledge(
         db, campaign_id, character.location_id
     )
-    # Backfill the real Phase 14 content for saves created before this
-    # integration. This runs inside the action checkpoint and is idempotent.
+    # Backfill the Phase 12 boards and the real Phase 14 content for saves
+    # created before them, quests first (job openings share the public
+    # board). Both run inside the action checkpoint and are idempotent.
+    ensure_initial_quest_opportunities_for_campaign(db, campaign_id)
     ensure_initial_economy_for_campaign(db, campaign_id)
 
     state = game_state.build_game_state(db, campaign_id, character_id)

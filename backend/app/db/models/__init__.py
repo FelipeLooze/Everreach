@@ -26,7 +26,6 @@ from app.db.models.character_class import (
 from app.db.models.currency import CurrencyHolding
 from app.db.models.event import WorldEvent
 from app.db.models.group import Group, GroupInvite, GroupMember
-from app.db.models.expedition import Expedition
 from app.db.models.domain import (
     CharacterDomainEvidence,
     CharacterDomainSynergy,
@@ -51,7 +50,6 @@ from app.db.models.location import (
     LocationFeature,
 )
 from app.db.models.memory import Memory
-from app.db.models.map import Map
 from app.db.models.map_annotation import MapAnnotation
 from app.db.models.material import MaterialDefinition
 from app.db.models.notice import Notice
@@ -161,7 +159,6 @@ __all__ = [
     "Group",
     "GroupMember",
     "GroupInvite",
-    "Expedition",
     "DomainDefinition",
     "CharacterDomainEvidence",
     "DomainEvidenceRecord",
@@ -196,7 +193,6 @@ __all__ = [
     "LocationConnection",
     "LocationFeature",
     "Memory",
-    "Map",
     "MaterialDefinition",
     "Notice",
     "Organization",

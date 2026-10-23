@@ -153,10 +153,8 @@ def grant_fact_with_precision(
     certainty: KnowledgeCertainty = KnowledgeCertainty.CONFIRMED,
     precision: GeographicPrecision = GeographicPrecision.VAGUE,
 ) -> None:
-    """The shared grant primitive behind grant_geographic_knowledge and
-    app.game.knowledge.rumors.grant_rumor — any fact_key already
-    established (ensure_geographic_fact or a rumor's own establish_rumor)
-    works here. Raises ValueError (via teach_fact) if fact_key doesn't
+    """The shared grant primitive behind grant_geographic_knowledge — any
+    fact_key already established by ensure_geographic_fact works here. Raises ValueError (via teach_fact) if fact_key doesn't
     exist yet — world truth must exist before anyone can be taught it.
 
     precision defaults to VAGUE — first knowledge of anything is vague

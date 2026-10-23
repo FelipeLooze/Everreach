@@ -7,7 +7,6 @@ from app.db.models.subregion import Subregion
 from app.game.character.service import create_character
 from app.game.game_state import build_game_state
 from app.game.knowledge.geography import ensure_geographic_fact, grant_geographic_knowledge
-from app.game.knowledge.maps import character_maps_covering, create_map
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -58,17 +57,3 @@ def test_unknown_subregion_facts_never_leak_into_narrator_context(db_session):
 
     assert "criatura territorial rara" not in context
 
-
-def test_character_maps_covering_finds_only_owned_maps_of_that_entity(db_session):
-    campaign = create_campaign(db_session, "Mapas Do Personagem", world_seed=3)
-    region, village = seed_initial_region(db_session, campaign.id)
-    character = create_character(db_session, campaign.id, "Logan", region_id=region.id, location_id=village.id)
-    _grant_mappable_knowledge(db_session, campaign.id, character.id, "settlement", "loc_arven")
-
-    create_map(db_session, campaign.id, character.id, "settlement", "loc_arven")
-
-    covering = character_maps_covering(db_session, character.id, "settlement", "loc_arven")
-    assert len(covering) == 1
-
-    not_covering = character_maps_covering(db_session, character.id, "settlement", "loc_somewhere_else")
-    assert not_covering == []

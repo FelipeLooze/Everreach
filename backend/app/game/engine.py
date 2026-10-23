@@ -14,6 +14,7 @@ from app.ai.observability import log_narrative_request
 from app.ai.validation import NarrativeProposal, validate_narrative_proposal
 from app.core.config import get_settings
 from app.core.enums import (
+    connection_type_label_pt,
     ActionIntentType,
     CharacterStatus,
     CombatActorType,
@@ -63,6 +64,7 @@ from app.game.groups import companions as companions_service
 from app.game.organizations import player_guilds as guilds_service
 from app.game.travel import settlement_routes
 from app.game import telling
+from app.game.exploration import service as exploration
 from app.ai import people_present
 from app.game.players.appearance import ensure_transported_features
 from app.game.notices.service import NoticeBoardError, read_notice_board
@@ -834,6 +836,15 @@ _FORMALIZE_PATTERN = re.compile(
 )
 
 
+# "Exploro os arredores", "vasculho a área", "procuro outras trilhas" —
+# looking around ("olho ao redor") stays EXAMINE.
+_EXPLORE_PATTERN = re.compile(
+    r"\b(?:exploro|explorar|exploramos|vasculho|vasculhar|vasculhamos)\b"
+    r"|\bprocur\w*\s+(?:outr[oa]s\s+|nov[oa]s\s+|alguma?\s+|um[a]?\s+)?(?:caminhos?|trilhas?|passagens?|rotas?|saidas?)\b"
+    r"|\breconhec\w*\s+o\s+terreno\b|\bdescobrir\s+(?:a\s+)?(?:regiao|area|arredores)\b"
+)
+
+
 _GUILD_RANK_PATTERN = re.compile(
     r"\b(?:promovo|promover|promova|rebaixo|rebaixar|rebaixe)\b"
     r"|\b(?:passo|passar|entrego|entregar|transfiro|transferir)\s+(?:a\s+)?(?:lideranca|chefia|comando)\b"
@@ -992,6 +1003,8 @@ def _refine_explicit_membership_intent(intent: Intent) -> Intent:
     # is a travel invitation, and "registrar nossa guilda" is not joining one.
     if _LEAVE_GROUP_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.LEAVE_GROUP)
+    if _EXPLORE_PATTERN.search(text):
+        return replace(intent, type=ActionIntentType.EXPLORE)
     if _GUILD_DIPLOMACY_PATTERN.search(text):
         return replace(intent, type=ActionIntentType.GUILD_DIPLOMACY)
     if _GUILD_RANK_PATTERN.search(text):
@@ -1071,6 +1084,8 @@ def _apply_intent(
     if intent.type == ActionIntentType.FORMALIZE_ORGANIZATION:
         change = guilds_service.formalize(db, campaign_id, character)
         return change.summary, 15 if change.changed else 0
+    if intent.type == ActionIntentType.EXPLORE:
+        return _handle_explore(db, campaign_id, character)
     if intent.type == ActionIntentType.CHANGE_GUILD_RANK:
         return _handle_guild_rank(db, campaign_id, character, intent, state)
     if intent.type == ActionIntentType.GUILD_DIPLOMACY:
@@ -1976,6 +1991,40 @@ def _handle_guild_membership(
     else:
         change = guilds_service.expel(db, character, player_hits[0])
     return change.summary, 1
+
+
+def _handle_explore(db: Session, campaign_id: str, character: Character) -> tuple[str, int]:
+    """Active search around here: at most one unknown route found, told as
+    the player can know it — direction and kind of place, never the name of
+    somewhere they have not been."""
+    outcome = exploration.explore_current_location(db, campaign_id, character)
+    hours = f"{outcome.minutes_spent // 60}h{outcome.minutes_spent % 60:02d}"
+    if not outcome.success:
+        return (
+            f"{character.name} explora os arredores por {hours}, mas não encontra nenhum caminho novo.",
+            outcome.minutes_spent,
+        )
+    connection = db.get(LocationConnection, outcome.found_connection_id)
+    destination = db.get(Location, outcome.found_location_id)
+    kind = _PLACE_TYPE_LABELS_PT.get(destination.type, ("um lugar",))[0]
+    route = connection_type_label_pt(connection.connection_type)
+    direction = f" para o {connection.direction}" if connection.direction else ""
+    return (
+        f"{character.name} explora os arredores por {hours} e encontra uma {route}{direction}, "
+        f"que leva a {_with_article(kind)} ainda desconhecido.",
+        outcome.minutes_spent,
+    )
+
+
+_FEMININE_PLACE_WORDS = ("floresta", "mata", "clareira", "caverna", "gruta", "torre", "mina", "estrada",
+                         "costa", "praia", "planicie", "serra", "vila", "praca", "ruinas")
+
+
+def _with_article(kind: str) -> str:
+    if kind in ("um lugar",):
+        return kind
+    head = kind.split()[0]
+    return f"{'uma' if head in _FEMININE_PLACE_WORDS else 'um'} {kind}"
 
 
 def _handle_guild_rank(

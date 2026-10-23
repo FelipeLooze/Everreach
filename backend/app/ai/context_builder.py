@@ -291,7 +291,7 @@ def _format_known_fact_without_certainty(fact: KnownFact) -> str:
 
 
 # Phase 24F — certainty tiers already exist deep in the Phase 12-era
-# knowledge/rumor infrastructure (app.game.knowledge.rumors/geography,
+# knowledge infrastructure (app.game.knowledge.geography,
 # KnowledgeCertainty); this only changes how they reach the narrator for
 # the active NPC's own knowledge, grouping by tier instead of an inline
 # per-line tag, so a rumor the NPC only heard secondhand can't be skimmed

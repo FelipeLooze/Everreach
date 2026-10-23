@@ -12,8 +12,8 @@ class VisualIdentity(Base):
 
     ONE reusable, polymorphic table for every entity kind's visual
     data (NPC/item/creature/location/settlement/region/organization),
-    the same overlay convention app.db.models.map.Map and
-    app.db.models.settlement.Settlement already use, and the same
+    the same overlay convention
+    app.db.models.settlement.Settlement already uses, and the same
     (subject_kind, subject_id) addressing app.game.knowledge.geography
     already established — never a new "visual_identity" column bolted
     onto every existing entity table ("DO NOT pollute every database

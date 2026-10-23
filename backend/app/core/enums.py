@@ -443,6 +443,7 @@ class ActionIntentType(StrEnum):
     FORMALIZE_ORGANIZATION = "FORMALIZE_ORGANIZATION"
     CHANGE_GUILD_RANK = "CHANGE_GUILD_RANK"
     GUILD_DIPLOMACY = "GUILD_DIPLOMACY"
+    EXPLORE = "EXPLORE"
     BUY = "BUY"
     SELL = "SELL"
     APPLY_JOB = "APPLY_JOB"
@@ -610,30 +611,6 @@ class DiscoverySignificance(StrEnum):
     MAJOR = "MAJOR"
 
 
-class NavigationRisk(StrEnum):
-    """Phase 17K — how likely a character is to get lost trying to reach
-    somewhere, derived from actual route/direction knowledge (17A/17E),
-    never a flat context-free chance (spec explicitly rejects "random
-    10% chance to get lost")."""
-
-    LOW = "LOW"
-    MODERATE = "MODERATE"
-    HIGH = "HIGH"
-
-
-class ExpeditionStatus(StrEnum):
-    """Phase 17I — a planned journey's lifecycle. Terminal states mirror
-    the spec's own list of possible outcomes (success/partial success/
-    retreat/failure/loss) rather than a bare success/fail boolean."""
-
-    PLANNED = "PLANNED"
-    UNDERWAY = "UNDERWAY"
-    SUCCEEDED = "SUCCEEDED"
-    PARTIAL_SUCCESS = "PARTIAL_SUCCESS"
-    FAILED = "FAILED"
-    LOST = "LOST"
-
-
 class GeographicKnowledgeAspect(StrEnum):
     """Phase 17A — a geographic entity (Region/Subregion/Settlement/
     Location/POI/BoundaryRoute/RegionalBoundary/...) is never known
@@ -670,20 +647,6 @@ class GeographicPrecision(StrEnum):
     APPROXIMATE = "APPROXIMATE"
     GOOD = "GOOD"
     PRECISE = "PRECISE"
-
-
-class RumorAccuracy(StrEnum):
-    """Phase 17C — the backend's own private truth about how a rumor's
-    statement relates to Canon. Never exposed to the player directly
-    (spec's "DO NOT SPOIL RISK" pattern, reused from Phase 16F/16H) —
-    Logan only ever sees the rumor's statement text and his own
-    certainty about it, never this label."""
-
-    TRUE = "TRUE"
-    FALSE = "FALSE"
-    PARTIALLY_TRUE = "PARTIALLY_TRUE"
-    OUTDATED = "OUTDATED"
-    MISINTERPRETED = "MISINTERPRETED"
 
 
 class SimulatedPlayerArchetype(StrEnum):

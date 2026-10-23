@@ -27,7 +27,6 @@ from app.db.models.character_class import (
 from app.db.models.currency import CurrencyHolding
 from app.db.models.consumable import ItemConsumptionRecord
 from app.db.models.event import WorldEvent
-from app.db.models.expedition import Expedition
 from app.db.models.group import Group, GroupInvite, GroupMember
 from app.db.models.defense import ActorCombatDefense
 from app.db.models.notice import Notice
@@ -59,7 +58,6 @@ from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.location import CharacterLocationDiscovery, Location, LocationConnection, LocationFeature, CharacterConnectionDiscovery
-from app.db.models.map import Map
 from app.db.models.map_annotation import MapAnnotation
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
@@ -169,7 +167,6 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(ItemWearRecord).filter(
         ItemWearRecord.item_instance_id.in_(item_instance_ids)
     ).delete(synchronize_session=False)
-    db.query(Map).filter(Map.item_instance_id.in_(item_instance_ids)).delete(synchronize_session=False)
     db.query(CurrencyHolding).filter(
         CurrencyHolding.campaign_id == campaign_id
     ).delete(synchronize_session=False)
@@ -182,7 +179,6 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         MapAnnotation.campaign_id == campaign_id
     ).delete(synchronize_session=False)
     group_ids = db.query(Group.id).filter(Group.campaign_id == campaign_id)
-    db.query(Expedition).filter(Expedition.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(GroupInvite).filter(GroupInvite.group_id.in_(group_ids)).delete(synchronize_session=False)
     db.query(GroupMember).filter(GroupMember.group_id.in_(group_ids)).delete(synchronize_session=False)
     db.query(Group).filter(Group.campaign_id == campaign_id).delete(synchronize_session=False)

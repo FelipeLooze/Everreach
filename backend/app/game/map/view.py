@@ -4,9 +4,7 @@ character knows — never a second copy of the world.
 One source decides what appears (simplification, 2026-10-23): the
 character's discovery tables (CharacterLocationDiscovery for places,
 CharacterConnectionDiscovery for routes), which every way of learning a
-place now writes — travel, exploration, rumors, shared routes, expeditions,
-what NPCs tell. Physical maps the character owns are the one other source:
-an item holding a frozen snapshot of past knowledge, which may go stale.
+place writes — travel, active exploration, what NPCs tell.
 
 - Precision comes from the discovery status: DISCOVERED (heard of, seen,
   told) is APPROXIMATE, VISITED is PRECISE. Exact coordinates only ship
@@ -19,9 +17,9 @@ an item holding a frozen snapshot of past knowledge, which may go stale.
 - position_* is the character's own location, never more precise than any
   other entry.
 
-The richer per-aspect/precision geographic facts (Phase 17) remain what
-NPCs and organizations know and can share; the player's map no longer
-reads them through parallel paths.
+`source`, `stale` and `known_aspects` stay in the response for the
+frontend; with physical maps and rumors gone they are always "discovery",
+False and EXISTENCE (+NAME).
 """
 from dataclasses import dataclass, field
 
@@ -29,24 +27,13 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import DiscoveryStatus, GeographicKnowledgeAspect, GeographicPrecision, KnowerType
 from app.db.models.character import Character
-from app.db.models.item import ItemInstance
 from app.db.models.location import Location
-from app.db.models.map import Map
 from app.db.models.map_annotation import MapAnnotation
-from app.db.models.region import Region
 from app.game.discovery.service import get_location_discovery, location_display_name
-from app.game.knowledge.geography import geographic_fact_key, precision_rank
-from app.game.knowledge.map_reliability import find_outdated_map_aspects
-from app.game.knowledge.maps import map_content
+from app.game.knowledge.geography import geographic_fact_key
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.map.service import known_map
 from app.game.npcs.service import knows
-
-_POSITION_ASPECTS = (
-    GeographicKnowledgeAspect.ROUTE,
-    GeographicKnowledgeAspect.DISTANCE,
-    GeographicKnowledgeAspect.DIRECTION,
-)
 
 _DISCOVERY_STATUS_PRECISION: dict[DiscoveryStatus, GeographicPrecision] = {
     DiscoveryStatus.DISCOVERED: GeographicPrecision.APPROXIMATE,
@@ -123,70 +110,6 @@ def _knows_name_aspect(
     return knows(db, KnowerType.PLAYER, character_id, fact_key, campaign_id)
 
 
-def _owned_maps_by_location(db: Session, character_id: str) -> dict[str, list[Map]]:
-    """Every "location"-subject physical Map the character currently
-    owns, grouped by the entity it covers. A map that changed hands or
-    was lost stops counting (same ItemInstance-ownership convention as
-    app.game.knowledge.maps.character_maps_covering)."""
-    map_rows = (
-        db.query(Map)
-        .join(ItemInstance, ItemInstance.id == Map.item_instance_id)
-        .filter(
-            ItemInstance.owner_type == "CHARACTER",
-            ItemInstance.owner_ref == character_id,
-            Map.subject_kind == "location",
-        )
-        .all()
-    )
-    by_location: dict[str, list[Map]] = {}
-    for map_row in map_rows:
-        by_location.setdefault(map_row.entity_id, []).append(map_row)
-    return by_location
-
-
-def _build_map_view_location_from_maps(
-    db: Session,
-    campaign_id: str,
-    location: Location,
-    discovery_status: DiscoveryStatus,
-    map_rows: list[Map],
-) -> MapViewLocation:
-    contents = [map_content(map_row) for map_row in map_rows]
-    stale = any(find_outdated_map_aspects(db, campaign_id, map_row) for map_row in map_rows)
-    all_aspects = [aspect for content in contents for aspect in content["aspects"]]
-    known_aspect_values = {aspect["aspect"] for aspect in all_aspects}
-    known_aspect_values.add(GeographicKnowledgeAspect.EXISTENCE.value)
-    name_known = GeographicKnowledgeAspect.NAME.value in known_aspect_values
-
-    position_aspect_values = {aspect.value for aspect in _POSITION_ASPECTS}
-    best_precision: GeographicPrecision | None = None
-    for aspect in all_aspects:
-        if aspect["aspect"] not in position_aspect_values or aspect["precision"] is None:
-            continue
-        precision = GeographicPrecision(aspect["precision"])
-        if best_precision is None or precision_rank(precision) > precision_rank(best_precision):
-            best_precision = precision
-    exact_position_known = best_precision == GeographicPrecision.PRECISE
-
-    return MapViewLocation(
-        id=location.id,
-        region_id=location.region_id,
-        subregion_id=location.subregion_id,
-        parent_location_id=location.parent_location_id,
-        type=location.type,
-        name=location.name if name_known else None,
-        precision=best_precision.value if best_precision is not None else None,
-        x=location.x if exact_position_known else None,
-        y=location.y if exact_position_known else None,
-        discovery_status=discovery_status.value,
-        source="map",
-        stale=stale,
-        provenance="mapa físico",
-        materialization_tier=location.materialization_tier,
-        known_aspects=sorted(known_aspect_values),
-    )
-
-
 def _build_map_view_location(
     db: Session,
     campaign_id: str,
@@ -218,7 +141,6 @@ def _build_map_view_location(
         x=location.x if exact_position_known else None,
         y=location.y if exact_position_known else None,
         discovery_status=discovery_status.value,
-        source="discovery",
         provenance=_PROVENANCE[discovery_status],
         materialization_tier=location.materialization_tier,
         known_aspects=sorted(known_aspects),
@@ -311,30 +233,6 @@ def get_map_view(
         )
         for location in data["locations"]
     ]
-    regions_by_id = {region.id: region for region in data["regions"]}
-
-    # Owned physical maps: places known only from a map the character holds.
-    included_location_ids = {location.id for location in locations}
-    maps_by_location = _owned_maps_by_location(db, character_id)
-    map_only_ids = set(maps_by_location) - included_location_ids if not visited_only else set()
-    if map_only_ids:
-        map_only_locations = (
-            db.query(Location)
-            .join(Region, Region.id == Location.region_id)
-            .filter(Location.id.in_(map_only_ids), Region.campaign_id == campaign_id)
-            .order_by(Location.name)
-            .all()
-        )
-        for location in map_only_locations:
-            locations.append(
-                _build_map_view_location_from_maps(
-                    db, campaign_id, location, DiscoveryStatus.DISCOVERED, maps_by_location[location.id]
-                )
-            )
-            if location.region_id not in regions_by_id:
-                region = db.get(Region, location.region_id)
-                if region is not None:
-                    regions_by_id[region.id] = region
 
     position_location_id: str | None = None
     position_precision: str | None = None
@@ -348,7 +246,7 @@ def get_map_view(
             position_precision = current_location_entry.precision
 
     regions = []
-    for region in regions_by_id.values():
+    for region in data["regions"]:
         name_known = explicitly_knows_name(
             db, campaign_id, KnowerType.PLAYER, character_id, region.name
         )

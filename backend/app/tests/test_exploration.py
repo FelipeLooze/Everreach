@@ -7,7 +7,6 @@ from app.game.character.service import create_character
 from app.game.discovery.service import discover_connection, get_location_discovery
 from app.game.exploration.service import EXPLORATION_MINUTES, explore_current_location
 from app.game.knowledge.geography import knows_geographic_aspect
-from app.game.time.clock import get_world_time
 from app.game.world.seed import create_campaign, seed_initial_region
 
 
@@ -41,13 +40,13 @@ def test_nothing_to_find_returns_unsuccessful_but_still_spends_time(db_session):
     for connection in connections:
         discover_connection(db_session, character.id, connection.id)
 
-    before_minute = get_world_time(db_session, campaign.id).total_minutes()
     outcome = explore_current_location(db_session, campaign.id, character)
-    after_minute = get_world_time(db_session, campaign.id).total_minutes()
 
     assert outcome.success is False
     assert outcome.found_connection_id is None
-    assert after_minute - before_minute == EXPLORATION_MINUTES
+    # Reported, not applied: the engine advances the clock (and the world)
+    # by minutes_spent like any other action.
+    assert outcome.minutes_spent == EXPLORATION_MINUTES
 
     event = (
         db_session.query(WorldEvent)

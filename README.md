@@ -624,6 +624,25 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   narração omitir algum que ele ainda não conhece, o jogo acrescenta a fala, nunca ensina algo não
   dito.
 
+## Simplificação do conhecimento (23/10/2026)
+
+- **Conversas:** uma regra só (`app/game/telling.py`). Antes de narrar, o jogo decide o que o
+  NPC conta (até 3 fatos que respondem à pergunta: lugar, contratos, horários ou o que bate com
+  as palavras ditas); o narrador recebe isso como fala obrigatória; o que a fala omitir é
+  acrescentado; o jogador aprende exatamente o que foi dito. Nada é aprendido por adivinhação
+  no texto narrado.
+- **Lugares:** três situações — desconhecido, conhecido, visitado (boato virou conhecido;
+  mapeado virou visitado). Toda forma de saber que um lugar existe marca as tabelas de
+  descoberta, e o mapa lê só elas: conhecido aparece com posição aproximada, visitado com a
+  posição exata. A rota antiga `/map` saiu; o frontend usa `/map-view`.
+- **Exploração ativa ligada ao jogo:** "exploro os arredores", "procuro outras trilhas" viram a
+  ação EXPLORE (1h30 de mundo, teste de busca); o que se acha aparece no mapa como conhecido,
+  sem nome até ser visitado ou dito.
+- **Removido por nunca ter sido ligado ao jogo:** perigos de navegação, fronteiras e expedições,
+  boatos com veracidade oculta, compartilhamento de conhecimento entre NPCs/guildas,
+  confiabilidade da informação, mapas físicos e cartografia (cerca de 1.400 linhas e 17
+  arquivos de teste). O histórico do git guarda tudo, se algum dia voltarem.
+
 ## Fora do MVP
 
 - Geração procedural complexa e novas regiões automáticas.

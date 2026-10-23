@@ -29,15 +29,9 @@ character-specific knowledge (not full detail — a character who just
 found a route doesn't automatically know the destination's name,
 dangers, or services; those are separate aspects, taught elsewhere).
 
-Deliberately NOT built here (later subphases, explicitly listed in the
-spec as future dependencies, not this foundation's job): terrain/
-weather/visibility modeling, and wiring search success to attributes/
-techniques/profession (17Q — Exploration Progression Integration).
-DC_SEARCH is a flat, documented placeholder until 17Q gives it a real
-character-dependent modifier. No LLM/engine ActionIntentType wiring
-either — this is the authoritative primitive a future EXPLORE intent
-(or 17I's NPC/organization expeditions) will call; wiring the
-player-facing action itself belongs with narrator-context work (17P).
+Played through the EXPLORE intent (app.game.engine), which advances the
+world clock by minutes_spent so the world simulates the search like any
+other action. DC_SEARCH is flat: no terrain, weather or skill modifier.
 """
 
 import random
@@ -45,14 +39,19 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import DiscoverySignificance, EventType, GeographicKnowledgeAspect, KnowerType
+from app.core.enums import (
+    DiscoverySignificance,
+    EventType,
+    GeographicKnowledgeAspect,
+    KnowerType,
+    connection_type_label_pt,
+)
 from app.db.models.character import Character
 from app.db.models.location import CharacterConnectionDiscovery, Location, LocationConnection
 from app.game.dice import d20
 from app.game.discovery.service import discover_connection, set_location_discovery
 from app.game.exploration.discovery_significance import assess_location_discovery_significance
 from app.game.knowledge.geography import ensure_geographic_fact, grant_geographic_knowledge
-from app.game.time.clock import advance_world_time
 from app.services.event_log import log_event
 
 EXPLORATION_MINUTES = 90
@@ -97,8 +96,6 @@ def explore_current_location(
     genuinely nothing there."""
     candidates = _undiscovered_outgoing_connections(db, character.id, character.location_id)
 
-    advance_world_time(db, campaign_id, EXPLORATION_MINUTES)
-
     if not candidates:
         log_event(
             db, campaign_id, EventType.EXPLORATION_ATTEMPTED,
@@ -125,9 +122,12 @@ def explore_current_location(
     set_location_discovery(db, character.id, destination.id, "DISCOVERED")
     significance = assess_location_discovery_significance(destination)
 
+    # Found a way there, not its name: a statement carrying the name would
+    # make the map show it (explicitly_knows_name matches statement text).
+    direction = f" para o {found.direction}" if found.direction else ""
     ensure_geographic_fact(
         db, campaign_id, "location", destination.id, GeographicKnowledgeAspect.EXISTENCE,
-        f"Existe um caminho levando a {destination.name}.",
+        f"Uma {connection_type_label_pt(found.connection_type)} sai{direction} rumo a um lugar ainda não visitado.",
     )
     grant_geographic_knowledge(
         db, campaign_id, KnowerType.PLAYER, character.id,

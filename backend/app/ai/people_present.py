@@ -9,6 +9,9 @@ registered appearance, and the intent parser picks the person the player
 means from the same numbered list (P1, P2…) — no word list to maintain.
 """
 
+import re
+import unicodedata
+
 from sqlalchemy.orm import Session
 
 from app.game.players.appearance import ensure_transported_features
@@ -75,6 +78,41 @@ def people_present_lines(db: Session, state, *, active_npc_id=None, active_playe
     if len(lines) == 1:
         lines.append("- ninguém")
     return lines
+
+
+_FEMININE_WORDS = ("mulher", "senhora", "moca", "garota", "velha", "idosa", "menina", "dama")
+_MASCULINE_WORDS = ("homem", "senhor", "rapaz", "garoto", "velho", "idoso", "menino", "sujeito", "cara")
+
+
+def _plain(text: str) -> str:
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", (text or "").casefold())
+        if not unicodedata.combining(char)
+    )
+
+
+def match_by_appearance(db: Session, state, raw_text: str):
+    """Instant backstop when the parser named nobody: the hair the player
+    mentioned ("a mulher de cabelo preto"), plus sex when stated, against
+    each person's registered look. Exactly one match or nothing."""
+    text = _plain(raw_text)
+    wants_female = any(word in text.split() for word in _FEMININE_WORDS)
+    wants_male = any(word in text.split() for word in _MASCULINE_WORDS)
+    matches = []
+    for kind, person in present_people(state):
+        if kind == "npc":
+            looks = npc_appearance_pt(db, state.character.campaign_id, person)
+        else:
+            looks = ensure_transported_features(db, person)
+        looks = _plain(looks)
+        hair = next(iter(re.findall(r"cabelo [a-z-]+(?: e [a-z]+)?", looks)), None)
+        if hair is None or hair not in text:
+            continue
+        female = looks.startswith("mulher")
+        if (wants_female and not female) or (wants_male and female):
+            continue
+        matches.append((kind, person))
+    return matches[0] if len(matches) == 1 else None
 
 
 def person_for_ref(state, ref: str | None):

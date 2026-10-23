@@ -94,3 +94,15 @@ def test_an_ambiguous_reference_is_asked_about_not_narrated(db_session):
     assert result.mechanical_summary.startswith(engine.WHO_DO_YOU_MEAN_PREFIX)
     assert "homem idoso, cabelo branco" in result.mechanical_summary
     assert result.narrative == result.mechanical_summary and llm.narrations == 0
+
+
+def test_a_hair_and_sex_description_resolves_without_the_parser(db_session):
+    from app.ai.people_present import match_by_appearance
+
+    campaign, character = _world(db_session)
+    state = build_game_state(db_session, campaign.id, character.id)
+    elder = next(npc for npc in state.nearby_npcs if npc.role == "ancião da vila")
+
+    assert match_by_appearance(db_session, state, "Falo com o senhor de cabelo branco") == ("npc", elder)
+    assert match_by_appearance(db_session, state, "Falo com a senhora de cabelo branco") is None
+    assert match_by_appearance(db_session, state, "Olho ao redor") is None

@@ -570,6 +570,15 @@ def resolve_action(
             context_npc.name if context_npc is not None else "",
         )
         narrative_warnings = validation.warnings
+    elif not asking_who:
+        # First version accepted as is (the player regenerates if unhappy);
+        # a direct price/wage question still gets its number, instantly.
+        final_narrative = narrator.enforce_authorized_price_answer(
+            narrative_text,
+            fresh_context,
+            text,
+            context_npc.name if context_npc is not None else "",
+        )
 
     if context_npc is not None and quest_discovery.is_work_question(text):
         final_narrative = quest_discovery.tell_contracts(
@@ -1943,7 +1952,9 @@ def _resolve_target_person(
     """Who an invitation/recruitment/expulsion is about: a name the player
     used, then a reference in the raw text, then whoever they are already
     talking to ("Quer vir comigo?")."""
-    chosen = people_present.person_for_ref(state, intent.person_ref)
+    chosen = people_present.person_for_ref(state, intent.person_ref) or (
+        people_present.match_by_appearance(db, state, intent.raw_text)
+    )
     if chosen is not None:
         kind, person = chosen
         return ([person], []) if kind == "npc" else ([], [person])
@@ -2114,7 +2125,9 @@ def _handle_talk(
     # player wrote nothing of at all ("Como está?" -> target
     # "estalajadeiro") falls through to the deterministic nearby-count
     # logic below, same as if no target had been given.
-    chosen = people_present.person_for_ref(state, intent.person_ref)
+    chosen = people_present.person_for_ref(state, intent.person_ref) or (
+        people_present.match_by_appearance(db, state, intent.raw_text)
+    )
     if chosen is not None:
         kind, person = chosen
         npc, simulated_player = (person, None) if kind == "npc" else (None, person)

@@ -2439,7 +2439,9 @@ def _narrate_draft(
     # the model's first answer without repairs, fallback substitutions or
     # additional LLM calls. Regeneration is the explicit revision path.
     if not automatic_validation:
-        final_response = raw_response.strip()
+        # Only instant, deterministic cleanup here (leaked instructions; the
+        # point-of-view polish runs in narrate()) — no extra model calls.
+        final_response = _strip_prompt_leak(raw_response).strip()
         logger.debug("FINAL RESPONSE (manual player review)\n%s", final_response)
         _log_narration_outcome(NarrationOutcome.MANUAL_REVIEW, attempt=1)
         return final_response

@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.game.players.appearance import ensure_transported_features
 from app.game.visual.npc import resolve_npc_appearance
+from app.game.npcs import profile as npc_profile
 from app.game.world.generator import gender_for_name
 
 _HAIR_PT = {
@@ -43,11 +44,15 @@ _ELDER_ROLES = ("ancião", "anciã")
 def npc_appearance_pt(db: Session, campaign_id: str, npc) -> str:
     traits = resolve_npc_appearance(db, campaign_id, npc.id)
     gender = gender_for_name(npc.name)
-    elderly = npc.role.casefold().startswith(_ELDER_ROLES)
+    npc_profile.ensure(db, npc)
+    age = "idoso" if npc.role.casefold().startswith(_ELDER_ROLES) or npc.age >= 60 else (
+        "jovem" if npc.age < 23 else "adulto"
+    )
     who = {
-        ("M", True): "homem idoso", ("F", True): "mulher idosa",
-        ("M", False): "homem", ("F", False): "mulher",
-    }.get((gender, elderly), "pessoa idosa" if elderly else "pessoa")
+        ("M", "idoso"): "homem idoso", ("F", "idoso"): "mulher idosa",
+        ("M", "jovem"): "rapaz", ("F", "jovem"): "moça",
+        ("M", "adulto"): "homem", ("F", "adulto"): "mulher",
+    }.get((gender, age), "pessoa idosa" if age == "idoso" else "pessoa")
     features = [
         _HAIR_PT.get(traits.get("hair_color", ""), ""),
         _EYES_PT.get(traits.get("eye_color", ""), ""),

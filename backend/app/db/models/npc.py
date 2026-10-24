@@ -38,6 +38,10 @@ class NPC(Base):
     personality: Mapped[str] = mapped_column(String, default="")
     backstory: Mapped[str] = mapped_column(String, default="")
     role: Mapped[str] = mapped_column(String, default="villager")
+    # Structured personality (app.game.npcs.profile); filled lazily for any
+    # NPC created without one.
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    profile_json: Mapped[str] = mapped_column(String, default="{}", server_default="{}", nullable=False)
 
     activity: Mapped[str] = mapped_column(
         String,

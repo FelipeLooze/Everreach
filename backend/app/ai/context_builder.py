@@ -82,6 +82,7 @@ from app.game.economy.pricing import PricingError
 from app.game.economy.supply_demand import resolve_local_market_price
 from app.game.economy.economic_canon import current_price, get_service_value
 from app.game.economy.wallet import total_carried_by_owner
+from app.game.npcs import profile as npc_profile
 
 
 logger = get_logger("context")
@@ -2003,7 +2004,7 @@ def build_narrative_context(
                 f"Role: {active_npc.role}{_gender_note(active_npc.name)}",
                 f"Location: {state.location.name if state.location else 'unknown'}",
                 "Visibility: private NPC context; not automatically known by the player.",
-                f"Personality: {_clip(active_npc.personality, 300)}",
+                *npc_profile.context_lines(db, active_npc, relationship.trust if relationship else 0),
                 (
                     "Known background (use for NPC behavior; reveal only through justified dialogue): "
                     f"{_clip(active_npc.backstory, MAX_DESCRIPTION_CHARS)}"

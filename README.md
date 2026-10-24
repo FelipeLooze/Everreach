@@ -609,8 +609,8 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   consomem tempo, retiram salários do capital real do negócio e desenvolvem a profissão pertinente
   com diminishing returns já existente. Produção consome insumos reais, exige o local correto e,
   quando aplicável, uma ferramenta física adequada; as receitas iniciais permitem preparar rações,
-  trançar corda e forjar uma faca. O painel **Economia** mostra apenas comércio, vagas e receitas no
-  local atual e envia toda operação pelo fluxo normal de ações, narração, Event Log e desfazer.
+  trançar corda e forjar uma faca. Comprar, vender, trabalhar e produzir são pedidos em texto, pelo
+  fluxo normal de ações; o dinheiro carregado aparece no Inventário (não há aba de economia).
   Saves anteriores recebem o conteúdo econômico inicial de forma idempotente. Negócios,
   organizações, perturbações econômicas, oferta/demanda e contexto do Narrator continuam usando
   os serviços 14A–14N já existentes, sem uma economia paralela no frontend.
@@ -618,19 +618,18 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   caber nele, e fora dele a recusa diz o horário. Cada contrato pode ter um "quando" informativo
   nas palavras de quem o oferece. Ambos só são conhecidos se o aviso os informa, se o empregador os
   diz ao contratar ou depois que alguém que os sabe é perguntado ("quando?", "que horas?"); até lá
-  os painéis Economia e Missões mostram "desconhecido" e o Narrator não pode inventar horário.
-  **Descobrir conversando:** perguntado sobre trabalho, um NPC cita pelo nome os contratos que
-  conhece; o jogador aprende exatamente os contratos e horários ditos no texto final — se a
-  narração omitir algum que ele ainda não conhece, o jogo acrescenta a fala, nunca ensina algo não
-  dito.
+  o painel Missões mostra "desconhecido" e o Narrator não pode inventar horário.
+  **Descobrir conversando:** perguntado sobre trabalho, um NPC pode citar os contratos que
+  conhece; quem oferece o contrato responde com ele. O jogador aprende exatamente o que foi dito.
 
 ## Simplificação do conhecimento (23/10/2026)
 
 - **Conversas:** uma regra só (`app/game/telling.py`). Antes de narrar, o jogo decide o que o
-  NPC conta (até 3 fatos que respondem à pergunta: lugar, contratos, horários ou o que bate com
-  as palavras ditas); o narrador recebe isso como fala obrigatória; o que a fala omitir é
-  acrescentado; o jogador aprende exatamente o que foi dito. Nada é aprendido por adivinhação
-  no texto narrado.
+  NPC pode contar (até 3 fatos), em dois grupos: **respostas** ao que foi perguntado (onde estou,
+  quando é o turno, os contratos de quem os oferece) — obrigatórias; se a narração omitir uma, ela
+  é acrescentada como fala — e **relacionados** (contratos, lugares e pessoas citados), que o NPC
+  menciona só se couber e nunca são colados depois. O jogador aprende exatamente o que foi dito.
+  (Revisto em 24/10/2026: colar tudo produzia falas sem sentido depois de uma despedida.)
 - **Lugares:** três situações — desconhecido, conhecido, visitado (boato virou conhecido;
   mapeado virou visitado). Toda forma de saber que um lugar existe marca as tabelas de
   descoberta, e o mapa lê só elas: conhecido aparece com posição aproximada, visitado com a
@@ -642,6 +641,15 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   boatos com veracidade oculta, compartilhamento de conhecimento entre NPCs/guildas,
   confiabilidade da informação, mapas físicos e cartografia (cerca de 1.400 linhas e 17
   arquivos de teste). O histórico do git guarda tudo, se algum dia voltarem.
+
+## Cidade inicial povoada (24/10/2026, em andamento)
+
+- **Parte 1 — Personalidade:** todo NPC tem idade e uma ficha sorteada por save
+  (`app/game/npcs/profile.py`): temperamento, jeito de falar, um hábito, postura com os
+  transportados (acolhedor, curioso, prático, desconfiado ou vê como sinal — nunca hostil: a
+  desconfiança muda o tom, não recusa venda, emprego ou resposta), um desejo, uma preocupação e um
+  segredo que só aparece com confiança ≥ 20. A aparência usa a idade (rapaz/moça, idoso/idosa).
+- Próximas partes: cerca de 15 moradores com rotinas, relações entre eles, missões locais.
 
 ## Fora do MVP
 

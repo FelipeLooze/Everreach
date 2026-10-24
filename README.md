@@ -662,7 +662,14 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   continua 15 minutos).
 - **Nomes:** o narrador só recebe o nome de um NPC depois que o personagem o conheceu; antes,
   ele é um estranho descrito pela aparência e pelo ofício.
-- Próximas partes: relações entre os moradores, missões locais.
+- **Parte 3 — Laços:** família, mestre e aprendiz, amizades e duas rivalidades
+  (`app/game/npcs/bonds.py`, tabela `npc_bonds`): o casal de agricultores e o filho adolescente, o
+  lenhador pai do aprendiz da ferraria, a ferreira mestra do aprendiz, estalajadeiro e cozinheiro(a)
+  casados ou irmãos, os dois guardas irmãos; o caçador contra o lenhador (as árvores onde se armam as
+  armadilhas) e a lojista contra a guilda de comerciantes (preços). Família divide o sobrenome e as
+  idades fecham; quem não é parente tem sobrenome diferente. Todo morador conhece esses laços e o
+  narrador os recebe como a lista completa — não inventa outros parentes.
+- Próxima parte: missões locais.
 
 ## Fora do MVP
 

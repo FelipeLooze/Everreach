@@ -87,6 +87,7 @@ from app.game.world.generator import (
 )
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
+from app.game.npcs import bonds as npc_bonds
 from app.game.npcs import residents
 from app.game.time.clock import get_world_time
 
@@ -535,6 +536,7 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         {**_service_location_by_type, "forest": forest_edge, "river": creek},
         starting_npc_rng, used_npc_names, get_world_time(db, campaign_id).hour,
     )
+    npc_bonds.link_starting_village(db, campaign_id, village.id)
 
     # Phase 15J (organizations), 15K (economy) and most of 15L (threats)
     # for every non-anchor subregion now happen inside

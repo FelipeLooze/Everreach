@@ -346,6 +346,12 @@ FIXED_TRANSPORTED_GIVEN_NAME_GENDER = {"Corren": "M", "Dessa": "F", "Bram": "M"}
 NPC_FAMILY_NAME_POOL = [
     "Sernn", "Talbrook", "Ferrow", "Kessler",
     "Draven", "Wystan", "Corrin", "Hallow", "Brennig", "Sowerby", "Quill",
+    # Widened 2026-10-24: unrelated villagers sharing one of 11 surnames were
+    # read as family by the narrator.
+    "Ashdown", "Blackwood", "Carrow", "Dunmore", "Elwood", "Fairhurst", "Greaves", "Harrow",
+    "Ingram", "Jessop", "Kirkby", "Lambert", "Marlow", "Norcott", "Oakley", "Pellam",
+    "Radley", "Stroud", "Thorne", "Underhill", "Varne", "Whitlock", "Yarrow", "Alden",
+    "Brisk", "Coldwell", "Denholm", "Everard", "Furrow",
 ]
 
 # A baseline stable visual identity (app.game.visual.npc.set_npc_stable_identity)

@@ -13,6 +13,8 @@ import random
 
 from sqlalchemy.orm import Session
 
+from app.game.npcs import bonds as npc_bonds
+
 SECRET_TRUST = 20
 
 _TEMPERAMENTS = (
@@ -135,6 +137,8 @@ def context_lines(db: Session, npc, trust: int) -> list[str]:
     profile = ensure(db, npc)
     stance_pt, stance_behavior = _STANCES[profile["stance"]]
     lines = [
+        "Who they are (bring it out a little at a time, in their own voice — at most one or two "
+        "things per reply, never as a list or a recital of this sheet):",
         f"Age: {npc.age}",
         f"Temperament: {profile['temperament']}",
         f"Speech: {profile['speech']} — every line they say must sound like this.",
@@ -146,7 +150,7 @@ def context_lines(db: Session, npc, trust: int) -> list[str]:
         f"Wants: {profile['want']}. Worried about: {profile['worry']}. "
         "Mention these only if the conversation turns that way. A worry is a feeling, not an "
         "event: never invent incidents behind it (attacks, deaths, missing caravans, dates).",
-        "Family: none listed — they never mention children, grandchildren, a spouse or siblings.",
+        *npc_bonds.context_lines(db, npc),
     ]
     if trust >= SECRET_TRUST:
         lines.append(f"Secret (they trust the player enough to hint at it, if it fits): {profile['secret']}")

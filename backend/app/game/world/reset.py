@@ -61,6 +61,7 @@ from app.db.models.location import CharacterLocationDiscovery, Location, Locatio
 from app.db.models.map_annotation import MapAnnotation
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
+from app.db.models.npc_bond import NPCBond
 from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
 from app.db.models.recovery import CharacterRecovery
 from app.db.models.region import Region
@@ -119,6 +120,7 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     db.query(ActionCheckpoint).filter(
         ActionCheckpoint.campaign_id == campaign_id
     ).delete(synchronize_session=False)
+    db.query(NPCBond).filter(NPCBond.campaign_id == campaign_id).delete(synchronize_session=False)
     db.query(ItemConsumptionRecord).filter(
         ItemConsumptionRecord.campaign_id == campaign_id
     ).delete(synchronize_session=False)

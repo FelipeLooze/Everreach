@@ -240,9 +240,12 @@ def generate_npc_name(
     given_pool = _given_name_pool_for_gender(gender)
     # Two people of one village should not share a first name.
     used_given = {used.split(" ", 1)[0] for used in used_names}
+    used_family = {used.split(" ", 1)[1] for used in used_names if " " in used}
     fresh = [given for given in given_pool if given not in used_given]
+    # Unrelated people get distinct surnames too (relatives share one later).
+    fresh_family = [family for family in NPC_FAMILY_NAME_POOL if family not in used_family]
     if fresh:
-        name = f"{rng.choice(fresh)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
+        name = f"{rng.choice(fresh)} {rng.choice(fresh_family or NPC_FAMILY_NAME_POOL)}"
         if name not in used_names:
             used_names.add(name)
             return name

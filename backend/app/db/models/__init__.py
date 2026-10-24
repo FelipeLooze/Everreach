@@ -25,6 +25,7 @@ from app.db.models.character_class import (
 )
 from app.db.models.currency import CurrencyHolding
 from app.db.models.event import WorldEvent
+from app.db.models.npc_bond import NPCBond
 from app.db.models.group import Group, GroupInvite, GroupMember
 from app.db.models.domain import (
     CharacterDomainEvidence,
@@ -132,6 +133,7 @@ from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
+    "NPCBond",
     "ActionCheckpoint",
     "BoundaryBarrier",
     "BoundaryRoute",

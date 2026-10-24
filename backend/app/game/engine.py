@@ -2173,7 +2173,7 @@ def _who_do_you_mean(db: Session, state) -> str:
     descriptions = []
     for kind, person in people_present.present_people(state):
         if kind == "npc":
-            descriptions.append(people_present.npc_appearance_pt(db, state.character.campaign_id, person))
+            descriptions.append(people_present.npc_appearance_pt(db, state.character.campaign_id, person, short=True))
         else:
             features = ensure_transported_features(db, person).rstrip(".")
             descriptions.append(f"{features[:1].lower()}{features[1:]}, com o traje dos transportados")

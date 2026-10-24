@@ -15,7 +15,7 @@ import unicodedata
 from sqlalchemy.orm import Session
 
 from app.game.players.appearance import ensure_transported_features
-from app.game.visual.npc import resolve_npc_appearance
+from app.game.npcs import looks as npc_looks
 from app.game.npcs import profile as npc_profile
 from app.game.world.generator import gender_for_name
 
@@ -41,8 +41,9 @@ _EYES_PT = {
 _ELDER_ROLES = ("ancião", "anciã")
 
 
-def npc_appearance_pt(db: Session, campaign_id: str, npc) -> str:
-    traits = resolve_npc_appearance(db, campaign_id, npc.id)
+def npc_appearance_pt(db: Session, campaign_id: str, npc, *, short: bool = False) -> str:
+    """Full look for the narrator; short (who, hair, beard, mark) for a question
+    to the player listing everyone present."""
     gender = gender_for_name(npc.name)
     npc_profile.ensure(db, npc)
     age = "idoso" if npc.role.casefold().startswith(_ELDER_ROLES) or npc.age >= 60 else (
@@ -53,11 +54,7 @@ def npc_appearance_pt(db: Session, campaign_id: str, npc) -> str:
         ("M", "jovem"): "rapaz", ("F", "jovem"): "moça",
         ("M", "adulto"): "homem", ("F", "adulto"): "mulher",
     }.get((gender, age), "pessoa idosa" if age == "idoso" else "pessoa")
-    features = [
-        _HAIR_PT.get(traits.get("hair_color", ""), ""),
-        _EYES_PT.get(traits.get("eye_color", ""), ""),
-    ]
-    return ", ".join([who, *(feature for feature in features if feature)])
+    return ", ".join([who, *npc_looks.describe_pt(db, npc, _HAIR_PT, _EYES_PT, short=short)])
 
 
 def present_people(state) -> list[tuple[str, object]]:
@@ -97,9 +94,10 @@ def _plain(text: str) -> str:
 
 
 def match_by_appearance(db: Session, state, raw_text: str):
-    """Instant backstop when the parser named nobody: the hair the player
-    mentioned ("a mulher de cabelo preto"), plus sex when stated, against
-    each person's registered look. Exactly one match or nothing."""
+    """Instant backstop when the parser named nobody: the hair, beard, hair
+    style or distinctive mark the player mentioned ("a mulher de cabelo
+    preto", "o homem da cicatriz"), plus sex when stated, against each
+    person's registered look. Exactly one match or nothing."""
     text = _plain(raw_text)
     wants_female = any(word in text.split() for word in _FEMININE_WORDS)
     wants_male = any(word in text.split() for word in _MASCULINE_WORDS)
@@ -110,10 +108,13 @@ def match_by_appearance(db: Session, state, raw_text: str):
         else:
             looks = ensure_transported_features(db, person)
         looks = _plain(looks)
-        hair = next(iter(re.findall(r"cabelo [a-z-]+(?: e [a-z]+)?", looks)), None)
-        if hair is None or hair not in text:
+        hair = next(iter(re.findall(r"cabelo [a-z-]+", looks)), None)
+        cues = [hair] if hair else []
+        if kind == "npc":
+            cues += npc_looks.cues_pt(db, person)
+        if not any(cue in text for cue in cues):
             continue
-        female = looks.startswith("mulher")
+        female = looks.startswith(("mulher", "moca"))
         if (wants_female and not female) or (wants_male and female):
             continue
         matches.append((kind, person))

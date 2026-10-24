@@ -5,6 +5,7 @@ import json
 import random
 
 from app.ai import people_present
+from app.db.models.character import Character
 from app.db.models.npc import NPC
 from app.game.character.service import create_character
 from app.game.npcs import profile
@@ -58,3 +59,36 @@ def test_appearance_follows_age(db_session):
     assert people_present.npc_appearance_pt(db_session, npc.campaign_id, npc).startswith("moça")
     npc.age = 66
     assert people_present.npc_appearance_pt(db_session, npc.campaign_id, npc).startswith("mulher idosa")
+
+
+def test_every_npc_gets_a_full_look_matching_age_and_trade(db_session):
+    from app.game.npcs import looks
+
+    for npc in _village_npcs(db_session):
+        traits = looks.ensure(db_session, npc)
+        assert {"height", "build", "hair_style", "skin", "mark", "outfit"} <= set(traits)
+        if npc.age >= 60:
+            assert traits["hair_color"] in ("grey hair", "white hair", "silver hair")
+        if npc.role == "ferreira":
+            assert traits["build"] not in ("thin", "frail", "wiry", "stooped")
+            assert "avental de couro" in people_present.npc_appearance_pt(db_session, npc.campaign_id, npc)
+
+
+def test_the_player_can_point_at_someone_by_a_distinctive_mark(db_session):
+    from app.game.game_state import build_game_state
+    from app.game.npcs import looks
+    from app.game.visual.npc import set_npc_stable_identity
+
+    _village_npcs(db_session)
+    character = db_session.query(Character).one()
+    state = build_game_state(db_session, character.campaign_id, character.id)
+    present = [npc for kind, npc in people_present.present_people(state) if kind == "npc"]
+    assert len(present) >= 2
+    for npc in present:
+        looks.ensure(db_session, npc)
+        set_npc_stable_identity(db_session, npc.campaign_id, npc.id, {"mark": "a crooked nose"})
+    target = present[0]
+    set_npc_stable_identity(db_session, target.campaign_id, target.id, {"mark": "a scar across the chin"})
+
+    assert "com uma cicatriz no queixo" in people_present.npc_appearance_pt(db_session, target.campaign_id, target)
+    assert people_present.match_by_appearance(db_session, state, "Vou falar com a pessoa da cicatriz") == ("npc", target)

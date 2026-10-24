@@ -44,7 +44,9 @@ def test_everyone_present_has_a_registered_look(db_session):
     state = build_game_state(db_session, campaign.id, character.id)
     elder = next(npc for npc in state.nearby_npcs if npc.role == "ancião da vila")
 
-    assert npc_appearance_pt(db_session, campaign.id, elder).startswith("homem idoso, cabelo branco")
+    looks = npc_appearance_pt(db_session, campaign.id, elder)
+    assert looks.startswith("homem idoso, ") and "cabelo branco" in looks and " usa " in looks
+    assert npc_appearance_pt(db_session, campaign.id, elder, short=True).startswith("homem idoso, cabelo branco")
     stranger = state.nearby_simulated_players[0]
     first = ensure_transported_features(db_session, stranger)
     assert first.startswith(("Homem", "Mulher")) and "cabelo" in first and "olhos" in first

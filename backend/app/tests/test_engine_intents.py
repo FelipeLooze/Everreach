@@ -99,7 +99,7 @@ def test_apply_intent_move_does_not_reveal_unknown_location(db_session):
     summary, minutes = engine._apply_intent(db_session, campaign.id, character, intent, state)
 
     assert minutes == 0
-    assert "Nenhum lugar conhecido" in summary
+    assert "não conhece um lugar" in summary and "Para onde você quer ir?" in summary
     assert character.location_id == village.id
 
 

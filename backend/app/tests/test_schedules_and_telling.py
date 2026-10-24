@@ -53,15 +53,21 @@ def _tell(db_session, campaign, character, npc, question, said):
 # --- Part 1: contracts are learned only when named ---------------------------
 
 
-def test_asking_about_work_teaches_only_the_contracts_actually_named(db_session):
+def test_asking_about_work_learns_a_contract_only_when_it_is_said(db_session):
+    """Playtest 2026-10-24: a contract pasted after the reply ("— Esse
+    contrato se chama ... — acrescenta Garrick") read as nonsense. A
+    contract is something the NPC may bring up, never an added line."""
     campaign, character = _world(db_session)
     elder = _npc(db_session, campaign.id, "ancião da vila")
     quest = _arrival(db_session)
 
-    told = _tell(db_session, campaign, character, elder, "Sabe de algum trabalho?", "— A forja precisa de braços.")
+    decided = telling.decide(db_session, campaign.id, character.id, elder, "Sabe de algum trabalho?")
+    assert any(fact.fact_key == f"quest:{quest.id}:exists" for fact in decided.related)
+    told = telling.tell(db_session, campaign.id, character.id, elder, decided, "— A forja precisa de braços.")
 
-    assert f'"{quest.name}"' in told and f"acrescenta {elder.name}" in told
-    assert discovery.is_quest_known_to_character(db_session, campaign.id, character.id, quest.id)
+    assert told == "— A forja precisa de braços."
+    assert not discovery.is_quest_known_to_character(db_session, campaign.id, character.id, quest.id)
+
 
 
 def test_a_contract_already_named_is_not_repeated(db_session):
@@ -189,14 +195,6 @@ def test_an_npc_answer_after_a_beat_naming_the_player_as_object_is_kept():
     assert narrator._fabricated_turn_violations(fabricated, "Logan", "Garrick Wystan")
 
 
-def test_the_added_contract_line_reads_naturally_when_nothing_was_said(db_session):
-    campaign, character = _world(db_session)
-    elder = _npc(db_session, campaign.id, "ancião da vila")
-    quest = _arrival(db_session)
-
-    told = _tell(db_session, campaign, character, elder, "Há trabalho por aqui?", "O ancião pensa um instante.")
-
-    assert f'"{quest.name}"' in told and told.rstrip().endswith(f"— diz {elder.name}.")
 
 
 def test_a_contract_the_player_already_knows_is_not_announced_again(db_session):
@@ -259,16 +257,6 @@ def test_introducing_yourself_does_not_recite_a_contract(db_session):
     assert any(fact.fact_key.startswith("quest:") for fact in named.facts)
 
 
-def test_a_described_contract_gets_only_its_name_added(db_session):
-    campaign, character = _world(db_session)
-    elder = _npc(db_session, campaign.id, "ancião da vila")
-    quest = _arrival(db_session)
-    described = "— Um contrato simples: conversar comigo e levar o relato ao mestre da guilda."
-
-    told = _tell(db_session, campaign, character, elder, "Tem trabalho por aqui?", described)
-
-    assert told.endswith(f'— Esse contrato se chama "{quest.name}". — acrescenta {elder.name}.')
-    assert "Há trabalho disponível" not in told
 
 
 def test_the_narrator_knows_this_is_the_first_arrival(db_session, client):

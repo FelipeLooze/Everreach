@@ -84,6 +84,7 @@ from app.game.skills.techniques import (
 )
 from app.game.time import clock
 from app.game.travel import service as travel_service
+from app.game.discovery import service as discovery_service
 from app.game.world.content_pools import SETTLEMENT_SERVICE_POOL
 from app.game.world.local_knowledge import ensure_settlement_public_knowledge
 from app.services.event_log import log_event
@@ -527,7 +528,7 @@ def resolve_action(
     npc_telling = (
         telling.decide(db, campaign_id, character.id, context_npc, text)
         if context_npc is not None
-        else telling.Telling([], {})
+        else telling.Telling()
     )
     if npc_telling.facts:
         fresh_context = f"{fresh_context}\n\n" + "\n".join(npc_telling.context_lines(context_npc.name))
@@ -537,14 +538,15 @@ def resolve_action(
     narrator_unavailable = False
     # Asking "com quem?" answers the turn by itself: no conversation was
     # registered, so nobody may be narrated answering as if one were.
-    asking_who = mechanical_summary.startswith(WHO_DO_YOU_MEAN_PREFIX)
+    asking_who = mechanical_summary.startswith(WHO_DO_YOU_MEAN_PREFIX) or WHERE_TO_QUESTION in mechanical_summary
+    narrator_facts = _without_progression_numbers(mechanical_summary)
     if asking_who:
         narrative_text = mechanical_summary
     else:
         try:
             narrative_text = narrator.narrate(
                 llm_service,
-                mechanical_summary,
+                narrator_facts,
                 fresh_context,
                 player_input=text,
                 recent_history=recent_history,
@@ -568,7 +570,7 @@ def resolve_action(
             text=validation.text,
             mode="CONTINUATION",
             context=fresh_context,
-            mechanical_summary=mechanical_summary,
+            mechanical_summary=narrator_facts,
             player_input=text,
             recent_history=recent_history,
             character_name=character.name,
@@ -1336,7 +1338,13 @@ _WILD_LOCATION_TYPE_LABELS_PT: dict[str, tuple[str, ...]] = {
     "abandoned_mine": ("mina abandonada",),
     "tower": ("torre",),
 }
-_PLACE_TYPE_LABELS_PT = {**_HUB_LOCATION_TYPE_LABELS_PT, **_WILD_LOCATION_TYPE_LABELS_PT}
+# A plain "a guilda" is the adventurers' guild, where every transported
+# person is sent; "guilda de comerciantes" still wins by its longer label.
+_PLACE_TYPE_LABELS_PT = {
+    **_HUB_LOCATION_TYPE_LABELS_PT,
+    **_WILD_LOCATION_TYPE_LABELS_PT,
+    "adventurers_guild": ("guilda", "guilda dos aventureiros"),
+}
 
 _OBSERVATION_CUE_PATTERN = re.compile(
     r"\b(?:olha|olho|observa|observo|examina|examino)\b", re.IGNORECASE
@@ -1372,7 +1380,10 @@ _MOVEMENT_PHRASE_PATTERN = re.compile(
     r"|\b(chega|chego|chegar)\b"
     r"|\b(entra|entro|entrar)\b.{0,15}\bn[ao]\b"
     r"|\b(caminha|caminho|caminhar)\b.{0,20}\b(direcao|para|ate)\b"
-    r"|\b(volta|volto|voltar|retorna|retorno|retornar)\b.{0,20}\b(direcao|para|ate)\b",
+    r"|\b(volta|volto|voltar|retorna|retorno|retornar)\b.{0,20}\b(direcao|para|ate)\b"
+    # Playtest: "Vou dar uma olhada na guilda" became EXAMINE in the square.
+    r"|\b(dar|dou|da)\s+uma\s+(olhada|passada)\s+n[ao]s?\b"
+    r"|\b(passa|passo|passar)\s+n[ao]s?\b",
     re.IGNORECASE,
 )
 
@@ -1426,24 +1437,52 @@ def _resolve_movement_target(db: Session, character: Character, raw_text: str) -
     def _mentioned(label: str) -> bool:
         return re.search(rf"\b{re.escape(_strip_accents(label).casefold())}\b", text_no_accents) is not None
 
-    matches = [
-        location
-        for location in candidates
-        if _mentioned(location.name)
-        or (location.type in _LOCATION_TYPE_LABELS_PT and _mentioned(_LOCATION_TYPE_LABELS_PT[location.type]))
-        or (
-            location.type in _PLACE_TYPE_LABELS_PT
-            and any(_mentioned(label) for label in _PLACE_TYPE_LABELS_PT[location.type])
-        )
-    ]
+    def _best_label(location: Location) -> int:
+        """Length of the longest label of this place in the text; the most
+        specific one wins ("ruínas do templo" over "ruínas")."""
+        labels = [location.name, _LOCATION_TYPE_LABELS_PT.get(location.type, ""),
+                  *_PLACE_TYPE_LABELS_PT.get(location.type, ())]
+        return max((len(label) for label in labels if label and _mentioned(label)), default=0)
+
+    scored = [(score, location) for location in candidates if (score := _best_label(location))]
+    best = max((score for score, _location in scored), default=0)
+    matches = [location for score, location in scored if score == best]
+    if not matches:
+        matches = _visible_service_matching(db, character, _best_label)
     if len(matches) != 1:
         return None
     return matches[0]
 
 
+def _visible_service_matching(db: Session, character: Character, best_label) -> list[Location]:
+    """A building right next to where the character stands is in plain view,
+    known or not. Playtest: the elder said "a guilda de aventureiros, ao
+    norte", and "Vou dar uma olhada na guilda" only looked around the square.
+    The one chosen becomes discovered, with its path, so the walk can run."""
+    connections = (
+        db.query(LocationConnection, Location)
+        .join(Location, Location.id == LocationConnection.to_location_id)
+        .filter(
+            LocationConnection.from_location_id == character.location_id,
+            LocationConnection.active.is_(True),
+            Location.type.in_(tuple(_LOCATION_TYPE_LABELS_PT)),
+        )
+        .all()
+    )
+    scored = [(score, connection, location) for connection, location in connections if (score := best_label(location))]
+    best = max((score for score, _c, _l in scored), default=0)
+    chosen = [(connection, location) for score, connection, location in scored if score == best]
+    if len(chosen) != 1:
+        return []
+    connection, location = chosen[0]
+    discovery_service.set_location_discovery(db, character.id, location.id, DiscoveryStatus.DISCOVERED)
+    discovery_service.discover_connection(db, character.id, connection.id)
+    return [location]
+
+
 def _handle_move(db: Session, campaign_id: str, character: Character, intent: Intent) -> tuple[str, int]:
     if not intent.target:
-        return "Nenhum destino claro foi indicado.", 0
+        return _where_to(db, character, ""), 0
 
     def _destination_query(name_filter):
         return (
@@ -1552,7 +1591,10 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
                 destination = hub_candidates[0]
 
     if destination is None:
-        return f"Nenhum lugar conhecido correspondente a '{intent.target}' pode ser alcançado a partir daqui.", 0
+        # "a direção que ele indicou" is a pointer, not a place name.
+        pointer = re.search(r"\b(?:que|direcao|onde|ali|la)\b", _strip_accents(intent.target).casefold())
+        lead = "" if pointer else f"Você não conhece um lugar chamado '{intent.target}' por aqui."
+        return _where_to(db, character, lead), 0
 
     # Phase 24J.3 — a repeated/redundant movement call toward the
     # location the character is already standing in (e.g. "Logan chega
@@ -2084,6 +2126,42 @@ def _handle_guild_diplomacy(
 
 
 WHO_DO_YOU_MEAN_PREFIX = "Há mais de uma pessoa aqui."
+WHERE_TO_QUESTION = "Para onde você quer ir?"
+
+
+def _where_to(db: Session, character: Character, lead: str) -> str:
+    """Asked instead of narrated. Playtest: "vou na direção que ele indicou"
+    moved nobody, yet the narration walked Logan out of the village."""
+    known = (
+        db.query(Location.name)
+        .join(CharacterLocationDiscovery, CharacterLocationDiscovery.location_id == Location.id)
+        .filter(
+            CharacterLocationDiscovery.character_id == character.id,
+            CharacterLocationDiscovery.status.in_((DiscoveryStatus.DISCOVERED.value, DiscoveryStatus.VISITED.value)),
+            Location.region_id == character.region_id,
+            Location.id != character.location_id,
+        )
+        .order_by(Location.name)
+        .all()
+    )
+    listed = f" Lugares que você conhece: {', '.join(name for (name,) in known)}." if known else ""
+    return f"{lead} {WHERE_TO_QUESTION}{listed}".strip()
+
+_QUEST_XP_REWARD = re.compile(r"\s*Recompensa de missão: (.+?)\.\s*$")
+_XP_NOTE = re.compile(r"\s*\(\+[\d.,]+ XP base[^)]*\)")
+
+
+def _without_progression_numbers(mechanical_summary: str) -> str:
+    """What the narrator may know of progression: that a contract was done,
+    never its XP. Playtest: "+10 XP" became "— Dez de experiência pelo
+    trabalho" in the guildmaster's mouth. The full summary (with numbers)
+    stays in the event log and the action result."""
+    text = _XP_NOTE.sub("", mechanical_summary)
+    reward = _QUEST_XP_REWARD.search(text)
+    if reward:
+        names = "; ".join(part.rsplit(":", 1)[0].strip() for part in reward.group(1).split(";"))
+        text = text[: reward.start()] + f" Missão concluída: {names}."
+    return text
 
 
 

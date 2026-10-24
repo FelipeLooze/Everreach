@@ -177,7 +177,7 @@ def test_native_move_intent_with_a_generic_label_target_still_resolves(db_sessio
     summary, _ = engine._apply_intent(db_session, campaign.id, character, return_intent, state)
 
     assert character.location_id == village.id
-    assert "Nenhum lugar conhecido" not in summary
+    assert "Para onde você quer ir?" not in summary
 
 
 def test_native_move_intent_also_gets_the_observation_side_effect(db_session):
@@ -250,7 +250,7 @@ def test_exit_with_no_named_destination_falls_back_to_the_settlement_hub(db_sess
     summary, _ = engine._apply_intent(db_session, campaign.id, character, exit_intent, state)
 
     assert character.location_id == village.id
-    assert "Nenhum lugar conhecido" not in summary
+    assert "Para onde você quer ir?" not in summary
 
 
 def test_movement_backstop_does_not_fire_for_unrelated_freeform_text(db_session):

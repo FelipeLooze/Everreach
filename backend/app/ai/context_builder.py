@@ -392,9 +392,11 @@ def _arrival_history_lines(db: Session, state) -> list[str]:
     since = "no other arrival since" if later == 0 else f"{later} smaller arrival(s) since"
     return [
         f"Transported people: the First Arrival — the first time anyone was ever transported "
-        f"to this world — happened {when}; {since}. Before it, nobody here had ever seen a "
-        "transported person: never say they arrive often or have been arriving for a while "
-        "unless this line says so.",
+        f"to this world — happened {when}; {since}. It was massive: a whole crowd of people "
+        "appeared at once, scattered across the world; only a few of them are in this place, "
+        "but locals know many came together, so never say only a handful arrived. Before it, "
+        "nobody here had ever seen a transported person: never say they arrive often or have "
+        "been arriving for a while unless this line says so.",
     ]
 
 
@@ -470,7 +472,13 @@ def _organization_leader_title(db: Session, organization_id: str) -> str | None:
         .order_by(OrganizationRole.rank_order)
         .first()
     )
-    return row[1].title if row else None
+    if row is None:
+        return None
+    # A native leader's name is common knowledge among locals. Playtest: with
+    # the title alone, the elder named the guildmaster "Lena Corrin" in one
+    # run and "Rowan Quill" in the next.
+    leader = db.get(NPC, row[0].member_id) if row[0].member_type == CombatActorType.NPC else None
+    return f"{row[1].title}, {leader.name}" if leader else row[1].title
 
 
 def _known_organizations_lines(db: Session, character) -> list[str]:

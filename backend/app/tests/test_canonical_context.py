@@ -313,7 +313,9 @@ def test_context_limits_scene_knowledge_instead_of_sending_the_database(db_sessi
 
     assert player_section.count("fonte:") == MAX_CONTEXT_FACTS_PER_KNOWER
     assert "[CONFIRMED; fonte:" in player_section
-    assert len(context) < 8_000
+    # 8k before the starting village was populated (2026-10-24): a busy square
+    # now lists ~8 locals with full looks; still nowhere near a database dump.
+    assert len(context) < 10_000
 
 
 def test_remote_known_fact_is_retrieved_only_when_the_input_makes_it_relevant(db_session):

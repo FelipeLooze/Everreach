@@ -2,6 +2,7 @@ from sqlalchemy import false, not_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.npc import NPC
+from app.game.npcs import residents
 from app.game.time.clock import get_world_time
 from app.simulation.npc_routines import activity_for_role
 from app.simulation.results import NPCSimulationResult
@@ -36,10 +37,20 @@ def tick(
             NPC.id.in_(active_scope.relevant_npc_ids),
         )
 
+    changes = 0
+    # Residents follow their own hour-by-hour routine, wherever the player is.
+    for npc in (
+        db.query(NPC)
+        .filter(NPC.campaign_id == campaign_id, NPC.alive.is_(True), NPC.routine_json != "[]")
+        .all()
+    ):
+        changes += residents.apply_routine(db, npc, world_time.hour)
+
     base_filters = (
         NPC.campaign_id == campaign_id,
         NPC.alive.is_(True),
         NPC.incapacitated.is_(False),
+        NPC.routine_json == "[]",
     )
 
     if active_scope.unrestricted:
@@ -56,8 +67,6 @@ def tick(
             .order_by(NPC.id)
             .all()
         )
-
-    changes = 0
 
     for npc in npcs:
         expected_activity = activity_for_role(

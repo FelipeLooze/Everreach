@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.game.npcs import profile as npc_profile
 from app.game.visual.npc import resolve_npc_appearance, set_npc_stable_identity
+from app.game.world.content_pools import NPC_HAIR_COLOR_POOL
 from app.game.world.generator import gender_for_name
 
 # English value -> (masculine, feminine) Portuguese.
@@ -77,6 +78,19 @@ _OUTFITS = {
     "ancião": ("a worn wool mantle", "um manto de lã gasto"),
     "anciã": ("a worn wool mantle", "um manto de lã gasto"),
     "ferreir": ("a scorched leather apron", "um avental de couro chamuscado"),
+    "aprendiz de ferreir": ("a scorched leather apron", "um avental de couro chamuscado"),
+    "cozinheir": ("a flour-dusted apron", "um avental sujo de farinha"),
+    "lojista": ("a neat apron with pockets", "um avental limpo cheio de bolsos"),
+    "caçador": ("a leather jerkin and a quiver", "um gibão de couro e uma aljava"),
+    "lenhador": ("a patched work shirt and a hatchet at the belt", "uma camisa remendada e uma machadinha no cinto"),
+    "agricultor": ("a straw hat and muddy boots", "um chapéu de palha e botas enlameadas"),
+    "herbalista": ("a satchel of dried herbs", "uma bolsa de ervas secas a tiracolo"),
+    "velh": ("a faded shawl", "um xale desbotado"),
+    "beberr": ("a stained, rumpled tunic", "uma túnica manchada e amarrotada"),
+    "rapaz": ("a tunic too big for them", "uma túnica grande demais"),
+    "moça": ("a tunic too big for them", "uma túnica grande demais"),
+    "carregador": ("rolled-up sleeves and a rope over the shoulder", "mangas arregaçadas e uma corda no ombro"),
+    "escriv": ("ink-stained sleeves", "mangas manchadas de tinta"),
     "estalajadeir": ("a stained cloth apron", "um avental de pano manchado"),
     "mestre da guilda de aventureiros": ("a sturdy travel coat", "um casaco de viagem resistente"),
     "mestre da guilda de comerciantes": ("a fine dyed doublet", "um gibão tingido de boa qualidade"),
@@ -111,10 +125,13 @@ def ensure(db: Session, npc) -> dict:
         "mark": rng.choice(list(_MARKS)),
         "outfit": _outfit(npc.role)[0],
     }
-    if gender_for_name(npc.name) == "M":
-        extra["facial_hair"] = rng.choice(list(_BEARDS))
+    if gender_for_name(npc.name) == "M" and npc.age >= 18:
+        extra["facial_hair"] = rng.choice(list(_BEARDS) if npc.age >= 23 else ["clean-shaven", "stubble"])
     if elderly and traits.get("hair_color") not in _OLD_HAIR:
         extra["hair_color"] = rng.choice(_OLD_HAIR)
+    elif npc.age < 40 and traits.get("hair_color") in _OLD_HAIR:
+        # Playtest: a teenage apprentice came out with grey hair and beard.
+        extra["hair_color"] = rng.choice([hair for hair in NPC_HAIR_COLOR_POOL if hair not in _OLD_HAIR])
     set_npc_stable_identity(db, npc.campaign_id, npc.id, extra)
     return {**traits, **extra}
 

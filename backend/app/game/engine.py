@@ -1198,7 +1198,12 @@ def _apply_intent(
             action_key=action_key,
         )
     if intent.type == ActionIntentType.WAIT:
-        return f"{character.name} espera, deixando o tempo passar.", 15
+        now = clock.get_world_time(db, campaign_id)
+        minutes = _wait_minutes(intent.raw_text or "", now.hour, now.minute)
+        if minutes <= 15:
+            return f"{character.name} espera, deixando o tempo passar.", 15
+        until = (now.hour * 60 + now.minute + minutes) // 60 % 24
+        return f"{character.name} espera, deixando o tempo passar, até por volta das {until}h.", minutes
     if intent.type == ActionIntentType.SKILL_CHECK:
         return _handle_skill_check(db, campaign_id, character, intent)
     if intent.type == ActionIntentType.USE:
@@ -2123,6 +2128,40 @@ def _handle_guild_diplomacy(
             )
         change = guilds_service.propose_alliance(db, campaign_id, character, other, envoy)
     return change.summary, 5 if change.changed else 1
+
+
+_WAIT_UNTIL = (
+    # (pattern, hour) — first match wins, so the specific ones come first.
+    (r"meia[- ]noite", 0),
+    (r"amanhecer|nascer do sol|alvorada|de manha cedo|amanha de manha", 6),
+    (r"meio[- ]dia|almoco", 12),
+    (r"fim da tarde|final da tarde|entardecer|por do sol|anoitecer|cair da noite", 18),
+    (r"\bnoite\b|jantar|ceia", 19),
+    (r"\btarde\b", 14),
+    (r"\bmanha\b", 8),
+)
+_WAIT_NUMBERS = {"uma": 1, "um": 1, "duas": 2, "dois": 2, "tres": 3, "quatro": 4, "cinco": 5,
+                 "seis": 6, "sete": 7, "oito": 8, "nove": 9, "dez": 10, "onze": 11, "doze": 12}
+_MAX_WAIT_MINUTES = 16 * 60
+
+
+def _wait_minutes(text: str, hour: int, minute: int) -> int:
+    """How long the player asked to wait. Playtest: "Espero até o fim da
+    tarde" always passed 15 minutes, while the narration let the whole
+    afternoon go by and nobody who comes to the inn at night showed up."""
+    plain = _strip_accents(text).casefold()
+    if re.search(r"meia hora", plain):
+        return 30
+    amount = re.search(r"\b(\d{1,2}|" + "|".join(_WAIT_NUMBERS) + r")\s+(hora|horas|minuto|minutos)\b", plain)
+    if amount:
+        value = int(amount.group(1)) if amount.group(1).isdigit() else _WAIT_NUMBERS[amount.group(1)]
+        return min(value * (60 if amount.group(2).startswith("hora") else 1), _MAX_WAIT_MINUTES)
+    if re.search(r"\b(?:ate|por)\b", plain):
+        for pattern, target in _WAIT_UNTIL:
+            if re.search(pattern, plain):
+                minutes = (target * 60 - (hour * 60 + minute)) % (24 * 60)
+                return min(minutes or 24 * 60, _MAX_WAIT_MINUTES)
+    return 15
 
 
 WHO_DO_YOU_MEAN_PREFIX = "Há mais de uma pessoa aqui."

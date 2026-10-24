@@ -649,7 +649,20 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   transportados (acolhedor, curioso, prático, desconfiado ou vê como sinal — nunca hostil: a
   desconfiança muda o tom, não recusa venda, emprego ou resposta), um desejo, uma preocupação e um
   segredo que só aparece com confiança ≥ 20. A aparência usa a idade (rapaz/moça, idoso/idosa).
-- Próximas partes: cerca de 15 moradores com rotinas, relações entre eles, missões locais.
+- **Aparência:** além de cabelo e olhos, altura, porte, penteado, barba, pele, um traço marcante e
+  a roupa do ofício (`app/game/npcs/looks.py`), combinando com idade, sexo e ofício; o jogador pode
+  apontar alguém pela barba, pelo penteado ou pelo traço ("o homem da cicatriz").
+- **Parte 2 — Moradores:** 15 moradores além dos cinco que comandam a vila
+  (`app/game/npcs/residents.py`): aprendiz de ferreiro, cozinheiro(a), lojista, dois guardas em
+  turnos, caçador(a), lenhador, casal de agricultores, herbalista, a velha da vila, o beberrão, um
+  adolescente curioso, carregador e escrivão(ã) da guilda. Cada um tem rotina por hora (casa,
+  trabalho, praça, estalagem no almoço e à noite), então quem está em cada lugar muda com o
+  relógio. Dois moradores da vila nunca têm o mesmo primeiro nome (listas de nomes ampliadas).
+- **Esperar** passa o tempo pedido ("até o fim da tarde", "duas horas", "meia hora"; "um pouco"
+  continua 15 minutos).
+- **Nomes:** o narrador só recebe o nome de um NPC depois que o personagem o conheceu; antes,
+  ele é um estranho descrito pela aparência e pelo ofício.
+- Próximas partes: relações entre os moradores, missões locais.
 
 ## Fora do MVP
 

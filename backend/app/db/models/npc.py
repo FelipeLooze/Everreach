@@ -42,6 +42,12 @@ class NPC(Base):
     # NPC created without one.
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     profile_json: Mapped[str] = mapped_column(String, default="{}", server_default="{}", nullable=False)
+    # Hour-by-hour routine of a resident (app.game.npcs.residents); empty for
+    # NPCs that follow activity_for_role. visiting_location_id is the
+    # building they are in right now when it is neither their base nor
+    # their workplace (the inn at lunch).
+    routine_json: Mapped[str] = mapped_column(String, default="[]", server_default="[]", nullable=False)
+    visiting_location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
 
     activity: Mapped[str] = mapped_column(
         String,

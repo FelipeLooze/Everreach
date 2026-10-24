@@ -238,6 +238,14 @@ def generate_npc_name(
     before this parameter existed.
     """
     given_pool = _given_name_pool_for_gender(gender)
+    # Two people of one village should not share a first name.
+    used_given = {used.split(" ", 1)[0] for used in used_names}
+    fresh = [given for given in given_pool if given not in used_given]
+    if fresh:
+        name = f"{rng.choice(fresh)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
+        if name not in used_names:
+            used_names.add(name)
+            return name
     for _ in range(max_attempts):
         name = f"{rng.choice(given_pool)} {rng.choice(NPC_FAMILY_NAME_POOL)}"
         if name not in used_names:

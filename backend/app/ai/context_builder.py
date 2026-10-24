@@ -353,6 +353,13 @@ def _quest_objective_lines(db: Session, character_id: str, quest_id: str) -> lis
     ]
 
 
+def _npc_label(db: Session, character, npc) -> str:
+    """The name only once the character has met this NPC, as for the
+    transported. Playtest: walking into the inn, the narrator called the
+    innkeeper and the cook "Dorian" and "Jory" before anyone said a name."""
+    return "stranger" if _first_meeting_note(db, character, npc) else _clip(npc.name, 100)
+
+
 def _first_meeting_note(db: Session, character, npc) -> str:
     """Playtest: the innkeeper greeted a first-time visitor with "Volta
     rápido", as if he were a regular. Say so when they have never met."""
@@ -1928,13 +1935,19 @@ def build_narrative_context(
         ),
     ]
 
-    visible_lines = ["VISIBLE NPCS"]
+    visible_lines = [
+        "VISIBLE NPCS",
+        # Said once here, not on every line: with the village populated the
+        # repeated notes alone pushed the context past its budget.
+        "A \"stranger\" has NEVER met the character: never name them (describe them by "
+        "appearance and trade), and they treat the character as a stranger, never as someone "
+        "known or returning.",
+    ]
     visible_lines.extend(
         [
             (
-                f"- {_clip(npc.name, 100)} "
-                f"({_clip(npc.role, 120)}{_gender_note(npc.name)}; activity={npc.activity}"
-                f"{_first_meeting_note(db, state.character, npc)}; "
+                f"- {_npc_label(db, state.character, npc)} "
+                f"({_clip(npc.role, 120)}{_gender_note(npc.name)}; activity={npc.activity}; "
                 f"appearance={npc_appearance_pt(db, state.character.campaign_id, npc)})"
             )
             for npc in state.nearby_npcs[:MAX_VISIBLE_ENTITIES]
@@ -1943,14 +1956,17 @@ def build_narrative_context(
     visible_lines.append(
         "Describe each person only with their listed appearance (hair, eyes, age) — the "
         "player identifies people by what you describe, so never invent a beard, hair or eye "
-        "colour, scar or build that is not listed."
+        "colour, scar or build that is not listed. Give the full description only the first "
+        "time someone appears; afterwards one or two traits are enough (\"o lenhador da "
+        "machadinha\", \"a velha do xale\")."
     )
     visible_lines.append(
         "When a person has a gender listed, make every Portuguese word about them agree "
         "with it (ela/ele, a ferreira/o ferreiro, cansada/cansado)."
     )
     visible_lines.append(
-        "Only people listed in this section may be singled out in narration. "
+        "Only people listed in this section may be singled out in narration, and they are "
+        "everyone here: never add customers, passers-by or other locals who are not listed. "
         "Before a name is learned, use the registered role as the stable player-facing reference; "
         "never invent a physical description or a distinct local bystander."
     )

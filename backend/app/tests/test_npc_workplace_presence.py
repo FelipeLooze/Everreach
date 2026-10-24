@@ -173,7 +173,7 @@ def test_narrator_context_sees_the_innkeeper_when_character_enters_the_inn(db_se
     assert innkeeper.id in {n.id for n in state.nearby_npcs}
 
     context = build_context(db_session, state)
-    assert innkeeper.name in context
+    assert "- stranger (estalajadeiro;" in context  # never met: present, but not named
 
 
 # --- integration: the exact reported reproduction scenario ---

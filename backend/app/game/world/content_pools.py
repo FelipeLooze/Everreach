@@ -326,8 +326,19 @@ LEADER_TITLE_GENDER_BY_ORG_TYPE = {
 # a name read as feminine ("Astra"), and the narrator, seeing only the
 # masculine role noun, described the NPC as "um homem". See
 # generate_npc_name's `gender` parameter.
-NPC_GIVEN_NAME_POOL_MASC = ["Thane", "Rowan", "Colm", "Dorian", "Garrick", "Aldric", "Perrin"]
-NPC_GIVEN_NAME_POOL_FEM = ["Ilya", "Sable", "Wren", "Astra", "Lena", "Nessa"]
+# Widened 2026-10-24 for the populated starting village (~20 people): with
+# 7 + 6 names, three villagers were called "Aldric".
+NPC_GIVEN_NAME_POOL_MASC = [
+    "Thane", "Rowan", "Colm", "Dorian", "Garrick", "Aldric", "Perrin", "Edric", "Hollis",
+    "Jory", "Kael", "Lucan", "Marek", "Osric", "Piers", "Tobin", "Willem", "Corwin", "Fenn",
+    "Hale", "Ivor", "Jasper", "Merrick", "Oswin", "Rafe", "Silas", "Tarn", "Ulric", "Gideon",
+    "Ansel",
+]
+NPC_GIVEN_NAME_POOL_FEM = [
+    "Ilya", "Sable", "Wren", "Astra", "Lena", "Nessa", "Brielle", "Cora", "Delia", "Elsbeth",
+    "Fiora", "Greta", "Hesper", "Isolde", "Jessa", "Kira", "Liane", "Maren", "Nell", "Odile",
+    "Petra", "Rhosyn", "Senna", "Tamsin", "Una", "Vela", "Yara", "Mira", "Edda", "Talia",
+]
 NPC_GIVEN_NAME_POOL = NPC_GIVEN_NAME_POOL_MASC + NPC_GIVEN_NAME_POOL_FEM
 # The three fixed transported people of the starting village (Phase 7),
 # kept out of the pools above; gender_for_name needs them too.

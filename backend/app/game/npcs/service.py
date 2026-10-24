@@ -60,6 +60,7 @@ def _effective_npc_location_expression():
             & NPC.workplace_location_id.is_not(None),
             NPC.workplace_location_id,
         ),
+        (NPC.visiting_location_id.is_not(None), NPC.visiting_location_id),
         else_=NPC.location_id,
     )
 
@@ -68,7 +69,7 @@ def effective_npc_location_id(npc: NPC) -> str:
     """Authoritative Python-side counterpart of the SQL projection above."""
     if npc.activity == NPCActivity.WORKING.value and npc.workplace_location_id:
         return npc.workplace_location_id
-    return npc.location_id
+    return npc.visiting_location_id or npc.location_id
 
 
 def npcs_at_location(

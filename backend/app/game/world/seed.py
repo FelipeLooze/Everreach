@@ -87,6 +87,8 @@ from app.game.world.generator import (
 )
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
+from app.game.npcs import residents
+from app.game.time.clock import get_world_time
 
 REGION_DESCRIPTION = (
     "Uma vasta região de escala quase continental, cujos limites mais distantes ninguém "
@@ -526,6 +528,13 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         workplace = _service_location_by_type.get(service_type)
         if workplace is not None:
             npc.workplace_location_id = workplace.id
+
+    # The people who live here, each with a routine (starting village, part 2).
+    residents.populate(
+        db, campaign_id, region.id, village,
+        {**_service_location_by_type, "forest": forest_edge, "river": creek},
+        starting_npc_rng, used_npc_names, get_world_time(db, campaign_id).hour,
+    )
 
     # Phase 15J (organizations), 15K (economy) and most of 15L (threats)
     # for every non-anchor subregion now happen inside

@@ -100,11 +100,14 @@ def test_an_ambiguous_reference_is_asked_about_not_narrated(db_session):
 
 def test_a_hair_and_sex_description_resolves_without_the_parser(db_session):
     from app.ai.people_present import match_by_appearance
+    from app.game.world.generator import gender_for_name
 
     campaign, character = _world(db_session)
     state = build_game_state(db_session, campaign.id, character.id)
     elder = next(npc for npc in state.nearby_npcs if npc.role == "ancião da vila")
 
     assert match_by_appearance(db_session, state, "Falo com o senhor de cabelo branco") == ("npc", elder)
-    assert match_by_appearance(db_session, state, "Falo com a senhora de cabelo branco") is None
+    # The village's old woman may be white-haired too; never the elder.
+    woman = match_by_appearance(db_session, state, "Falo com a senhora de cabelo branco")
+    assert woman is None or (woman[1] is not elder and gender_for_name(woman[1].name) == "F")
     assert match_by_appearance(db_session, state, "Olho ao redor") is None

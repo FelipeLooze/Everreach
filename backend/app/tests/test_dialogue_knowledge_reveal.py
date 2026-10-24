@@ -77,7 +77,7 @@ def test_npc_revealing_the_village_name_in_dialogue_teaches_the_player(db_sessio
 
     state_after = build_game_state(db_session, campaign.id, character.id)
     response_after = to_game_state_response(db_session, state_after)
-    assert response_after.location.name == village.name
+    assert response_after.location.name == f"Praça central de {village.name}"
     assert response_after.region.name == region.name
 
 

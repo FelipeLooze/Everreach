@@ -4,7 +4,7 @@ from app.core.enums import KnowerType
 from app.db.models.location import CharacterLocationDiscovery
 from app.game.game_state import GameStateSnapshot
 from app.game.knowledge.service import explicitly_knows_name
-from app.game.discovery.service import location_display_name
+from app.game.discovery.service import location_display_name, place_label
 from app.schemas.character import CharacterResponse
 from app.schemas.game_state import (
     ActiveQuestSummary,
@@ -82,7 +82,7 @@ def to_game_state_response(
         location=(
             LocationSummary(
                 id=state.location.id,
-                name=location_display,
+                name=place_label(db, state.location, location_display),
                 type=state.location.type,
                 description=None,
                 discovery_status=(

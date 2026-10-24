@@ -30,7 +30,7 @@ def test_a_visited_location_is_returned_with_its_name_and_exact_position(db_sess
     view = get_map_view(db_session, campaign.id, character.id)
 
     location = next(item for item in view.locations if item.id == village.id)
-    assert location.name == village.name
+    assert location.name == f"Praça central de {village.name}"
     assert location.x == village.x
     assert location.y == village.y
     assert location.precision == GeographicPrecision.PRECISE.value

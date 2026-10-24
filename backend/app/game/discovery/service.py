@@ -199,3 +199,16 @@ def location_display_name(
     if location.identity_hidden:
         return location.unrevealed_name
     return location.name
+
+
+_SETTLEMENT_TYPES = {"village", "hamlet", "isolated_settlement", "town", "city", "major_city"}
+
+
+def place_label(db: Session, location: Location, name: str | None) -> str | None:
+    """What the player sees for a place. A settlement with buildings inside
+    is, standing in it, its central square: playtest showed the square with
+    the notice board labelled just "Ulridge", like the whole town."""
+    if name is None or location.type not in _SETTLEMENT_TYPES:
+        return name
+    has_buildings = db.query(Location.id).filter(Location.parent_location_id == location.id).first() is not None
+    return f"Praça central de {name}" if has_buildings else name

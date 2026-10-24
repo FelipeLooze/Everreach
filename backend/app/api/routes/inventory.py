@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.core.enums import CombatActorType
 from app.db.models.character import Character
 from app.db.models.defense import ItemArmorProfile
 from app.db.models.equipment import ItemEquipmentProfile
@@ -11,6 +12,8 @@ from app.db.models.item import Item, ItemInstance
 from app.db.models.material import MaterialDefinition
 from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
+from app.game.economy.currency import to_denominations
+from app.game.economy.wallet import total_carried_by_owner
 from app.game.inventory.service import list_inventory
 from app.game.items.armor import get_armor_coverage, get_armor_physical_protections
 from app.game.items.encumbrance import get_character_encumbrance
@@ -160,8 +163,12 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
             )
         )
     encumbrance = get_character_encumbrance(db, character_id)
+    coins = to_denominations(total_carried_by_owner(db, CombatActorType.CHARACTER, character_id))
     return InventoryResponse(
         items=items,
+        money_gold=coins.gold,
+        money_silver=coins.silver,
+        money_bronze=coins.bronze,
         total_weight=encumbrance.total_weight,
         carrying_capacity=encumbrance.carrying_capacity,
         load_ratio=encumbrance.load_ratio,

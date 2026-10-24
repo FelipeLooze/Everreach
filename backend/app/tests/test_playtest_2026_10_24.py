@@ -115,3 +115,17 @@ def test_the_narrator_knows_the_guildmasters_name(db_session):
     ).one()
 
     assert _organization_leader_title(db_session, guild.id).endswith(f", {master.name}")
+
+
+def test_the_arrival_square_is_shown_as_the_central_square(db_session, client):
+    campaign = client.post("/api/campaigns", json={"name": "Praça"}).json()
+    character = client.post(f"/api/campaigns/{campaign['id']}/characters", json={"name": "Logan"}).json()
+    client.post(f"/api/campaigns/{campaign['id']}/start", params={"character_id": character["id"]})
+
+    state = client.get(f"/api/campaigns/{campaign['id']}/state", params={"character_id": character["id"]}).json()
+    village = db_session.query(Location).filter(Location.id == state["location"]["id"]).one()
+    assert state["location"]["name"] == f"Praça central de {village.name}"
+
+    map_view = client.get(f"/api/campaigns/{campaign['id']}/map-view", params={"character_id": character["id"]}).json()
+    names = [location["name"] for location in map_view["locations"]]
+    assert f"Praça central de {village.name}" in names and village.name not in names

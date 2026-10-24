@@ -90,3 +90,7 @@ class InventoryResponse(BaseModel):
     carrying_capacity: float
     load_ratio: float
     encumbrance: EncumbranceTier
+    # The carried money, in coins: it lives in the inventory, not a tab.
+    money_gold: int = 0
+    money_silver: int = 0
+    money_bronze: int = 0

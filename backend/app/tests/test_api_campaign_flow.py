@@ -257,7 +257,7 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
         params={"character_id": character_id},
     ).json()
 
-    assert state["location"]["name"] == village.name
+    assert state["location"]["name"] == f"Praça central de {village.name}"
     assert state["region"]["name"] == region.name
 
     map_data = client.get(
@@ -269,7 +269,7 @@ def test_player_facing_state_and_map_reveal_names_after_learning_fact(
         region.name
     ]
 
-    assert village.name in [
+    assert f"Praça central de {village.name}" in [
         location["name"]
         for location in map_data["locations"]
     ]

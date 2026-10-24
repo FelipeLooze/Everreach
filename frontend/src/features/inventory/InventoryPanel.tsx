@@ -242,6 +242,13 @@ export function InventoryPanel({ campaignId, characterId }: { campaignId: string
       </p>
 
       <section className="fantasy-section">
+        <h4 className="fantasy-section-title">Dinheiro</h4>
+        <p className="inventory-money">
+          {inventory.money_gold} Ouro · {inventory.money_silver} Prata · {inventory.money_bronze} Bronze
+        </p>
+      </section>
+
+      <section className="fantasy-section">
         <h4 className="fantasy-section-title">Equipado</h4>
         {equipped.length === 0 ? (
           <p className="panel-empty">Nada equipado.</p>

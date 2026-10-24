@@ -376,6 +376,9 @@ export interface Inventory {
   carrying_capacity: number;
   load_ratio: number;
   encumbrance: EncumbranceTier;
+  money_gold: number;
+  money_silver: number;
+  money_bronze: number;
 }
 
 export interface QuestObjective {
@@ -391,67 +394,6 @@ export interface Quest {
   status: string;
   objectives: QuestObjective[];
   schedule: string | null;
-}
-
-export interface EconomyListing {
-  listing_id: string;
-  name: string;
-  type: string;
-  quantity: number;
-  unit_price_bronze: number;
-}
-
-export interface EconomySellableItem {
-  item_instance_id: string;
-  name: string;
-  quantity: number;
-  price_bronze: number;
-}
-
-export interface EconomyShop {
-  shop_id: string;
-  name: string;
-  operator_available: boolean;
-  listings: EconomyListing[];
-  sellable_items: EconomySellableItem[];
-}
-
-export interface EconomyJob {
-  job_id: string;
-  title: string;
-  description: string;
-  employer_name: string;
-  wage_bronze: number;
-  payment_frequency: string;
-  work_minutes: number;
-  schedule: string;
-  application_status: string | null;
-  employer_available: boolean;
-}
-
-export interface EconomyRecipeItem {
-  name: string;
-  quantity: number;
-}
-
-export interface EconomyRecipe {
-  key: string;
-  name: string;
-  description: string;
-  inputs: EconomyRecipeItem[];
-  outputs: EconomyRecipeItem[];
-  minutes: number;
-  required_tool: string | null;
-  can_produce: boolean;
-  missing: string[];
-}
-
-export interface EconomyState {
-  balance_bronze: number;
-  location_name: string | null;
-  shops: EconomyShop[];
-  jobs: EconomyJob[];
-  recipes: EconomyRecipe[];
 }
 
 export interface OrganizationSummary {

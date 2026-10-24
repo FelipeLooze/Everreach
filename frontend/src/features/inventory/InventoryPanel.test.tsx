@@ -49,6 +49,9 @@ describe("InventoryPanel", () => {
       carrying_capacity: 25,
       load_ratio: 0.18,
       encumbrance: "NORMAL",
+      money_gold: 0,
+      money_silver: 1,
+      money_bronze: 24,
     });
   });
 
@@ -57,6 +60,7 @@ describe("InventoryPanel", () => {
 
     expect(await screen.findByText(/Peso: 4,5 \/ 25,0/)).toBeInTheDocument();
     expect(screen.getByText(/Carga normal/)).toBeInTheDocument();
+    expect(screen.getByText("0 Ouro · 1 Prata · 24 Bronze")).toBeInTheDocument();
     const card = (await screen.findByText("Rações")).closest(".inventory-item-card");
     expect(card).toHaveTextContent("4,5 de peso");
   });

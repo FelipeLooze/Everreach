@@ -29,7 +29,7 @@ from app.core.enums import DiscoveryStatus, GeographicKnowledgeAspect, Geographi
 from app.db.models.character import Character
 from app.db.models.location import Location
 from app.db.models.map_annotation import MapAnnotation
-from app.game.discovery.service import get_location_discovery, location_display_name
+from app.game.discovery.service import get_location_discovery, location_display_name, place_label
 from app.game.knowledge.geography import geographic_fact_key
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.map.service import known_map
@@ -136,7 +136,7 @@ def _build_map_view_location(
         subregion_id=location.subregion_id,
         parent_location_id=location.parent_location_id,
         type=location.type,
-        name=display_name,
+        name=place_label(db, location, display_name),
         precision=precision.value,
         x=location.x if exact_position_known else None,
         y=location.y if exact_position_known else None,

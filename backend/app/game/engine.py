@@ -2133,7 +2133,7 @@ def _where_to(db: Session, character: Character, lead: str) -> str:
     """Asked instead of narrated. Playtest: "vou na direção que ele indicou"
     moved nobody, yet the narration walked Logan out of the village."""
     known = (
-        db.query(Location.name)
+        db.query(Location)
         .join(CharacterLocationDiscovery, CharacterLocationDiscovery.location_id == Location.id)
         .filter(
             CharacterLocationDiscovery.character_id == character.id,
@@ -2144,7 +2144,8 @@ def _where_to(db: Session, character: Character, lead: str) -> str:
         .order_by(Location.name)
         .all()
     )
-    listed = f" Lugares que você conhece: {', '.join(name for (name,) in known)}." if known else ""
+    names = [discovery_service.place_label(db, location, location.name) for location in known]
+    listed = f" Lugares que você conhece: {', '.join(names)}." if names else ""
     return f"{lead} {WHERE_TO_QUESTION}{listed}".strip()
 
 _QUEST_XP_REWARD = re.compile(r"\s*Recompensa de missão: (.+?)\.\s*$")

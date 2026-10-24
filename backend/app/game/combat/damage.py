@@ -170,7 +170,13 @@ def apply_attack_damage(
     )
     if reduced_to_zero:
         cause = f"combat_action:{action.id}"
-        if lethal:
+        # The character only ever faints (app.game.combat.fainting); an
+        # animal brought to zero is dead — there is no stabilizing a wolf.
+        creature = (
+            target.actor_type == CombatActorType.NPC.value
+            and getattr(db.get(NPC, target.actor_id), "creature_species", None) is not None
+        )
+        if (lethal or creature) and target.actor_type != CombatActorType.CHARACTER.value:
             kill_devastated_actor(db, encounter, target, cause=cause)
         else:
             incapacitate_actor(db, encounter, target, action)

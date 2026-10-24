@@ -47,6 +47,9 @@ class NPC(Base):
     # building they are in right now when it is neither their base nor
     # their workplace (the inn at lunch).
     routine_json: Mapped[str] = mapped_column(String, default="[]", server_default="[]", nullable=False)
+    # A creature (app.game.creatures.species key: "wolf", "boar"…), never a
+    # person: no talk, routine, profile or knowledge. None for people.
+    creature_species: Mapped[str | None] = mapped_column(String, nullable=True)
     visiting_location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
 
     activity: Mapped[str] = mapped_column(

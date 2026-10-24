@@ -33,7 +33,9 @@ def test_death_is_permanent_status(db_session):
     assert character.status == "DEAD"
 
 
-def test_incapacitated_character_cannot_send_world_actions(db_session, fake_llm):
+def test_a_fallen_character_wakes_up_instead_of_being_stuck(db_session, fake_llm):
+    """Before fainting existed (2026-10-24) a fallen character could never
+    act again; now the next action wakes them up back in the village."""
     campaign = create_campaign(db_session, "Critical Campaign")
     region, village = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, village.id)
@@ -41,7 +43,7 @@ def test_incapacitated_character_cannot_send_world_actions(db_session, fake_llm)
     character.hp_current = 0
     db_session.flush()
 
-    with pytest.raises(engine.CharacterIncapacitatedError):
-        engine.resolve_action(db_session, fake_llm, campaign.id, character.id, "Eu me levanto")
+    result = engine.resolve_action(db_session, fake_llm, campaign.id, character.id, "Eu me levanto")
 
-    assert fake_llm.calls == []
+    assert character.status == CharacterStatus.ALIVE.value and character.hp_current > 0
+    assert "acorda" in result.mechanical_summary

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 
 from sqlalchemy.orm import Session
@@ -14,7 +14,7 @@ from app.db.models.campaign import WorldTime
 from app.db.models.event import WorldEvent
 from app.services.story_log import get_effective_narrative_for_event
 from app.core.enums import EventType
-from app.game.npcs.service import npcs_at_location
+from app.game.npcs.service import creatures_at_location, npcs_at_location
 from app.game.players.service import (
     simulated_players_available_for_encounter_at_location,
 )
@@ -45,6 +45,8 @@ class GameStateSnapshot:
     active_encounter: CombatEncounterSnapshot | None
     opening_narrative: str | None
     opening_narrator_unavailable: bool
+    # Animals out at this place right now (app.game.creatures).
+    nearby_creatures: list[NPC] = field(default_factory=list)
 
 
 def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameStateSnapshot:
@@ -105,4 +107,5 @@ def build_game_state(db: Session, campaign_id: str, character_id: str) -> GameSt
             if effective_opening_narrative != opening_payload.get("narrative")
             else bool(opening_payload.get("narrator_unavailable", False))
         ),
+        nearby_creatures=creatures_at_location(db, character.location_id) if character.location_id else [],
     )

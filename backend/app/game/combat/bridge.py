@@ -9,6 +9,7 @@ intent; every mechanical result comes from the existing Combat Engine
 """
 
 import random
+import unicodedata
 
 from sqlalchemy.orm import Session
 
@@ -458,7 +459,7 @@ def _find_nearby_target(
     state,
     target_name: str | None,
 ) -> tuple[CombatActorType | None, "NPC | SimulatedPlayer | None"]:
-    npc_candidates = list(state.nearby_npcs)
+    npc_candidates = list(state.nearby_npcs) + list(getattr(state, "nearby_creatures", []))
     sim_candidates = list(state.nearby_simulated_players)
     if target_name:
         needle = target_name.casefold()
@@ -468,6 +469,10 @@ def _find_nearby_target(
         (CombatActorType.SIMULATED_PLAYER, p) for p in sim_candidates
     ]
     if len(matches) == 1:
+        return matches[0]
+    # "Ataco o lobo" with two wolves around: any of them will do.
+    species = {getattr(actor, "creature_species", None) for _kind, actor in matches}
+    if target_name and matches and len(species) == 1 and None not in species:
         return matches[0]
     return None, None
 
@@ -631,9 +636,11 @@ def _resolve_player_attack(
 ) -> str:
     action_type = _parse_action_type(intent.attack_type)
     body_area = _parse_body_area(intent.body_area)
-    weapon_instance, weapon_profile = _resolve_named_weapon(db, character, intent.weapon)
+    # Fists, kicks and bare hands are no weapon to look for.
+    weapon_name = None if _is_unarmed(intent.weapon) else intent.weapon
+    weapon_instance, weapon_profile = _resolve_named_weapon(db, character, weapon_name)
 
-    if intent.weapon and weapon_instance is None:
+    if weapon_name and weapon_instance is None:
         raise CombatBridgeError(
             f"'{intent.weapon}' não está equipado nem acessível na cintura para atacar."
         )
@@ -717,6 +724,19 @@ def _quick_draw(
         else EquipmentSlot.MAIN_HAND
     )
     equip_item(db, instance, slot=slot)
+
+
+_UNARMED_WORDS = ("punho", "punhos", "mao", "maos", "soco", "socos", "chute", "chutes",
+                  "desarmado", "nuas", "cotovelo", "joelho", "cabecada")
+
+
+def _is_unarmed(weapon: str | None) -> bool:
+    if not weapon:
+        return False
+    plain = "".join(
+        char for char in unicodedata.normalize("NFKD", weapon.casefold()) if not unicodedata.combining(char)
+    )
+    return any(word in plain.split() for word in _UNARMED_WORDS)
 
 
 def _resolve_named_weapon(

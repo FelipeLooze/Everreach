@@ -15,6 +15,7 @@ import unicodedata
 from sqlalchemy.orm import Session
 
 from app.game.players.appearance import ensure_transported_features
+from app.game.creatures.context import creature_lines
 from app.game.npcs import looks as npc_looks
 from app.game.npcs import profile as npc_profile
 from app.game.world.generator import gender_for_name
@@ -155,4 +156,5 @@ def build_intent_context(db: Session, state, narrator_context: str, *, active_np
     people = "\n".join(
         people_present_lines(db, state, active_npc_id=active_npc_id, active_player_id=active_player_id)
     )
-    return "\n\n".join([people, *blocks])
+    creatures = "\n".join(creature_lines(state)[:-1]) if getattr(state, "nearby_creatures", None) else ""
+    return "\n\n".join(part for part in [people, creatures, *blocks] if part)

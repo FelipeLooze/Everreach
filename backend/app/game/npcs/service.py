@@ -76,6 +76,7 @@ def npcs_at_location(
     db: Session,
     location_id: str,
 ) -> list[NPC]:
+    """The people here (never animals: see creatures_at_location)."""
     return (
         db.query(NPC)
         .filter(
@@ -83,6 +84,23 @@ def npcs_at_location(
             NPC.alive.is_(True),
             NPC.incapacitated.is_(False),
             NPC.activity != NPCActivity.RESTING.value,
+            NPC.creature_species.is_(None),
+        )
+        .order_by(NPC.id)
+        .all()
+    )
+
+
+def creatures_at_location(db: Session, location_id: str) -> list[NPC]:
+    """Animals out at this place now (asleep in the den ones are not met)."""
+    return (
+        db.query(NPC)
+        .filter(
+            NPC.location_id == location_id,
+            NPC.alive.is_(True),
+            NPC.incapacitated.is_(False),
+            NPC.activity != NPCActivity.RESTING.value,
+            NPC.creature_species.is_not(None),
         )
         .order_by(NPC.id)
         .all()

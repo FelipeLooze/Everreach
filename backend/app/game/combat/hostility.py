@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import CharacterStatus, CombatActorType, CombatRangeBand
+from app.core.enums import CharacterStatus, CombatActorType, CombatRangeBand, NPCActivity
 from app.db.models.character import Character
 from app.db.models.npc import NPC
 from app.game.combat.autonomy import AutonomousCombatResolution, resolve_until_player_turn
@@ -82,6 +82,8 @@ def resolve_ambush_for_character(
             NPC.alive.is_(True),
             NPC.incapacitated.is_(False),
             NPC.hostility >= HOSTILE_THRESHOLD,
+            # Asleep in the den (a wolf by day) attacks no one.
+            NPC.activity != NPCActivity.RESTING.value,
         )
         .order_by(NPC.id)
         .all()

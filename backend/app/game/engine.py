@@ -41,6 +41,7 @@ from app.db.models.location import (
 from app.db.models.notice import Notice
 from app.game import game_state
 from app.game.combat import bridge as combat_bridge
+from app.game.combat import fainting
 from app.game.combat import hostility as combat_hostility
 from app.game.combat import service as combat_service
 from app.game.combat.recovery import recover_character
@@ -207,10 +208,9 @@ def resolve_action(
         raise ValueError(f"Personagem desconhecido nesta campanha: {character_id}")
     if character.status == CharacterStatus.DEAD:
         raise CharacterDeadError("Este personagem morreu. A morte é permanente — nenhuma ação é mais possível.")
-    if character.status == CharacterStatus.INCAPACITATED:
-        raise CharacterIncapacitatedError(
-            "Este personagem está incapacitado e precisa ser estabilizado antes de agir."
-        )
+    # A save left with a fallen character (before fainting existed) wakes
+    # them first instead of refusing every action forever.
+    woke_up = fainting.faint_and_wake(db, campaign_id, character)
     if character.region_id is None or character.location_id is None:
         raise WorldNotStartedError("Inicie o mundo antes de realizar uma ação.")
 
@@ -493,6 +493,13 @@ def resolve_action(
                 for resolution in ambush.resolutions
             )
             mechanical_summary = f"{mechanical_summary} " + " ".join(ambush_lines)
+
+    # Lost the fight: they faint and wake up back in the village.
+    fainted = fainting.faint_and_wake(db, campaign_id, character)
+    if fainted:
+        mechanical_summary = f"{mechanical_summary} {fainted}"
+    if woke_up:
+        mechanical_summary = f"{woke_up} {mechanical_summary}"
 
     db.flush()
 

@@ -2,6 +2,7 @@ from sqlalchemy import false, not_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.npc import NPC
+from app.game.creatures import population
 from app.game.npcs import residents
 from app.game.time.clock import get_world_time
 from app.simulation.npc_routines import activity_for_role
@@ -46,11 +47,18 @@ def tick(
     ):
         changes += residents.apply_routine(db, npc, world_time.hour)
 
+    # Animals come out at their hours, and the wild regrows each dawn.
+    changes += population.apply_activity(db, campaign_id, world_time.hour)
+    now = world_time.total_minutes()
+    if (now - minutes) // population.DAY != now // population.DAY:
+        changes += len(population.replenish(db, campaign_id, world_time.hour))
+
     base_filters = (
         NPC.campaign_id == campaign_id,
         NPC.alive.is_(True),
         NPC.incapacitated.is_(False),
         NPC.routine_json == "[]",
+        NPC.creature_species.is_(None),
     )
 
     if active_scope.unrestricted:

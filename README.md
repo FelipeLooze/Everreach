@@ -685,6 +685,18 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
 - **Entregas:** o destinatário é achado pela aparência, ofício ou conversa atual, e um NPC conta
   como presente onde está agora (a ferraria no expediente), não em casa.
 
+## Caça em volta da vila inicial (24/10/2026, em andamento)
+
+- **A1 — Bichos de verdade:** lobos, javalis, cervos e raposas vivem nos lugares selvagens em
+  volta da vila inicial (`app/game/creatures/`), como NPCs marcados com a espécie — o motor de
+  combate os enfrenta sem mudança, mas nunca passam por pessoas (sem nome de gente, conversa,
+  rotina ou conhecimento). Cada espécie tem seus lugares e horários: lobos à noite (atacam ao ver),
+  javalis de dia (só reagem se provocados), cervos ao amanhecer e entardecer, raposas à noite; quem
+  está na toca não é encontrado nem embosca. Cada amanhecer cada lugar repõe no máximo um bicho de
+  cada espécie. Bicho a zero de vida morre; lutar com os punhos funciona.
+- **Perder uma luta:** o personagem nunca morre — desmaia e acorda horas depois na estalagem da
+  vila, ferido (um quarto da vida). Antes, um personagem caído ficava travado para sempre.
+
 ## Fora do MVP
 
 - Geração procedural complexa e novas regiões automáticas.

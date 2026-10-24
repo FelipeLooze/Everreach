@@ -88,6 +88,7 @@ from app.game.world.generator import (
 from app.services.event_log import log_event
 from app.game.npcs.service import teach_fact
 from app.game.npcs import bonds as npc_bonds
+from app.game.creatures import population as creature_population
 from app.game.npcs import residents
 from app.game.quests import local_requests
 from app.game.time.clock import get_world_time
@@ -543,6 +544,11 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
         db, campaign_id, region.id, village,
         {**_service_location_by_type, "forest": forest_edge, "river": creek, "clearing": clearing},
         starting_npc_rng,
+    )
+    # The animals of the wild places around it.
+    creature_population.replenish(
+        db, campaign_id, get_world_time(db, campaign_id).hour,
+        rng=random.Random(derive_seed(anchor_subregion.generation_seed, "fauna")), full=True,
     )
 
     # Phase 15J (organizations), 15K (economy) and most of 15L (threats)

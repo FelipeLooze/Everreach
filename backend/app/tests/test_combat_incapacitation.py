@@ -96,7 +96,7 @@ def test_critical_failures_cause_permanent_death(db_session):
     ).count() == 1
 
 
-def test_devastating_damage_bypasses_critical_state(db_session):
+def test_devastating_damage_only_downs_the_character(db_session):
     campaign = create_campaign(db_session, "Devastating Damage")
     region, location = seed_initial_region(db_session, campaign.id)
     character = create_character(db_session, campaign.id, "Hero", region.id, location.id)
@@ -114,7 +114,8 @@ def test_devastating_damage_bypasses_critical_state(db_session):
                             action_type=CombatActionType.MELEE_ATTACK, action_key="devastating",
                             rng=SequenceRng(10, 2)).action
 
+    # The blow is devastating, but the character never dies from it: they go
+    # down and faint home (app.game.combat.fainting, 2026-10-24).
     assert action.lethal is True
-    assert action.incapacitating is False
-    assert character.status == CharacterStatus.DEAD.value
-    assert db_session.query(CombatIncapacitation).count() == 0
+    assert character.status == CharacterStatus.INCAPACITATED.value
+    assert db_session.query(CombatIncapacitation).count() == 1

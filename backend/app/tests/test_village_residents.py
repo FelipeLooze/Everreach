@@ -124,7 +124,7 @@ def test_young_residents_never_look_old(db_session):
     from app.game.npcs import looks
 
     campaign, _village = _world(db_session)
-    for npc in db_session.query(NPC).filter(NPC.campaign_id == campaign.id):
+    for npc in db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.creature_species.is_(None)):
         traits = looks.ensure(db_session, npc)
         if npc.age < 40:
             assert traits["hair_color"] not in ("grey hair", "white hair", "silver hair"), npc.role

@@ -83,6 +83,7 @@ from app.game.economy.supply_demand import resolve_local_market_price
 from app.game.economy.economic_canon import current_price, get_service_value
 from app.game.economy.wallet import total_carried_by_owner
 from app.game.npcs import profile as npc_profile
+from app.game.creatures.context import creature_lines
 
 
 logger = get_logger("context")
@@ -1970,6 +1971,7 @@ def build_narrative_context(
         "Before a name is learned, use the registered role as the stable player-facing reference; "
         "never invent a physical description or a distinct local bystander."
     )
+    visible_lines.extend(creature_lines(state))
     visible_lines.append("VISIBLE TRANSPORTED PEOPLE")
     visible_lines.extend(
         [

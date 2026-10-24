@@ -69,6 +69,9 @@ def test_leader_npc_names_never_collide(db_session):
     campaign = create_campaign(db_session, "Campanha A")
     region, _village = seed_initial_region(db_session, campaign.id)
 
-    npc_names = [npc.name for npc in db_session.query(NPC).filter(NPC.campaign_id == campaign.id).all()]
+    npc_names = [  # people; two "Lobo cinzento" in different woods are fine
+        npc.name
+        for npc in db_session.query(NPC).filter(NPC.campaign_id == campaign.id, NPC.creature_species.is_(None))
+    ]
 
     assert len(npc_names) == len(set(npc_names))

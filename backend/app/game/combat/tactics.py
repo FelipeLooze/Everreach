@@ -27,6 +27,7 @@ from app.game.combat.conditions import apply_condition
 from app.game.combat.costs import apply_action_cost, validate_resource_cost
 from app.game.combat.encounters import end_encounter, list_active_participants, remove_participant
 from app.game.combat.turns import complete_current_turn, get_current_turn
+from app.game.combat.costs import _actor as resource_actor
 from app.game.dice import d20
 from app.game.items.encumbrance import get_character_encumbrance
 from app.game.time.clock import get_world_time
@@ -34,6 +35,7 @@ from app.services.event_log import log_event
 
 
 FLEE_DC = 12
+CATCH_BREATH_STAMINA = 4.0
 _ACTION_KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 _ACTION_COSTS = {
     CombatTacticalActionType.GUARD: 1.0,
@@ -173,6 +175,11 @@ def resolve_tactical_action(
         apply_action_cost(db, encounter, action, actor, cost)
     if new_range is not None:
         target.range_band = new_range
+    if action_type == CombatTacticalActionType.WAIT:
+        # Catching one's breath. Without it a fight where both sides ran out
+        # of stamina stalled forever (calibration, 2026-10-24).
+        body = resource_actor(db, actor)
+        body.stamina_current = min(float(body.stamina_max), float(body.stamina_current) + CATCH_BREATH_STAMINA)
     log_event(
         db,
         encounter.campaign_id,

@@ -22,6 +22,7 @@ from app.game.combat.encounters import (
     start_encounter,
 )
 from app.game.combat.turns import roll_initiative
+from app.game.creatures.pack import pack_of
 
 ATTACKED_HOSTILITY = 100
 HOSTILE_THRESHOLD = 75
@@ -114,6 +115,12 @@ def resolve_ambush_for_character(
                     npc.id,
                     side_key="hostile",
                     range_band=CombatRangeBand.ENGAGED,
+                ),
+                # Its pack comes with it.
+                *(
+                    CombatantSpec(CombatActorType.NPC, member.id, side_key="hostile",
+                                  range_band=CombatRangeBand.ENGAGED)
+                    for member in pack_of(db, npc)
                 ),
             ),
         )

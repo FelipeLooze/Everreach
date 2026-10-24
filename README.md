@@ -687,13 +687,23 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
 
 ## Caça em volta da vila inicial (24/10/2026, em andamento)
 
-- **A1 — Bichos de verdade:** lobos, javalis, cervos e raposas vivem nos lugares selvagens em
-  volta da vila inicial (`app/game/creatures/`), como NPCs marcados com a espécie — o motor de
+- **A1 — Bichos de verdade:** os bichos vivem nos lugares selvagens em volta da vila inicial
+  (`app/game/creatures/`), como NPCs marcados com a espécie — o motor de
   combate os enfrenta sem mudança, mas nunca passam por pessoas (sem nome de gente, conversa,
   rotina ou conhecimento). Cada espécie tem seus lugares e horários: lobos à noite (atacam ao ver),
   javalis de dia (só reagem se provocados), cervos ao amanhecer e entardecer, raposas à noite; quem
   está na toca não é encontrado nem embosca. Cada amanhecer cada lugar repõe no máximo um bicho de
   cada espécie. Bicho a zero de vida morre; lutar com os punhos funciona.
+- **A2a — Bestiário autoritativo:** as criaturas vêm do dataset do projeto
+  (`backend/app/data/bestiary.json`: 225 criaturas de nível 1 a 5, 658 itens de saque;
+  `app/game/creatures/species.py`). Cada lugar selvagem ganha sua fauna pelas regras do próprio
+  dataset: bioma do lugar, distância da vila em trilhas (1 = próxima, 2 = intermediária, 3+ =
+  remota), níveis permitidos (perto da vila só nível 1 e um pouco de 2), raridade, ajuste por tipo
+  perto de povoado e a distância preferida da espécie. Fauna comum nasce jovem, adulta ou velha
+  ("Javali Jovem" do dataset é o jovem da espécie Javali). Cada bicho luta com vida, dano e defesa
+  da sua espécie e fase, e o nível soma ao acerto e à esquiva. Matilhas lutam juntas (o ataque vai
+  no mais ferido). Sem fôlego, o turno vira "recuperar o ar" (+4 de stamina) — antes a luta
+  travava. Moeda do dataset: 1 cobre = 1 bronze.
 - **Perder uma luta:** o personagem nunca morre — desmaia e acorda horas depois na estalagem da
   vila, ferido (um quarto da vida). Antes, um personagem caído ficava travado para sempre.
 

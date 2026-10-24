@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.game.creatures import combat as creature_combat
 from app.core.enums import (
     BodyArea,
     CharacterAttributeKey,
@@ -416,7 +417,9 @@ def _attribute_modifier(
     key: CharacterAttributeKey,
 ) -> int:
     if participant.actor_type != CombatActorType.CHARACTER.value:
-        return 0
+        # A creature's level makes it harder to hit and better at hitting.
+        creature = creature_combat.creature_profile(db, participant)
+        return creature_combat.level_bonus(creature) if creature else 0
     attribute = get_character_attribute(db, participant.actor_id, key)
     return attribute_check_modifier(attribute.value)
 

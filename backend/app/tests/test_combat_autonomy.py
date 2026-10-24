@@ -247,7 +247,7 @@ def test_exhausted_autonomous_actor_waits_without_spending_resource(db_session):
     assert result.decision.reason == "EXHAUSTED"
     assert result.tactical_action.resource_key is None
     assert result.tactical_action.resource_cost is None
-    assert enemy.stamina_current == 0
+    assert enemy.stamina_current == 4  # waiting catches its breath (CATCH_BREATH_STAMINA)
     assert get_current_turn(db_session, encounter).participant_id == hero.id
     assert db_session.query(CombatTacticalAction).count() == 1
 

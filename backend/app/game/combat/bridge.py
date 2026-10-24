@@ -49,6 +49,7 @@ from app.game.combat.encounters import (
 )
 from app.game.combat.hostility import mark_hostile_from_attack
 from app.game.combat.tactics import resolve_tactical_action
+from app.game.creatures.pack import pack_of
 from app.game.combat.techniques import (
     CombatTechniqueError,
     CombatTechniqueResolution,
@@ -134,6 +135,17 @@ def handle_attack_intent(
     current_turn = get_current_turn(db, encounter)
     if current_turn is None or current_turn.participant_id != character_participant.id:
         return " ".join(lines) or f"{character.name} aguarda sua vez no combate.", 0
+
+    # Out of breath: the turn goes to catching it, and the fight goes on.
+    if character.stamina_current < _attack_stamina_cost(intent):
+        resolve_tactical_action(
+            db, encounter, character_participant,
+            action_type=CombatTacticalActionType.WAIT, action_key=f"breath:{resolved_key}", rng=rng,
+        )
+        lines.append(f"{character.name} está sem fôlego e recua um instante para recuperar o ar.")
+        if encounter.status == CombatEncounterStatus.ACTIVE.value:
+            lines.extend(_advance_autonomy(db, encounter, prefix=f"combat:{resolved_key}:after", rng=rng))
+        return " ".join(lines), 0
 
     if target_participant is None:
         try:
@@ -437,6 +449,11 @@ def _start_new_encounter(
             range_band=CombatRangeBand.ENGAGED,
         ),
     )
+    pack = pack_of(db, target_actor) if target_kind == CombatActorType.NPC else []
+    combatants += tuple(
+        CombatantSpec(CombatActorType.NPC, member.id, side_key="hostile", range_band=CombatRangeBand.ENGAGED)
+        for member in pack
+    )
     try:
         encounter = start_encounter(db, campaign_id, character.location_id, combatants)
         roll_initiative(db, encounter, rng=rng)
@@ -445,14 +462,21 @@ def _start_new_encounter(
 
     if target_kind == CombatActorType.NPC:
         mark_hostile_from_attack(target_actor)
+        for member in pack:
+            mark_hostile_from_attack(member)
 
     character_participant = _find_character_participant(db, encounter, character.id)
     target_participant = next(
         participant
         for participant in list_active_participants(db, encounter.id)
-        if participant.id != character_participant.id
+        if participant.actor_id == target_actor.id
     )
     return encounter, character_participant, target_participant
+
+
+def _attack_stamina_cost(intent: Intent) -> float:
+    ranged = (intent.attack_type or "").upper() == CombatActionType.RANGED_ATTACK.value
+    return 1.0 if ranged else 2.0
 
 
 def _find_nearby_target(
@@ -513,12 +537,27 @@ def _resolve_opposing_target(
         named = [p for p in opponents if needle in _participant_name(db, p).casefold()]
         if len(named) == 1:
             return named[0]
+        same_pack = _same_species(db, named)
+        if same_pack:
+            # "Ataco o lobo" in a pack: the most wounded one, as a hunter would.
+            return min(same_pack, key=lambda p: db.get(NPC, p.actor_id).hp_current)
         if len(named) > 1:
             raise CombatBridgeError("Há mais de um alvo correspondente a essa descrição.")
         raise CombatBridgeError(f"'{target_name}' não é um oponente ativo neste combate.")
     if len(opponents) == 1:
         return opponents[0]
+    same_pack = _same_species(db, opponents)
+    if same_pack:
+        return min(same_pack, key=lambda p: db.get(NPC, p.actor_id).hp_current)
     raise CombatBridgeError("É preciso indicar contra qual oponente agir; há mais de um.")
+
+
+def _same_species(db: Session, participants: list[CombatParticipant]) -> list[CombatParticipant]:
+    """These participants when all are animals of one species, else []."""
+    if len(participants) < 2 or any(p.actor_type != CombatActorType.NPC.value for p in participants):
+        return []
+    species = {db.get(NPC, p.actor_id).creature_species for p in participants}
+    return participants if len(species) == 1 and None not in species else []
 
 
 def _participant_name(db: Session, participant: CombatParticipant) -> str:

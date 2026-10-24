@@ -16,6 +16,7 @@ from app.core.enums import (
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatEncounter, CombatParticipant
 from app.db.models.npc import NPC
+from app.game.creatures import combat as creature_combat
 from app.db.models.simulated_player import SimulatedPlayer
 from app.game.attributes.service import attribute_check_modifier, get_character_attribute
 from app.game.combat.encounters import list_active_participants, remove_participant
@@ -98,6 +99,12 @@ def apply_attack_damage(
         2 if action.outcome == CombatActionOutcome.CRITICAL_HIT.value else 1
     )
     damage_roll = sum(roll(die_sides, rng=rng).raw for _ in range(dice_count))
+    # A creature bites with its own species' range, not a generic 1d6.
+    creature = creature_combat.creature_profile(db, actor)
+    if creature is not None:
+        damage_roll = creature_combat.damage_roll(
+            creature, action.outcome == CombatActionOutcome.CRITICAL_HIT.value, rng
+        )
     damage_attribute = (
         CharacterAttributeKey(action.damage_attribute)
         if action.damage_attribute

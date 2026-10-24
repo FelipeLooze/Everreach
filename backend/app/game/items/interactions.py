@@ -26,6 +26,7 @@ from app.game.items.equipment import (
     unequip_item,
 )
 from app.game.items.service import move_item_instance, set_item_owner
+from app.game.npcs.service import effective_npc_location_id
 from app.services.event_log import log_event
 
 
@@ -405,7 +406,9 @@ def _require_not_equipped(item: ItemInstance) -> None:
 
 
 def _require_colocated(actor: Character, other: Character | NPC) -> None:
-    if other.location_id != actor.location_id:
+    # An NPC is where they are now (the forge while working), not at home.
+    where = effective_npc_location_id(other) if isinstance(other, NPC) else other.location_id
+    if where != actor.location_id:
         raise ItemInteractionError("The other actor is not at the same location.")
     if isinstance(other, Character) and other.status == CharacterStatus.DEAD.value:
         raise ItemInteractionError("Cannot complete this transfer with a dead character.")

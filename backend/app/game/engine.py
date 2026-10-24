@@ -16,6 +16,7 @@ from app.core.config import get_settings
 from app.core.enums import (
     connection_type_label_pt,
     ActionIntentType,
+    ItemLocationType,
     CharacterStatus,
     CombatActorType,
     DiscoveryStatus,
@@ -30,6 +31,7 @@ from app.core.enums import (
 from app.core.logging import current_narrative_request_id, get_logger, with_narrative_request_id
 from app.core.ids import generate_id
 from app.db.models.character import Character
+from app.db.models.item import ItemInstance
 from app.db.models.location import (
     CharacterLocationDiscovery,
     Location,
@@ -69,7 +71,7 @@ from app.ai import people_present
 from app.game.players.appearance import ensure_transported_features
 from app.game.notices.service import NoticeBoardError, read_notice_board
 from app.game.quests import service as quests_service
-from app.game.quests.rewards import grant_pending_quest_completion_xp
+from app.game.quests.rewards import grant_local_request_rewards, grant_pending_quest_completion_xp
 from app.game.relationships import service as relationship_service
 from app.game.progression.outcomes import resolve_progression_outcome
 from app.game.skills.technique_experimentation import (
@@ -309,6 +311,17 @@ def resolve_action(
             and _looks_like_dialogue(text)
         ):
             intent = replace(intent, type=ActionIntentType.TALK)
+        # Saying yes to whoever just asked a favour is an answer to them,
+        # however the parser read it. Playtest: "Pode deixar, eu procuro o
+        # gato pra senhora" came back as a skill check and nothing was taken.
+        if (
+            active_npc is not None
+            and intent.type not in (ActionIntentType.TALK, ActionIntentType.MOVE)
+            and "?" not in text
+            and _AGREEMENT_PATTERN.search(_strip_accents(text).casefold())
+            and _known_request_of(db, campaign_id, character, active_npc) is not None
+        ):
+            intent = replace(intent, type=ActionIntentType.TALK, target=None, person_ref=None)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     if technique_use is not None:
@@ -398,6 +411,7 @@ def resolve_action(
             )
             mechanical_warnings.extend(progression.warnings)
     else:
+        location_before = character.location_id
         mechanical_summary, minutes = _apply_intent(
             db,
             campaign_id,
@@ -406,7 +420,15 @@ def resolve_action(
             state,
             action_key=resolved_action_key,
         )
+        if character.location_id != location_before:
+            quests_service.evaluate_objective_trigger(
+                db, campaign_id, character.id, ObjectiveTriggerType.REACH_LOCATION,
+                subject_id=character.location_id,
+            )
 
+    request_payments = grant_local_request_rewards(db, campaign_id, character)
+    if request_payments:
+        mechanical_summary = f"{mechanical_summary} {' '.join(request_payments)}"
     granted_quest_xp = grant_pending_quest_completion_xp(
         db,
         llm_service,
@@ -1087,6 +1109,10 @@ def _apply_intent(
         change = guilds_service.formalize(db, campaign_id, character)
         return change.summary, 15 if change.changed else 0
     if intent.type == ActionIntentType.EXPLORE:
+        # "Vou até a clareira procurar o gato" is a walk to a known place.
+        destination = _resolve_movement_target(db, character, intent.raw_text)
+        if destination is not None and destination.id != character.location_id:
+            return _handle_move(db, campaign_id, character, replace(intent, type=ActionIntentType.MOVE, target=destination.name))
         return _handle_explore(db, campaign_id, character)
     if intent.type == ActionIntentType.CHANGE_GUILD_RANK:
         return _handle_guild_rank(db, campaign_id, character, intent, state)
@@ -1114,6 +1140,10 @@ def _apply_intent(
             status=QuestStatus.AVAILABLE,
         )
         if quest is None:
+            # "Aceito ajudar": the request of whoever the player is talking to.
+            active = npcs_service.get_active_interlocutor(db, campaign_id, character.id, character.location_id)
+            quest = _known_request_of(db, campaign_id, character, active) if active else None
+        if quest is None:
             return "Nenhuma missão conhecida e disponível corresponde a esse nome.", 0
         try:
             quests_service.accept_known_quest(
@@ -1121,6 +1151,10 @@ def _apply_intent(
             )
         except quests_service.QuestLifecycleError as exc:
             return str(exc), 0
+        if quest.giver_npc_id:
+            from app.game.quests.local_requests import reveal_the_way
+
+            reveal_the_way(db, character, quest)
         return f"{character.name} aceita a missão '{quest.name}'.", 1
     if intent.type == ActionIntentType.ABANDON_QUEST:
         quest = quests_service.find_character_quest_by_name(
@@ -1239,6 +1273,7 @@ def _apply_intent(
             character,
             intent,
             action_key=action_key,
+            state=state,
         )
     if intent.type == ActionIntentType.ATTACK:
         return combat_bridge.handle_attack_intent(
@@ -1279,6 +1314,7 @@ def _handle_item_interaction(
     intent: Intent,
     *,
     action_key: str | None,
+    state=None,
 ) -> tuple[str, int]:
     if combat_bridge.get_active_encounter_for_actor(
         db, CombatActorType.CHARACTER, character.id
@@ -1290,6 +1326,15 @@ def _handle_item_interaction(
             intent,
             action_key=action_key,
         )
+    secondary_target = intent.secondary_target
+    if intent.type == ActionIntentType.GIVE and state is not None:
+        # "Entrego as ervas para a herbalista": the recipient by appearance,
+        # trade or the current conversation, as for everyone else.
+        npcs, _players = _resolve_target_person(
+            db, campaign_id, character, replace(intent, target=intent.secondary_target), state
+        )
+        if len(npcs) == 1:
+            secondary_target = npcs[0].id
     try:
         result = resolve_item_interaction(
             db,
@@ -1297,12 +1342,24 @@ def _handle_item_interaction(
             character,
             interaction=intent.type,
             target=intent.target,
-            secondary_target=intent.secondary_target,
+            secondary_target=secondary_target,
             slot=intent.slot,
             interaction_key=action_key,
         )
     except ValueError as exc:
         return f"A interação com o item não pôde ser realizada: {exc}", 0
+    if not result.replayed and intent.type == ActionIntentType.PICK_UP:
+        quests_service.evaluate_objective_trigger(
+            db, campaign_id, character.id, ObjectiveTriggerType.RETRIEVE_ITEM,
+            subject_id=result.item_instance_id,
+        )
+    if not result.replayed and intent.type == ActionIntentType.GIVE:
+        item = db.get(ItemInstance, result.item_instance_id)
+        if item is not None and item.location_type == ItemLocationType.NPC.value:
+            quests_service.evaluate_objective_trigger(
+                db, campaign_id, character.id, ObjectiveTriggerType.DELIVER_ITEM,
+                subject_id=f"{item.id}:{item.location_ref}",
+            )
     return result.summary, 0 if result.replayed else 1
 
 
@@ -1621,7 +1678,10 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
             pace=intent.pace,
         )
     except travel_service.TravelError as exc:
-        return str(exc), 0
+        walked = _walk_known_route(db, campaign_id, character, destination, intent.pace)
+        if walked is None:
+            return str(exc), 0
+        return walked
 
     quests_service.evaluate_objective_trigger(
         db,
@@ -1651,6 +1711,38 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
             )
 
     return summary, travel_result.minutes
+
+
+def _walk_known_route(db: Session, campaign_id: str, character: Character, destination: Location, pace):
+    """A known place a few trails away ("vou até a clareira", past the
+    forest) is walked leg by leg along the character's known route.
+    None when no known route links them."""
+    from app.game.map.planning import plan_known_route
+
+    plan = plan_known_route(db, campaign_id, character.id, character.location_id, destination.id)
+    if plan is None or not plan.segments:
+        return None
+    minutes, stamina, passed = 0, 0.0, []
+    for segment in plan.segments:
+        try:
+            leg = settlement_routes.move_within_reach(
+                db, campaign_id, character, segment.to_location_id, pace=pace
+            )
+        except travel_service.TravelError as exc:
+            stopped = db.get(Location, character.location_id)
+            return (
+                f"{character.name} segue a rota mas para em {stopped.name}: {exc}",
+                minutes,
+            )
+        minutes += leg.minutes
+        stamina += leg.stamina_spent
+        passed.append(db.get(Location, segment.to_location_id).name)
+    via = f", passando por {', '.join(passed[:-1])}" if len(passed) > 1 else ""
+    return (
+        f"{character.name} viaja até {destination.name}{via}. A viagem leva {minutes} minutos "
+        f"e consome {stamina:g} de stamina.",
+        minutes,
+    )
 
 
 _LEAVING_CLAUSE_PATTERN = re.compile(
@@ -2417,6 +2509,7 @@ def _handle_talk(
             character.id,
             npc.id,
         )
+        accepted, way = _accept_request_by_agreement(db, campaign_id, character, npc, intent.raw_text)
 
         _auto_complete_talk_objectives(
             db,
@@ -2433,7 +2526,9 @@ def _handle_talk(
 
         return (
             f"{character.name} conversa com "
-            f"{npc.name} ({npc.role}).",
+            f"{npc.name} ({npc.role})."
+            + (f" {character.name} aceita o pedido '{accepted.name}'." if accepted else "")
+            + (f" {npc.name} explica o caminho até {', '.join(place.name for place in way)}." if way else ""),
             crossed_minutes,
         )
 
@@ -2455,6 +2550,44 @@ def _handle_talk(
         f"{simulated_player.name}.",
         crossed_minutes,
     )
+
+
+_AGREEMENT_PATTERN = re.compile(
+    r"\b(?:pode deixar|deixa comigo|deixe comigo|conte comigo|pode contar comigo|eu ajudo|"
+    r"vou ajudar|ajudo sim|aceito|combinado|fechado|eu faco|eu levo|eu vejo|eu procuro|eu busco|"
+    r"eu vou (?:la|ver|buscar|levar|procurar|falar|conferir))\b"
+)
+
+
+def _known_request_of(db: Session, campaign_id: str, character: Character, npc):
+    """This NPC's open request, once they have told the player about it."""
+    from app.game.quests.discovery import is_quest_known_to_character
+    from app.game.quests.local_requests import open_request_of
+
+    quest = open_request_of(db, npc)
+    if quest is None or not is_quest_known_to_character(db, campaign_id, character.id, quest.id):
+        return None
+    return quest
+
+
+def _accept_request_by_agreement(db: Session, campaign_id: str, character: Character, npc, text: str):
+    """Saying yes to the one who asked ("Pode deixar, eu vejo as armadilhas")
+    takes their request. Only a request they already told about, and never
+    a question ("posso ajudar?")."""
+    plain = _strip_accents(text or "").casefold()
+    if "?" in plain or not _AGREEMENT_PATTERN.search(plain):
+        return None, []
+    quest = _known_request_of(db, campaign_id, character, npc)
+    if quest is None:
+        return None, []
+    try:
+        quests_service.accept_known_quest(db, campaign_id, character.id, quest.id)
+    except quests_service.QuestLifecycleError:
+        return None, []
+    from app.game.quests.local_requests import reveal_the_way
+
+    places = reveal_the_way(db, character, quest)
+    return quest, places
 
 
 def _auto_complete_talk_objectives(db: Session, campaign_id: str, character: Character, npc) -> None:

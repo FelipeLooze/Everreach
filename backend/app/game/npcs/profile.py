@@ -152,6 +152,14 @@ def context_lines(db: Session, npc, trust: int) -> list[str]:
         "event: never invent incidents behind it (attacks, deaths, missing caravans, dates).",
         *npc_bonds.context_lines(db, npc),
     ]
+    from app.game.quests.local_requests import open_request_of
+
+    request = open_request_of(db, npc)
+    if request is not None:
+        lines.append(
+            f"Has a favour to ask (\"{request.name}\": {request.description}) — they bring it up, "
+            "in their own words, if the player offers help or asks what worries them."
+        )
     if trust >= SECRET_TRUST:
         lines.append(f"Secret (they trust the player enough to hint at it, if it fits): {profile['secret']}")
     return lines

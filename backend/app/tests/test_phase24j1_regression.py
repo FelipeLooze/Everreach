@@ -150,7 +150,7 @@ def test_case_c2_freeform_explicit_approach_switches_active_interlocutor(db_sess
     # own "never guess" philosophy — a real behavior worth having, but
     # not what this specific test is about).
     innkeeper.name = "Talven Ashgrove"
-    blacksmith.name = "Mira Stonewell"
+    blacksmith.name = "Brynja Stonewell"
     db_session.flush()
     state = build_game_state(db_session, campaign.id, character.id)
 

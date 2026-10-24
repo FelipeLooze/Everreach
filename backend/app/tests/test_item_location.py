@@ -85,7 +85,7 @@ def test_physical_location_and_social_ownership_are_independent(db_session):
 
     location_events = (
         db_session.query(WorldEvent)
-        .filter(WorldEvent.event_type == EventType.ITEM_LOCATION_CHANGED.value)
+        .filter(WorldEvent.event_type == EventType.ITEM_LOCATION_CHANGED.value, WorldEvent.actor_id == sword.id)
         .order_by(WorldEvent.created_at)
         .all()
     )
@@ -140,7 +140,7 @@ def test_repeating_the_same_location_does_not_duplicate_events(db_session):
 
     assert (
         db_session.query(WorldEvent)
-        .filter(WorldEvent.event_type == EventType.ITEM_LOCATION_CHANGED.value)
+        .filter(WorldEvent.event_type == EventType.ITEM_LOCATION_CHANGED.value, WorldEvent.actor_id == sword.id)
         .count()
         == 1
     )

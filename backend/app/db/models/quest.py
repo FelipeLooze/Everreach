@@ -40,6 +40,10 @@ class Quest(Base):
     # dia", "amanhã ao amanhecer"). Informational only. None: not set.
     schedule_text: Mapped[str | None] = mapped_column(String, nullable=True)
     schedule_on_notice: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # A villager's own request (app.game.quests.local_requests): who asked,
+    # and the bronze they pay from their purse on completion.
+    giver_npc_id: Mapped[str | None] = mapped_column(ForeignKey("npcs.id"), nullable=True)
+    reward_bronze: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
 
 
 class QuestObjective(Base):

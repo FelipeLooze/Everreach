@@ -41,6 +41,8 @@ _PLACE_QUESTION = re.compile(
     r"|\b(?:qual|que)\b.{0,20}\b(?:vila|lugar|regiao|cidade)\b"
 )
 _PLACE_FACT_KEYS = ("settlement_name_known", "settlement_region_known")
+# "Posso ajudar?", "o que te preocupa?" — when a villager's favour comes up.
+_HELP_QUESTION = re.compile(r"\b(?:ajud\w*|preocup\w*|problema\w*|precis\w* de algo|aflig\w*)\b")
 _QUESTION = re.compile(
     r"\?|\b(?:onde|como|qual|quais|quem|quando|quanto|sabe|conhece|pode me|me diz|me fala)\b"
 )
@@ -136,10 +138,11 @@ def decide(db: Session, campaign_id: str, character_id: str, npc, player_input: 
         answers += named or schedule_facts
 
     related: list[KnowledgeFact] = []
-    if is_work_question(player_input):
+    if is_work_question(player_input) or _HELP_QUESTION.search(question):
         contracts = [fact for fact in facts if _is_open_contract(db, fact)]
         # Asked for work, the one who offers a contract answers with it.
-        answers += [fact for fact in contracts if _offered_by_npc(db, fact, npc)]
+        # A villager's own favour is told in their words, never pasted after.
+        answers += [fact for fact in contracts if _offered_by_npc(db, fact, npc) and not _is_request(db, fact)]
         related += [fact for fact in contracts if fact not in answers]
     if _QUESTION.search(question):
         for fact in facts:
@@ -159,6 +162,16 @@ def _offered_by_npc(db: Session, fact: KnowledgeFact, npc) -> bool:
     quest = db.get(Quest, fact.fact_key.split(":")[1])
     sponsor = db.get(Organization, quest.sponsoring_organization_id) if quest and quest.sponsoring_organization_id else None
     return sponsor is not None and sponsor.founder_type == CombatActorType.NPC.value and sponsor.founder_id == npc.id
+
+
+def _is_request(db: Session, fact: KnowledgeFact) -> bool:
+    quest = db.get(Quest, fact.fact_key.split(":")[1])
+    return quest is not None and quest.giver_npc_id is not None
+
+
+def _most_words_said(title: str, text: str) -> bool:
+    words = [word for word in re.findall(r"\w{4,}", _plain(title))]
+    return bool(words) and sum(bool(re.search(rf"\b{word[:5]}", text)) for word in words) * 2 >= len(words)
 
 
 def _offered_by(db: Session, fact: KnowledgeFact) -> str:
@@ -188,8 +201,10 @@ def is_stated(statement: str, narrated_text: str) -> bool:
     text = _plain(narrated_text)
     quoted = re.findall(r'"([^"]+)"', statement)
     if quoted:
-        # A contract is identified by its title; its description is context.
-        return all(_plain(title) in text for title in quoted)
+        # A contract is identified by its title, said outright or by most of
+        # its words ("as armadilhas do bosque" for a favour nobody names);
+        # its description is context.
+        return all(_plain(title) in text or _most_words_said(title, text) for title in quoted)
     hours = re.findall(r"\b(\d{1,2})h\b", statement)
     if hours and not all(
         re.search(rf"\b{hour}\s*h|\b{hour}\s*horas|\b{_HOUR_WORDS[int(hour)]}\b", text) for hour in hours

@@ -144,3 +144,44 @@ def grant_pending_quest_completion_xp(
     if pending:
         db.flush()
     return granted
+
+
+def grant_local_request_rewards(db: Session, campaign_id: str, character: Character) -> list[str]:
+    """A villager's request, just completed: they pay from their own purse
+    (never more than they have — money is finite) and trust the player
+    enough to share their secret (app.game.npcs.profile.SECRET_TRUST). Runs
+    before grant_pending_quest_completion_xp, which marks the reward given."""
+    from app.db.models.npc import NPC
+    from app.game.economy.wallet import get_or_create_holding, transfer
+    from app.game.quests.local_requests import TRUST_ON_COMPLETION
+    from app.game.relationships.service import record_npc_interaction
+
+    pending = (
+        db.query(Quest)
+        .join(CharacterQuest, CharacterQuest.quest_id == Quest.id)
+        .filter(
+            CharacterQuest.character_id == character.id,
+            CharacterQuest.status == "COMPLETED",
+            CharacterQuest.reward_granted.is_(False),
+            Quest.giver_npc_id.is_not(None),
+        )
+        .all()
+    )
+    lines = []
+    for quest in pending:
+        giver = db.get(NPC, quest.giver_npc_id)
+        if giver is None:
+            continue
+        record_npc_interaction(
+            db, campaign_id, character.id, giver.id,
+            familiarity_delta=2, trust_delta=TRUST_ON_COMPLETION, affinity_delta=5,
+        )
+        purse = get_or_create_holding(db, campaign_id, CombatActorType.NPC, giver.id)
+        amount = min(quest.reward_bronze or 0, purse.amount_bronze)
+        if amount > 0:
+            wallet = get_or_create_holding(db, campaign_id, CombatActorType.CHARACTER, character.id)
+            transfer(db, purse, wallet, amount, reason=f"Pagamento pelo pedido '{quest.name}'")
+            lines.append(f"{giver.name} paga {amount} bronze a {character.name} pelo pedido '{quest.name}'.")
+        else:
+            lines.append(f"{giver.name} agradece a {character.name} pelo pedido '{quest.name}'.")
+    return lines

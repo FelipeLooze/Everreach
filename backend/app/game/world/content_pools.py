@@ -337,7 +337,7 @@ NPC_GIVEN_NAME_POOL_MASC = [
 NPC_GIVEN_NAME_POOL_FEM = [
     "Ilya", "Sable", "Wren", "Astra", "Lena", "Nessa", "Brielle", "Cora", "Delia", "Elsbeth",
     "Fiora", "Greta", "Hesper", "Isolde", "Jessa", "Kira", "Liane", "Maren", "Nell", "Odile",
-    "Petra", "Rhosyn", "Senna", "Tamsin", "Una", "Vela", "Yara", "Mira", "Edda", "Talia",
+    "Petra", "Rhosyn", "Senna", "Tamsin", "Una", "Vela", "Yara", "Wilda", "Edda", "Talia",
 ]
 NPC_GIVEN_NAME_POOL = NPC_GIVEN_NAME_POOL_MASC + NPC_GIVEN_NAME_POOL_FEM
 # The three fixed transported people of the starting village (Phase 7),

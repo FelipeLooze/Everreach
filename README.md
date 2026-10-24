@@ -642,7 +642,7 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   confiabilidade da informação, mapas físicos e cartografia (cerca de 1.400 linhas e 17
   arquivos de teste). O histórico do git guarda tudo, se algum dia voltarem.
 
-## Cidade inicial povoada (24/10/2026, em andamento)
+## Cidade inicial povoada (24/10/2026)
 
 - **Parte 1 — Personalidade:** todo NPC tem idade e uma ficha sorteada por save
   (`app/game/npcs/profile.py`): temperamento, jeito de falar, um hábito, postura com os
@@ -669,7 +669,21 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   armadilhas) e a lojista contra a guilda de comerciantes (preços). Família divide o sobrenome e as
   idades fecham; quem não é parente tem sobrenome diferente. Todo morador conhece esses laços e o
   narrador os recebe como a lista completa — não inventa outros parentes.
-- Próxima parte: missões locais.
+- **Parte 4 — Pedidos dos moradores:** 7 favores (`app/game/quests/local_requests.py`): as
+  armadilhas do bosque (caçador), ervas da beira do riacho (herbalista), a encomenda da ferraria
+  para o lenhador, o gato fujão (a velha), um recado de paz do lenhador para a rival, a conta do
+  beberrão na estalagem e notícias do quadro para o adolescente. Cada um nasce da preocupação de
+  quem pede, só ele sabe do pedido e só se descobre conversando ("posso ajudar?", "o que te
+  preocupa?") — nunca colado na fala. Dizer sim a quem pediu ("pode deixar", "eu ajudo", "deixa
+  comigo") aceita, e o morador explica o caminho (os lugares e trilhas ficam conhecidos).
+  Objetivos completam por estado real: chegar a um lugar, pegar um item, entregá-lo a alguém, ler
+  o quadro, falar com alguém. Ao concluir, o morador paga em bronze da própria bolsa, dá XP, e a
+  confiança sobe +20 — o bastante para ele contar o segredo.
+- **Viagem por rota conhecida:** "vou até a clareira" segue as trilhas conhecidas trecho a trecho
+  (passando pelo bosque) em vez de exigir ligação direta; um lugar conhecido citado vence o
+  "explorar".
+- **Entregas:** o destinatário é achado pela aparência, ofício ou conversa atual, e um NPC conta
+  como presente onde está agora (a ferraria no expediente), não em casa.
 
 ## Fora do MVP
 

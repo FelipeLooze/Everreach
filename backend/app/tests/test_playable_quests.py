@@ -65,7 +65,8 @@ def test_initial_world_has_grounded_board_content_without_revealing_it_remotely(
     campaign, character = _started_world(client, db_session)
     guild_board, public_board = _boards_and_locations(db_session)
 
-    assert db_session.query(Quest).count() == 2
+    assert db_session.query(Quest).filter(Quest.giver_npc_id.is_(None)).count() == 2
+    assert db_session.query(Quest).filter(Quest.giver_npc_id.is_not(None)).count() == 7  # villagers' own
     assert db_session.query(OrganizationNeed).count() >= 2
     assert db_session.query(Notice).filter(Notice.board_feature_id == guild_board.id).count() == 2
     public_notices = db_session.query(Notice).filter(
@@ -143,7 +144,8 @@ def test_two_initial_contracts_complete_from_real_triggers_and_reach_level_one(
     guild_board, public_board = _boards_and_locations(db_session)
     character.location_id = guild_board.location_id
     read_notice_board(db_session, character.id, guild_board.id)
-    quests = {quest.name: quest for quest in db_session.query(Quest).all()}
+    # The guild's two contracts; villagers' own requests are learned by talking.
+    quests = {quest.name: quest for quest in db_session.query(Quest).filter(Quest.giver_npc_id.is_(None))}
     for quest in quests.values():
         response = client.post(
             f"/api/campaigns/{campaign['id']}/quests/{quest.id}/accept",

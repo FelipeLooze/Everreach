@@ -21,7 +21,10 @@ def creature_profile(db: Session, participant) -> dict | None:
 
 
 def level_bonus(profile: dict) -> int:
-    return max(0, int(profile.get("level", 1)) - 1)
+    from app.game.creatures.species import CAMPAIGN_DIFFICULTY
+
+    level = int(profile.get("level", 1))
+    return max(0, level - 1) + CAMPAIGN_DIFFICULTY.get(level, (1.0, 0, 0))[2]
 
 
 def damage_roll(profile: dict, critical: bool, rng: random.Random | None) -> int:

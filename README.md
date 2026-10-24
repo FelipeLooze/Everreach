@@ -695,7 +695,7 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   está na toca não é encontrado nem embosca. Cada amanhecer cada lugar repõe no máximo um bicho de
   cada espécie. Bicho a zero de vida morre; lutar com os punhos funciona.
 - **A2a — Bestiário autoritativo:** as criaturas vêm do dataset do projeto
-  (`backend/app/data/bestiary.json`: 225 criaturas de nível 1 a 5, 658 itens de saque;
+  (`backend/app/data/bestiary.json`: 250 criaturas de nível 1 a 5, 713 itens de saque;
   `app/game/creatures/species.py`). Cada lugar selvagem ganha sua fauna pelas regras do próprio
   dataset: bioma do lugar, distância da vila em trilhas (1 = próxima, 2 = intermediária, 3+ =
   remota), níveis permitidos (perto da vila só nível 1 e um pouco de 2), raridade, ajuste por tipo
@@ -704,6 +704,10 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   da sua espécie e fase, e o nível soma ao acerto e à esquiva. Matilhas lutam juntas (o ataque vai
   no mais ferido). Sem fôlego, o turno vira "recuperar o ar" (+4 de stamina) — antes a luta
   travava. Moeda do dataset: 1 cobre = 1 bronze.
+  **Dificuldade da campanha** (`CAMPAIGN_DIFFICULTY` em `species.py`): por nível, um multiplicador
+  de vida, dano somado e bônus de acerto sobre os números propostos pelo dataset. Nível 1 é uma luta
+  média para um personagem novo desarmado (vence, mas perde de 4 a 8 de 20 de vida); nível 2 é difícil
+  (um lobo sozinho custa metade da vida; um lince vence metade das vezes); matilhas são perigosas.
 - **Perder uma luta:** o personagem nunca morre — desmaia e acorda horas depois na estalagem da
   vila, ferido (um quarto da vida). Antes, um personagem caído ficava travado para sempre.
 

@@ -29,6 +29,18 @@ _PERIOD_HOURS = {
 # at combat.hostility.HOSTILE_THRESHOLD (75) and above they attack on sight.
 _HOSTILITY = {"baixa": 0, "defensiva": 10, "moderada": 40, "hostil_condicional": 60, "territorial": 80}
 _STAGED_KINDS = ("fauna_comum", "fauna_comum_ou_adaptada")
+# The campaign's difficulty on top of the dataset's proposed numbers, by the
+# creature's level: (life multiplier, damage added to both ends, bonus to
+# hit). The user (2026-10-24): level 1 must be a real fight for a new
+# character — "médio", not easy. Tuned with simulated fights (a fresh,
+# unarmed character, 20 HP).
+CAMPAIGN_DIFFICULTY = {
+    1: (2.2, 2, 2),
+    2: (1.4, 1, 1),
+    3: (1.3, 1, 1),
+    4: (1.2, 1, 1),
+    5: (1.2, 1, 1),
+}
 _STAGE_WORDS = {"Jovem": "jovem", "Adulto": "adulto", "Adulta": "adulto"}
 
 
@@ -98,9 +110,16 @@ def _stages(entry: dict, named_stage: str | None, kind: str) -> dict[str, Stage]
         young = Stage("jovem", max(1.0, round(hp * 0.6)), (max(0, low - 1), max(0, high - 1)),
                       max(0, defense - 1), max(1, level - 1), 0.6)
     if kind not in _STAGED_KINDS and named_stage is None:
-        return {"adulto": adult}
+        return {"adulto": _campaign(adult)}
     old = Stage("velho", round(adult.hp * 1.2), adult.damage, adult.defense + 1, adult.level, 1.3)
-    return {"jovem": young, "adulto": adult, "velho": old}
+    return {stage.key: _campaign(stage) for stage in (young, adult, old)}
+
+
+def _campaign(stage: Stage) -> Stage:
+    life, extra, _hit = CAMPAIGN_DIFFICULTY.get(stage.level, (1.0, 0, 0))
+    low, high = stage.damage
+    return Stage(stage.key, float(round(stage.hp * life)), (low + extra, high + extra),
+                 stage.defense, stage.level, stage.loot_quantity)
 
 
 @lru_cache(maxsize=1)

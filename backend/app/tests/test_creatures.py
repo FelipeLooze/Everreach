@@ -52,13 +52,14 @@ def _spawn(db_session, campaign_id, place, name, hour=12):
     return creature
 
 
-def test_the_bestiary_loads_all_225_creatures_with_life_stages():
+def test_the_bestiary_loads_all_250_creatures_with_life_stages():
     species = all_species()
-    assert len(species) == 225
+    assert len(species) == 250
     boar = next(s for s in species.values() if s.singular == "Javali")  # "Javali Jovem" in the dataset
     assert set(boar.stages) == {"jovem", "adulto", "velho"}
     assert boar.stages["adulto"].hp > boar.stages["jovem"].hp
-    assert next(s for s in species.values() if s.singular == "Rato de Celeiro").stages["adulto"].damage == (0, 0)
+    # Dataset: a barn rat bites for 0; the campaign makes level 1 a real fight.
+    assert next(s for s in species.values() if s.singular == "Rato de Celeiro").stages["adulto"].damage == (2, 2)
 
 
 def test_near_the_village_only_low_level_local_fauna(client, db_session):

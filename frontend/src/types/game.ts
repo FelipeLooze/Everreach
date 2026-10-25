@@ -385,6 +385,8 @@ export interface QuestObjective {
   id: string;
   description: string;
   completed: boolean;
+  progress_count: number;
+  required_count: number;
 }
 
 export interface Quest {

@@ -155,7 +155,11 @@ def start_quest(
         character_id=character_id,
         quest_id=quest_id,
         status=QuestStatus.ACTIVE,
-        deadline_world_minute=deadline_world_minute,
+        deadline_world_minute=(
+            deadline_world_minute
+            if deadline_world_minute is not None
+            else quest.deadline_world_minute
+        ),
     )
     db.add(cq)
     db.flush()
@@ -491,10 +495,16 @@ def complete_objective(db: Session, campaign_id: str, character_id: str, objecti
         .first()
     )
     if not entry:
-        entry = CharacterQuestObjective(character_id=character_id, objective_id=objective_id, completed=True)
+        entry = CharacterQuestObjective(
+            character_id=character_id,
+            objective_id=objective_id,
+            completed=True,
+            progress_count=max(1, objective.required_count),
+        )
         db.add(entry)
     else:
         entry.completed = True
+        entry.progress_count = max(entry.progress_count, objective.required_count)
     db.flush()
 
     log_event(
@@ -591,6 +601,10 @@ def check_deadlines(db: Session, campaign_id: str, character_id: str | None = No
         if already_claimed:
             continue
         expire_quest(db, campaign_id, quest.id)
+        if quest.giver_npc_id:
+            from app.game.quests.local_requests import close_request_worry
+
+            close_request_worry(db, quest, expired=True)
 
     if character_id is None:
         return
@@ -607,6 +621,16 @@ def check_deadlines(db: Session, campaign_id: str, character_id: str | None = No
     )
     for cq in failing:
         fail_quest(db, campaign_id, character_id, cq.quest_id, reason="O prazo da missão expirou.")
+        quest = db.get(Quest, cq.quest_id)
+        if (
+            quest is not None
+            and quest.giver_npc_id
+            and quest.status == QuestStatus.AVAILABLE
+        ):
+            expire_quest(db, campaign_id, quest.id)
+            from app.game.quests.local_requests import close_request_worry
+
+            close_request_worry(db, quest, expired=True)
 
 
 def active_character_quests(db: Session, character_id: str) -> list[tuple[CharacterQuest, Quest]]:
@@ -630,6 +654,7 @@ def evaluate_objective_trigger(
     trigger_type: ObjectiveTriggerType,
     *,
     subject_id: str | None = None,
+    amount: int = 1,
 ) -> list[CharacterQuestObjective]:
     """The Objective Evaluator (Phase 12B). Call this after an authoritative
     backend fact occurs — an NPC was actually talked to, a location was
@@ -641,6 +666,8 @@ def evaluate_objective_trigger(
     A trigger with no trigger_subject_id matches any subject_id for that
     trigger_type; one with a trigger_subject_id requires an exact match.
     """
+    if amount <= 0:
+        return []
     completed: list[CharacterQuestObjective] = []
     for _cq, quest in active_character_quests(db, character_id):
         objectives = (
@@ -654,18 +681,35 @@ def evaluate_objective_trigger(
                 and objective.trigger_subject_id != subject_id
             ):
                 continue
-            already_done = (
+            progress = (
                 db.query(CharacterQuestObjective)
                 .filter(
                     CharacterQuestObjective.character_id == character_id,
                     CharacterQuestObjective.objective_id == objective.id,
-                    CharacterQuestObjective.completed.is_(True),
                 )
                 .first()
             )
-            if already_done:
+            if progress is not None and progress.completed:
                 continue
             if not _objective_prerequisite_is_complete(db, character_id, objective):
                 continue
-            completed.append(complete_objective(db, campaign_id, character_id, objective.id))
+            if progress is None:
+                progress = CharacterQuestObjective(
+                    character_id=character_id,
+                    objective_id=objective.id,
+                    completed=False,
+                    progress_count=0,
+                )
+                db.add(progress)
+                db.flush()
+            progress.progress_count = min(
+                objective.required_count,
+                progress.progress_count + amount,
+            )
+            if progress.progress_count >= objective.required_count:
+                completed.append(
+                    complete_objective(db, campaign_id, character_id, objective.id)
+                )
+            else:
+                db.flush()
     return completed

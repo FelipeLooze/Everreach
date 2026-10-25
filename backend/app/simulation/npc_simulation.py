@@ -51,7 +51,14 @@ def tick(
     changes += population.apply_activity(db, campaign_id, world_time.hour)
     now = world_time.total_minutes()
     if (now - minutes) // population.DAY != now // population.DAY:
+        from app.game.quests import local_requests
+        from app.game.quests.service import check_deadlines
+
+        check_deadlines(db, campaign_id)
         changes += len(population.replenish(db, campaign_id, world_time.hour))
+        first_day = (now - minutes) // population.DAY + 1
+        for world_day in range(first_day, now // population.DAY + 1):
+            changes += len(local_requests.run_daily_director(db, campaign_id, world_day))
 
     base_filters = (
         NPC.campaign_id == campaign_id,

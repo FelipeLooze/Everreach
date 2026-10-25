@@ -15,7 +15,13 @@ const availableQuest = {
   name: "Relato da Primeira Chegada",
   description: "Converse com o ancião.",
   status: "AVAILABLE",
-  objectives: [{ id: "objective_1", description: "Falar com o ancião.", completed: false }],
+  objectives: [{
+    id: "objective_1",
+    description: "Falar com o ancião.",
+    completed: false,
+    progress_count: 0,
+    required_count: 1,
+  }],
   schedule: "desconhecido",
 };
 

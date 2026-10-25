@@ -37,12 +37,11 @@ def _quest_response(
         .order_by(QuestObjective.order, QuestObjective.id)
         .all()
     )
-    completed_ids = {
-        row.objective_id
+    progress_by_id = {
+        row.objective_id: row
         for row in db.query(CharacterQuestObjective)
         .filter(
             CharacterQuestObjective.character_id == character_id,
-            CharacterQuestObjective.completed.is_(True),
         )
         .all()
     }
@@ -61,7 +60,15 @@ def _quest_response(
             QuestObjectiveResponse(
                 id=objective.id,
                 description=objective.description,
-                completed=objective.id in completed_ids,
+                completed=(
+                    objective.id in progress_by_id
+                    and progress_by_id[objective.id].completed
+                ),
+                progress_count=(
+                    progress_by_id[objective.id].progress_count
+                    if objective.id in progress_by_id else 0
+                ),
+                required_count=objective.required_count,
             )
             for objective in objectives
         ],

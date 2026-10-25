@@ -1,0 +1,8 @@
+{
+  "radius_m": 63710000,
+  "macro_cells": 6144,
+  "plates": 95,
+  "plan_json_bytes": 38363,
+  "python_peak_bytes": 350316,
+  "elapsed_seconds_with_tracemalloc": 12.465
+}

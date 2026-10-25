@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 
 from app.ai.llm_service import LLMService
-from app.core.enums import CharacterXPSource, CombatActorType
+from app.core.enums import CharacterXPSource, CombatActorType, ObjectiveTriggerType
 from app.db.models.character import Character
 from app.db.models.combat import CombatAction, CombatParticipant
 from app.db.models.npc import NPC
@@ -35,6 +35,16 @@ def grant_new_creature_defeat_rewards(
         ):
             continue
         species = get_species(creature.creature_species)
+        if species is not None:
+            from app.game.quests.service import evaluate_objective_trigger
+
+            evaluate_objective_trigger(
+                db,
+                campaign_id,
+                character.id,
+                ObjectiveTriggerType.DEFEAT_TARGET,
+                subject_id=f"species:{species.key}",
+            )
         if species is None or species.xp <= 0:
             continue
         profile = _profile(creature)

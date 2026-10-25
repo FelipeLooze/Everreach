@@ -2,6 +2,8 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
+from app.db.models.world_genesis import GenesisSector, GenesisWorld
+from app.db.models.world_spatial import EntitySpatialCoverage, GenesisSphereSector, LocationSpatialAnchor
 from app.db.models.action_checkpoint import ActionCheckpoint
 from app.db.models.character import Character, CharacterAttribute
 from app.db.models.combat import (
@@ -66,7 +68,13 @@ from app.db.models.map_annotation import MapAnnotation
 from app.db.models.memory import Memory
 from app.db.models.npc import NPC
 from app.db.models.npc_bond import NPCBond
-from app.db.models.quest import CharacterQuest, CharacterQuestObjective, Quest, QuestObjective
+from app.db.models.quest import (
+    CharacterQuest,
+    CharacterQuestObjective,
+    DailyRequestGeneration,
+    Quest,
+    QuestObjective,
+)
 from app.db.models.recovery import CharacterRecovery
 from app.db.models.region import Region
 from app.db.models.region_materialization import RegionMaterializationRequest
@@ -120,6 +128,10 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     campaign = db.get(Campaign, campaign_id)
     if campaign is None:
         return False
+
+    # Spatial bindings point at legacy entities; remove before their parents.
+    for model in (EntitySpatialCoverage, LocationSpatialAnchor, GenesisSphereSector):
+        db.query(model).filter(model.campaign_id == campaign_id).delete(synchronize_session=False)
 
     db.query(ActionCheckpoint).filter(
         ActionCheckpoint.campaign_id == campaign_id
@@ -328,6 +340,9 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     )
     db.query(QuestObjective).filter(QuestObjective.quest_id.in_(quest_ids)).delete(synchronize_session=False)
     db.query(Quest).filter(Quest.id.in_(quest_ids)).delete(synchronize_session=False)
+    db.query(DailyRequestGeneration).filter(
+        DailyRequestGeneration.campaign_id == campaign_id
+    ).delete(synchronize_session=False)
 
     db.query(KnowledgeKnower).filter(KnowledgeKnower.fact_id.in_(fact_ids)).delete(synchronize_session=False)
     db.query(KnowledgeFact).filter(KnowledgeFact.id.in_(fact_ids)).delete(synchronize_session=False)
@@ -517,6 +532,8 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
     )
 
     db.query(WorldTime).filter(WorldTime.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(GenesisSector).filter(GenesisSector.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(GenesisWorld).filter(GenesisWorld.campaign_id == campaign_id).delete(synchronize_session=False)
     db.delete(campaign)
     db.flush()
     return True

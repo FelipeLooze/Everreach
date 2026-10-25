@@ -12,6 +12,8 @@ class QuestObjectiveResponse(BaseModel):
     id: str
     description: str
     completed: bool
+    progress_count: int = 0
+    required_count: int = 1
 
 
 class QuestResponse(BaseModel):

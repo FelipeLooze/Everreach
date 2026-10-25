@@ -1,0 +1,48 @@
+{
+  "seed": 42,
+  "generator_version": 3,
+  "signature": "29e53ca2fa686fa78a60",
+  "config": {
+    "config_version": 3,
+    "generator_version": 3,
+    "topology": "cube_sphere",
+    "radius_m": 63710000,
+    "sector_level": 13,
+    "macro_level": 5,
+    "sample_intervals": 4,
+    "sea_level_m": 0,
+    "target_sector_m": 16000,
+    "continental_crust_ppm": 430000
+  },
+  "scale": {
+    "plate_length_m": 12649110,
+    "orogen_width_m": 505964,
+    "regional_wavelength_m": 4216370,
+    "detail_wavelength_m": 316227,
+    "nominal_sector_span_m": 12216,
+    "sector_resolution_limited": false,
+    "macro_cells": 6144,
+    "nominal_identity_span_m": 3127357,
+    "macro_resolution_limited": false
+  },
+  "plate_count": 95,
+  "landmass_count_macro": 15,
+  "water_body_count_macro": 14,
+  "height_range_m": [
+    -6972,
+    13031
+  ],
+  "preview_land_fraction": 0.4253946940104167,
+  "macro_disagreement_fraction": 0.03936767578125,
+  "sampled_mechanisms": {
+    "ocean_spreading_ridge": 1775,
+    "subduction_arc": 4375,
+    "transform_fault": 2209,
+    "continental_rift": 2902,
+    "continental_collision": 916,
+    "continental_margin_rift": 4557,
+    "island_arc": 4078
+  },
+  "face_size": 128,
+  "elapsed_seconds": 45.571
+}

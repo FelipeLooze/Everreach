@@ -1188,6 +1188,17 @@ def _apply_intent(
     *,
     action_key: str | None = None,
 ) -> tuple[str, int]:
+    if intent.type in (
+        ActionIntentType.FREEFORM,
+        ActionIntentType.SKILL_CHECK,
+        ActionIntentType.EXPERIMENT,
+        ActionIntentType.WORK_JOB,
+    ):
+        from app.game.quests.local_requests import resolve_request_work
+
+        request_work = resolve_request_work(db, character, intent.raw_text or "")
+        if request_work is not None:
+            return request_work
     if intent.type in _ECONOMY_INTENTS:
         if combat_bridge.get_active_encounter_for_actor(
             db, CombatActorType.CHARACTER, character.id

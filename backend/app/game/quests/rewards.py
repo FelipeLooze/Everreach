@@ -153,7 +153,7 @@ def grant_local_request_rewards(db: Session, campaign_id: str, character: Charac
     before grant_pending_quest_completion_xp, which marks the reward given."""
     from app.db.models.npc import NPC
     from app.game.economy.wallet import get_or_create_holding, transfer
-    from app.game.quests.local_requests import TRUST_ON_COMPLETION
+    from app.game.quests.local_requests import TRUST_ON_COMPLETION, close_request_worry
     from app.game.relationships.service import record_npc_interaction
 
     pending = (
@@ -184,4 +184,5 @@ def grant_local_request_rewards(db: Session, campaign_id: str, character: Charac
             lines.append(f"{giver.name} paga {amount} bronze a {character.name} pelo pedido '{quest.name}'.")
         else:
             lines.append(f"{giver.name} agradece a {character.name} pelo pedido '{quest.name}'.")
+        close_request_worry(db, quest)
     return lines

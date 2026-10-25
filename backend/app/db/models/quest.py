@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.enums import (
@@ -44,6 +44,16 @@ class Quest(Base):
     # and the bronze they pay from their purse on completion.
     giver_npc_id: Mapped[str | None] = mapped_column(ForeignKey("npcs.id"), nullable=True)
     reward_bronze: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    # Daily village request director metadata.  Null for authored quests and
+    # organization contracts.
+    request_template_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    request_generated_world_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    settlement_location_id: Mapped[str | None] = mapped_column(
+        ForeignKey("locations.id"), nullable=True
+    )
+    target_location_id: Mapped[str | None] = mapped_column(
+        ForeignKey("locations.id"), nullable=True
+    )
 
 
 class QuestObjective(Base):
@@ -64,6 +74,7 @@ class QuestObjective(Base):
     prerequisite_objective_id: Mapped[str | None] = mapped_column(
         ForeignKey("quest_objectives.id"), nullable=True
     )
+    required_count: Mapped[int] = mapped_column(Integer, default=1, server_default="1", nullable=False)
 
 
 class CharacterQuest(Base):
@@ -88,3 +99,23 @@ class CharacterQuestObjective(Base):
     character_id: Mapped[str] = mapped_column(ForeignKey("characters.id"), nullable=False)
     objective_id: Mapped[str] = mapped_column(ForeignKey("quest_objectives.id"), nullable=False)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    progress_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+
+
+class DailyRequestGeneration(Base):
+    """Idempotency marker for one village director pass per world dawn."""
+
+    __tablename__ = "daily_request_generations"
+    __table_args__ = (
+        UniqueConstraint(
+            "campaign_id", "settlement_location_id", "world_day",
+            name="uq_daily_request_generation_village_day",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: generate_id("reqgen"))
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)
+    settlement_location_id: Mapped[str] = mapped_column(ForeignKey("locations.id"), nullable=False)
+    world_day: Mapped[int] = mapped_column(Integer, nullable=False)
+    attempted_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    created_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)

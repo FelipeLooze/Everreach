@@ -279,6 +279,17 @@ def resolve_creature_harvest(
             owner_ref=character.id,
         )
         found.append((definition.name, quantity))
+        from app.core.enums import ObjectiveTriggerType
+        from app.game.quests.service import evaluate_objective_trigger
+
+        evaluate_objective_trigger(
+            db,
+            campaign_id,
+            character.id,
+            ObjectiveTriggerType.RETRIEVE_ITEM,
+            subject_id=f"definition:{definition.id}",
+            amount=quantity,
+        )
 
     resolved_key = action_key or generate_id("harvest_action")
     resolution = CreatureHarvestResolution(

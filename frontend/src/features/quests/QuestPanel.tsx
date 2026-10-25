@@ -59,6 +59,9 @@ export function QuestPanel({ campaignId, characterId }: { campaignId: string; ch
         {quest.objectives.map((objective) => (
           <li key={objective.id} className={objective.completed ? "objective-done" : ""}>
             {objective.completed ? "✓" : "○"} {objective.description}
+            {objective.required_count > 1
+              ? ` (${objective.progress_count}/${objective.required_count})`
+              : ""}
           </li>
         ))}
       </ul>

@@ -1,4 +1,6 @@
 from app.db.models.boundary_barrier import BoundaryBarrier
+from app.db.models.world_genesis import GenesisSector, GenesisWorld
+from app.db.models.world_spatial import EntitySpatialCoverage, GenesisSphereSector, LocationSpatialAnchor
 from app.db.models.action_checkpoint import ActionCheckpoint
 from app.db.models.boundary_route import BoundaryRoute
 from app.db.models.business import Business
@@ -79,6 +81,7 @@ from app.db.models.progression_outcome import AppliedProgressionOutcome
 from app.db.models.quest import (
     CharacterQuest,
     CharacterQuestObjective,
+    DailyRequestGeneration,
     Quest,
     QuestObjective,
 )
@@ -139,6 +142,11 @@ from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
+    "EntitySpatialCoverage",
+    "GenesisSphereSector",
+    "LocationSpatialAnchor",
+    "GenesisWorld",
+    "GenesisSector",
     "NPCBond",
     "ActionCheckpoint",
     "BoundaryBarrier",

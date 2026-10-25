@@ -35,10 +35,22 @@ from app.db.models.notice import Notice
 from app.db.models.npc import NPC
 from app.db.models.organization import Organization
 from app.db.models.shop import Shop
+from app.game.creatures.loot_catalog import (
+    ANY_BESTIARY_LOOT,
+    FOOD_AND_HIDE,
+    HARD_MATERIAL,
+    NATURAL_REAGENT,
+    ensure_bestiary_item_definitions,
+)
 from app.game.economy.businesses import deposit_business_funds, found_business
 from app.game.economy.jobs import create_job
 from app.game.economy.pricing import set_item_base_value
-from app.game.economy.shops import create_shop, deposit_till, stock_item
+from app.game.economy.shops import (
+    configure_shop_purchase_categories,
+    create_shop,
+    deposit_till,
+    stock_item,
+)
 from app.game.items.armor import configure_item_armor_profile
 from app.game.items.consumables import configure_consumable_profile
 from app.game.items.equipment import configure_item_equipment_profile
@@ -110,6 +122,9 @@ def ensure_economy_item_catalog(db: Session) -> dict[str, ItemDefinition]:
         damage_profiles={PhysicalDamageProfile.SLASH, PhysicalDamageProfile.PIERCE},
         reach=WeaponReach.NORMAL,
         hand_requirement=WeaponHandRequirement.ONE_HAND,
+    )
+    configure_item_tool_profile(
+        db, items["knife"], capabilities={ToolCapability.CUTTING}
     )
     configure_item_equipment_profile(
         db, items["hammer"], allowed_slots={EquipmentSlot.MAIN_HAND, EquipmentSlot.OFF_HAND, EquipmentSlot.WAIST}
@@ -292,6 +307,7 @@ def ensure_initial_economy_for_campaign(
     ).first()
 
     items = ensure_economy_item_catalog(db)
+    ensure_bestiary_item_definitions(db)
     created_any = False
 
     forge, forge_created = _business(
@@ -301,6 +317,7 @@ def ensure_initial_economy_for_campaign(
         db, campaign_id, forge, blacksmith, blacksmith.workplace_location_id,
         (ItemType.WEAPON, ItemType.ARMOR, ItemType.TOOL, ItemType.MATERIAL),
     )
+    configure_shop_purchase_categories(db, forge_shop, (HARD_MATERIAL,))
     if forge_shop_created:
         _stock(db, forge_shop, blacksmith, items["knife"], 1)
         _stock(db, forge_shop, blacksmith, items["knife"], 1)
@@ -331,15 +348,77 @@ def ensure_initial_economy_for_campaign(
         db, campaign_id, market, merchant, merchant.workplace_location_id,
         (ItemType.MATERIAL, ItemType.MISC, ItemType.CONSUMABLE, ItemType.CONTAINER),
     )
+    configure_shop_purchase_categories(
+        db, market_shop, (ANY_BESTIARY_LOOT,)
+    )
     if market_shop_created:
         for key, quantity in (("rope", 3), ("torch", 4), ("fiber", 9), ("iron", 6), ("wood", 6)):
             _stock(db, market_shop, merchant, items[key], quantity)
     market_job = _job(db, campaign_id, market, "Auxiliar de Armazém", "Separar mercadorias e ajudar a registrar cargas do entreposto.", merchant.workplace_location_id, 10, 150, "MERCHANT", "Comerciante", 0.6, hours=(8, 18), hours_on_notice=True)
 
+    shopkeeper = db.query(NPC).filter(
+        NPC.campaign_id == campaign_id,
+        NPC.role == "lojista",
+    ).first()
+    if shopkeeper is not None and shopkeeper.workplace_location_id is not None:
+        general, general_created = _business(
+            db,
+            campaign_id,
+            f"Loja Geral de {shopkeeper.name}",
+            BusinessType.SHOP,
+            shopkeeper,
+            shopkeeper.workplace_location_id,
+        )
+        general_shop, general_shop_created = _shop(
+            db,
+            campaign_id,
+            general,
+            shopkeeper,
+            shopkeeper.workplace_location_id,
+            (ItemType.MATERIAL, ItemType.CONSUMABLE, ItemType.MISC),
+        )
+        configure_shop_purchase_categories(
+            db, general_shop, (FOOD_AND_HIDE,)
+        )
+        created_any = created_any or general_created or general_shop_created
+
+    herbalist = db.query(NPC).filter(
+        NPC.campaign_id == campaign_id,
+        NPC.role == "herbalista",
+    ).first()
+    if herbalist is not None:
+        herbal, herbal_created = _business(
+            db,
+            campaign_id,
+            f"Compra de Ervas de {herbalist.name}",
+            BusinessType.SHOP,
+            herbalist,
+            herbalist.location_id,
+        )
+        herbal_shop, herbal_shop_created = _shop(
+            db,
+            campaign_id,
+            herbal,
+            herbalist,
+            herbalist.location_id,
+            (ItemType.MATERIAL,),
+        )
+        configure_shop_purchase_categories(
+            db, herbal_shop, (NATURAL_REAGENT,)
+        )
+        created_any = created_any or herbal_created or herbal_shop_created
+
     for job, author in ((forge_job, blacksmith), (inn_job, innkeeper), (market_job, merchant)):
         _post_job_notice(db, campaign_id, job, author)
         ensure_job_schedule(db, campaign_id, job, author)
 
-    created_any = any((forge_created, forge_shop_created, inn_created, inn_shop_created, market_created, market_shop_created))
+    created_any = created_any or any((
+        forge_created,
+        forge_shop_created,
+        inn_created,
+        inn_shop_created,
+        market_created,
+        market_shop_created,
+    ))
     db.flush()
     return created_any

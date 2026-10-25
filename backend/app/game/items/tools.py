@@ -40,8 +40,8 @@ def configure_item_tool_profile(
 ) -> ItemToolProfile:
     if db.get(ItemDefinition, item.id) is None:
         raise ToolError("Tool item must be persisted before configuration.")
-    if item.type != ItemType.TOOL.value:
-        raise ToolError("Only TOOL item definitions can have a tool profile.")
+    if item.type not in (ItemType.TOOL.value, ItemType.WEAPON.value):
+        raise ToolError("Only TOOL or WEAPON item definitions can have a tool profile.")
     if not capabilities or any(
         not isinstance(capability, ToolCapability) for capability in capabilities
     ):

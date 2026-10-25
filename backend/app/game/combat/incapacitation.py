@@ -252,6 +252,9 @@ def _permanently_kill(db, campaign_id, state, actor, cause, actor_type=None) -> 
     elif identity == CombatActorType.NPC.value:
         actor.incapacitated = False
         actor.alive = False
+        actor.died_world_minute = get_world_time(
+            db, campaign_id
+        ).total_minutes()
         log_event(db, campaign_id, EventType.NPC_DIED, actor_type="npc", actor_id=actor.id,
                   payload={"npc_id": actor.id, "name": actor.name, "cause": cause}, importance=5)
     else:

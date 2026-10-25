@@ -18,12 +18,16 @@ from sqlalchemy.orm import Session
 
 from app.core.enums import CombatActorType, NPCActivity
 from app.db.models.location import Location, LocationConnection
+from app.db.models.loot import ActorLootProfile
 from app.db.models.npc import NPC
+from app.db.models.visual_identity import VisualIdentity
 from app.game.combat.defense import configure_actor_combat_defense
 from app.game.creatures.species import Species, all_species, bestiary, is_active
+from app.game.time.clock import get_world_time
 from app.game.visual.npc import set_npc_stable_identity
 
 DAY = 24 * 60
+CORPSE_LIFETIME_MINUTES = 2 * DAY
 SPECIES_PER_PLACE = 3
 MAX_GROUP = 4
 MAX_HOPS = 4
@@ -172,6 +176,7 @@ def replenish(db: Session, campaign_id: str, hour: int, *, rng: random.Random | 
               full: bool = False) -> list[NPC]:
     """Regrow the wild: one animal per species and place (``full`` fills
     every group at once, for a new world)."""
+    cleanup_expired_corpses(db, campaign_id)
     rng = rng or random.Random()
     born = []
     for place_id, hops in _distances_from_village(db, campaign_id).items():
@@ -194,6 +199,36 @@ def replenish(db: Session, campaign_id: str, hour: int, *, rng: random.Random | 
                 born.append(_spawn(db, campaign_id, place, species, _distance_word(hops), rng, hour))
     db.flush()
     return born
+
+
+def cleanup_expired_corpses(db: Session, campaign_id: str) -> int:
+    """Remove creature carcasses roughly two world days after death."""
+    cutoff = (
+        get_world_time(db, campaign_id).total_minutes()
+        - CORPSE_LIFETIME_MINUTES
+    )
+    expired = db.query(NPC).filter(
+        NPC.campaign_id == campaign_id,
+        NPC.creature_species.is_not(None),
+        NPC.alive.is_(False),
+        NPC.died_world_minute.is_not(None),
+        NPC.died_world_minute <= cutoff,
+    ).all()
+    for creature in expired:
+        db.query(ActorLootProfile).filter(
+            ActorLootProfile.campaign_id == campaign_id,
+            ActorLootProfile.actor_type == "NPC",
+            ActorLootProfile.actor_id == creature.id,
+        ).delete(synchronize_session=False)
+        db.query(VisualIdentity).filter(
+            VisualIdentity.campaign_id == campaign_id,
+            VisualIdentity.subject_kind == "npc",
+            VisualIdentity.subject_id == creature.id,
+        ).delete(synchronize_session=False)
+        db.delete(creature)
+    if expired:
+        db.flush()
+    return len(expired)
 
 
 def apply_activity(db: Session, campaign_id: str, hour: int) -> int:

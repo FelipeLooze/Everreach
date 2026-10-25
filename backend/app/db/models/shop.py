@@ -37,6 +37,12 @@ class Shop(Base):
     # declared restriction (buys nothing unless explicitly listed; see
     # app.game.economy.shops.sell_to_shop).
     accepted_item_types_json: Mapped[str] = mapped_column(String, default="[]", nullable=False)
+    # Authoritative bestiary-loot categories this buyer accepts. Dataset loot
+    # requires an explicit policy; broad ItemType=MATERIAL is not enough to
+    # make an inn buy horns or a smith buy raw meat.
+    purchase_categories_json: Mapped[str] = mapped_column(
+        String, default="[]", server_default="[]", nullable=False
+    )
 
 
 class ShopListing(Base):

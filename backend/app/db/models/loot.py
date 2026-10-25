@@ -58,3 +58,37 @@ class LootResolution(Base):
     luck_value: Mapped[int] = mapped_column(Integer, nullable=False)
     result_json: Mapped[str] = mapped_column(String, nullable=False)
     created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class CreatureHarvestResolution(Base):
+    """One authoritative collection method resolved against one carcass."""
+
+    __tablename__ = "creature_harvest_resolutions"
+    __table_args__ = (
+        UniqueConstraint(
+            "campaign_id",
+            "source_npc_id",
+            "harvest_method",
+            name="uq_creature_harvest_source_method",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String, primary_key=True, default=lambda: generate_id("harvest")
+    )
+    campaign_id: Mapped[str] = mapped_column(
+        ForeignKey("campaigns.id"), nullable=False
+    )
+    character_id: Mapped[str] = mapped_column(
+        ForeignKey("characters.id"), nullable=False
+    )
+    # Deliberately not a foreign key: carcass cleanup removes the NPC after
+    # two world days while this audit/idempotency record remains.
+    source_npc_id: Mapped[str] = mapped_column(String, nullable=False)
+    source_name: Mapped[str] = mapped_column(String, nullable=False)
+    species_key: Mapped[str] = mapped_column(String, nullable=False)
+    harvest_method: Mapped[str] = mapped_column(String, nullable=False)
+    action_key: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    luck_value: Mapped[int] = mapped_column(Integer, nullable=False)
+    result_json: Mapped[str] = mapped_column(String, nullable=False)
+    created_world_minute: Mapped[int] = mapped_column(Integer, nullable=False)

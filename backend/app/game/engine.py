@@ -39,18 +39,24 @@ from app.db.models.location import (
     LocationFeature,
 )
 from app.db.models.notice import Notice
+from app.db.models.npc import NPC
 from app.game import game_state
 from app.game.combat import bridge as combat_bridge
 from app.game.combat import fainting
 from app.game.combat import hostility as combat_hostility
 from app.game.combat import service as combat_service
 from app.game.combat.recovery import recover_character
+from app.game.creatures.rewards import grant_new_creature_defeat_rewards
 from app.game.items.interactions import (
     ITEM_INTERACTION_INTENTS,
     resolve_item_interaction,
 )
 from app.game.items.consumables import ConsumableError, use_consumable
-from app.game.items.loot import LootError, resolve_npc_loot
+from app.game.items.loot import (
+    LootError,
+    resolve_creature_harvest,
+    resolve_npc_loot,
+)
 from app.game.economy.economic_canon import (
     EconomicCanonError,
     materialize_economic_value,
@@ -300,6 +306,7 @@ def resolve_action(
                 active_player_id=active_simulated_player.id if active_simulated_player else None,
             ),
         )
+        intent = _refine_explicit_harvest_intent(intent)
         intent = _refine_explicit_quest_intent(intent)
         intent = _refine_explicit_membership_intent(intent)
         intent = _refine_explicit_economy_intent(intent)
@@ -323,6 +330,15 @@ def resolve_action(
         ):
             intent = replace(intent, type=ActionIntentType.TALK, target=None, person_ref=None)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
+
+    dead_creature_ids_before = {
+        creature_id
+        for (creature_id,) in db.query(NPC.id).filter(
+            NPC.campaign_id == campaign_id,
+            NPC.creature_species.is_not(None),
+            NPC.alive.is_(False),
+        )
+    }
 
     if technique_use is not None:
         mechanical_summary = technique_use.mechanical_summary
@@ -425,6 +441,20 @@ def resolve_action(
                 db, campaign_id, character.id, ObjectiveTriggerType.REACH_LOCATION,
                 subject_id=character.location_id,
             )
+
+    creature_rewards = grant_new_creature_defeat_rewards(
+        db,
+        llm_service,
+        campaign_id,
+        character,
+        dead_creature_ids_before,
+    )
+    if creature_rewards:
+        reward_text = "; ".join(
+            f"{creature.name}: +{amount:g} XP"
+            for creature, amount in creature_rewards
+        )
+        mechanical_summary = f"{mechanical_summary} Experiência de combate: {reward_text}."
 
     request_payments = grant_local_request_rewards(db, campaign_id, character)
     if request_payments:
@@ -889,6 +919,76 @@ _GUILD_DIPLOMACY_PATTERN = re.compile(
 )
 
 
+_HARVEST_VERBS = (
+    ("vasculhar ninho", re.compile(r"\bvasculh\w*\s+(?:o\s+)?ninho\b")),
+    ("esfolar", re.compile(r"\b(?:esfol\w*|tiro\s+a\s+pele)\b")),
+    ("extrair", re.compile(r"\b(?:extra\w*|extraio|arranco)\b")),
+    ("processar", re.compile(r"\bprocess\w*\b")),
+    (
+        "butchering",
+        re.compile(
+            r"\b(?:carneio|carnear|destrinch\w*|esquartej\w*|"
+            r"corto\s+e\s+preparo|separo\s+a\s+carne)\b"
+        ),
+    ),
+    ("depenar", re.compile(r"\bdepen\w*\b")),
+    ("capturar", re.compile(r"\bcaptur\w*\b")),
+    ("filtrar", re.compile(r"\bfiltr\w*\b")),
+    ("tosquiar", re.compile(r"\btosqui\w*\b")),
+    ("recolher", re.compile(r"\brecolh\w*\b")),
+    ("coletar", re.compile(r"\bcolet\w*\b")),
+    ("vasculhar", re.compile(r"\bvasculh\w*\b")),
+)
+_NON_CARCASS_TARGETS = {
+    "area", "arredores", "regiao", "terreno", "trilha", "trilhas",
+    "caminho", "caminhos", "local", "lugar",
+}
+
+
+def _refine_explicit_harvest_intent(intent: Intent) -> Intent:
+    """Recognize concrete carcass collection verbs without trusting the LLM."""
+    if intent.type not in (
+        ActionIntentType.FREEFORM,
+        ActionIntentType.SKILL_CHECK,
+        ActionIntentType.EXAMINE,
+        ActionIntentType.LOOT,
+    ):
+        return intent
+    raw = intent.raw_text or ""
+    plain = _strip_accents(raw).casefold()
+    matched_method = None
+    matched_span = None
+    for method, pattern in _HARVEST_VERBS:
+        match = pattern.search(plain)
+        if match is not None:
+            matched_method = method
+            matched_span = match.span()
+            break
+    if matched_method is None or matched_span is None:
+        return intent
+
+    target = intent.target if intent.type == ActionIntentType.LOOT else None
+    if not target:
+        tail = raw[matched_span[1]:].strip(" \t\r\n:;,.!?-'\"“”")
+        corpse_match = re.search(
+            r"\b(?:do|da|dos|das|de\s+um|de\s+uma)\s+(.+)$",
+            tail,
+            re.IGNORECASE,
+        )
+        target = corpse_match.group(1) if corpse_match else tail
+        target = re.sub(
+            r"^(?:o|a|os|as|um|uma)\s+", "", target, flags=re.IGNORECASE
+        ).strip()
+    if matched_method == "vasculhar" and _strip_accents(target).casefold() in _NON_CARCASS_TARGETS:
+        return intent
+    return replace(
+        intent,
+        type=ActionIntentType.LOOT,
+        target=target or "corpo",
+        secondary_target=matched_method,
+    )
+
+
 _ECONOMY_INTENTS = {
     ActionIntentType.BUY,
     ActionIntentType.SELL,
@@ -1267,9 +1367,19 @@ def _apply_intent(
         if not intent.target:
             return "Nenhum alvo para saque foi identificado.", 0
         try:
-            result = resolve_npc_loot(
-                db, campaign_id, character, intent.target, action_key=action_key
-            )
+            if intent.secondary_target:
+                result = resolve_creature_harvest(
+                    db,
+                    campaign_id,
+                    character,
+                    intent.target,
+                    intent.secondary_target,
+                    action_key=action_key,
+                )
+            else:
+                result = resolve_npc_loot(
+                    db, campaign_id, character, intent.target, action_key=action_key
+                )
         except LootError as exc:
             return f"O saque não pôde ser realizado: {exc}", 0
         return f"{character.name} {result.summary[0].lower() + result.summary[1:]}", 0 if result.replayed else 2

@@ -85,8 +85,13 @@ Guia:
   o recipiente de destino em "secondary_target".
 - USE: consumir ou usar um item consumível possuído pelo jogador, como beber
   uma poção ou comer uma ração. O item fica em "target".
-- LOOT: saquear ou revistar os pertences de uma pessoa ou criatura morta. O
-  morto fica em "target". Nunca classifique roubo de uma pessoa viva como LOOT.
+- LOOT: saquear/revistar uma pessoa morta ou coletar partes de uma criatura
+  morta. O morto fica em "target". Para coleta, use em "secondary_target"
+  exatamente um destes métodos internos conforme o verbo do jogador: esfolar,
+  extrair, processar, butchering (cortar/preparar carne), coletar, recolher,
+  vasculhar, vasculhar ninho, depenar, capturar, filtrar ou tosquiar. Para
+  simples revista de pertences, deixe "secondary_target" null. Nunca
+  classifique roubo de uma pessoa viva como LOOT e nunca decida os materiais.
 - ACCEPT_QUEST: aceitar uma missão ou contrato conhecido. Use o título da missão
   em "target". Você não decide se ela está disponível; o backend valida.
 - ABANDON_QUEST: abandonar ou cancelar a participação do jogador em uma missão.

@@ -150,13 +150,19 @@ def test_fists_fight_a_wolf_and_a_wolf_at_zero_is_dead(client, db_session):
     forest = _forest_next_to_the_village(db_session, campaign_id)
     for creature in db_session.query(NPC).filter(NPC.location_id == forest.id, NPC.creature_species.is_not(None)):
         creature.alive = False
-    wolf = _spawn(db_session, campaign_id, forest, "Lobo Cinzento", hour=22)
     _at(db_session, campaign_id, 22)
+    # Dawn replenishes the normal fauna.  Keep this scenario deliberately to
+    # one combatant so XP assertions are independent from pack participation.
+    for creature in db_session.query(NPC).filter(NPC.location_id == forest.id, NPC.creature_species.is_not(None)):
+        creature.alive = False
+    wolf = _spawn(db_session, campaign_id, forest, "Lobo Cinzento", hour=22)
     character.location_id = forest.id
     wolf.hp_current = 1
     db_session.commit()
 
     llm = Scripted()
+    xp_before = character.xp
+    result = None
     for _ in range(12):
         result = engine.resolve_action(db_session, llm, campaign_id, character.id, "Ataco o lobo com os punhos", intent_llm_service=llm)
         assert "não está equipado" not in result.mechanical_summary
@@ -164,6 +170,8 @@ def test_fists_fight_a_wolf_and_a_wolf_at_zero_is_dead(client, db_session):
         if not wolf.alive:
             break
     assert wolf.alive is False
+    assert character.xp == xp_before + get(wolf.creature_species).xp
+    assert "Experiência de combate" in result.mechanical_summary
 
 
 def test_losing_a_fight_means_waking_up_at_the_inn(client, db_session):

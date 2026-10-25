@@ -50,6 +50,9 @@ class NPC(Base):
     # A creature (app.game.creatures.species key: "wolf", "boar"…), never a
     # person: no talk, routine, profile or knowledge. None for people.
     creature_species: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Set when an NPC dies. Creature population cleanup uses this timestamp
+    # to remove old carcasses without relying on narration or wall-clock time.
+    died_world_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
     visiting_location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
 
     activity: Mapped[str] = mapped_column(

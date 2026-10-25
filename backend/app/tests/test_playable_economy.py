@@ -28,8 +28,8 @@ def _setup(db_session):
 def test_initial_economy_has_real_businesses_stock_and_jobs_without_gifting_player_gear(db_session):
     campaign, _region, _village, character = _setup(db_session)
 
-    assert db_session.query(Business).filter(Business.campaign_id == campaign.id).count() == 3
-    assert db_session.query(Shop).filter(Shop.campaign_id == campaign.id).count() == 3
+    assert db_session.query(Business).filter(Business.campaign_id == campaign.id).count() == 5
+    assert db_session.query(Shop).filter(Shop.campaign_id == campaign.id).count() == 5
     assert db_session.query(Job).filter(Job.campaign_id == campaign.id).count() == 3
     assert db_session.query(ShopListing).count() > 0
 

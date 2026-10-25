@@ -32,6 +32,10 @@ from app.core.enums import (
 )
 from app.db.models.item import ItemInstance
 from app.db.models.shop import Shop, ShopListing
+from app.game.creatures.loot_catalog import (
+    ANY_BESTIARY_LOOT,
+    bestiary_item_for_definition,
+)
 from app.game.economy.supply_demand import resolve_local_market_price
 from app.game.economy.economic_canon import item_subject, materialize_economic_value
 from app.game.economy.wallet import get_or_create_holding
@@ -76,6 +80,48 @@ def create_shop(
     db.add(shop)
     db.flush()
     return shop
+
+
+def configure_shop_purchase_categories(
+    db: Session,
+    shop: Shop,
+    categories: tuple[str, ...],
+) -> Shop:
+    """Declare which authoritative bestiary-loot categories a shop buys."""
+    normalized = sorted(
+        {category.strip().upper() for category in categories if category.strip()}
+    )
+    shop.purchase_categories_json = json.dumps(
+        normalized, separators=(",", ":")
+    )
+    db.flush()
+    return shop
+
+
+def quote_shop_purchase(
+    db: Session,
+    shop: Shop,
+    item: ItemInstance,
+) -> int | None:
+    """Return the unit price offered, or None when this shop refuses it."""
+    dataset_item = bestiary_item_for_definition(item.definition)
+    if dataset_item is not None:
+        if not dataset_item.sellable:
+            return None
+        policy = set(json.loads(shop.purchase_categories_json or "[]"))
+        if not policy:
+            return None
+        if ANY_BESTIARY_LOOT in policy:
+            base = dataset_item.effective_price_bronze
+            return max(1, base * 3 // 5)
+        if not policy.intersection(dataset_item.purchase_categories):
+            return None
+        return dataset_item.effective_price_bronze
+
+    accepted = set(json.loads(shop.accepted_item_types_json or "[]"))
+    if accepted and item.definition.type not in accepted:
+        return None
+    return resolve_local_market_price(db, item, shop.location_id)
 
 
 def deposit_till(db: Session, shop: Shop, amount_bronze: int, *, reason: str) -> Shop:
@@ -227,15 +273,10 @@ def sell_to_shop(
     if item.owner_type != seller_type.value or item.owner_ref != seller_id:
         raise ShopError("Você não possui este item.")
 
-    accepted = json.loads(shop.accepted_item_types_json)
-    if accepted and item.definition.type not in accepted:
-        raise ShopError(f"'{shop.name}' não compra itens do tipo {item.definition.type}.")
-
-    unit_price = (
-        price_bronze
-        if price_bronze is not None
-        else resolve_local_market_price(db, item, shop.location_id)
-    )
+    quoted_price = quote_shop_purchase(db, shop, item)
+    if quoted_price is None:
+        raise ShopError(f"'{shop.name}' não compra esse tipo de item.")
+    unit_price = price_bronze if price_bronze is not None else quoted_price
     price = unit_price * item.quantity
     if price > shop.till_bronze:
         raise ShopError(

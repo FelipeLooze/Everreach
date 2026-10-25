@@ -5,7 +5,6 @@ stock, wages and production.  This module only resolves a text action against
 what is physically present and composes those services into playable turns.
 """
 
-import json
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -32,7 +31,12 @@ from app.db.models.tool import ItemToolProfile
 from app.game.economy.jobs import JobError, apply_to_job, end_employment, resolve_application
 from app.game.economy.production import ProductionError, produce_goods
 from app.game.economy.recipes import RECIPES, EconomyRecipe
-from app.game.economy.shops import ShopError, buy_from_shop, sell_to_shop
+from app.game.economy.shops import (
+    ShopError,
+    buy_from_shop,
+    quote_shop_purchase,
+    sell_to_shop,
+)
 from app.game.economy.supply_demand import resolve_local_market_price
 from app.game.economy.wages import WageError, pay_wage
 from app.game.economy.wallet import total_carried_by_owner
@@ -214,20 +218,20 @@ def build_economy_view(db: Session, character: Character) -> dict:
                 "quantity": item.quantity,
                 "unit_price_bronze": price,
             })
-        accepted = set(json.loads(shop.accepted_item_types_json))
         sellable = []
         held = db.query(ItemInstance, ItemDefinition).join(ItemDefinition).filter(
             ItemInstance.location_type == ItemLocationType.CHARACTER.value,
             ItemInstance.location_ref == character.id,
         ).order_by(ItemDefinition.name, ItemInstance.id).all()
         for item, definition in held:
-            if accepted and definition.type not in accepted:
+            unit_price = quote_shop_purchase(db, shop, item)
+            if unit_price is None:
                 continue
             sellable.append({
                 "item_instance_id": item.id,
                 "name": definition.name,
                 "quantity": item.quantity,
-                "price_bronze": resolve_local_market_price(db, item, shop.location_id) * item.quantity,
+                "price_bronze": unit_price * item.quantity,
             })
         shops.append({
             "shop_id": shop.id,

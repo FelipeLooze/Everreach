@@ -6,14 +6,35 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.core.enums import CharacterAttributeKey, CharacterStatus, EventType, ItemInstanceMode, ItemLocationType, ItemOwnerType
+from app.core.enums import (
+    CharacterAttributeKey,
+    CharacterStatus,
+    EventType,
+    ItemInstanceMode,
+    ItemLocationType,
+    ItemOwnerType,
+    ToolCapability,
+)
 from app.core.ids import generate_id
 from app.db.models.character import Character
 from app.db.models.item import ItemDefinition, ItemInstance
-from app.db.models.loot import ActorLootProfile, LootResolution, LootTable, LootTableEntry
+from app.db.models.loot import (
+    ActorLootProfile,
+    CreatureHarvestResolution,
+    LootResolution,
+    LootTable,
+    LootTableEntry,
+)
 from app.db.models.npc import NPC
+from app.db.models.tool import ItemToolProfile
 from app.game.attributes.service import get_character_attribute
+from app.game.creatures.loot_catalog import (
+    bestiary_item_key,
+    ensure_bestiary_item_definitions,
+)
+from app.game.creatures.species import get as get_species
 from app.game.items.service import create_item_instance, move_item_instance, set_item_owner
+from app.game.items.tools import ToolError, validate_character_tool_use
 from app.game.npcs.service import effective_npc_location_id
 from app.game.time.clock import get_world_time
 from app.services.event_log import log_event
@@ -36,6 +57,45 @@ class LootResult:
             return f"Revista {self.source_name}, mas não encontra nada que possa levar."
         found = ", ".join(f"{quantity}× {name}" for name, quantity in self.items)
         return f"Saqueia {self.source_name} e obtém: {found}."
+
+
+@dataclass(frozen=True)
+class HarvestResult:
+    source_name: str
+    method: str
+    items: tuple[tuple[str, int], ...]
+    luck_value: int
+    replayed: bool = False
+
+    @property
+    def summary(self) -> str:
+        label = _HARVEST_LABELS.get(self.method, self.method)
+        if not self.items:
+            return (
+                f"Tenta {label} {self.source_name}, mas não obtém nenhum "
+                "material aproveitável."
+            )
+        found = ", ".join(
+            f"{quantity}× {name}" for name, quantity in self.items
+        )
+        return f"Conclui a coleta em {self.source_name} ({label}) e obtém: {found}."
+
+
+_CUTTING_METHODS = {"esfolar", "butchering", "extrair"}
+_HARVEST_LABELS = {
+    "esfolar": "esfolar",
+    "extrair": "extrair",
+    "processar": "processar",
+    "butchering": "cortar e preparar",
+    "coletar": "coletar",
+    "recolher": "recolher",
+    "vasculhar": "vasculhar",
+    "vasculhar ninho": "vasculhar o ninho",
+    "depenar": "depenar",
+    "capturar": "capturar",
+    "filtrar": "filtrar",
+    "tosquiar": "tosquiar",
+}
 
 
 def effective_drop_chance(base_chance: float, luck_value: int) -> float:
@@ -122,6 +182,191 @@ def resolve_npc_loot(db: Session, campaign_id: str, character: Character, target
     db.add(resolution); db.flush()
     log_event(db, campaign_id, EventType.LOOT_RESOLVED, actor_type="character", actor_id=character.id, payload={"source_actor_type": "NPC", "source_actor_id": npc.id, "luck_value": luck, "items": found, "action_key": resolved_key})
     return LootResult(npc.name, tuple(found), luck)
+
+
+def resolve_creature_harvest(
+    db: Session,
+    campaign_id: str,
+    character: Character,
+    target: str,
+    method: str,
+    *,
+    action_key: str | None,
+) -> HarvestResult:
+    """Resolve each compatible dataset drop independently, once per method."""
+    normalized_method = method.strip().casefold()
+    if normalized_method not in _HARVEST_LABELS:
+        raise LootError("Método de coleta desconhecido.")
+    if action_key:
+        previous = db.query(CreatureHarvestResolution).filter(
+            CreatureHarvestResolution.action_key == action_key
+        ).one_or_none()
+        if previous is not None:
+            if (
+                previous.campaign_id != campaign_id
+                or previous.character_id != character.id
+            ):
+                raise LootError("A chave desta ação pertence a outro personagem.")
+            return HarvestResult(
+                previous.source_name,
+                previous.harvest_method,
+                tuple(tuple(row) for row in json.loads(previous.result_json)),
+                previous.luck_value,
+                True,
+            )
+    if (
+        character.campaign_id != campaign_id
+        or character.status != CharacterStatus.ALIVE.value
+    ):
+        raise LootError("Somente o personagem vivo pode coletar neste mundo.")
+
+    creature = _resolve_dead_creature(
+        db, campaign_id, character.location_id, target
+    )
+    species = get_species(creature.creature_species)
+    if species is None:
+        raise LootError("A espécie desse corpo não existe no bestiário.")
+    compatible = [drop for drop in species.loot if drop.method == normalized_method]
+    if not compatible:
+        available = sorted({drop.method for drop in species.loot})
+        readable = ", ".join(
+            _HARVEST_LABELS.get(value, value) for value in available
+        )
+        raise LootError(
+            f"Esse corpo não permite esse método. Métodos possíveis: {readable}."
+        )
+    already = db.query(CreatureHarvestResolution).filter(
+        CreatureHarvestResolution.campaign_id == campaign_id,
+        CreatureHarvestResolution.source_npc_id == creature.id,
+        CreatureHarvestResolution.harvest_method == normalized_method,
+    ).one_or_none()
+    if already is not None:
+        raise LootError("Esse método já foi usado neste corpo.")
+    if normalized_method in _CUTTING_METHODS:
+        _require_cutting_tool(db, character)
+
+    definitions = ensure_bestiary_item_definitions(db)
+    luck = get_character_attribute(
+        db, character.id, CharacterAttributeKey.LUCK
+    ).value
+    profile = json.loads(creature.profile_json or "{}")
+    stage = species.stages.get(
+        profile.get("stage"), species.stages.get("adulto")
+    )
+    loot_quantity = stage.loot_quantity if stage is not None else 1.0
+    found: list[tuple[str, int]] = []
+    for drop in compatible:
+        rng = random.Random(
+            _seed(campaign_id, creature.id, normalized_method, drop.item_id)
+        )
+        chance = effective_drop_chance(drop.chance_pct / 100.0, luck)
+        if rng.random() >= chance:
+            continue
+        rolled = rng.randint(drop.quantity[0], drop.quantity[1])
+        quantity = max(1, int(round(rolled * loot_quantity)))
+        definition = definitions[bestiary_item_key(drop.item_id)]
+        instance = create_item_instance(db, definition, quantity=quantity)
+        move_item_instance(
+            db,
+            instance,
+            location_type=ItemLocationType.CHARACTER,
+            location_ref=character.id,
+        )
+        set_item_owner(
+            db,
+            instance,
+            owner_type=ItemOwnerType.CHARACTER,
+            owner_ref=character.id,
+        )
+        found.append((definition.name, quantity))
+
+    resolved_key = action_key or generate_id("harvest_action")
+    resolution = CreatureHarvestResolution(
+        campaign_id=campaign_id,
+        character_id=character.id,
+        source_npc_id=creature.id,
+        source_name=creature.name,
+        species_key=species.key,
+        harvest_method=normalized_method,
+        action_key=resolved_key,
+        luck_value=luck,
+        result_json=json.dumps(found, ensure_ascii=False),
+        created_world_minute=get_world_time(db, campaign_id).total_minutes(),
+    )
+    db.add(resolution)
+    db.flush()
+    log_event(
+        db,
+        campaign_id,
+        EventType.LOOT_RESOLVED,
+        actor_type="character",
+        actor_id=character.id,
+        payload={
+            "source_actor_type": "NPC",
+            "source_actor_id": creature.id,
+            "species_key": species.key,
+            "harvest_method": normalized_method,
+            "luck_value": luck,
+            "items": found,
+            "action_key": resolved_key,
+        },
+    )
+    return HarvestResult(creature.name, normalized_method, tuple(found), luck)
+
+
+def _require_cutting_tool(db: Session, character: Character) -> None:
+    candidates = (
+        db.query(ItemInstance)
+        .join(
+            ItemToolProfile,
+            ItemToolProfile.item_id == ItemInstance.definition_id,
+        )
+        .filter(ItemInstance.campaign_id == character.campaign_id)
+        .all()
+    )
+    for candidate in candidates:
+        try:
+            validate_character_tool_use(
+                db,
+                character.id,
+                candidate.id,
+                required_capability=ToolCapability.CUTTING,
+            )
+            return
+        except ToolError:
+            continue
+    raise LootError(
+        "Esse método exige uma ferramenta de corte acessível no inventário."
+    )
+
+
+def _resolve_dead_creature(
+    db: Session,
+    campaign_id: str,
+    location_id: str | None,
+    target: str,
+) -> NPC:
+    candidates = db.query(NPC).filter(
+        NPC.campaign_id == campaign_id,
+        NPC.alive.is_(False),
+        NPC.creature_species.is_not(None),
+        NPC.location_id == location_id,
+    ).all()
+    direct = db.get(NPC, target.strip())
+    if direct in candidates:
+        return direct
+    normalized = target.strip().casefold()
+    exact = [npc for npc in candidates if npc.name.casefold() == normalized]
+    matches = exact or [
+        npc
+        for npc in candidates
+        if normalized and normalized in npc.name.casefold()
+    ]
+    if len(matches) == 1:
+        return matches[0]
+    if not matches and len(candidates) == 1:
+        return candidates[0]
+    raise LootError("Corpo de criatura não encontrado ou alvo ambíguo.")
 
 
 def _grant(db: Session, definition: ItemDefinition, character: Character) -> None:

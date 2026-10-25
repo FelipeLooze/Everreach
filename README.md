@@ -708,6 +708,19 @@ Detalhes de implementação, rastreamento de processos e como reportar problemas
   de vida, dano somado e bônus de acerto sobre os números propostos pelo dataset. Nível 1 é uma luta
   média para um personagem novo desarmado (vence, mas perde de 4 a 8 de 20 de vida); nível 2 é difícil
   (um lobo sozinho custa metade da vida; um lince vence metade das vezes); matilhas são perigosas.
+- **A2b — Saque, venda e XP:** os 713 materiais únicos do bestiário são definições de item reais.
+  Um corpo pode ser esfolado, extraído, processado, cortado, coletado, recolhido, vasculhado,
+  depenado, capturado, filtrado ou tosquiado conforme os métodos do próprio dataset; cada método
+  rola seus drops de forma independente e só pode ser usado uma vez por corpo. Esfolar, cortar e
+  extrair exigem uma ferramenta com capacidade de corte (a faca de ferro vendida pela ferreira
+  possui essa capacidade). A fase da criatura altera a quantidade e a sorte continua influenciando
+  apenas drops opcionais. Corpos desaparecem após cerca de dois dias de mundo.
+- **Comércio do saque:** a loja geral compra alimentos e peles; a ferraria compra partes duras;
+  a herbalista compra ingredientes e reagentes naturais; a Guilda de Comerciantes compra qualquer
+  material vendável por menos. O preço-base vem do dataset (1 cobre = 1 Bronze), material de preço
+  zero com uso potencial vale 1 Bronze e material sem preço nem uso não tem comprador. Todo caixa é
+  finito. A vitória sobre uma criatura de risco concede seu XP de combate uma única vez pelo sistema
+  de progressão; o resultado mecânico informa ao narrador exatamente o que caiu e em que quantidade.
 - **Perder uma luta:** o personagem nunca morre — desmaia e acorda horas depois na estalagem da
   vila, ferido (um quarto da vida). Antes, um personagem caído ficava travado para sempre.
 

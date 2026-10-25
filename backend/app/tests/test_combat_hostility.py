@@ -100,11 +100,18 @@ def test_resolve_ambush_does_not_trigger_below_hostility_threshold(db_session):
 
 def test_resolve_ambush_skips_a_character_already_in_combat(db_session):
     campaign, character, npc = _hostile_scene(db_session, hostility=100)
-    state = build_game_state(db_session, campaign.id, character.id)
-    intent = Intent(type=ActionIntentType.ATTACK, target="Bandido", raw_text="Ataco")
-    combat_bridge.handle_attack_intent(
-        db_session, campaign.id, character, intent, state, action_key="already-fighting",
+    from app.game.combat.encounters import CombatantSpec, start_encounter
+
+    encounter = start_encounter(
+        db_session,
+        campaign.id,
+        character.location_id,
+        (
+            CombatantSpec(CombatActorType.CHARACTER, character.id, "player"),
+            CombatantSpec(CombatActorType.NPC, npc.id, "hostile"),
+        ),
     )
+    db_session.flush()
 
     ambush = combat_hostility.resolve_ambush_for_character(
         db_session, campaign.id, character, rng=ForcedTriggerRng(),

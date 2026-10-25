@@ -535,7 +535,15 @@ def seed_initial_region(db: Session, campaign_id: str) -> tuple[Region, Location
     # The people who live here, each with a routine (starting village, part 2).
     residents.populate(
         db, campaign_id, region.id, village,
-        {**_service_location_by_type, "forest": forest_edge, "river": creek},
+        {
+            **_service_location_by_type,
+            # The generated general store is persisted with the generic
+            # location type "shop"; residents use the service key
+            # "general_store" in their routine vocabulary.
+            "general_store": _service_location_by_type.get("shop"),
+            "forest": forest_edge,
+            "river": creek,
+        },
         starting_npc_rng, used_npc_names, get_world_time(db, campaign_id).hour,
     )
     npc_bonds.link_starting_village(db, campaign_id, village.id)

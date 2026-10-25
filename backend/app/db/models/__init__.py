@@ -41,7 +41,13 @@ from app.db.models.job import Job, JobApplication
 from app.db.models.knowledge import KnowledgeFact, KnowledgeKnower
 from app.db.models.knowledge_index import IndexedKnowledgeDocument
 from app.db.models.local_economy import LocationEconomy
-from app.db.models.loot import ActorLootProfile, LootResolution, LootTable, LootTableEntry
+from app.db.models.loot import (
+    ActorLootProfile,
+    CreatureHarvestResolution,
+    LootResolution,
+    LootTable,
+    LootTableEntry,
+)
 from app.db.models.economic_value import EconomicCanonValue
 from app.db.models.location import (
     CharacterConnectionDiscovery,
@@ -189,6 +195,7 @@ __all__ = [
     "LootTable",
     "LootTableEntry",
     "ActorLootProfile",
+    "CreatureHarvestResolution",
     "LootResolution",
     "EconomicCanonValue",
     "Location",

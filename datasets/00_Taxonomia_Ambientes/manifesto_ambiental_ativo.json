@@ -1,0 +1,33 @@
+{
+  "dataset": "EV-ECO-1.1.1",
+  "status": "ATIVO_REFERENCIAL_NAO_INTEGRADO",
+  "versao_pacote": 20,
+  "pasta_ativa": "00_Taxonomia_Ambientes/",
+  "quantidades": {
+    "naturais": 100,
+    "construidos": 100,
+    "anomalos": 50,
+    "total": 250
+  },
+  "arquivos_ativos": {
+    "taxonomia": "00_Taxonomia_Ambientes/Everreach_Taxonomia_250_Ambientes_EV_ECO_1_1.json",
+    "indice": "00_Taxonomia_Ambientes/Everreach_EV_ECO_1_1_Indice_250.json",
+    "regras": "00_Taxonomia_Ambientes/Everreach_EV_ECO_1_1_1_Regras_Fisicas_250.json",
+    "auditoria_habitats": "00_Taxonomia_Ambientes/Everreach_EV_ECO_1_1_Auditoria_Habitats.json",
+    "validacao": "00_Taxonomia_Ambientes/Everreach_EV_ECO_1_1_1_Validacao.json",
+    "guia_codex": "00_Taxonomia_Ambientes/Everreach_EV_ECO_1_1_1_Guia_Codex.md",
+    "diff_corretivo": "00_Taxonomia_Ambientes/Everreach_EV_ECO_1_1_1_Diff.json",
+    "testes": "00_Taxonomia_Ambientes/test_ev_eco_1_1_1.py"
+  },
+  "chaves_referenciais": {
+    "id_ambiente": "id",
+    "referencia_regra": "ambiente_id"
+  },
+  "historico": "HISTORICO_TAXONOMIA_NAO_IMPORTAR/ — arquivos antigos preservados, nao carregar como datasets ativos",
+  "observacoes": [
+    "Nenhum ambiente foi adicionado ou removido nesta reorganizacao.",
+    "Regras 1.1.1 sao as unicas regras fisicas ativas; taxonomia e indice vieram da v1.1.",
+    "Matrizes 6A e habitats Flora/Bestiario nao foram recalculados.",
+    "Validacao aqui e documental/estrutural; adaptacao V4/T1/C2/JR1/W1/W2/P1 segue pendente."
+  ]
+}

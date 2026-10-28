@@ -1,0 +1,22 @@
+{
+  "versao": 20,
+  "status": "aprovada",
+  "ambientais": {
+    "ids_unicos": 250,
+    "naturais": 100,
+    "construidos": 100,
+    "anomalos": 50,
+    "antigos_inalterados": 100,
+    "indice_corresponde": true,
+    "regras_por_tipo": {
+      "naturais": 100,
+      "construidos": 100,
+      "anomalos": 50
+    }
+  },
+  "arquivos_originais_preservados_byte_a_byte": 87,
+  "duplicidade_de_entrada_ativa": false,
+  "raiz_ativa": "00_Taxonomia_Ambientes/",
+  "historicos_nao_importar": "HISTORICO_TAXONOMIA_NAO_IMPORTAR/",
+  "escopo": "reorganizacao e verificacao estrutural; sem integracao com backend"
+}

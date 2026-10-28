@@ -1,0 +1,1 @@
+Dataset 14 Complemento Geológico v4.1. O catálogo base v4 permanece IMUTÁVEL; importar o complemento sem sobrescrever materiais. A geração de jazidas deve permanecer DESABILITADA até mapear os campos reais V4/T1 e calibrar quotas. Leia o Guia WorldGenesis.

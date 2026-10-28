@@ -1,0 +1,17 @@
+{
+  "status": "aprovado_estruturalmente",
+  "verificacoes": {
+    "17_dominios": true,
+    "136_proficiências": true,
+    "408_especializacoes": true,
+    "272_atividades_de_referencia": true,
+    "ids_globais_unicos": true,
+    "referencias_internas_consistentes": true,
+    "papeis_de_6B_existentes": true,
+    "aliases_criticos_corretos": true,
+    "valores_0_a_100": true,
+    "nao_modifica_datasets_anteriores": true,
+    "execucao_backend_testada": false
+  },
+  "observacao": "Validação de dados e referências; integração do backend e balanceamento ainda pendentes."
+}

@@ -1,0 +1,2195 @@
+{
+  "metadata": {
+    "dataset": "EV-LOC-v2",
+    "quantidade": 240,
+    "status": "candidato_nao_instanciado"
+  },
+  "resumo": {
+    "arquetipos": 240,
+    "nivel_fantasia": {
+      "natural": 126,
+      "fantastico": 84,
+      "anomalo": 30
+    },
+    "afinidades": {
+      "nenhuma": 88,
+      "baixa": 54,
+      "moderada": 34,
+      "excepcional": 30,
+      "alta": 34
+    },
+    "relacoes": {
+      "independente": 120,
+      "favorecido_proximidade": 50,
+      "exige_condicao_arcana_especifica": 30,
+      "evita_energia_intensa": 6,
+      "favorecido_convergencia": 18,
+      "associado_nexo": 16
+    },
+    "dependentes": 30,
+    "com_manifestacoes": 152,
+    "manifestacoes_taxonomia": 56
+  },
+  "itens": [
+    {
+      "id": "EV-LOC-0001",
+      "nome": "Corredor de Raízes Entrelaçadas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0002",
+      "nome": "Clareira dos Troncos Caídos",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0003",
+      "nome": "Bosque das Copas em Degraus",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0004",
+      "nome": "Floresta de Ilhotas Secas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0005",
+      "nome": "Pátio de Samambaias Altas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0006",
+      "nome": "Arvoredo das Três Nascentes",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0007",
+      "nome": "Mata dos Troncos Retorcidos",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0008",
+      "nome": "Bosque dos Troncos Ocos",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0009",
+      "nome": "Floresta de Troncos Partidos",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0010",
+      "nome": "Catedral de Galhos Vivos",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0011",
+      "nome": "Pomar das Copas Sobrepostas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0012",
+      "nome": "Bosque das Raízes de Pedra",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0013",
+      "nome": "Jardim de Folhas Translúcidas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0014",
+      "nome": "Anel das Árvores Bifurcadas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0015",
+      "nome": "Floresta de Galerias Suspensas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0016",
+      "nome": "Clareira das Sombras Desatadas",
+      "categoria": "florestas_bosques",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-CLAREIRA_DE_NOITE_INTERMITENTE"
+    },
+    {
+      "id": "EV-LOC-0017",
+      "nome": "Mar de Capim Ondulante",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0018",
+      "nome": "Ilhas de Árvores Solitárias",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0019",
+      "nome": "Campo das Covas Rasas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0020",
+      "nome": "Terraço de Pradaria Elevada",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0021",
+      "nome": "Savana das Acácias Tortas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0022",
+      "nome": "Alameda de Colinas Gramadas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0023",
+      "nome": "Campina dos Solo Escuro",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "evita_energia_intensa",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0024",
+      "nome": "Planície das Pegadas Antigas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0025",
+      "nome": "Várzea de Flores Baixas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0026",
+      "nome": "Campo de Capins Prateados",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0027",
+      "nome": "Savana de Rochas-Coroa",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0028",
+      "nome": "Campina das Sementes Aladas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0029",
+      "nome": "Planície das Formas Concêntricas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0030",
+      "nome": "Jardim das Hastes Altíssimas",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0031",
+      "nome": "Campo das Ilhas de Flores Gigantes",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0032",
+      "nome": "Pradaria do Orvalho Ascendente",
+      "categoria": "campos_planicies_savanas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-CAMPO_DE_ORVALHO_PERSISTENTE"
+    },
+    {
+      "id": "EV-LOC-0033",
+      "nome": "Passagem das Escadas de Pedra",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0034",
+      "nome": "Vale dos Terraços de Erosão",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0035",
+      "nome": "Pico das Duas Vertentes",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0036",
+      "nome": "Anfiteatro das Agulhas",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0037",
+      "nome": "Garganta da Pedra Lisa",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0038",
+      "nome": "Varanda do Vale Suspenso",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0039",
+      "nome": "Depressão das Rochas Tombadas",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0040",
+      "nome": "Colina dos Sete Espigões",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0041",
+      "nome": "Labirinto de Taludes",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0042",
+      "nome": "Vale das Pontes Rochosas",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0043",
+      "nome": "Montanha das Escamas de Pedra",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0044",
+      "nome": "Jardim Alpino de Fendas",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0045",
+      "nome": "Bacia do Vento Vertical",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0046",
+      "nome": "Rochedo de Cristas Azuis",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0047",
+      "nome": "Vale do Céu Duplo",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0048",
+      "nome": "Penhasco de Gravidade Lateral",
+      "categoria": "montanhas_vales",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-PENHASCO_SUSPENSO"
+    },
+    {
+      "id": "EV-LOC-0049",
+      "nome": "Salão das Colunas Úmidas",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0050",
+      "nome": "Galeria das Três Saídas",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0051",
+      "nome": "Poço de Entrada Oblíqua",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0052",
+      "nome": "Câmara das Pedras Deslizantes",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0053",
+      "nome": "Túnel dos Ventos Cruzados",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0054",
+      "nome": "Ninho de Estalactites",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0055",
+      "nome": "Caverna do Piso em Camadas",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0056",
+      "nome": "Fenda do Silêncio Profundo",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0057",
+      "nome": "Corredor das Lajes Soltas",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0058",
+      "nome": "Gruta dos Pilares Trançados",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0059",
+      "nome": "Câmara de Flores de Calcita",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0060",
+      "nome": "Abóbada dos Musgos Subterrâneos",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0061",
+      "nome": "Gruta do Espelho Mineral",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0062",
+      "nome": "Jardim das Fendas Abissais",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0063",
+      "nome": "Caverna das Cascatas Internas",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0064",
+      "nome": "Gruta dos Passos Repetidos",
+      "categoria": "cavernas_subterraneo",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-GRUTA_DE_PASSOS_TARDIOS"
+    },
+    {
+      "id": "EV-LOC-0065",
+      "nome": "Cascata de Degraus Rasos",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0066",
+      "nome": "Ilha de Sedimentos Recentes",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0067",
+      "nome": "Baía de Água Parada",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0068",
+      "nome": "Nascente Sob Rocha Alta",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0069",
+      "nome": "Desfiladeiro de Corredeiras",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "evita_energia_intensa",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0070",
+      "nome": "Lagoa das Margens Móveis",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0071",
+      "nome": "Riacho de Leito Duplo",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0072",
+      "nome": "Terraço de Conchas Fluviais",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0073",
+      "nome": "Meandro de Areia Vermelha",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0074",
+      "nome": "Lago dos Jardins Submersos",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0075",
+      "nome": "Fonte das Pedras Ocas",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0076",
+      "nome": "Cachoeira de Cortina Larga",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0077",
+      "nome": "Piscinas de Travertino Gigantes",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0078",
+      "nome": "Lago de Duas Temperaturas",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0079",
+      "nome": "Rio de Ilhas Vegetais",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0080",
+      "nome": "Nascente de Gotas Imóveis",
+      "categoria": "rios_lagos_fontes",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-MARGEM_DE_AGUA_SUSPENSA"
+    },
+    {
+      "id": "EV-LOC-0081",
+      "nome": "Labirinto de Dunas Transversais",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0082",
+      "nome": "Poço de Sombra Rochosa",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0083",
+      "nome": "Cemitério de Pedras Erguidas",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0084",
+      "nome": "Planície das Rachaduras Profundas",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0085",
+      "nome": "Cânion das Curvas Gêmeas",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0086",
+      "nome": "Mar de Cascalho Branco",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0087",
+      "nome": "Arco de Areia Compactada",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0088",
+      "nome": "Vale dos Ventos Baixos",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0089",
+      "nome": "Oásis das Bordas Pedregosas",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0090",
+      "nome": "Jardim de Cactos Colossais",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0091",
+      "nome": "Dunas com Raízes Expostas",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0092",
+      "nome": "Deserto das Flores Efêmeras",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0093",
+      "nome": "Pedreira Natural de Sal Colorido",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0094",
+      "nome": "Vale do Vidro Eólico",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0095",
+      "nome": "Arvoredo de Pedras-Flor",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0096",
+      "nome": "Oásis da Água Reversa",
+      "categoria": "desertos_aridos",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-MARGEM_DE_AGUA_SUSPENSA"
+    },
+    {
+      "id": "EV-LOC-0097",
+      "nome": "Muralha de Gelo Azul",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0098",
+      "nome": "Campo de Rochas da Morena",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0099",
+      "nome": "Vale da Neve Soprada",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0100",
+      "nome": "Jardim de Líquens Polares",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0101",
+      "nome": "Fenda de Degelo Sazonal",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0102",
+      "nome": "Costa de Gelo Partilhado",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0103",
+      "nome": "Abrigo de Pedras Quentes",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0104",
+      "nome": "Terraço das Agulhas de Geada",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0105",
+      "nome": "Pico de Crista Ennevada",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0106",
+      "nome": "Jardim Glacial das Fissuras",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0107",
+      "nome": "Gruta do Gelo Estratificado",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0108",
+      "nome": "Tundra das Almofadas Vivas",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0109",
+      "nome": "Lago Sob o Gelo Transparente",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0110",
+      "nome": "Floresta de Geada Mineral",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0111",
+      "nome": "Círculo das Auroras Baixas",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0112",
+      "nome": "Jardim do Inverno Sem Fim",
+      "categoria": "geleiras_tundras",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-CAMPO_DE_NEVE_ARDENTE"
+    },
+    {
+      "id": "EV-LOC-0113",
+      "nome": "Ilhas de Turfa Flutuante",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0114",
+      "nome": "Corredor de Juncos Curvos",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0115",
+      "nome": "Bosque das Raízes Respiratórias",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "evita_energia_intensa",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0116",
+      "nome": "Charco das Águas Espelhadas",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0117",
+      "nome": "Várzea de Troncos Encalhados",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0118",
+      "nome": "Brejo dos Patamares de Lama",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0119",
+      "nome": "Turfeira das Colinas Moles",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0120",
+      "nome": "Bacia das Águas Salobras",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0121",
+      "nome": "Pântano dos Espelhos Partidos",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0122",
+      "nome": "Jardim das Flores de Brejo",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0123",
+      "nome": "Bosque de Cogumelos de Tronco",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0124",
+      "nome": "Arquipélago de Raízes",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0125",
+      "nome": "Charco das Bolhas Minerais",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0126",
+      "nome": "Ilhas de Musgo Vermelho",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0127",
+      "nome": "Lagoa das Folhas que Flutuam em Pé",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0128",
+      "nome": "Pântano do Reflexo Atrasado",
+      "categoria": "pantanos_areas_umidas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-LAGO_ESPELHADO"
+    },
+    {
+      "id": "EV-LOC-0129",
+      "nome": "Campo de Escórias Negras",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0130",
+      "nome": "Fenda de Vapor Intermitente",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0131",
+      "nome": "Terraço de Cinzas Consolidadas",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0132",
+      "nome": "Arco de Basalto Resfriado",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0133",
+      "nome": "Cratera de Borda Dupla",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0134",
+      "nome": "Jardim de Rochas Sulfurosas",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0135",
+      "nome": "Passagem das Colunas Prismáticas",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0136",
+      "nome": "Vale das Fontes Fumegantes",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0137",
+      "nome": "Campo de Bombas Vulcânicas",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0138",
+      "nome": "Caverna de Cristais de Calor",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0139",
+      "nome": "Lagoa de Argila Borbulhante",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0140",
+      "nome": "Muralha de Obsidiana Fraturada",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0141",
+      "nome": "Jardim de Líquens Vulcânicos",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0142",
+      "nome": "Caminho das Pedras de Ferro Quente",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0143",
+      "nome": "Vale do Basalto Flutuante",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0144",
+      "nome": "Cratera das Cinzas que Sobem",
+      "categoria": "vulcanicos_geotermicos",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-VALE_DE_CINZAS_ETERNAS"
+    },
+    {
+      "id": "EV-LOC-0145",
+      "nome": "Praia das Piscinas de Maré",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0146",
+      "nome": "Ponta das Rochas Fatiadas",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0147",
+      "nome": "Baía das Três Correntes",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0148",
+      "nome": "Arquipélago das Ilhas Baixas",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0149",
+      "nome": "Falésia das Cavidades Marinhas",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0150",
+      "nome": "Praia do Cascalho Cantante",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0151",
+      "nome": "Ponta das Dunas Brancas",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0152",
+      "nome": "Recife dos Arcos Vazados",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0153",
+      "nome": "Jardim das Conchas Gigantes",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0154",
+      "nome": "Floresta de Algas Monumentais",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0155",
+      "nome": "Ponta das Pedras de Espuma",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0156",
+      "nome": "Ilhota do Lago de Maré",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0157",
+      "nome": "Desfiladeiro Submarino Escalonado",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0158",
+      "nome": "Jardim das Formas Bioluminescentes",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0159",
+      "nome": "Ilha de Cristais Salinos",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0160",
+      "nome": "Baía das Marés Suspensas",
+      "categoria": "oceanos_costas_ilhas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-COLUNA_DE_AGUA_IMOVEL"
+    },
+    {
+      "id": "EV-LOC-0161",
+      "nome": "Parede das Camadas Multicoloridas",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "evita_energia_intensa",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0162",
+      "nome": "Círculo de Seixos Brancos",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0163",
+      "nome": "Falésia de Prismas de Basalto",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0164",
+      "nome": "Arco de Calcário Perfurado",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0165",
+      "nome": "Jardim das Drusas Opacas",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0166",
+      "nome": "Bacia das Pedras Rolantes",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0167",
+      "nome": "Agulhas de Ardósia",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0168",
+      "nome": "Vale das Lentes Minerais",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0169",
+      "nome": "Gruta do Quartzo Leitoso",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0170",
+      "nome": "Caverna dos Cristais Azuis Profundos",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0171",
+      "nome": "Rosácea de Pedras Laminadas",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0172",
+      "nome": "Colina dos Dentes Minerais",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0173",
+      "nome": "Domo das Escamas Metálicas",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0174",
+      "nome": "Labirinto de Cristais Ocultos",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0175",
+      "nome": "Jardim dos Minerais que Cantam",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0176",
+      "nome": "Câmara dos Cristais de Peso Invertido",
+      "categoria": "minerais_cristalinos",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-NINHO_DE_CRISTAIS_ORGANICOS"
+    },
+    {
+      "id": "EV-LOC-0177",
+      "nome": "Alameda de Árvores Curvadas pelo Vento",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0178",
+      "nome": "Jardim das Raízes Aéreas",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0179",
+      "nome": "Clareira dos Musgos Espessos",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0180",
+      "nome": "Vale das Plantas Almofadadas",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0181",
+      "nome": "Bosque dos Troncos Geminados",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0182",
+      "nome": "Arvoredo das Folhas Multicoloridas",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0183",
+      "nome": "Santuário Natural de Cactos Antigos",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0184",
+      "nome": "Campo de Samambaias em Espiral",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "evita_energia_intensa",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0185",
+      "nome": "Pântano das Raízes Sobrepostas",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0186",
+      "nome": "Floresta de Árvores Colossais",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0187",
+      "nome": "Jardim das Flores do Tamanho de Escudos",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0188",
+      "nome": "Caminho das Trepadeiras em Arco",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0189",
+      "nome": "Viveiro Natural de Fungos Guarda-Chuva",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0190",
+      "nome": "Bosque das Folhas Transparentes",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0191",
+      "nome": "Pomar Silvestre de Frutos Flutuantes",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0192",
+      "nome": "Floresta das Raízes que Escolhem Caminhos",
+      "categoria": "vegetacao_extraordinaria",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-POMAR_DE_RAIZES_MIGRANTES"
+    },
+    {
+      "id": "EV-LOC-0193",
+      "nome": "Vale do Eco Longo",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0194",
+      "nome": "Desfiladeiro das Nuvens Baixas",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0195",
+      "nome": "Planície dos Redemoinhos de Poeira",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0196",
+      "nome": "Mar de Névoa Entre Colinas",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0197",
+      "nome": "Montanha das Sombras Compridas",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0198",
+      "nome": "Bacia do Arco-Íris de Névoa",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0199",
+      "nome": "Enseada do Trovão Distante",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0200",
+      "nome": "Vales das Correntes Convergentes",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0201",
+      "nome": "Teto de Nuvens em Camadas",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0202",
+      "nome": "Campo das Pedras Assobiantes",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0203",
+      "nome": "Lago das Estrelas Refletidas",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0204",
+      "nome": "Trilha dos Espelhos de Sal",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0205",
+      "nome": "Vale do Granizo Silencioso",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0206",
+      "nome": "Colina dos Raios Horizontais",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0207",
+      "nome": "Cânion da Neve Rosada",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0208",
+      "nome": "Horizonte do Amanhecer Repetido",
+      "categoria": "fenomenos_naturais_fantasticos",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-VALE_DO_HORIZONTE_PARTIDO"
+    },
+    {
+      "id": "EV-LOC-0209",
+      "nome": "Jardim das Pedras sem Peso",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-PENHASCO_SUSPENSO"
+    },
+    {
+      "id": "EV-LOC-0210",
+      "nome": "Fenda da Luz que Cai",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-VEIO_DE_LUZ_INVERSA"
+    },
+    {
+      "id": "EV-LOC-0211",
+      "nome": "Lago do Fundo Estrelado",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-LAGO_ESPELHADO"
+    },
+    {
+      "id": "EV-LOC-0212",
+      "nome": "Colina dos Passos Invertidos",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-TRILHA_QUE_RETORNA"
+    },
+    {
+      "id": "EV-LOC-0213",
+      "nome": "Bosque dos Silêncios Visíveis",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-BOSQUE_DOS_ECOS"
+    },
+    {
+      "id": "EV-LOC-0214",
+      "nome": "Nascente das Sombras Claras",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-NASCENTE_DE_MANA"
+    },
+    {
+      "id": "EV-LOC-0215",
+      "nome": "Cristalário das Horas Lentas",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-CRISTALARIO_VIVO"
+    },
+    {
+      "id": "EV-LOC-0216",
+      "nome": "Arquipélago Suspenso de Fragmentos",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-ILHAS_DE_POEIRA_CELESTE"
+    },
+    {
+      "id": "EV-LOC-0217",
+      "nome": "Gruta da Chuva Ascendente",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-MARGEM_DE_AGUA_SUSPENSA"
+    },
+    {
+      "id": "EV-LOC-0218",
+      "nome": "Vale dos Caminhos Desencontrados",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-VALE_DO_HORIZONTE_PARTIDO"
+    },
+    {
+      "id": "EV-LOC-0219",
+      "nome": "Jardim do Gelo Ardente",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-CAMPO_DE_NEVE_ARDENTE"
+    },
+    {
+      "id": "EV-LOC-0220",
+      "nome": "Abismo das Vozes Adormecidas",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-ABISMO_DO_CANTO_SILENCIOSO"
+    },
+    {
+      "id": "EV-LOC-0221",
+      "nome": "Oásis das Quatro Estações",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-LAGO_DE_ESTACOES_CRUZADAS"
+    },
+    {
+      "id": "EV-LOC-0222",
+      "nome": "Dorsal do Mar Imóvel",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-COLUNA_DE_AGUA_IMOVEL"
+    },
+    {
+      "id": "EV-LOC-0223",
+      "nome": "Planície das Pedras Celestes",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-ILHAS_DE_POEIRA_CELESTE"
+    },
+    {
+      "id": "EV-LOC-0224",
+      "nome": "Caverna do Segundo Horizonte",
+      "categoria": "anomalias_magicas",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-GRUTA_DE_PASSOS_TARDIOS"
+    },
+    {
+      "id": "EV-LOC-0225",
+      "nome": "Faixa entre Bosque e Campo",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0226",
+      "nome": "Cornija Protegida do Vento",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0227",
+      "nome": "Vale do Degelo Entre Rochas",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0228",
+      "nome": "Faixa de Areia junto ao Brejo",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0229",
+      "nome": "Margem entre Rio e Escarpa",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0230",
+      "nome": "Planície da Névoa e do Capim",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "evita_energia_intensa",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0231",
+      "nome": "Refúgio Natural de Pedra e Raízes",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "baixa",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0232",
+      "nome": "Terraço entre Neve e Floresta",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0233",
+      "nome": "Corredor entre Duna e Rocha",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "natural",
+      "afinidade_arcana": "nenhuma",
+      "relacao_ley_lines": "independente",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0234",
+      "nome": "Encontro de Mata e Mangue",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0235",
+      "nome": "Janela da Montanha para a Tundra",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "moderada",
+      "relacao_ley_lines": "favorecido_proximidade",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0236",
+      "nome": "Bolsa Verde em Encosta Árida",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0237",
+      "nome": "Jardim de Fissura ao Pé da Geleira",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "favorecido_convergencia",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0238",
+      "nome": "Passagem das Três Paisagens",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0239",
+      "nome": "Refúgio de Florestas Sobrepostas",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "fantastico",
+      "afinidade_arcana": "alta",
+      "relacao_ley_lines": "associado_nexo",
+      "dependencia_exata_id": null
+    },
+    {
+      "id": "EV-LOC-0240",
+      "nome": "Encontro dos Microclimas Errantes",
+      "categoria": "ecotonos_refugios",
+      "nivel_fantasia": "anomalo",
+      "afinidade_arcana": "excepcional",
+      "relacao_ley_lines": "exige_condicao_arcana_especifica",
+      "dependencia_exata_id": "EV-ANO-LAGO_DE_ESTACOES_CRUZADAS"
+    }
+  ]
+}

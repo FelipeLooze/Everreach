@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "status": "validacao_estrutural_aprovada",
+  "comparacao_antes_depois": {
+    "antes": {
+      "postos": 55,
+      "mercadorias": 139,
+      "servicos": 14
+    },
+    "depois": {
+      "oficios": 120,
+      "mercadorias_propostas": 1000,
+      "servicos_propostos": 150,
+      "receitas_de_fabricacao_propostas": 500,
+      "perfis_de_estoque_propostos": 250,
+      "perfis_de_demanda_propostos": 200
+    }
+  },
+  "fontes": {
+    "bestiario": {
+      "arquivo": "Everreach_Bestiario_500_Monstros_Completo_v3.json",
+      "sha256": "dad4ac25e0ff89f20fa8e0c9300cbb5c75b4bafc1a26c267f0f898b38cdf71c1",
+      "total_monstros": 500,
+      "total_itens": 810
+    },
+    "flora": {
+      "arquivo": "Everreach_Flora_1500_Especies_Completo_v2.json",
+      "sha256": "24934286ecf67be6d53b21e443fa1fd661e100af31b2ea927a9b5b107e7c7ddf",
+      "total_especies": 1500,
+      "total_itens": 3000
+    },
+    "diretor_missoes": {
+      "arquivo": "Everreach_Diretor_Missoes_430_Modelos_Tradicoes_v2.json",
+      "papeis_de_moradores": 38
+    }
+  },
+  "contagens": {
+    "status": "integridade_estrutural_aprovada_compatibilidade_engine_nao_verificada",
+    "checagens": {
+      "ids_unicos": true,
+      "ofertas_compra_referenciam_itens_reais": true,
+      "vendas_referenciam_mercadorias": true,
+      "todas_mercadorias_tem_vendedor_potencial": true,
+      "todos_servicos_tem_prestador_potencial": true,
+      "receitas_entradas_e_saidas_referenciam_ids_validos": true,
+      "estoque_referencia_postos_e_produtos": true,
+      "perfil_demanda_refere_categoria_existente": true,
+      "economia_escassa_politica_mantida": true
+    },
+    "contagens": {
+      "oficios": 120,
+      "mercadorias_propostas": 1000,
+      "servicos_propostos": 150,
+      "receitas_de_fabricacao_propostas": 500,
+      "perfis_de_estoque_propostos": 250,
+      "perfis_de_demanda_propostos": 200
+    },
+    "total_registros": 2220,
+    "total_ofertas_de_compra": 3476,
+    "materiais_com_compradores": 1507,
+    "materiais_nos_datasets_origem": 3810,
+    "mercadorias_com_vendedor_potencial": 1000,
+    "servicos_com_prestador_potencial": 150,
+    "receitas_ativas_automaticamente": 0,
+    "avisos": [
+      "139 mercadorias e 55 ofícios anteriores mantidos, com adições pontuais de ofertas e vendas.",
+      "Receitas são propostas e não executáveis até validar insumos.",
+      "1500 espécies de flora e 500 monstros conferidos; comprar só os itens explicitamente aceitos.",
+      "Não foi testada a compatibilidade com os modelos reais do backend.",
+      "Rótulos de variação de material exigem insumos equivalentes, não apenas qualquer item da categoria."
+    ]
+  },
+  "notas_integracao": [
+    "Nenhuma receita é automaticamente executável.",
+    "Mercadorias precisam registrar-se no runtime.",
+    "Perfis de demanda e estoque não criam estados sem simulação.",
+    "Povo/raça não define profissão ou capacidade de curar."
+  ]
+}

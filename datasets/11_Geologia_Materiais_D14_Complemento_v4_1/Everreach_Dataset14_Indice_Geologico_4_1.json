@@ -1,0 +1,383 @@
+{
+  "versao": "4.1.0",
+  "catalogo_base_d14_v4_intocado": true,
+  "substratos": [
+    {
+      "id": "EV-GEO-SUB-001",
+      "slug": "granito",
+      "nome": "Granito",
+      "classe": "ignea_intrusiva"
+    },
+    {
+      "id": "EV-GEO-SUB-002",
+      "slug": "basalto",
+      "nome": "Basalto",
+      "classe": "ignea_extrusiva"
+    },
+    {
+      "id": "EV-GEO-SUB-003",
+      "slug": "andesito",
+      "nome": "Andesito",
+      "classe": "ignea_extrusiva"
+    },
+    {
+      "id": "EV-GEO-SUB-004",
+      "slug": "gabro",
+      "nome": "Gabro",
+      "classe": "ignea_intrusiva"
+    },
+    {
+      "id": "EV-GEO-SUB-005",
+      "slug": "ultramafica",
+      "nome": "Rocha ultramáfica",
+      "classe": "ignea_intrusiva"
+    },
+    {
+      "id": "EV-GEO-SUB-006",
+      "slug": "calcario",
+      "nome": "Calcário",
+      "classe": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-SUB-007",
+      "slug": "arenito",
+      "nome": "Arenito",
+      "classe": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-SUB-008",
+      "slug": "folhelho",
+      "nome": "Folhelho",
+      "classe": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-SUB-009",
+      "slug": "argilito",
+      "nome": "Argilito",
+      "classe": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-SUB-010",
+      "slug": "conglomerado",
+      "nome": "Conglomerado",
+      "classe": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-SUB-011",
+      "slug": "quartzito",
+      "nome": "Quartzito",
+      "classe": "metamorfica"
+    },
+    {
+      "id": "EV-GEO-SUB-012",
+      "slug": "marmore",
+      "nome": "Mármore",
+      "classe": "metamorfica"
+    },
+    {
+      "id": "EV-GEO-SUB-013",
+      "slug": "xisto",
+      "nome": "Xisto",
+      "classe": "metamorfica"
+    },
+    {
+      "id": "EV-GEO-SUB-014",
+      "slug": "gnaisse",
+      "nome": "Gnaisse",
+      "classe": "metamorfica"
+    },
+    {
+      "id": "EV-GEO-SUB-015",
+      "slug": "tufo_vulcanico",
+      "nome": "Tufo vulcânico",
+      "classe": "piroclastica"
+    },
+    {
+      "id": "EV-GEO-SUB-016",
+      "slug": "sedimento_aluvial",
+      "nome": "Cascalho e sedimento aluvial",
+      "classe": "deposito_inconsolidado"
+    },
+    {
+      "id": "EV-GEO-SUB-017",
+      "slug": "sedimento_glacial",
+      "nome": "Depósito glacial",
+      "classe": "deposito_inconsolidado"
+    },
+    {
+      "id": "EV-GEO-SUB-018",
+      "slug": "evaporito",
+      "nome": "Depósito evaporítico",
+      "classe": "deposito_quimico"
+    },
+    {
+      "id": "EV-GEO-SUB-019",
+      "slug": "sedimento_costeiro",
+      "nome": "Sedimento costeiro",
+      "classe": "deposito_inconsolidado"
+    },
+    {
+      "id": "EV-GEO-SUB-020",
+      "slug": "recife_carbonatico",
+      "nome": "Recife carbonático",
+      "classe": "bioconstruido"
+    }
+  ],
+  "pontes": [
+    {
+      "id": "EV-GEO-BRIDGE-01",
+      "modelo_ocorrencia_v4_id": "aluvião",
+      "descricao": "Deposição aluvial",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-02",
+      "modelo_ocorrencia_v4_id": "biomineral",
+      "descricao": "Formação biológica",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-03",
+      "modelo_ocorrencia_v4_id": "caverna",
+      "descricao": "Precipitação em cavidade",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-04",
+      "modelo_ocorrencia_v4_id": "deserto",
+      "descricao": "Concentração em terreno árido",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-05",
+      "modelo_ocorrencia_v4_id": "escarpa",
+      "descricao": "Estrutura exposta em escarpa",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-06",
+      "modelo_ocorrencia_v4_id": "evaporito",
+      "descricao": "Precipitação evaporítica",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-07",
+      "modelo_ocorrencia_v4_id": "fossil",
+      "descricao": "Fossilização e resina",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-08",
+      "modelo_ocorrencia_v4_id": "glacial",
+      "descricao": "Deposição glacial",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-09",
+      "modelo_ocorrencia_v4_id": "litoral",
+      "descricao": "Deposição costeira",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-10",
+      "modelo_ocorrencia_v4_id": "meteoritico",
+      "descricao": "Origem meteórica",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-11",
+      "modelo_ocorrencia_v4_id": "pantano",
+      "descricao": "Acumulação em área úmida",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-12",
+      "modelo_ocorrencia_v4_id": "recifal",
+      "descricao": "Acumulação recifal",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-13",
+      "modelo_ocorrencia_v4_id": "sedimentar",
+      "descricao": "Acumulação sedimentar",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-14",
+      "modelo_ocorrencia_v4_id": "veio_anomalo",
+      "descricao": "Veio anômalo",
+      "dependencia_arcana_canonica": true
+    },
+    {
+      "id": "EV-GEO-BRIDGE-15",
+      "modelo_ocorrencia_v4_id": "veio_arcano",
+      "descricao": "Veio arcano",
+      "dependencia_arcana_canonica": true
+    },
+    {
+      "id": "EV-GEO-BRIDGE-16",
+      "modelo_ocorrencia_v4_id": "veio_montanhoso",
+      "descricao": "Veio em rocha consolidada",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-17",
+      "modelo_ocorrencia_v4_id": "veio_profundo",
+      "descricao": "Veio profundo",
+      "dependencia_arcana_canonica": false
+    },
+    {
+      "id": "EV-GEO-BRIDGE-18",
+      "modelo_ocorrencia_v4_id": "vulcanico",
+      "descricao": "Formação vulcânica",
+      "dependencia_arcana_canonica": false
+    }
+  ],
+  "rotas_alternativas": [
+    {
+      "id": "EV-GEO-ALT-001",
+      "material_id": "EV-GEO-FAN-0001",
+      "material_nome_referencia": "Ferro",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-002",
+      "material_id": "EV-GEO-FAN-0002",
+      "material_nome_referencia": "Cobre",
+      "origem_alternativa_modelo_id": "vulcanico"
+    },
+    {
+      "id": "EV-GEO-ALT-003",
+      "material_id": "EV-GEO-FAN-0002",
+      "material_nome_referencia": "Cobre",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-004",
+      "material_id": "EV-GEO-FAN-0003",
+      "material_nome_referencia": "Estanho",
+      "origem_alternativa_modelo_id": "aluvião"
+    },
+    {
+      "id": "EV-GEO-ALT-005",
+      "material_id": "EV-GEO-FAN-0004",
+      "material_nome_referencia": "Prata",
+      "origem_alternativa_modelo_id": "veio_profundo"
+    },
+    {
+      "id": "EV-GEO-ALT-006",
+      "material_id": "EV-GEO-FAN-0005",
+      "material_nome_referencia": "Ouro",
+      "origem_alternativa_modelo_id": "veio_montanhoso"
+    },
+    {
+      "id": "EV-GEO-ALT-007",
+      "material_id": "EV-GEO-FAN-0005",
+      "material_nome_referencia": "Ouro",
+      "origem_alternativa_modelo_id": "veio_profundo"
+    },
+    {
+      "id": "EV-GEO-ALT-008",
+      "material_id": "EV-GEO-FAN-0006",
+      "material_nome_referencia": "Chumbo",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-009",
+      "material_id": "EV-GEO-FAN-0007",
+      "material_nome_referencia": "Sal-gema",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-010",
+      "material_id": "EV-GEO-FAN-0008",
+      "material_nome_referencia": "Quartzo",
+      "origem_alternativa_modelo_id": "caverna"
+    },
+    {
+      "id": "EV-GEO-ALT-011",
+      "material_id": "EV-GEO-FAN-0008",
+      "material_nome_referencia": "Quartzo",
+      "origem_alternativa_modelo_id": "aluvião"
+    },
+    {
+      "id": "EV-GEO-ALT-012",
+      "material_id": "EV-GEO-FAN-0009",
+      "material_nome_referencia": "Obsidiana",
+      "origem_alternativa_modelo_id": "litoral"
+    },
+    {
+      "id": "EV-GEO-ALT-013",
+      "material_id": "EV-GEO-FAN-0010",
+      "material_nome_referencia": "Carvão mineral",
+      "origem_alternativa_modelo_id": "pantano"
+    },
+    {
+      "id": "EV-GEO-ALT-014",
+      "material_id": "EV-GEO-FAN-0011",
+      "material_nome_referencia": "Enxofre",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-015",
+      "material_id": "EV-GEO-FAN-0012",
+      "material_nome_referencia": "Âmbar",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-016",
+      "material_id": "EV-GEO-FAN-0012",
+      "material_nome_referencia": "Âmbar",
+      "origem_alternativa_modelo_id": "litoral"
+    },
+    {
+      "id": "EV-GEO-ALT-017",
+      "material_id": "EV-GEO-FAN-0013",
+      "material_nome_referencia": "Mithril",
+      "origem_alternativa_modelo_id": "veio_profundo"
+    },
+    {
+      "id": "EV-GEO-ALT-018",
+      "material_id": "EV-GEO-FAN-0028",
+      "material_nome_referencia": "Ferro Estelar",
+      "origem_alternativa_modelo_id": "aluvião"
+    },
+    {
+      "id": "EV-GEO-ALT-019",
+      "material_id": "EV-GEO-FAN-0038",
+      "material_nome_referencia": "Glaciolita",
+      "origem_alternativa_modelo_id": "caverna"
+    },
+    {
+      "id": "EV-GEO-ALT-020",
+      "material_id": "EV-GEO-FAN-0019",
+      "material_nome_referencia": "Verdálio",
+      "origem_alternativa_modelo_id": "pantano"
+    },
+    {
+      "id": "EV-GEO-ALT-021",
+      "material_id": "EV-GEO-FAN-0026",
+      "material_nome_referencia": "Ferronita",
+      "origem_alternativa_modelo_id": "veio_profundo"
+    },
+    {
+      "id": "EV-GEO-ALT-022",
+      "material_id": "EV-GEO-FAN-0047",
+      "material_nome_referencia": "Pedrálio",
+      "origem_alternativa_modelo_id": "caverna"
+    },
+    {
+      "id": "EV-GEO-ALT-023",
+      "material_id": "EV-GEO-FAN-0066",
+      "material_nome_referencia": "Brumita",
+      "origem_alternativa_modelo_id": "sedimentar"
+    },
+    {
+      "id": "EV-GEO-ALT-024",
+      "material_id": "EV-GEO-FAN-0100",
+      "material_nome_referencia": "Coralferro",
+      "origem_alternativa_modelo_id": "litoral"
+    }
+  ],
+  "geracao_automatica_autorizada": false
+}

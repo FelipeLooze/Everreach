@@ -1,0 +1,27 @@
+{
+  "versao": "v7",
+  "estado": "estrutura_validada_heuristicas_precisam_revisao",
+  "quantidade_arquetipos": 250,
+  "quantidade_ambientes": 100,
+  "avaliacoes": 25000,
+  "naturais": 16250,
+  "construidos": 6250,
+  "anomalos": 2500,
+  "total_registros_dataset_6a_sem_alteracao": 1500,
+  "ids_originais_preservados": true,
+  "edificios_infraestrutura_caracteristicas_preservados": true,
+  "distribuicao": {
+    "condicional": 8812,
+    "inadequado_sem_adaptacao_excepcional": 4960,
+    "favoravel_candidato": 2478,
+    "infraestrutura_associada_candidata": 1750,
+    "camada_construida_nao_essencial": 4500,
+    "bloqueado_ate_validacao_canonica": 2500
+  },
+  "limitations": [
+    "Nao confirma compatibilidade com schema runtime backend",
+    "Aptidao de ambiente nao comprova recursos efetivos",
+    "Casos especiais requerem avaliacao manual e/ou dados do mapa",
+    "Nao altera o catalogo de criaturas ou flora"
+  ]
+}

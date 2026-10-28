@@ -1,0 +1,3204 @@
+{
+  "schema_version": "1.1.0",
+  "metadados": {
+    "titulo": "Everreach - Taxonomia refinada de biomas e ambientes",
+    "versao_taxonomia": "EV-ECO-1.1",
+    "estado_proposta": "proposta_nao_importada",
+    "total_ecossistemas_naturais": 100,
+    "total_ambientes_construidos": 100,
+    "total_ambientes_anomalos": 50,
+    "total_entradas": 250,
+    "categorias_legadas": 10,
+    "povos_jogaveis_sem_restricao_por_bioma": true,
+    "nota": "EV-ECO-1 sem alteração de registros; +150 novos ambientes propostos. Regras físicas e de autoridade no complemento EV-ECO-1.1; anomalias bloqueadas por padrão.",
+    "ids_legados_preservados_100": true,
+    "novos_registros": 150
+  },
+  "biomas_ecossistemas_naturais": [
+    {
+      "id": "EV-BIO-FLORESTA_TEMPERADA",
+      "slug": "floresta_temperada",
+      "nome": "Floresta temperada",
+      "grupo": "florestas",
+      "descricao_ecologica": "dossel sazonal, solo fértil, serrapilheira",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_TROPICAL_UMIDA",
+      "slug": "floresta_tropical_umida",
+      "nome": "Floresta tropical úmida",
+      "grupo": "florestas",
+      "descricao_ecologica": "calor, chuva frequente, dossel fechado",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_TROPICAL_SAZONAL",
+      "slug": "floresta_tropical_sazonal",
+      "nome": "Floresta tropical sazonal",
+      "grupo": "florestas",
+      "descricao_ecologica": "estações secas e chuvosas",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_BOREAL",
+      "slug": "floresta_boreal",
+      "nome": "Floresta boreal",
+      "grupo": "florestas",
+      "descricao_ecologica": "coníferas frias, invernos longos",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CONIFERAS_MONTANAS",
+      "slug": "coniferas_montanas",
+      "nome": "Coníferas montanas",
+      "grupo": "florestas",
+      "descricao_ecologica": "pinheiros em encostas frias",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-BOSQUE_ABERTO",
+      "slug": "bosque_aberto",
+      "nome": "Bosque aberto",
+      "grupo": "florestas",
+      "descricao_ecologica": "árvores espaçadas e sub-bosque iluminado",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-MATA_CILIAR",
+      "slug": "mata_ciliar",
+      "nome": "Mata ciliar",
+      "grupo": "florestas",
+      "descricao_ecologica": "faixa florestada ao longo de cursos d’água",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_NEBULOSA",
+      "slug": "floresta_nebulosa",
+      "nome": "Floresta nebulosa",
+      "grupo": "florestas",
+      "descricao_ecologica": "alta umidade e neblina frequente",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CARVALHAL_ANTIGO",
+      "slug": "carvalhal_antigo",
+      "nome": "Carvalhal antigo",
+      "grupo": "florestas",
+      "descricao_ecologica": "árvores maduras, madeira caída e clareiras naturais",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-BOSQUE_ESPINHOSO_SECO",
+      "slug": "bosque_espinhoso_seco",
+      "nome": "Bosque espinhoso seco",
+      "grupo": "florestas",
+      "descricao_ecologica": "vegetação lenhosa tolerante à seca",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PRADARIA",
+      "slug": "pradaria",
+      "nome": "Pradaria",
+      "grupo": "campos",
+      "descricao_ecologica": "capins contínuos e relevo aberto",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ESTEPE",
+      "slug": "estepe",
+      "nome": "Estepe",
+      "grupo": "campos",
+      "descricao_ecologica": "campos secos e poucas árvores",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-SAVANA",
+      "slug": "savana",
+      "nome": "Savana",
+      "grupo": "campos",
+      "descricao_ecologica": "gramíneas com árvores dispersas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAMPO_FLORIDO",
+      "slug": "campo_florido",
+      "nome": "Campo florido",
+      "grupo": "campos",
+      "descricao_ecologica": "alta presença sazonal de herbáceas floridas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PASTAGEM_NATURAL",
+      "slug": "pastagem_natural",
+      "nome": "Pastagem natural",
+      "grupo": "campos",
+      "descricao_ecologica": "forragem espontânea sem manejo obrigatório",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAMPINA_ARBORIZADA",
+      "slug": "campina_arborizada",
+      "nome": "Campina arborizada",
+      "grupo": "campos",
+      "descricao_ecologica": "transição de campo e árvores isoladas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAMPO_ALAGAVEL",
+      "slug": "campo_alagavel",
+      "nome": "Campo alagável",
+      "grupo": "campos",
+      "descricao_ecologica": "inundação temporária de baixadas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAMPO_DE_ALTITUDE",
+      "slug": "campo_de_altitude",
+      "nome": "Campo de altitude",
+      "grupo": "campos",
+      "descricao_ecologica": "vegetação baixa exposta ao vento",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "arredores_povoados"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-COLINA_ARBORIZADA",
+      "slug": "colina_arborizada",
+      "nome": "Colina arborizada",
+      "grupo": "montanhas",
+      "descricao_ecologica": "relevo ondulado com cobertura florestal",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-COLINA_PEDREGOSA",
+      "slug": "colina_pedregosa",
+      "nome": "Colina pedregosa",
+      "grupo": "montanhas",
+      "descricao_ecologica": "afloramentos e solo raso",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-SERRA_GRANITICA",
+      "slug": "serra_granitica",
+      "nome": "Serra granítica",
+      "grupo": "montanhas",
+      "descricao_ecologica": "paredões e cascalho",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ESCARPA_ROCHOSA",
+      "slug": "escarpa_rochosa",
+      "nome": "Escarpa rochosa",
+      "grupo": "montanhas",
+      "descricao_ecologica": "declives altos e saliências",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-VALE_ALPINO",
+      "slug": "vale_alpino",
+      "nome": "Vale alpino",
+      "grupo": "montanhas",
+      "descricao_ecologica": "vale frio cercado de montanhas",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PLANALTO_ALTO",
+      "slug": "planalto_alto",
+      "nome": "Planalto alto",
+      "grupo": "montanhas",
+      "descricao_ecologica": "área elevada e extensa",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-MONTANHA_VULCANICA",
+      "slug": "montanha_vulcanica",
+      "nome": "Montanha vulcânica",
+      "grupo": "montanhas",
+      "descricao_ecologica": "rocha ígnea; atividade vulcânica precisa existir no mapa",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ENCOSTA_INSTAVEL",
+      "slug": "encosta_instavel",
+      "nome": "Encosta instável",
+      "grupo": "montanhas",
+      "descricao_ecologica": "declive com risco geológico",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PICO_NEVADO",
+      "slug": "pico_nevado",
+      "nome": "Pico nevado",
+      "grupo": "montanhas",
+      "descricao_ecologica": "cume elevado com neve persistente",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas",
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DESERTO_DUNAS",
+      "slug": "deserto_dunas",
+      "nome": "Deserto de dunas",
+      "grupo": "aridos",
+      "descricao_ecologica": "areia móvel e poucas fontes de água",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DESERTO_PEDREGOSO",
+      "slug": "deserto_pedregoso",
+      "nome": "Deserto pedregoso",
+      "grupo": "aridos",
+      "descricao_ecologica": "superfície rochosa e vegetação rara",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-SEMIARIDO_ARBUSTIVO",
+      "slug": "semiarido_arbustivo",
+      "nome": "Semiárido arbustivo",
+      "grupo": "aridos",
+      "descricao_ecologica": "arbustos espaçados e precipitação baixa",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TERRAS_ARGILOSAS_ERODIDAS",
+      "slug": "terras_argilosas_erodidas",
+      "nome": "Terras argilosas erodidas",
+      "grupo": "aridos",
+      "descricao_ecologica": "ravinas e argilas expostas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CANION_SECO",
+      "slug": "canion_seco",
+      "nome": "Cânion seco",
+      "grupo": "aridos",
+      "descricao_ecologica": "desfiladeiro profundo sem corrente perene",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-SALINA_INTERIOR",
+      "slug": "salina_interior",
+      "nome": "Salina interior",
+      "grupo": "aridos",
+      "descricao_ecologica": "depressão de sais acumulados",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-OASIS",
+      "slug": "oasis",
+      "nome": "Oásis",
+      "grupo": "aridos",
+      "descricao_ecologica": "água localizada em paisagem árida",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-RIO_LENTO",
+      "slug": "rio_lento",
+      "nome": "Rio de correnteza lenta",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "margens sedimentares e água corrente",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-RIO_CORREDEIRAS",
+      "slug": "rio_corredeiras",
+      "nome": "Rio de corredeiras",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "trechos turbulentos e pedras submersas",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-RIACHO",
+      "slug": "riacho",
+      "nome": "Riacho",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "curso d’água pequeno",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-NASCENTE",
+      "slug": "nascente",
+      "nome": "Nascente",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "afloramento superficial de água",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-LAGO_PROFUNDO",
+      "slug": "lago_profundo",
+      "nome": "Lago profundo",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "massa d’água doce com estratificação",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-LAGOA_RASA",
+      "slug": "lagoa_rasa",
+      "nome": "Lagoa rasa",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "água parada em baixa profundidade",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CACHOEIRA",
+      "slug": "cachoeira",
+      "nome": "Cachoeira",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "queda d’água e margens úmidas",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DELTA_FLUVIAL",
+      "slug": "delta_fluvial",
+      "nome": "Delta fluvial",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "ramificação fluvial em depósitos sedimentares",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PANTANO_DOCE",
+      "slug": "pantano_doce",
+      "nome": "Pântano de água doce",
+      "grupo": "pantanos",
+      "descricao_ecologica": "água doce estagnada e vegetação emergente",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues",
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-BREJO_TABOAS",
+      "slug": "brejo_taboas",
+      "nome": "Brejo de taboas",
+      "grupo": "pantanos",
+      "descricao_ecologica": "solo encharcado com plantas altas",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues",
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TURFEIRA",
+      "slug": "turfeira",
+      "nome": "Turfeira",
+      "grupo": "pantanos",
+      "descricao_ecologica": "solo orgânico saturado e acidez elevada",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues",
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-MANGUEZAL",
+      "slug": "manguezal",
+      "nome": "Manguezal",
+      "grupo": "pantanos",
+      "descricao_ecologica": "vegetação tolerante à salinidade e maré",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues",
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-VARZEA_FLUVIAL",
+      "slug": "varzea_fluvial",
+      "nome": "Várzea fluvial",
+      "grupo": "pantanos",
+      "descricao_ecologica": "planície inundada em cheias de rio",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues",
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CHARCO_SALOBRO",
+      "slug": "charco_salobro",
+      "nome": "Charco salobro",
+      "grupo": "pantanos",
+      "descricao_ecologica": "água salobra rasa",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues",
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PRAIA_ARENOSA",
+      "slug": "praia_arenosa",
+      "nome": "Praia arenosa",
+      "grupo": "litorais",
+      "descricao_ecologica": "linha de praia com sedimentos soltos",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-COSTA_ROCHOSA",
+      "slug": "costa_rochosa",
+      "nome": "Costa rochosa",
+      "grupo": "litorais",
+      "descricao_ecologica": "rochedos e zona de maré",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DUNAS_COSTEIRAS",
+      "slug": "dunas_costeiras",
+      "nome": "Dunas costeiras",
+      "grupo": "litorais",
+      "descricao_ecologica": "areia litorânea transportada pelo vento",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FALESIA",
+      "slug": "falesia",
+      "nome": "Falésia",
+      "grupo": "litorais",
+      "descricao_ecologica": "paredão costeiro exposto",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ESTUARIO",
+      "slug": "estuario",
+      "nome": "Estuário",
+      "grupo": "litorais",
+      "descricao_ecologica": "encontro de águas doces e salgadas",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-RECIFE_RASO",
+      "slug": "recife_raso",
+      "nome": "Recife raso",
+      "grupo": "litorais",
+      "descricao_ecologica": "substrato recifal em águas rasas",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ILHA_COSTEIRA",
+      "slug": "ilha_costeira",
+      "nome": "Ilha costeira",
+      "grupo": "litorais",
+      "descricao_ecologica": "terra insular próxima ao continente",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TUNDRA_HERBACEA",
+      "slug": "tundra_herbacea",
+      "nome": "Tundra herbácea",
+      "grupo": "frios",
+      "descricao_ecologica": "solo frio com cobertura baixa",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TUNDRA_ARBUSTIVA",
+      "slug": "tundra_arbustiva",
+      "nome": "Tundra arbustiva",
+      "grupo": "frios",
+      "descricao_ecologica": "arbustos adaptados à estação curta",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAMPO_NEVE",
+      "slug": "campo_neve",
+      "nome": "Campo de neve",
+      "grupo": "frios",
+      "descricao_ecologica": "cobertura nival extensa",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-GELEIRA",
+      "slug": "geleira",
+      "nome": "Geleira",
+      "grupo": "frios",
+      "descricao_ecologica": "gelo em movimento lento",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-BANQUISA_COSTEIRA",
+      "slug": "banquisa_costeira",
+      "nome": "Banquisa costeira",
+      "grupo": "frios",
+      "descricao_ecologica": "gelo flutuante costeiro",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias",
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAVERNA_CALCARIA",
+      "slug": "caverna_calcaria",
+      "nome": "Caverna calcária",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "rocha carbonática e galerias",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAVERNA_BASALTICA",
+      "slug": "caverna_basaltica",
+      "nome": "Caverna basáltica",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "túneis de rocha vulcânica",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-GRUTA_INUNDADA",
+      "slug": "gruta_inundada",
+      "nome": "Gruta inundada",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "salas subterrâneas alagadas",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ABISMO_SUBTERRANEO",
+      "slug": "abismo_subterraneo",
+      "nome": "Abismo subterrâneo",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "poço ou precipício em rocha",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAVERNAS_SEDIMENTARES",
+      "slug": "cavernas_sedimentares",
+      "nome": "Sistema de cavernas sedimentares",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "redes de galerias em rocha sedimentar",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_TEMPERADA_UMIDA",
+      "slug": "floresta_temperada_umida",
+      "nome": "Floresta temperada úmida",
+      "grupo": "florestas",
+      "descricao_ecologica": "Bosque fechado de chuvas regulares, musgos e sub-bosque permanente",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_DE_VARZEA_TROPICAL",
+      "slug": "floresta_de_varzea_tropical",
+      "nome": "Floresta de várzea tropical",
+      "grupo": "florestas",
+      "descricao_ecologica": "Floresta sujeita a pulsos de inundação sazonal confirmados",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FLORESTA_SUBALPINA",
+      "slug": "floresta_subalpina",
+      "nome": "Floresta subalpina",
+      "grupo": "florestas",
+      "descricao_ecologica": "Faixa arbórea fria próxima ao limite altitudinal de árvores",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAMPO_ARBUSTIVO_MEDITERRANEO",
+      "slug": "campo_arbustivo_mediterraneo",
+      "nome": "Campo arbustivo de verão seco",
+      "grupo": "campos",
+      "descricao_ecologica": "Mosaico de arbustos e ervas sob estiagem estival",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CERRADO_ARBORIZADO",
+      "slug": "cerrado_arborizado",
+      "nome": "Savana arborizada seca",
+      "grupo": "campos",
+      "descricao_ecologica": "Árvores espaçadas, gramíneas e sazonalidade marcada",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-VEGETACAO_DUNAS_INTERIORES",
+      "slug": "vegetacao_dunas_interiores",
+      "nome": "Vegetação de dunas interiores",
+      "grupo": "campos",
+      "descricao_ecologica": "Herbáceas e arbustos que colonizam dunas interiores estabilizadas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-VALE_GLACIAL",
+      "slug": "vale_glacial",
+      "nome": "Vale glacial",
+      "grupo": "montanhas",
+      "descricao_ecologica": "Vale esculpido por gelo pretérito, com depósitos glaciais verificáveis",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-MORENA_GLACIAL",
+      "slug": "morena_glacial",
+      "nome": "Morena glacial",
+      "grupo": "montanhas",
+      "descricao_ecologica": "Cordão de detritos depositados por geleira antiga ou ativa",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PLANALTO_CARSTICO",
+      "slug": "planalto_carstico",
+      "nome": "Planalto cárstico",
+      "grupo": "montanhas",
+      "descricao_ecologica": "Planalto de rocha solúvel com dolinas e drenagem peculiar",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DESERTO_FRIO",
+      "slug": "deserto_frio",
+      "nome": "Deserto frio",
+      "grupo": "aridos",
+      "descricao_ecologica": "Baixa precipitação e estação fria rigorosa",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PLANICIE_SALAR",
+      "slug": "planicie_salar",
+      "nome": "Planície salina seca",
+      "grupo": "aridos",
+      "descricao_ecologica": "Superfície evaporítica sazonalmente úmida sobre bacia fechada",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-LEQUE_ALUVIAL_SECO",
+      "slug": "leque_aluvial_seco",
+      "nome": "Leque aluvial seco",
+      "grupo": "aridos",
+      "descricao_ecologica": "Acúmulo em leque de detritos por torrentes episódicas",
+      "categorias_legadas_relacionadas": [
+        "planicies_cultivos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-MEANDRO_ABANDONADO",
+      "slug": "meandro_abandonado",
+      "nome": "Meandro abandonado",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "Braço fluvial isolado por mudança de curso confirmada",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-LAGO_DE_CRATERA",
+      "slug": "lago_de_cratera",
+      "nome": "Lago de cratera",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "Água em depressão vulcânica, meteorítica ou erosiva registrada",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-RIO_SUBTERRANEO",
+      "slug": "rio_subterraneo",
+      "nome": "Rio subterrâneo",
+      "grupo": "agua_doce",
+      "descricao_ecologica": "Curso hídrico comprovado no sistema de cavernas",
+      "categorias_legadas_relacionadas": [
+        "rios_lagos"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PANTANO_DE_ALTITUDE",
+      "slug": "pantano_de_altitude",
+      "nome": "Pântano de altitude",
+      "grupo": "pantanos",
+      "descricao_ecologica": "Zona encharcada elevada com drenagem lenta persistente",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-LAGUNA_COSTEIRA_SALOBRA",
+      "slug": "laguna_costeira_salobra",
+      "nome": "Laguna costeira salobra",
+      "grupo": "pantanos",
+      "descricao_ecologica": "Corpo d’água costeiro parcialmente separado do oceano",
+      "categorias_legadas_relacionadas": [
+        "pantanos_mangues"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-RESTINGA_COSTEIRA",
+      "slug": "restinga_costeira",
+      "nome": "Restinga costeira",
+      "grupo": "litorais",
+      "descricao_ecologica": "Vegetação natural sobre depósitos arenosos costeiros estabilizados",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-BAIA_ABRIGADA",
+      "slug": "baia_abrigada",
+      "nome": "Baía abrigada",
+      "grupo": "litorais",
+      "descricao_ecologica": "Enseada protegida por configuração geomorfológica real",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PRADARIA_COSTEIRA",
+      "slug": "pradaria_costeira",
+      "nome": "Pradaria costeira",
+      "grupo": "litorais",
+      "descricao_ecologica": "Cobertura herbácea natural influenciada pelo vento marinho",
+      "categorias_legadas_relacionadas": [
+        "costa"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TRANSICAO_TAIGA_TUNDRA",
+      "slug": "transicao_taiga_tundra",
+      "nome": "Transição taiga-tundra",
+      "grupo": "frios",
+      "descricao_ecologica": "Mosaico de árvores dispersas e tundra sob clima subártico",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DESERTO_POLAR",
+      "slug": "deserto_polar",
+      "nome": "Deserto polar",
+      "grupo": "frios",
+      "descricao_ecologica": "Ambiente muito frio com precipitação extremamente baixa",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-NEVE_SAZONAL_ALPINA",
+      "slug": "neve_sazonal_alpina",
+      "nome": "Campo de neve sazonal alpina",
+      "grupo": "frios",
+      "descricao_ecologica": "Acúmulo temporário de neve, sem geleira perene",
+      "categorias_legadas_relacionadas": [
+        "regioes_frias"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-CAVERNA_DE_GELO",
+      "slug": "caverna_de_gelo",
+      "nome": "Caverna de gelo",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "Cavidade comprovada que preserva gelo sazonal ou duradouro",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TUNEL_DE_LAVA_NATURAL",
+      "slug": "tunel_de_lava_natural",
+      "nome": "Túnel de lava natural",
+      "grupo": "subterraneo",
+      "descricao_ecologica": "Conduto vulcânico oco deixado por fluxo de lava",
+      "categorias_legadas_relacionadas": [
+        "cavernas_subterraneo"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-ENCOSTA_MARITIMA_NEBULOSA",
+      "slug": "encosta_maritima_nebulosa",
+      "nome": "Encosta marítima nebulosa",
+      "grupo": "montanhas",
+      "descricao_ecologica": "Encosta sob influência de nevoeiro marítimo orográfico",
+      "categorias_legadas_relacionadas": [
+        "colinas_montanhas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-BOSQUE_RIBEIRINHO_SECO",
+      "slug": "bosque_ribeirinho_seco",
+      "nome": "Bosque ribeirinho de região seca",
+      "grupo": "florestas",
+      "descricao_ecologica": "Mata estreita associada a água fluvial em território árido",
+      "categorias_legadas_relacionadas": [
+        "bosques_florestas"
+      ],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-OCEANO_ABERTO_SUPERFICIAL",
+      "slug": "oceano_aberto_superficial",
+      "nome": "Oceano aberto superficial",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Águas oceânicas superficiais afastadas do litoral",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PLATAFORMA_CONTINENTAL_SUBMERSA",
+      "slug": "plataforma_continental_submersa",
+      "nome": "Plataforma continental submersa",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Fundo marítimo raso adjacente a margem continental",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-TALUDE_CONTINENTAL",
+      "slug": "talude_continental",
+      "nome": "Talude continental",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Declive submarino entre plataforma e bacia profunda",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-OCEANO_MESOPELAGICO",
+      "slug": "oceano_mesopelagico",
+      "nome": "Oceano mesopelágico",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Coluna d’água intermediária entre superfície e águas profundas",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-PLANICIE_ABISSAL",
+      "slug": "planicie_abissal",
+      "nome": "Planície abissal",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Leito oceânico profundo de declividade reduzida",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-FOSSA_OCEANICA",
+      "slug": "fossa_oceanica",
+      "nome": "Fossa oceânica",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Depressão profunda delimitada por tectônica ou morfologia confirmada",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-DORSAL_OCEANICA",
+      "slug": "dorsal_oceanica",
+      "nome": "Dorsal oceânica",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Cordilheira submarina associada à evolução tectônica",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    },
+    {
+      "id": "EV-BIO-OCEANO_POLAR_SAZONAL",
+      "slug": "oceano_polar_sazonal",
+      "nome": "Oceano polar sazonal",
+      "grupo": "oceanos",
+      "descricao_ecologica": "Superfície marinha polar com ocorrência sazonal de gelo",
+      "categorias_legadas_relacionadas": [],
+      "estado_proposta": "proposta",
+      "restricoes": {
+        "requer_area_instanciada": true,
+        "nao_habilitar_spawn_pela_simples_compatibilidade": true
+      }
+    }
+  ],
+  "ambientes_construidos_ou_modificados": [
+    {
+      "id": "EV-AMB-ALDEIA_COMPACTA",
+      "slug": "aldeia_compacta",
+      "nome": "Núcleo de aldeia",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-BAIRRO_COMERCIAL",
+      "slug": "bairro_comercial",
+      "nome": "Bairro de comércio",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CELEIRO_ARMAZEM",
+      "slug": "celeiro_armazem",
+      "nome": "Celeiro e armazém",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-HORTA_CULTIVADA",
+      "slug": "horta_cultivada",
+      "nome": "Horta cultivada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-POMAR_MANEJADO",
+      "slug": "pomar_manejado",
+      "nome": "Pomar manejado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PASTAGEM_MANEJADA",
+      "slug": "pastagem_manejada",
+      "nome": "Pastagem manejada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "planicies_cultivos",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MOINHO_AGRICOLA",
+      "slug": "moinho_agricola",
+      "nome": "Moinho agrícola",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "planicies_cultivos",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CANAL_IRRIGACAO",
+      "slug": "canal_irrigacao",
+      "nome": "Canal de irrigação",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "rios_lagos",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESTRADA_RURAL",
+      "slug": "estrada_rural",
+      "nome": "Estrada rural",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PONTE",
+      "slug": "ponte",
+      "nome": "Ponte e acessos",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "rios_lagos",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PORTO_MERCANTIL",
+      "slug": "porto_mercantil",
+      "nome": "Porto mercantil",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "costa",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CAIS_RIBEIRINHO",
+      "slug": "cais_ribeirinho",
+      "nome": "Cais ribeirinho",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "rios_lagos",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PEDREIRA_ATIVA",
+      "slug": "pedreira_ativa",
+      "nome": "Pedreira ativa",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "colinas_montanhas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MINA_ESCAVADA",
+      "slug": "mina_escavada",
+      "nome": "Mina escavada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "cavernas_subterraneo",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-RUINAS_HABITADAS",
+      "slug": "ruinas_habitadas",
+      "nome": "Ruínas reaproveitadas",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-RUINAS_ABANDONADAS",
+      "slug": "ruinas_abandonadas",
+      "nome": "Ruínas abandonadas",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TEMPLO_URBANO",
+      "slug": "templo_urbano",
+      "nome": "Templo ou capela",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-SANTUARIO_RURAL",
+      "slug": "santuario_rural",
+      "nome": "Santuário rural",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CEMITERIO",
+      "slug": "cemiterio",
+      "nome": "Cemitério e mausoléus",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TORRE_VIGIA",
+      "slug": "torre_vigia",
+      "nome": "Torre de vigia",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MURALHA_PORTAO",
+      "slug": "muralha_portao",
+      "nome": "Muralha e portão",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ACAMPAMENTO_TEMPORARIO",
+      "slug": "acampamento_temporario",
+      "nome": "Acampamento temporário",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-GALERIA_ESCAVADA",
+      "slug": "galeria_escavada",
+      "nome": "Galeria artificial subterrânea",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "cavernas_subterraneo",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESTALEIRO",
+      "slug": "estaleiro",
+      "nome": "Estaleiro",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "costa",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESGOTO_URBANO",
+      "slug": "esgoto_urbano",
+      "nome": "Galerias de esgoto",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-BAIRRO_RESIDENCIAL",
+      "slug": "bairro_residencial",
+      "nome": "Bairro residencial",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-VILA_PALICADA",
+      "slug": "vila_palicada",
+      "nome": "Vila paliçada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MERCADO_COBERTO",
+      "slug": "mercado_coberto",
+      "nome": "Mercado coberto",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PRACA_CENTRAL",
+      "slug": "praca_central",
+      "nome": "Praça central",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CASA_DO_CONSELHO",
+      "slug": "casa_do_conselho",
+      "nome": "Casa do conselho",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESCOLA_COMUNITARIA",
+      "slug": "escola_comunitaria",
+      "nome": "Escola comunitária",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-BIBLIOTECA_CIVICA",
+      "slug": "biblioteca_civica",
+      "nome": "Biblioteca cívica",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CASA_DE_HOSPEDES",
+      "slug": "casa_de_hospedes",
+      "nome": "Casa de hóspedes",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-POSTO_MENSAGEIROS",
+      "slug": "posto_mensageiros",
+      "nome": "Posto de mensageiros",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-POSTO_DE_SAUDE_COMUNITARIO",
+      "slug": "posto_de_saude_comunitario",
+      "nome": "Posto comunitário de cuidados",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-FORJA_ATIVA",
+      "slug": "forja_ativa",
+      "nome": "Forja ativa",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-OLARIA",
+      "slug": "olaria",
+      "nome": "Olaria",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CURTUME",
+      "slug": "curtume",
+      "nome": "Curtume",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TECELAGEM",
+      "slug": "tecelagem",
+      "nome": "Tecelagem",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-SERRARIA",
+      "slug": "serraria",
+      "nome": "Serraria",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-OFICINA_CARPINTARIA",
+      "slug": "oficina_carpintaria",
+      "nome": "Oficina de carpintaria",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-OFICINA_CARRUAGENS",
+      "slug": "oficina_carruagens",
+      "nome": "Oficina de carruagens",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CERVEJARIA",
+      "slug": "cervejaria",
+      "nome": "Cervejaria",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TINTURARIA",
+      "slug": "tinturaria",
+      "nome": "Tinturaria",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-BOTICA_HERBAL",
+      "slug": "botica_herbal",
+      "nome": "Botica herbal",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CAMPO_DE_CEREAIS",
+      "slug": "campo_de_cereais",
+      "nome": "Campo de cereais",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-VINHEDO_MANEJADO",
+      "slug": "vinhedo_manejado",
+      "nome": "Vinhedo manejado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-APIARIO",
+      "slug": "apiario",
+      "nome": "Apiário",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESTUFA_AGRICOLA",
+      "slug": "estufa_agricola",
+      "nome": "Estufa agrícola",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CANTEIRO_IRRIGADO",
+      "slug": "canteiro_irrigado",
+      "nome": "Canteiro irrigado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ARROZAL_ALAGADO",
+      "slug": "arrozal_alagado",
+      "nome": "Arrozal alagado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CRIATORIO_DE_AVES",
+      "slug": "criatorio_de_aves",
+      "nome": "Criatório de aves",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CURRAL_DE_CRIACAO",
+      "slug": "curral_de_criacao",
+      "nome": "Curral de criação",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TANQUES_DE_PISCICULTURA",
+      "slug": "tanques_de_piscicultura",
+      "nome": "Tanques de piscicultura",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TERREIRO_DE_SECAGEM",
+      "slug": "terreiro_de_secagem",
+      "nome": "Terreiro de secagem",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ENTREPOSTO_ESTRADA",
+      "slug": "entreposto_estrada",
+      "nome": "Entreposto de estrada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESTACAO_DE_CARAVANAS",
+      "slug": "estacao_de_caravanas",
+      "nome": "Estação de caravanas",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-FAROL_COSTEIRO",
+      "slug": "farol_costeiro",
+      "nome": "Farol costeiro",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CAIS_PESQUEIRO",
+      "slug": "cais_pesqueiro",
+      "nome": "Cais pesqueiro",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-DEPOSITO_FLUVIAL",
+      "slug": "deposito_fluvial",
+      "nome": "Depósito fluvial",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PONTILHAO",
+      "slug": "pontilhao",
+      "nome": "Pontilhão",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TRAVESSIA_DE_BALSA",
+      "slug": "travessia_de_balsa",
+      "nome": "Travessia de balsa",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ESTRADA_CALCADA",
+      "slug": "estrada_calcada",
+      "nome": "Estrada calçada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-AQUEDUTO",
+      "slug": "aqueduto",
+      "nome": "Aqueduto",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CISTERNA_PUBLICA",
+      "slug": "cisterna_publica",
+      "nome": "Cisterna pública",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-FORTIM_FRONTEIRICO",
+      "slug": "fortim_fronteirico",
+      "nome": "Fortim fronteiriço",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CASERNA",
+      "slug": "caserna",
+      "nome": "Caserna",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TORRE_DE_SINAIS",
+      "slug": "torre_de_sinais",
+      "nome": "Torre de sinais",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CAMPO_DE_TREINAMENTO",
+      "slug": "campo_de_treinamento",
+      "nome": "Campo de treinamento",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-POSTO_DE_ALFANDEGA",
+      "slug": "posto_de_alfandega",
+      "nome": "Posto de alfândega",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MARCOS_DA_FRONTEIRA",
+      "slug": "marcos_da_fronteira",
+      "nome": "Marcos de fronteira",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TRINCHEIRA_DEFENSIVA",
+      "slug": "trincheira_defensiva",
+      "nome": "Trincheira defensiva",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-REFUGIO_DE_MONTANHA",
+      "slug": "refugio_de_montanha",
+      "nome": "Refúgio de montanha",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ABRIGO_FORTIFICADO",
+      "slug": "abrigo_fortificado",
+      "nome": "Abrigo fortificado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MURALHA_DE_TERRA",
+      "slug": "muralha_de_terra",
+      "nome": "Muralha de terra",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-AULA_MONASTICA",
+      "slug": "aula_monastica",
+      "nome": "Escola monástica",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CLAUSTRO",
+      "slug": "claustro",
+      "nome": "Claustro",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-HOSPICIO_DE_ERVAS",
+      "slug": "hospicio_de_ervas",
+      "nome": "Hospício de ervas",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CASA_DE_BANHOS",
+      "slug": "casa_de_banhos",
+      "nome": "Casa de banhos",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-SALA_DE_ASSEMBLEIA",
+      "slug": "sala_de_assembleia",
+      "nome": "Sala de assembleia",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-ANFITEATRO",
+      "slug": "anfiteatro",
+      "nome": "Anfiteatro",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-JARDIM_MEMORIAL",
+      "slug": "jardim_memorial",
+      "nome": "Jardim memorial",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-POSTO_DE_RONDAS",
+      "slug": "posto_de_rondas",
+      "nome": "Posto de rondas",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-OFICINA_COOPERATIVA",
+      "slug": "oficina_cooperativa",
+      "nome": "Oficina cooperativa",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-SALAO_DE_FESTAS",
+      "slug": "salao_de_festas",
+      "nome": "Salão de festas",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-RUINA_DE_PONTE",
+      "slug": "ruina_de_ponte",
+      "nome": "Ruína de ponte",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-FORTALEZA_ARRUINADA",
+      "slug": "fortaleza_arruinada",
+      "nome": "Fortaleza arruinada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TUNEL_COLAPSADO",
+      "slug": "tunel_colapsado",
+      "nome": "Túnel colapsado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-MINA_ABANDONADA",
+      "slug": "mina_abandonada",
+      "nome": "Mina abandonada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-AQUEDUTO_ARRUINADO",
+      "slug": "aqueduto_arruinado",
+      "nome": "Aqueduto arruinado",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-TORRE_ARRUINADA",
+      "slug": "torre_arruinada",
+      "nome": "Torre arruinada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-VILA_ABANDONADA",
+      "slug": "vila_abandonada",
+      "nome": "Vila abandonada",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CATACUMBA_CONSTRUIDA",
+      "slug": "catacumba_construida",
+      "nome": "Catacumba construída",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-OBSERVATORIO_ANTIGO",
+      "slug": "observatorio_antigo",
+      "nome": "Observatório antigo",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-DIQUE_ROMPIDO",
+      "slug": "dique_rompido",
+      "nome": "Dique rompido",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "ruinas_estruturas",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-QUEBRA_MAR_DE_PEDRA",
+      "slug": "quebra_mar_de_pedra",
+      "nome": "Quebra-mar de pedra",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PLATAFORMA_DE_PESCA",
+      "slug": "plataforma_de_pesca",
+      "nome": "Plataforma de pesca",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-DOCA_FLUTUANTE",
+      "slug": "doca_flutuante",
+      "nome": "Doca flutuante",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-PORTO_DE_CABOTAGEM",
+      "slug": "porto_de_cabotagem",
+      "nome": "Porto de cabotagem",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-AMB-CANAL_NAVEGAVEL",
+      "slug": "canal_navegavel",
+      "nome": "Canal navegável",
+      "categoria": "construido_ou_modificado",
+      "categoria_legada_relacionada": "arredores_povoados",
+      "depende_de_instalacao_ou_modificacao_existente": true,
+      "evidencia_obrigatoria": "estrutura_no_mapa_ou_registro_de_obra",
+      "estado_proposta": "proposta"
+    }
+  ],
+  "ambientes_anomalos_ou_magicos": [
+    {
+      "id": "EV-ANO-FLORESTA_CRISTALINA",
+      "slug": "floresta_cristalina",
+      "nome": "Floresta cristalina",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-BOSQUE_DOS_ECOS",
+      "slug": "bosque_dos_ecos",
+      "nome": "Bosque dos ecos",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CHARCO_LUMINESCENTE",
+      "slug": "charco_luminescente",
+      "nome": "Charco luminescente",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-NASCENTE_DE_MANA",
+      "slug": "nascente_de_mana",
+      "nome": "Nascente de mana",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-LAGO_ESPELHADO",
+      "slug": "lago_espelhado",
+      "nome": "Lago espelhado",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-PENHASCO_SUSPENSO",
+      "slug": "penhasco_suspenso",
+      "nome": "Penhasco suspenso",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-GRUTA_RESSONANTE",
+      "slug": "gruta_ressonante",
+      "nome": "Gruta ressonante",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-VALE_DE_CINZAS_ETERNAS",
+      "slug": "vale_de_cinzas_eternas",
+      "nome": "Vale de cinzas eternas",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-ILHA_ENCOBERTA",
+      "slug": "ilha_encoberta",
+      "nome": "Ilha encoberta",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-RUINAS_DISTORCIDAS",
+      "slug": "ruinas_distorcidas",
+      "nome": "Ruínas distorcidas",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-VEIO_DE_LUZ_INVERSA",
+      "slug": "veio_de_luz_inversa",
+      "nome": "Veio de luz inversa",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-PEDREIRA_DE_ECO_DE_MANA",
+      "slug": "pedreira_de_eco_de_mana",
+      "nome": "Pedreira de eco de mana",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CRISTALARIO_VIVO",
+      "slug": "cristalario_vivo",
+      "nome": "Cristalário vivo",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-FISSURA_DE_RUNAS",
+      "slug": "fissura_de_runas",
+      "nome": "Fissura de runas",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-NASCENTE_DE_CINZA_AZUL",
+      "slug": "nascente_de_cinza_azul",
+      "nome": "Nascente de cinza azul",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CAMPO_DE_NEVE_ARDENTE",
+      "slug": "campo_de_neve_ardente",
+      "nome": "Campo de neve ardente",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-TURFEIRA_CINTILANTE",
+      "slug": "turfeira_cintilante",
+      "nome": "Turfeira cintilante",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-DESFILADEIRO_DE_RAIOS_LENTOS",
+      "slug": "desfiladeiro_de_raios_lentos",
+      "nome": "Desfiladeiro de raios lentos",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CAVERNA_DE_VENTO_PRESO",
+      "slug": "caverna_de_vento_preso",
+      "nome": "Caverna de vento preso",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-MARGEM_DE_AGUA_SUSPENSA",
+      "slug": "margem_de_agua_suspensa",
+      "nome": "Margem de água suspensa",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-TRILHA_QUE_RETORNA",
+      "slug": "trilha_que_retorna",
+      "nome": "Trilha que retorna",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-VALE_DO_HORIZONTE_PARTIDO",
+      "slug": "vale_do_horizonte_partido",
+      "nome": "Vale do horizonte partido",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-PONTE_SEM_MARGENS",
+      "slug": "ponte_sem_margens",
+      "nome": "Ponte sem margens",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-BOSQUE_DAS_DISTANCIAS",
+      "slug": "bosque_das_distancias",
+      "nome": "Bosque das distâncias",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-COLINA_DE_SOMBRA_DUPLA",
+      "slug": "colina_de_sombra_dupla",
+      "nome": "Colina de sombra dupla",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-RUINA_DE_CREPUSCULO_FIXO",
+      "slug": "ruina_de_crepusculo_fixo",
+      "nome": "Ruína de crepúsculo fixo",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CAMPO_DE_ORVALHO_PERSISTENTE",
+      "slug": "campo_de_orvalho_persistente",
+      "nome": "Campo de orvalho persistente",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-LAGO_DE_ESTACOES_CRUZADAS",
+      "slug": "lago_de_estacoes_cruzadas",
+      "nome": "Lago de estações cruzadas",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-GRUTA_DE_PASSOS_TARDIOS",
+      "slug": "gruta_de_passos_tardios",
+      "nome": "Gruta de passos tardios",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CLAREIRA_DE_NOITE_INTERMITENTE",
+      "slug": "clareira_de_noite_intermitente",
+      "nome": "Clareira de noite intermitente",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-POMAR_DE_RAIZES_MIGRANTES",
+      "slug": "pomar_de_raizes_migrantes",
+      "nome": "Pomar de raízes migrantes",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-BOSQUE_DE_FLORES_MURMURANTES",
+      "slug": "bosque_de_flores_murmurantes",
+      "nome": "Bosque de flores murmurantes",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-VALE_DE_MUSGO_DOURADO",
+      "slug": "vale_de_musgo_dourado",
+      "nome": "Vale de musgo dourado",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-PANTANO_DE_ESPOROS_LUMINOSOS",
+      "slug": "pantano_de_esporos_luminosos",
+      "nome": "Pântano de esporos luminosos",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-NINHO_DE_CRISTAIS_ORGANICOS",
+      "slug": "ninho_de_cristais_organicos",
+      "nome": "Ninho de cristais orgânicos",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-RUA_DE_VOZES_RESIDUAIS",
+      "slug": "rua_de_vozes_residuais",
+      "nome": "Rua de vozes residuais",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CRIPTA_DE_VELAS_FRIAS",
+      "slug": "cripta_de_velas_frias",
+      "nome": "Cripta de velas frias",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CAPELA_DE_SINOS_SILENTES",
+      "slug": "capela_de_sinos_silentes",
+      "nome": "Capela de sinos silentes",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CAMPINA_DE_SOMBRAS_PERDIDAS",
+      "slug": "campina_de_sombras_perdidas",
+      "nome": "Campina de sombras perdidas",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CORREDOR_DAS_MEMORIAS",
+      "slug": "corredor_das_memorias",
+      "nome": "Corredor das memórias",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-MAR_DE_FOSFORESCENCIA_ARCANA",
+      "slug": "mar_de_fosforescencia_arcana",
+      "nome": "Mar de fosforescência arcana",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-ABISMO_DO_CANTO_SILENCIOSO",
+      "slug": "abismo_do_canto_silencioso",
+      "nome": "Abismo do canto silencioso",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-RECIFE_DE_VIDRO_VIVO",
+      "slug": "recife_de_vidro_vivo",
+      "nome": "Recife de vidro vivo",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-COLUNA_DE_AGUA_IMOVEL",
+      "slug": "coluna_de_agua_imovel",
+      "nome": "Coluna de água imóvel",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-ILHOTA_DE_NEVOA_PRATEADA",
+      "slug": "ilhota_de_nevoa_prateada",
+      "nome": "Ilhota de névoa prateada",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-CRATERA_AZULADA",
+      "slug": "cratera_azulada",
+      "nome": "Cratera azulada",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-TORRE_DE_LUZ_ESTELAR",
+      "slug": "torre_de_luz_estelar",
+      "nome": "Torre de luz estelar",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-MIRANTE_DE_AURORA_INVERSA",
+      "slug": "mirante_de_aurora_inversa",
+      "nome": "Mirante de aurora inversa",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-ROCHA_DAS_CONSTELACOES",
+      "slug": "rocha_das_constelacoes",
+      "nome": "Rocha das constelações",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANO-ILHAS_DE_POEIRA_CELESTE",
+      "slug": "ilhas_de_poeira_celeste",
+      "nome": "Ilhas de poeira celeste",
+      "categoria": "anomalo_ou_magico",
+      "ativo_por_padrao": false,
+      "exige_confirmacao_de_evento_ou_regiao_canonica": true,
+      "nao_disponivel_para_spawn_padrao": true,
+      "estado_proposta": "proposta"
+    }
+  ],
+  "mapeamento_de_compatibilidade_legado": [
+    {
+      "categoria_legada_id": "arredores_povoados",
+      "descricao_legada": "Áreas rurais e instalações humanas próximas a povoações",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-PASTAGEM_NATURAL",
+        "EV-BIO-CAMPINA_ARBORIZADA"
+      ],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-ALDEIA_COMPACTA",
+        "EV-AMB-HORTA_CULTIVADA"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "planicies_cultivos",
+      "descricao_legada": "Campos, pastagens, pradarias e regiões de cultivo",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-PRADARIA",
+        "EV-BIO-PASTAGEM_NATURAL"
+      ],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-PASTAGEM_MANEJADA",
+        "EV-AMB-MOINHO_AGRICOLA"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "bosques_florestas",
+      "descricao_legada": "Bosques e florestas de diversas densidades",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-BOSQUE_ABERTO",
+        "EV-BIO-FLORESTA_TEMPERADA"
+      ],
+      "ambientes_construidos_candidatos_ids": [],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "rios_lagos",
+      "descricao_legada": "Rios, lagoas, represas e canais de água doce",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-RIO_LENTO",
+        "EV-BIO-LAGOA_RASA"
+      ],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-PONTE",
+        "EV-AMB-CAIS_RIBEIRINHO"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "pantanos_mangues",
+      "descricao_legada": "Pântanos, manguezais, charcos e áreas alagadas",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-PANTANO_DOCE",
+        "EV-BIO-MANGUEZAL"
+      ],
+      "ambientes_construidos_candidatos_ids": [],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "colinas_montanhas",
+      "descricao_legada": "Colinas, pedreiras, encostas, serras e zonas pedregosas",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-COLINA_PEDREGOSA",
+        "EV-BIO-COLINA_ARBORIZADA"
+      ],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-PEDREIRA_ATIVA"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "cavernas_subterraneo",
+      "descricao_legada": "Grutas, cavernas, túneis e passagens subterrâneas",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-GALERIA_ESCAVADA",
+        "EV-AMB-MINA_ESCAVADA"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "ruinas_estruturas",
+      "descricao_legada": "Ruínas, estruturas antigas e instalações abandonadas",
+      "biomas_naturais_candidatos_ids": [],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-RUINAS_ABANDONADAS",
+        "EV-AMB-RUINAS_HABITADAS"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "costa",
+      "descricao_legada": "Costa marítima, estuários e faixa litorânea",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-PRAIA_ARENOSA",
+        "EV-BIO-COSTA_ROCHOSA"
+      ],
+      "ambientes_construidos_candidatos_ids": [
+        "EV-AMB-PORTO_MERCANTIL",
+        "EV-AMB-ESTALEIRO"
+      ],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    },
+    {
+      "categoria_legada_id": "regioes_frias",
+      "descricao_legada": "Tundras, regiões geladas e montanhas frias",
+      "biomas_naturais_candidatos_ids": [
+        "EV-BIO-TUNDRA_HERBACEA",
+        "EV-BIO-FLORESTA_BOREAL"
+      ],
+      "ambientes_construidos_candidatos_ids": [],
+      "mapeamento_eh_permissao_de_ocorrencia": false,
+      "politica": "compatibilidade legado; especialização somente se a área do mapa estiver classificada pelo backend"
+    }
+  ],
+  "regras_de_instanciacao": {
+    "filtros_obrigatorios": [
+      "id_de_area_persistida",
+      "ambiente_efetivamente_presente",
+      "clima",
+      "altitude_ou_relevo_quando_pertinente",
+      "estacao",
+      "horario",
+      "distancia",
+      "populacao_ou_estoque_real"
+    ],
+    "mapa_e_autoridade": "somente backend estabelece qual ambiente existe; nenhuma entrada cria mapas, criaturas, plantas ou edificações",
+    "regras_de_coexistencia": "biomas podem se sobrepor ao longo de um mapa real; ambientes modificados são camadas adicionais, nunca substitutos obrigatórios do bioma",
+    "anomalias": "desligadas ate evento/regiao explicitamente autorizados",
+    "especies_sem_evidencia_refinada": "manter categoria legada e subtipos como candidatos de baixa confiança; nao sortear entre todos os subtipos por padrão",
+    "narrador": "descreve o ambiente confirmado, não inventa clima, bioma, ponto de coleta, fauna ou rotas"
+  },
+  "integracao_EV_ECO_1_1": {
+    "arquivo_complemento": "Everreach_EV_ECO_1_1_Regras_Fisicas_250.json",
+    "campos_climaticos_e_geograficos": "contrato_de_adaptador_proposto_nao_confirmado_com_codigo",
+    "sem_importacao_automatica": true,
+    "manter_regras_legadas": true
+  }
+}

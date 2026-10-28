@@ -1,0 +1,171 @@
+{
+  "dataset": "Everreach Proficiências Universais",
+  "version": "v1",
+  "totais": {
+    "dominios": 17,
+    "proficiências": 136,
+    "especializacoes": 408,
+    "atividades_referencia": 272,
+    "eventos_aprendizagem": 6
+  },
+  "dominios": [
+    {
+      "id": "EV-PROF-DOM-MIN",
+      "nome": "Mineração e geologia",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-MET",
+      "nome": "Metalurgia e forja",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-MAD",
+      "nome": "Madeira e carpintaria",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-TEX",
+      "nome": "Têxteis, couro e vestuário",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-FAU",
+      "nome": "Fauna, caça e aproveitamento",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-BOT",
+      "nome": "Botânica e herbalismo",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-AGR",
+      "nome": "Agricultura e criação",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-SOB",
+      "nome": "Sobrevivência e exploração",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-TRN",
+      "nome": "Transporte e navegação",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-ENG",
+      "nome": "Construção e engenharia",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-MED",
+      "nome": "Saúde e cuidados",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-CUL",
+      "nome": "Culinária e alquimia material",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-COM",
+      "nome": "Comércio e economia",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-SOC",
+      "nome": "Sociedade e educação",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-ART",
+      "nome": "Artes, história e cultura",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-ARC",
+      "nome": "Conhecimento e fenômenos arcanos",
+      "qtd_proficiências": 8
+    },
+    {
+      "id": "EV-PROF-DOM-CMB",
+      "nome": "Combate e preparo físico",
+      "qtd_proficiências": 8
+    }
+  ],
+  "proficiências_chave": {
+    "mineracao": "EV-PROF-MIN-001",
+    "prospeccao": "EV-PROF-MIN-002",
+    "lapidacao": "EV-PROF-MIN-007",
+    "esfolar": "EV-PROF-FAU-005",
+    "butchering": "EV-PROF-FAU-006",
+    "extrair_glandula": "EV-PROF-FAU-007",
+    "colher_flores": "EV-PROF-BOT-002",
+    "colher_folhas": "EV-PROF-BOT-002",
+    "colher_raiz": "EV-PROF-BOT-003"
+  },
+  "compatibilidade": {
+    "papeis_6B": [
+      "EV-SOC-ECO-001",
+      "EV-SOC-ECO-002",
+      "EV-SOC-ECO-003",
+      "EV-SOC-ECO-004",
+      "EV-SOC-ECO-007",
+      "EV-SOC-ECO-008",
+      "EV-SOC-ECO-009",
+      "EV-SOC-ECO-010",
+      "EV-SOC-ECO-014",
+      "EV-SOC-ECO-015",
+      "EV-SOC-ECO-016",
+      "EV-SOC-ECO-018",
+      "EV-SOC-ECO-020",
+      "EV-SOC-ECO-022",
+      "EV-SOC-ECO-023",
+      "EV-SOC-ECO-024",
+      "EV-SOC-ECO-025",
+      "EV-SOC-ECO-026",
+      "EV-SOC-ECO-029",
+      "EV-SOC-ECO-030",
+      "EV-SOC-ECO-031",
+      "EV-SOC-ECO-032",
+      "EV-SOC-ECO-033",
+      "EV-SOC-ECO-035",
+      "EV-SOC-ECO-036",
+      "EV-SOC-ECO-037",
+      "EV-SOC-ECO-040",
+      "EV-SOC-ECO-044",
+      "EV-SOC-ECO-046",
+      "EV-SOC-ECO-047",
+      "EV-SOC-ECO-048",
+      "EV-SOC-ECO-049",
+      "EV-SOC-ECO-050",
+      "EV-SOC-ECO-052",
+      "EV-SOC-ECO-053",
+      "EV-SOC-ECO-054",
+      "EV-SOC-ECO-061",
+      "EV-SOC-ECO-062",
+      "EV-SOC-ECO-066",
+      "EV-SOC-ECO-067",
+      "EV-SOC-ECO-073",
+      "EV-SOC-ECO-074",
+      "EV-SOC-ECO-075",
+      "EV-SOC-ECO-084",
+      "EV-SOC-ECO-086",
+      "EV-SOC-ECO-087",
+      "EV-SOC-ECO-088",
+      "EV-SOC-ECO-095",
+      "EV-SOC-ECO-097",
+      "EV-SOC-ECO-098",
+      "EV-SOC-ECO-106",
+      "EV-SOC-ECO-107",
+      "EV-SOC-ECO-108",
+      "EV-SOC-ECO-113",
+      "EV-SOC-ECO-114",
+      "EV-SOC-ECO-115"
+    ],
+    "total_papeis_economicos_6B_mapeados": 56
+  },
+  "sem_implantacao_backend": true
+}

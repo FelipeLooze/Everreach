@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "status": "aprovado_estruturalmente_nao_testado_no_backend",
+  "contagens": {
+    "eventos_comunitarios": 400,
+    "problemas_locais": 400,
+    "costumes_e_tradicoes": 350,
+    "interacoes_sociais": 350
+  },
+  "familias_de_situacoes_distintas": {
+    "eventos": 100,
+    "problemas": 100,
+    "tradicoes": 70,
+    "interacoes": 70
+  },
+  "ids_unicos": true,
+  "nomes_de_templates_unicos": true,
+  "referencias_validas_para_6a": true,
+  "referencias_validas_para_6b": true,
+  "gatilhos_sugeridos_restritos_a_lista_existente": true,
+  "sem_criacao_automatica_de_missao_npc_item_ou_local": true,
+  "arquivos_relacionados_montados_e_lidos": 5,
+  "notas": [
+    "Contagens de modelos incluem variações contextuais: não são 1500 enredos-base totalmente independentes.",
+    "As associações são propostas; ocupação, estrutura e calendário reais precisam ser confirmados no runtime.",
+    "O código do backend não foi acessado nem testado; JSON não ativa eventos sozinho.",
+    "Os 200 templates adicionais são extras opcionais e separados, não contabilizados nas 1500 entradas principais."
+  ]
+}

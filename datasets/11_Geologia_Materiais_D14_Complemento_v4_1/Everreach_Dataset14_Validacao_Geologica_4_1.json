@@ -1,0 +1,160 @@
+{
+  "resumo": {
+    "dataset": "14.1",
+    "substratos": 20,
+    "pontes": 18,
+    "rotas_alternativas": 24,
+    "materiais_ativos_intocados": 120,
+    "perfis_extracao_intocados": 360,
+    "fixtures": 10,
+    "validacoes": 28,
+    "passaram": 28,
+    "falharam": 0,
+    "sha256_catalogo_v4_preservado": "1101b05722d85fdc9168d0ed6117e1a3c960343d40a992ada6417e86d92a7eec",
+    "mapeamento_backend_V4_T1": "nao_verificado",
+    "autogeracao_jazidas": "DESABILITADA",
+    "calibracao_global": "pendente_dados_reais_gerador"
+  },
+  "checks": [
+    {
+      "teste": "120 materiais na base imutavel",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "ID original do catalogo unico",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "360 perfis extracao originais",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "20 rochas e substratos",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "ID substrato unico",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "18 modelos v4 mapeados exatamente uma vez",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "nenhuma ponte usa bioma",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "substratos de ponte existem",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "rotas alternativas preservam material IDs",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "rotas alternativas utilizam modelos validos",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "rotas alternativas sem repeticao",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "rotas nao repetem modelo principal",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "sem spawn automaticamente",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "lendario cap aleatorio zero",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "intensidades originais bloqueadas",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "T1 contrato nao verificado",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "material com mais de uma rota sem duplicar chance",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ouro_veio_primario",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ouro_aluviao_fonte",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ouro_aluviao_sem_fonte",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ferro_rocha_sedimentar",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ferro_montanha_sem_geologia",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ferro_estelar_meteorito_real",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_ferro_estelar_sem_impacto",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_adamantita_profunda_sem_autorizacao",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_aetherium_sem_canon",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "fixture_mithril_em_planicie_sem_rocha",
+      "passou": true,
+      "detalhe": null
+    },
+    {
+      "teste": "catalogo base bate com v16 SHA256",
+      "passou": true,
+      "detalhe": null
+    }
+  ]
+}

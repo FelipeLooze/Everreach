@@ -1,0 +1,121 @@
+{
+  "resultado": "aprovado",
+  "dataset": "Everreach 14 v4",
+  "versao": "4.0.0",
+  "total_materiais": 120,
+  "perfis_extracao_preservados": 360,
+  "perfis_ocorrencia_novos": 120,
+  "politicas_fragmento_novas": 120,
+  "classes_raridade": {
+    "comum": 8,
+    "incomum": 21,
+    "raro": 55,
+    "muito_raro": 21,
+    "lendario": 15
+  },
+  "modelos_geologicos": 18,
+  "testes_aprovados": 24,
+  "testes_total": 24,
+  "testes": [
+    {
+      "teste": "120 materiais ativos",
+      "aprovado": true
+    },
+    {
+      "teste": "120 IDs originais preservados em ordem",
+      "aprovado": true
+    },
+    {
+      "teste": "120 nomes originais preservados",
+      "aprovado": true
+    },
+    {
+      "teste": "14 propriedades 0–100 preservadas em todos os materiais",
+      "aprovado": true
+    },
+    {
+      "teste": "todos campos anteriores de cada material imutaveis",
+      "aprovado": true
+    },
+    {
+      "teste": "modelo de extracao v3 preservado",
+      "aprovado": true
+    },
+    {
+      "teste": "experimentos v3 preservados",
+      "aprovado": true
+    },
+    {
+      "teste": "360 perfis de extracao conservados",
+      "aprovado": true
+    },
+    {
+      "teste": "120 ocorrencias mapeadas",
+      "aprovado": true
+    },
+    {
+      "teste": "ID de perfil unico",
+      "aprovado": true
+    },
+    {
+      "teste": "ID de fragmento unico",
+      "aprovado": true
+    },
+    {
+      "teste": "raridade dentro do intervalo da classe",
+      "aprovado": true
+    },
+    {
+      "teste": "indice de todas propiedades entre 0-100",
+      "aprovado": true
+    },
+    {
+      "teste": "biomas referenciados realmente pertencem a taxonomia de 65 naturais",
+      "aprovado": true
+    },
+    {
+      "teste": "todos as origens geologicas mapeadas",
+      "aprovado": true
+    },
+    {
+      "teste": "eventos de fragmento coerentes com origem",
+      "aprovado": true
+    },
+    {
+      "teste": "nunca há spawn de fragmento sem fonte",
+      "aprovado": true
+    },
+    {
+      "teste": "sem rerrolagem a cada visita",
+      "aprovado": true
+    },
+    {
+      "teste": "legendarios nao tem fragmentos automaticos",
+      "aprovado": true
+    },
+    {
+      "teste": "muito raros exigem evento autorizado",
+      "aprovado": true
+    },
+    {
+      "teste": "Meteoritos podem ter fonte de impacto sem jazida subterranea",
+      "aprovado": true
+    },
+    {
+      "teste": "raridade não altera dificuldade de extracao anterior",
+      "aprovado": true
+    },
+    {
+      "teste": "indice de novos perfis entre 0 e 100",
+      "aprovado": true
+    },
+    {
+      "teste": "sem modelagem percentual de drop por visita",
+      "aprovado": true
+    }
+  ],
+  "erros": [],
+  "integracao_com_backend_testada": false,
+  "modelo_raridade_implementado": false,
+  "referencias_antigas_preservadas": true
+}

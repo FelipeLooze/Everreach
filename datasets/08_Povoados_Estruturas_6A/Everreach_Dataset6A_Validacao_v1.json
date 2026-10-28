@@ -1,0 +1,53 @@
+{
+  "titulo": "Validação do Dataset 6A Everreach",
+  "contagens": {
+    "arquétipos_de_povoados": 250,
+    "edificios": 500,
+    "infraestrutura": 400,
+    "caracteristicas_regionais": 350,
+    "total": 1500
+  },
+  "referencias": {
+    "oficios": 120,
+    "povos": 5,
+    "descendencias_mistas": 10,
+    "biomas": 10,
+    "candidatos_nomes_lugares_validos": 4000
+  },
+  "checagens": {
+    "quantidade_arquétipos": true,
+    "quantidade_edificios": true,
+    "quantidade_infraestrutura": true,
+    "quantidade_regionais": true,
+    "ids_unicos": true,
+    "exatamente_1500": true,
+    "referencias_arquetipo_edificio": true,
+    "referencias_arquetipo_infra": true,
+    "referencias_arquetipo_regional": true,
+    "oficios_validos": true,
+    "povos_validos": true,
+    "biomas_validos": true,
+    "nomes_refs_validos": true,
+    "nome_arquetipo_unico": true,
+    "nome_edificio_unico": true,
+    "nome_infra_unico": true,
+    "nome_regional_unico": true,
+    "edificios_compatibilidade_bioma": true,
+    "regionais_compatibilidade_bioma": true,
+    "todas_as_construcoes_exigem_instanciacao": true,
+    "infra_nao_cria_recursos": true,
+    "regionais_nao_criam_missoes": true,
+    "povoados_nao_criam_npcs": true
+  },
+  "alertas": [
+    "Os modelos representam propostas, não localidades já existentes.",
+    "A presença física e os serviços de um edifício precisam ser instanciados e registrados no backend.",
+    "As 10 variantes por família são combinações estruturais úteis, não 1.500 povoados individualmente inventados.",
+    "A economia fornece perfis de vendedores e preços, mas não cria estoques ou dinheiro.",
+    "Espécie, cultura, religião, profissão e personalidade permanecem independentes.",
+    "A integração real com a engine não foi executada neste ambiente."
+  ],
+  "erros": [],
+  "referencias_de_edificios_corrigidas_por_bioma": 0,
+  "referencias_de_ambientacao_corrigidas_por_bioma": 0
+}

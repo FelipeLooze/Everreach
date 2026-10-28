@@ -1,0 +1,1935 @@
+{
+  "schema_version": "everreach.dataset14.complemento_geologico.v4.1",
+  "metadata": {
+    "titulo": "Dataset 14 — Complemento Geológico V4/T1 v4.1",
+    "versao": "4.1.0",
+    "idioma": "pt-BR",
+    "status": "dados_propostos_sem_integracao_backend",
+    "base_referenciada": "Everreach_Dataset14_Materiais_Fantasia_120_Ocorrencia_v4.json",
+    "altera_base_d14_v4": false,
+    "total_materiais_preservados": 120,
+    "total_perfis_extracao_preservados": 360,
+    "total_modelos_mapeados": 18,
+    "total_substratos": 20,
+    "total_rotas_alternativas": 24,
+    "world_genesis": "V4 / T1 - contrato sem mapeamento real verificado"
+  },
+  "prioridade_do_world_genesis": [
+    "tectonica_e_historia_terreno",
+    "litologia_e_substratos",
+    "processos_mineralizantes_e_eventos",
+    "avaliacao_fontes_modelos",
+    "biomas_clima_para_exposicao_e_acesso",
+    "instancia_economia_e_narrativa"
+  ],
+  "rochas_e_substratos": [
+    {
+      "id": "EV-GEO-SUB-001",
+      "slug": "granito",
+      "nome": "Granito",
+      "classe": "ignea_intrusiva",
+      "marcadores_litologicos": [
+        "intrusiva",
+        "silicica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "fratura",
+        "hidrotermalismo"
+      ],
+      "descricao_funcional": "Rocha intrusiva de granulação grossa; pode conter fraturas mineralizadas, não prova minério.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-002",
+      "slug": "basalto",
+      "nome": "Basalto",
+      "classe": "ignea_extrusiva",
+      "marcadores_litologicos": [
+        "vulcanica",
+        "mafica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "fratura",
+        "vulcanismo"
+      ],
+      "descricao_funcional": "Lavas solidificadas e outras unidades basálticas; não presumir lava ativa.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-003",
+      "slug": "andesito",
+      "nome": "Andesito",
+      "classe": "ignea_extrusiva",
+      "marcadores_litologicos": [
+        "vulcanica",
+        "intermediaria",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "fratura",
+        "vulcanismo"
+      ],
+      "descricao_funcional": "Vulcanismo intermediário, potencial de alteração hidrotermal condicionada.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-004",
+      "slug": "gabro",
+      "nome": "Gabro",
+      "classe": "ignea_intrusiva",
+      "marcadores_litologicos": [
+        "intrusiva",
+        "mafica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "fratura",
+        "intrusao"
+      ],
+      "descricao_funcional": "Rocha máfica profunda, não equivale a minério metálico.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-005",
+      "slug": "ultramafica",
+      "nome": "Rocha ultramáfica",
+      "classe": "ignea_intrusiva",
+      "marcadores_litologicos": [
+        "intrusiva",
+        "ultramafica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "alteracao",
+        "intrusao"
+      ],
+      "descricao_funcional": "Rochas pobres em sílica e ricas em minerais ferromagnesianos; apenas hospedeira.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-006",
+      "slug": "calcario",
+      "nome": "Calcário",
+      "classe": "sedimentar",
+      "marcadores_litologicos": [
+        "carbonatica",
+        "sedimentar",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "dissolucao",
+        "carstificacao"
+      ],
+      "descricao_funcional": "Pode gerar carste e cavernas após processos registrados.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-007",
+      "slug": "arenito",
+      "nome": "Arenito",
+      "classe": "sedimentar",
+      "marcadores_litologicos": [
+        "clastica",
+        "sedimentar",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "deposicao",
+        "erosao"
+      ],
+      "descricao_funcional": "Areia cimentada; pode servir de hospedeira ou de fonte retrabalhada.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-008",
+      "slug": "folhelho",
+      "nome": "Folhelho",
+      "classe": "sedimentar",
+      "marcadores_litologicos": [
+        "clastica",
+        "sedimentar",
+        "laminada",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "deposicao",
+        "compactacao"
+      ],
+      "descricao_funcional": "Camadas finas sedimentares, às vezes orgânicas; requer contexto.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-009",
+      "slug": "argilito",
+      "nome": "Argilito",
+      "classe": "sedimentar",
+      "marcadores_litologicos": [
+        "clastica",
+        "sedimentar",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "deposicao",
+        "compactacao"
+      ],
+      "descricao_funcional": "Sedimento fino consolidado; não é item argila automaticamente.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-010",
+      "slug": "conglomerado",
+      "nome": "Conglomerado",
+      "classe": "sedimentar",
+      "marcadores_litologicos": [
+        "clastica",
+        "sedimentar",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "deposicao",
+        "retrabalhamento"
+      ],
+      "descricao_funcional": "Clastos arredondados; material transportado deve ter proveniência.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-011",
+      "slug": "quartzito",
+      "nome": "Quartzito",
+      "classe": "metamorfica",
+      "marcadores_litologicos": [
+        "silicica",
+        "metamorfica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "metamorfismo",
+        "fratura"
+      ],
+      "descricao_funcional": "Arenito metamorfizado; depósitos minerais exigem processo adicional.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-012",
+      "slug": "marmore",
+      "nome": "Mármore",
+      "classe": "metamorfica",
+      "marcadores_litologicos": [
+        "carbonatica",
+        "metamorfica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "metamorfismo",
+        "fratura"
+      ],
+      "descricao_funcional": "Rocha carbonática metamorfizada, apta a cavidades sob condições.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-013",
+      "slug": "xisto",
+      "nome": "Xisto",
+      "classe": "metamorfica",
+      "marcadores_litologicos": [
+        "metamorfica",
+        "foliada",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "metamorfismo",
+        "fratura"
+      ],
+      "descricao_funcional": "Foliações e estruturas podem abrigar veios sob processos apropriados.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-014",
+      "slug": "gnaisse",
+      "nome": "Gnaisse",
+      "classe": "metamorfica",
+      "marcadores_litologicos": [
+        "metamorfica",
+        "foliada",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "metamorfismo",
+        "fratura"
+      ],
+      "descricao_funcional": "Rocha metamórfica bandada, sem implicar depósito mineral.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-015",
+      "slug": "tufo_vulcanico",
+      "nome": "Tufo vulcânico",
+      "classe": "piroclastica",
+      "marcadores_litologicos": [
+        "vulcanica",
+        "piroclastica",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "vulcanismo",
+        "deposicao_cinzas"
+      ],
+      "descricao_funcional": "Material de cinzas consolidadas e alteradas, sob evidência de atividade passada.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-016",
+      "slug": "sedimento_aluvial",
+      "nome": "Cascalho e sedimento aluvial",
+      "classe": "deposito_inconsolidado",
+      "marcadores_litologicos": [
+        "aluvial",
+        "sedimentar",
+        "sedimento_solto"
+      ],
+      "processos_compativeis_candidatos": [
+        "transporte_fluvial",
+        "deposicao"
+      ],
+      "descricao_funcional": "Depósito de rio; concentra minerais transportados, não os cria.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-017",
+      "slug": "sedimento_glacial",
+      "nome": "Depósito glacial",
+      "classe": "deposito_inconsolidado",
+      "marcadores_litologicos": [
+        "glacial",
+        "sedimento_solto"
+      ],
+      "processos_compativeis_candidatos": [
+        "transporte_glacial",
+        "deposicao"
+      ],
+      "descricao_funcional": "Material movido por gelo; não cria minerais gelados por tema.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-018",
+      "slug": "evaporito",
+      "nome": "Depósito evaporítico",
+      "classe": "deposito_quimico",
+      "marcadores_litologicos": [
+        "evaporitica",
+        "sedimentar",
+        "rocha_consolidada"
+      ],
+      "processos_compativeis_candidatos": [
+        "evaporacao",
+        "precipitacao"
+      ],
+      "descricao_funcional": "Concentração por evaporação em bacias restritas.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-019",
+      "slug": "sedimento_costeiro",
+      "nome": "Sedimento costeiro",
+      "classe": "deposito_inconsolidado",
+      "marcadores_litologicos": [
+        "costeira",
+        "sedimento_solto"
+      ],
+      "processos_compativeis_candidatos": [
+        "transporte_costeiro",
+        "deposicao"
+      ],
+      "descricao_funcional": "Praias e acumulações litorâneas; fonte de minerais transportados deve existir.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    },
+    {
+      "id": "EV-GEO-SUB-020",
+      "slug": "recife_carbonatico",
+      "nome": "Recife carbonático",
+      "classe": "bioconstruido",
+      "marcadores_litologicos": [
+        "carbonatica",
+        "recifal",
+        "bioconstruida"
+      ],
+      "processos_compativeis_candidatos": [
+        "bioconstrucoes",
+        "precipitacao"
+      ],
+      "descricao_funcional": "Estrutura recifal sedimentar; não exige mineral mágico.",
+      "status": "substrato_proposto_nao_instanciado",
+      "uso": "camada_fisica_world_genesis_nao_item_inventario",
+      "instanciacao_exige_unidade_geologica_id": true,
+      "nao_gera_minerio_so_pela_presenca": true,
+      "nome_exibido_para_jogador": "descrição contextual, não item automaticamente coletável"
+    }
+  ],
+  "pontes_modelos_ocorrencia_v4_t1": [
+    {
+      "id": "EV-GEO-BRIDGE-01",
+      "modelo_ocorrencia_v4_id": "aluvião",
+      "descricao": "Deposição aluvial",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-016",
+          "EV-GEO-SUB-010"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "fluxo_fluvial_persistente",
+          "fonte_mineral_a_montante_rastreada",
+          "concentracao_por_transporte_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "reconcentracao_secundaria"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-02",
+      "modelo_ocorrencia_v4_id": "biomineral",
+      "descricao": "Formação biológica",
+      "requisitos": {
+        "substratos_aceitos_any": [],
+        "substrato_obrigatorio": false,
+        "evidencias_obrigatorias_all": [
+          "organismo_produtor_instanciado",
+          "processo_biomineral_confirmado"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "organismo_ou_bioconstruido"
+        ],
+        "evento_ou_organismo_instanciado_necessario": true
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-03",
+      "modelo_ocorrencia_v4_id": "caverna",
+      "descricao": "Precipitação em cavidade",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-011",
+          "EV-GEO-SUB-012",
+          "EV-GEO-SUB-013",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "cavidade_subterranea_instanciada",
+          "precipitacao_mineral_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-04",
+      "modelo_ocorrencia_v4_id": "deserto",
+      "descricao": "Concentração em terreno árido",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-010",
+          "EV-GEO-SUB-016"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "processo_arido_persistente",
+          "concentracao_mineralizante_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "reconcentracao_secundaria"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-05",
+      "modelo_ocorrencia_v4_id": "escarpa",
+      "descricao": "Estrutura exposta em escarpa",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-011",
+          "EV-GEO-SUB-012",
+          "EV-GEO-SUB-013",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "escarpa_exposta_registrada",
+          "mineralizacao_preexistente_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_exposto"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-06",
+      "modelo_ocorrencia_v4_id": "evaporito",
+      "descricao": "Precipitação evaporítica",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-018",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-009"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "bacia_restrita_confirmada",
+          "evaporacao_recorrente_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-07",
+      "modelo_ocorrencia_v4_id": "fossil",
+      "descricao": "Fossilização e resina",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-008",
+          "EV-GEO-SUB-009",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-010"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "contexto_organico_fossilizavel",
+          "preservacao_geologica_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "corpo_fossilizado"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-08",
+      "modelo_ocorrencia_v4_id": "glacial",
+      "descricao": "Deposição glacial",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-017",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-011"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "historico_glacial_persistente",
+          "concentracao_mineralizante_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "reconcentracao_secundaria"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-09",
+      "modelo_ocorrencia_v4_id": "litoral",
+      "descricao": "Deposição costeira",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-019",
+          "EV-GEO-SUB-020",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-010"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "processo_costeiro_registrado",
+          "aporte_mineral_com_fonte_rastreada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "reconcentracao_secundaria"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-10",
+      "modelo_ocorrencia_v4_id": "meteoritico",
+      "descricao": "Origem meteórica",
+      "requisitos": {
+        "substratos_aceitos_any": [],
+        "substrato_obrigatorio": false,
+        "evidencias_obrigatorias_all": [
+          "impacto_meteoritico_persistente",
+          "corpo_meteoritico_com_massa"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "corpo_impacto"
+        ],
+        "evento_ou_organismo_instanciado_necessario": true
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-11",
+      "modelo_ocorrencia_v4_id": "pantano",
+      "descricao": "Acumulação em área úmida",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-008",
+          "EV-GEO-SUB-009",
+          "EV-GEO-SUB-016"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "deposito_organico_alagado_persistente",
+          "concentracao_mineralizante_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-12",
+      "modelo_ocorrencia_v4_id": "recifal",
+      "descricao": "Acumulação recifal",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-020",
+          "EV-GEO-SUB-006"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "recife_persistente_instanciado",
+          "precipitacao_biogenica_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "organismo_ou_bioconstruido"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-13",
+      "modelo_ocorrencia_v4_id": "sedimentar",
+      "descricao": "Acumulação sedimentar",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-008",
+          "EV-GEO-SUB-009",
+          "EV-GEO-SUB-010",
+          "EV-GEO-SUB-018",
+          "EV-GEO-SUB-016",
+          "EV-GEO-SUB-017",
+          "EV-GEO-SUB-019",
+          "EV-GEO-SUB-020"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "ambiente_deposicional_confirmado",
+          "concentracao_mineralizante_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ",
+          "reconcentracao_secundaria"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-14",
+      "modelo_ocorrencia_v4_id": "veio_anomalo",
+      "descricao": "Veio anômalo",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-011",
+          "EV-GEO-SUB-012",
+          "EV-GEO-SUB-013",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "anomalia_canonica_instanciada",
+          "autorizacao_fonte_excepcional"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": true,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-15",
+      "modelo_ocorrencia_v4_id": "veio_arcano",
+      "descricao": "Veio arcano",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-011",
+          "EV-GEO-SUB-012",
+          "EV-GEO-SUB-013",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "fraturas_mapeadas",
+          "campo_arcano_canonico_instanciado"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": true,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-16",
+      "modelo_ocorrencia_v4_id": "veio_montanhoso",
+      "descricao": "Veio em rocha consolidada",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-011",
+          "EV-GEO-SUB-012",
+          "EV-GEO-SUB-013",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "fraturas_mapeadas",
+          "circulacao_mineralizante_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-17",
+      "modelo_ocorrencia_v4_id": "veio_profundo",
+      "descricao": "Veio profundo",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-006",
+          "EV-GEO-SUB-007",
+          "EV-GEO-SUB-011",
+          "EV-GEO-SUB-012",
+          "EV-GEO-SUB-013",
+          "EV-GEO-SUB-014",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "unidade_geologica_profunda",
+          "processo_mineralizante_confirmado"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    },
+    {
+      "id": "EV-GEO-BRIDGE-18",
+      "modelo_ocorrencia_v4_id": "vulcanico",
+      "descricao": "Formação vulcânica",
+      "requisitos": {
+        "substratos_aceitos_any": [
+          "EV-GEO-SUB-001",
+          "EV-GEO-SUB-002",
+          "EV-GEO-SUB-003",
+          "EV-GEO-SUB-004",
+          "EV-GEO-SUB-005",
+          "EV-GEO-SUB-015"
+        ],
+        "substrato_obrigatorio": true,
+        "evidencias_obrigatorias_all": [
+          "historico_vulcanico_persistente",
+          "concentracao_mineralizante_confirmada"
+        ],
+        "evidencias_adicionais_any": [],
+        "fonte_fisica_candidata_tipos": [
+          "deposito_in_situ"
+        ],
+        "evento_ou_organismo_instanciado_necessario": false
+      },
+      "dependencia_arcana_canonica": false,
+      "condicoes_basicas_insuficientes_para_instanciar": true,
+      "resultado_se_conferido": "elegivel_para_avaliacao_de_raridade_e_orcamento_na_criacao_persistente",
+      "resultado_se_campo_ausente": "inelegivel_sem_inferir_da_altitude_ou_bioma",
+      "filtro_por_bioma_permitido": false,
+      "pode_gerar_recursos_sem_deposito_id": false,
+      "status_mapeamento_para_campos_reais": "pendente_confirmacao_do_schema_V4_T1"
+    }
+  ],
+  "rotas_alternativas_por_material": [
+    {
+      "id": "EV-GEO-ALT-001",
+      "material_id": "EV-GEO-FAN-0001",
+      "material_nome_referencia": "Ferro",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "horizonte_ferrifero_confirmado"
+      ],
+      "justificativa": "acumulação ferrífera sedimentar",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-002",
+      "material_id": "EV-GEO-FAN-0002",
+      "material_nome_referencia": "Cobre",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "vulcanico",
+      "evidencias_adicionais_necessarias_all": [
+        "alteracao_hidrotermal_em_unidade_vulcanica"
+      ],
+      "justificativa": "concentração vinculada a vulcanismo antigo",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-003",
+      "material_id": "EV-GEO-FAN-0002",
+      "material_nome_referencia": "Cobre",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "horizonte_cuprifero_confirmado"
+      ],
+      "justificativa": "enriquecimento em unidade sedimentar",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-004",
+      "material_id": "EV-GEO-FAN-0003",
+      "material_nome_referencia": "Estanho",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "aluvião",
+      "evidencias_adicionais_necessarias_all": [
+        "fonte_estanifera_a_montante"
+      ],
+      "justificativa": "cassiterita de origem primária transportada, invisível como item técnico",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-005",
+      "material_id": "EV-GEO-FAN-0004",
+      "material_nome_referencia": "Prata",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "veio_profundo",
+      "evidencias_adicionais_necessarias_all": [
+        "mineralizacao_argentifera_profunda"
+      ],
+      "justificativa": "depósito primário profundo",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-006",
+      "material_id": "EV-GEO-FAN-0005",
+      "material_nome_referencia": "Ouro",
+      "origem_principal_v4_preservada": "aluvião",
+      "origem_alternativa_modelo_id": "veio_montanhoso",
+      "evidencias_adicionais_necessarias_all": [
+        "veio_aurifero_primario"
+      ],
+      "justificativa": "jazida primária em fratura mineralizada",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-007",
+      "material_id": "EV-GEO-FAN-0005",
+      "material_nome_referencia": "Ouro",
+      "origem_principal_v4_preservada": "aluvião",
+      "origem_alternativa_modelo_id": "veio_profundo",
+      "evidencias_adicionais_necessarias_all": [
+        "processo_aurifero_profundo"
+      ],
+      "justificativa": "jazida primária profunda",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-008",
+      "material_id": "EV-GEO-FAN-0006",
+      "material_nome_referencia": "Chumbo",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "mineralizacao_plumbifera_sedimentar"
+      ],
+      "justificativa": "mineralização em ambiente sedimentar",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-009",
+      "material_id": "EV-GEO-FAN-0007",
+      "material_nome_referencia": "Sal-gema",
+      "origem_principal_v4_preservada": "evaporito",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "sequencia_evaporitica_comprovada"
+      ],
+      "justificativa": "rocha sedimentar evaporítica consolidada",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-010",
+      "material_id": "EV-GEO-FAN-0008",
+      "material_nome_referencia": "Quartzo",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "caverna",
+      "evidencias_adicionais_necessarias_all": [
+        "precipitacao_silicosa_em_cavidade"
+      ],
+      "justificativa": "formação de cristais em cavidade",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-011",
+      "material_id": "EV-GEO-FAN-0008",
+      "material_nome_referencia": "Quartzo",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "aluvião",
+      "evidencias_adicionais_necessarias_all": [
+        "fonte_quartzosa_a_montante"
+      ],
+      "justificativa": "seixos de quartzo transportados",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-012",
+      "material_id": "EV-GEO-FAN-0009",
+      "material_nome_referencia": "Obsidiana",
+      "origem_principal_v4_preservada": "vulcanico",
+      "origem_alternativa_modelo_id": "litoral",
+      "evidencias_adicionais_necessarias_all": [
+        "fonte_vulcanica_a_montante",
+        "transporte_costeiro_registrado"
+      ],
+      "justificativa": "fragmentos transportados de fonte vulcânica; não jazida primária",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-013",
+      "material_id": "EV-GEO-FAN-0010",
+      "material_nome_referencia": "Carvão mineral",
+      "origem_principal_v4_preservada": "sedimentar",
+      "origem_alternativa_modelo_id": "pantano",
+      "evidencias_adicionais_necessarias_all": [
+        "acumulo_vegetal_soterrado_e_transformado"
+      ],
+      "justificativa": "formação a partir de matéria vegetal soterrada",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-014",
+      "material_id": "EV-GEO-FAN-0011",
+      "material_nome_referencia": "Enxofre",
+      "origem_principal_v4_preservada": "vulcanico",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "precipitacao_de_enxofre_sedimentar"
+      ],
+      "justificativa": "deposição química não vulcânica",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-015",
+      "material_id": "EV-GEO-FAN-0012",
+      "material_nome_referencia": "Âmbar",
+      "origem_principal_v4_preservada": "fossil",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "resina_fossilizada_na_unidade"
+      ],
+      "justificativa": "resina fossilizada em camadas sedimentares",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-016",
+      "material_id": "EV-GEO-FAN-0012",
+      "material_nome_referencia": "Âmbar",
+      "origem_principal_v4_preservada": "fossil",
+      "origem_alternativa_modelo_id": "litoral",
+      "evidencias_adicionais_necessarias_all": [
+        "fonte_de_ambar_rastreada",
+        "transporte_costeiro_registrado"
+      ],
+      "justificativa": "fragmento retrabalhado proveniente de fonte existente",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-017",
+      "material_id": "EV-GEO-FAN-0013",
+      "material_nome_referencia": "Mithril",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "veio_profundo",
+      "evidencias_adicionais_necessarias_all": [
+        "mineralizacao_de_mithril_profunda"
+      ],
+      "justificativa": "alternativa profunda sem tornar fácil a ocorrência",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-018",
+      "material_id": "EV-GEO-FAN-0028",
+      "material_nome_referencia": "Ferro Estelar",
+      "origem_principal_v4_preservada": "meteoritico",
+      "origem_alternativa_modelo_id": "aluvião",
+      "evidencias_adicionais_necessarias_all": [
+        "corpo_meteoritico_rastreado",
+        "transporte_fluvial_registrado"
+      ],
+      "justificativa": "reconcentração de meteorito preexistente sem gerar metal novo",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-019",
+      "material_id": "EV-GEO-FAN-0038",
+      "material_nome_referencia": "Glaciolita",
+      "origem_principal_v4_preservada": "glacial",
+      "origem_alternativa_modelo_id": "caverna",
+      "evidencias_adicionais_necessarias_all": [
+        "geologia_glacial_persistente",
+        "precipitacao_de_glaciolita_confirmada"
+      ],
+      "justificativa": "depósito de gelo mineral em cavidade comprovada",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-020",
+      "material_id": "EV-GEO-FAN-0019",
+      "material_nome_referencia": "Verdálio",
+      "origem_principal_v4_preservada": "sedimentar",
+      "origem_alternativa_modelo_id": "pantano",
+      "evidencias_adicionais_necessarias_all": [
+        "processo_geoquimico_verdálio_confirmado"
+      ],
+      "justificativa": "concentração em sedimento úmido confirmada",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-021",
+      "material_id": "EV-GEO-FAN-0026",
+      "material_nome_referencia": "Ferronita",
+      "origem_principal_v4_preservada": "veio_montanhoso",
+      "origem_alternativa_modelo_id": "veio_profundo",
+      "evidencias_adicionais_necessarias_all": [
+        "mineralizacao_ferronita_profunda"
+      ],
+      "justificativa": "depósito profundo mais exigente",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-022",
+      "material_id": "EV-GEO-FAN-0047",
+      "material_nome_referencia": "Pedrálio",
+      "origem_principal_v4_preservada": "sedimentar",
+      "origem_alternativa_modelo_id": "caverna",
+      "evidencias_adicionais_necessarias_all": [
+        "precipitacao_pedralio_confirmada"
+      ],
+      "justificativa": "variante em caverna se existir processo compatível",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-023",
+      "material_id": "EV-GEO-FAN-0066",
+      "material_nome_referencia": "Brumita",
+      "origem_principal_v4_preservada": "pantano",
+      "origem_alternativa_modelo_id": "sedimentar",
+      "evidencias_adicionais_necessarias_all": [
+        "horizonte_brumita_preservado"
+      ],
+      "justificativa": "concentração de material de origem úmida em rocha sedimentar",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    },
+    {
+      "id": "EV-GEO-ALT-024",
+      "material_id": "EV-GEO-FAN-0100",
+      "material_nome_referencia": "Coralferro",
+      "origem_principal_v4_preservada": "recifal",
+      "origem_alternativa_modelo_id": "litoral",
+      "evidencias_adicionais_necessarias_all": [
+        "recife_fonte_instanciado",
+        "retrabalhamento_costeiro_registrado"
+      ],
+      "justificativa": "fragmentos retrabalhados de recife existente",
+      "restricoes": [
+        "satisfazer_todos_requisitos_da_ponte_de_origem",
+        "condicoes_especificas_desta_rota",
+        "avaliar_raridade_original_do_material",
+        "validar_orcamento_regional_global",
+        "instanciar_fonte_unica_finita"
+      ],
+      "nao_multiplicar_chances_por_numero_de_rotas": true,
+      "nao_habilitar_fontes_canonicas_excepcionais_por_acaso": true,
+      "status": "proposta_aditiva_nao_integrada"
+    }
+  ],
+  "contrato_adaptador_world_genesis": {
+    "versao": "0.1_proposta",
+    "implementacao_no_world_genesis": "nao_verificada",
+    "mapeamento_efetivo_para_campos_existentes": "PENDENTE - contrato adaptador a validar com Codex",
+    "objetivo": "Transpor dados já gerados por T1/V4 para predicados estáveis que não usem bioma como criação mineral.",
+    "campos_logicos_esperados": [
+      {
+        "campo": "world_id",
+        "tipo": "string",
+        "origem": "world_genesis/persistencia",
+        "obrigatorio": true
+      },
+      {
+        "campo": "region_id",
+        "tipo": "string",
+        "origem": "geografia persistente",
+        "obrigatorio": true
+      },
+      {
+        "campo": "geological_unit_id",
+        "tipo": "string",
+        "origem": "unidade geologica persistente",
+        "obrigatorio": true
+      },
+      {
+        "campo": "lithology_substrate_ids",
+        "tipo": "list[string]",
+        "origem": "geologia primaria mapeada dos substratos EV-GEO-SUB",
+        "obrigatorio": true
+      },
+      {
+        "campo": "evidence_flags",
+        "tipo": "set[string]",
+        "origem": "contexto geologico/tectonico/geomorfologico confirmado",
+        "obrigatorio": true
+      },
+      {
+        "campo": "event_instance_ids",
+        "tipo": "list[string]",
+        "origem": "eventos canônicos existentes",
+        "obrigatorio": false
+      },
+      {
+        "campo": "source_lineage_ids",
+        "tipo": "list[string]",
+        "origem": "fontes de transportes/biominerais/impactos reais",
+        "obrigatorio": false
+      },
+      {
+        "campo": "depth_index_0_100",
+        "tipo": "integer|null",
+        "origem": "geometria da unidade - NAO altitude",
+        "obrigatorio": false
+      },
+      {
+        "campo": "canonical_authorizations",
+        "tipo": "set[string]",
+        "origem": "canon/autorizacoes World Genesis",
+        "obrigatorio": false
+      },
+      {
+        "campo": "formation_opportunity_id",
+        "tipo": "string",
+        "origem": "unidade deterministica elegível e deduplicada",
+        "obrigatorio": true
+      }
+    ],
+    "regras_contrato": [
+      "Geologia primária definida antes da classificação de biomas; clima pode afetar erosão/exposição, nunca litologia autogerada.",
+      "Não inferir litologia, evento ou minério exclusivamente da altitude, do bioma ou da narração.",
+      "Não assumir que chaves lógicas são nomes reais de variáveis V4/T1; traduzir explicitamente na integração.",
+      "Substrato ausente ou evidência necessária desconhecida resulta em inelegível (fail-closed), não em roll de fallback.",
+      "Teste de elegibilidade não instancia fonte; requer orçamento regional/global, raridade aprovada e persistência.",
+      "Múltiplas rotas de um mesmo material não multiplicam a chance; atribuir ao material um orçamento antes da escolha de rota.",
+      "Formações elegíveis devem ser unidades geológicas persistentes deduplicadas, não tiles de relevo, turnos ou visitas.",
+      "Fontes de impacto e biomineral podem se ancorar em eventos/organismos em vez de rocha hospedeira; ainda exigem rastreabilidade.",
+      "Proveniência dos fragmentos usa balanço de massa e idempotência; nenhum fragmento por chance de visita."
+    ],
+    "validacao_ordem": [
+      "verificar_unidade_evidencias",
+      "avaliar_ponte_modelo",
+      "avaliar_origem_adicional_quando_aplicavel",
+      "checar_canon_e_quota",
+      "selecionar_formacao_sem_repeticao",
+      "persistir_fonte_finita",
+      "somente_depois_calcular_exposicao_e_descoberta"
+    ],
+    "resultados_permitidos": [
+      "inelegivel",
+      "elegivel_nao_instanciado",
+      "instanciado_autorizado"
+    ],
+    "nao_implementar_sem_mapeamento_real": true
+  },
+  "politica_calibracao_raridade": {
+    "estado": "REFERENCIA_DE_AUDITORIA_NAO_PARAMETROS_CALIBRADOS",
+    "risco": "Planeta com área 100x a Terra amplifica oportunidades; sem definir unidades elegíveis e orçamento não é seguro usar as intensidades do v4.",
+    "densidades_existentes_v4": "preservadas_byte_a_byte_no_catalogo_base_sem_efeito_em_runtime",
+    "intensidades_v4_ativas_na_geracao": false,
+    "pre_requisitos_para_calibrar": [
+      "resolucao_efetiva_das_unidades_geologicas_geradas_em_V4_T1",
+      "contagem_de_unidades_geologicas_eligiveis_por_modelo_por_regiao",
+      "proporcao_de_formacoes_acessiveis_x_subterraneas",
+      "distribuicao_de_eventos_de_impacto_e_origens_biologicas",
+      "orcamentos_por_material_e_tier_de_raridade",
+      "tamanho_de_macrorregiao_canonica_e_limites_de_exploracao"
+    ],
+    "politicas_por_classe": {
+      "comum": {
+        "modo": "orcamento_por_unidade_geologica_e_recurso",
+        "permitir_geracao_automatica": false,
+        "motivo": "aguardando mapa de unidades elegíveis e calibração"
+      },
+      "incomum": {
+        "modo": "orcamento_regional",
+        "permitir_geracao_automatica": false
+      },
+      "raro": {
+        "modo": "orcamento_macroregional",
+        "permitir_geracao_automatica": false
+      },
+      "muito_raro": {
+        "modo": "orcamento_macroregional_e_auditoria_global",
+        "permitir_geracao_automatica": false
+      },
+      "lendario": {
+        "modo": "posicionamento_canonico_autorizado",
+        "permitir_geracao_automatica": false,
+        "limite_aleatorio_global": 0,
+        "nao_converter_para_sorte_por_tile": true
+      }
+    },
+    "restricoes_gerais": [
+      "contagem_de_geracoes_so_na_criacao_persistente_do_mundo",
+      "deduplicacao_por_world_id+formation_opportunity_id+material_id",
+      "cap_por_material_por_world_id_obrigatorio_apos_calibracao",
+      "cap_por_macrorregiao_recomendado",
+      "quotas_nao_escalam_automaticamente_com_area_total_do_planeta",
+      "sem_quota_inventada_se_nao_ha_dados_de_V4_T1",
+      "rotas_multiplicas_dividem_mesmo_orcamento_de_material",
+      "fontes_excepcionais_requerem_canon_preexistente",
+      "amostras_reais_consumem_massa_da_fonte"
+    ],
+    "cenarios_de_sensibilidade_hipoteticos": [
+      {
+        "oportunidades_elegiveis_hipoteticas": 1000,
+        "projecoes_ingenuas_NAO_APLICAR": {
+          "Ferro": {
+            "intensidade_herdada_por_milhao": 312750,
+            "esperanca_linear_SE_USADA": 312.75,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Ouro": {
+            "intensidade_herdada_por_milhao": 2204,
+            "esperanca_linear_SE_USADA": 2.204,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Mithril": {
+            "intensidade_herdada_por_milhao": 54,
+            "esperanca_linear_SE_USADA": 0.054,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Adamantita": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 0.001,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Aetherium": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 0.001,
+            "autorizado_como_numero_de_jazidas": false
+          }
+        }
+      },
+      {
+        "oportunidades_elegiveis_hipoteticas": 1000000,
+        "projecoes_ingenuas_NAO_APLICAR": {
+          "Ferro": {
+            "intensidade_herdada_por_milhao": 312750,
+            "esperanca_linear_SE_USADA": 312750.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Ouro": {
+            "intensidade_herdada_por_milhao": 2204,
+            "esperanca_linear_SE_USADA": 2204.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Mithril": {
+            "intensidade_herdada_por_milhao": 54,
+            "esperanca_linear_SE_USADA": 54.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Adamantita": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 1.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Aetherium": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 1.0,
+            "autorizado_como_numero_de_jazidas": false
+          }
+        }
+      },
+      {
+        "oportunidades_elegiveis_hipoteticas": 100000000,
+        "projecoes_ingenuas_NAO_APLICAR": {
+          "Ferro": {
+            "intensidade_herdada_por_milhao": 312750,
+            "esperanca_linear_SE_USADA": 31275000.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Ouro": {
+            "intensidade_herdada_por_milhao": 2204,
+            "esperanca_linear_SE_USADA": 220400.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Mithril": {
+            "intensidade_herdada_por_milhao": 54,
+            "esperanca_linear_SE_USADA": 5400.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Adamantita": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 100.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Aetherium": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 100.0,
+            "autorizado_como_numero_de_jazidas": false
+          }
+        }
+      },
+      {
+        "oportunidades_elegiveis_hipoteticas": 10000000000,
+        "projecoes_ingenuas_NAO_APLICAR": {
+          "Ferro": {
+            "intensidade_herdada_por_milhao": 312750,
+            "esperanca_linear_SE_USADA": 3127500000.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Ouro": {
+            "intensidade_herdada_por_milhao": 2204,
+            "esperanca_linear_SE_USADA": 22040000.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Mithril": {
+            "intensidade_herdada_por_milhao": 54,
+            "esperanca_linear_SE_USADA": 540000.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Adamantita": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 10000.0,
+            "autorizado_como_numero_de_jazidas": false
+          },
+          "Aetherium": {
+            "intensidade_herdada_por_milhao": 1,
+            "esperanca_linear_SE_USADA": 10000.0,
+            "autorizado_como_numero_de_jazidas": false
+          }
+        }
+      }
+    ],
+    "protocolo_validacao": [
+      "gerar_unidades_geologicas_reais_com_T1",
+      "contar_elegibilidade_por_modelo_e_por_macrorregiao",
+      "simular_ao_menos_3_seeds_de_formacoes_sem_instanciar_em_save_real",
+      "comparar_quantidades_com_orcamento_e_area_exploravel",
+      "testar_zero_spawn_de_lendarios_sem_autorizacao",
+      "aprovar_rates_de_geracao_numa_config_separada",
+      "registrar_resultados_e_reexecutar_testes_deterministas"
+    ]
+  },
+  "fixtures_de_integracao_declarativos": [
+    {
+      "id": "ouro_veio_primario",
+      "material": "Ouro",
+      "model": "veio_montanhoso",
+      "substrato": "granito",
+      "evidencias": [
+        "fraturas_mapeadas",
+        "circulacao_mineralizante_confirmada",
+        "veio_aurifero_primario"
+      ],
+      "result": "elegivel_nao_instanciado"
+    },
+    {
+      "id": "ouro_aluviao_fonte",
+      "material": "Ouro",
+      "model": "aluvião",
+      "substrato": "sedimento_aluvial",
+      "evidencias": [
+        "fluxo_fluvial_persistente",
+        "fonte_mineral_a_montante_rastreada",
+        "concentracao_por_transporte_confirmada"
+      ],
+      "result": "elegivel_nao_instanciado"
+    },
+    {
+      "id": "ouro_aluviao_sem_fonte",
+      "material": "Ouro",
+      "model": "aluvião",
+      "substrato": "sedimento_aluvial",
+      "evidencias": [
+        "fluxo_fluvial_persistente",
+        "concentracao_por_transporte_confirmada"
+      ],
+      "result": "inelegivel"
+    },
+    {
+      "id": "ferro_rocha_sedimentar",
+      "material": "Ferro",
+      "model": "sedimentar",
+      "substrato": "arenito",
+      "evidencias": [
+        "ambiente_deposicional_confirmado",
+        "concentracao_mineralizante_confirmada",
+        "horizonte_ferrifero_confirmado"
+      ],
+      "result": "elegivel_nao_instanciado"
+    },
+    {
+      "id": "ferro_montanha_sem_geologia",
+      "material": "Ferro",
+      "model": "veio_montanhoso",
+      "substrato": "granito",
+      "evidencias": [
+        "escarpa_exposta_registrada"
+      ],
+      "result": "inelegivel"
+    },
+    {
+      "id": "ferro_estelar_meteorito_real",
+      "material": "Ferro Estelar",
+      "model": "meteoritico",
+      "substrato": null,
+      "evidencias": [
+        "impacto_meteoritico_persistente",
+        "corpo_meteoritico_com_massa"
+      ],
+      "result": "elegivel_nao_instanciado"
+    },
+    {
+      "id": "ferro_estelar_sem_impacto",
+      "material": "Ferro Estelar",
+      "model": "meteoritico",
+      "substrato": null,
+      "evidencias": [],
+      "result": "inelegivel"
+    },
+    {
+      "id": "adamantita_profunda_sem_autorizacao",
+      "material": "Adamantita",
+      "model": "veio_profundo",
+      "substrato": "gnaisse",
+      "evidencias": [
+        "unidade_geologica_profunda",
+        "processo_mineralizante_confirmado"
+      ],
+      "result": "elegivel_but_spawn_bloqueado_canon"
+    },
+    {
+      "id": "aetherium_sem_canon",
+      "material": "Aetherium",
+      "model": "veio_anomalo",
+      "substrato": "gnaisse",
+      "evidencias": [
+        "anomalia_canonica_instanciada"
+      ],
+      "result": "inelegivel"
+    },
+    {
+      "id": "mithril_em_planicie_sem_rocha",
+      "material": "Mithril",
+      "model": "veio_montanhoso",
+      "substrato": null,
+      "evidencias": [
+        "fraturas_mapeadas",
+        "circulacao_mineralizante_confirmada"
+      ],
+      "result": "inelegivel"
+    }
+  ],
+  "regras_autoritativas_essenciais": [
+    "Substrato geológico não é item de inventário nem impõe mineração geológica realista ao jogador.",
+    "O bioma e a altitude não criam minério nem comprovam litologia.",
+    "Cada jazida exige fonte física finita persistida com ID único e formação geradora; não há respawn.",
+    "Raridade v4 e número de rotas alternativas não devem ser convertidos em chance por visita.",
+    "Sem contrato V4/T1 mapeado e quotas calibradas, não habilitar autogeração de jazidas por esse complemento.",
+    "Materiais fantásticos permanecem conhecidos, mas novos materiais não catalogados seguem possíveis com validação autoritativa.",
+    "Propriedades, IDs, nomes e perfis de extração da v4 permanecem intactos."
+  ]
+}

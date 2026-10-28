@@ -1,0 +1,328 @@
+{
+  "versao": "7.2",
+  "total_especies": 3096,
+  "novas_ids": [
+    "EV-FL-3001",
+    "EV-FL-3002",
+    "EV-FL-3003",
+    "EV-FL-3004",
+    "EV-FL-3005",
+    "EV-FL-3006",
+    "EV-FL-3007",
+    "EV-FL-3008",
+    "EV-FL-3009",
+    "EV-FL-3010",
+    "EV-FL-3011",
+    "EV-FL-3012",
+    "EV-FL-3013",
+    "EV-FL-3014",
+    "EV-FL-3015",
+    "EV-FL-3016",
+    "EV-FL-3017",
+    "EV-FL-3018",
+    "EV-FL-3019",
+    "EV-FL-3020",
+    "EV-FL-3021",
+    "EV-FL-3022",
+    "EV-FL-3023",
+    "EV-FL-3024",
+    "EV-FL-3025",
+    "EV-FL-3026",
+    "EV-FL-3027",
+    "EV-FL-3028",
+    "EV-FL-3029",
+    "EV-FL-3030",
+    "EV-FL-3031",
+    "EV-FL-3032",
+    "EV-FL-3033",
+    "EV-FL-3034",
+    "EV-FL-3035",
+    "EV-FL-3036",
+    "EV-FL-3037",
+    "EV-FL-3038",
+    "EV-FL-3039",
+    "EV-FL-3040",
+    "EV-FL-3041",
+    "EV-FL-3042",
+    "EV-FL-3043",
+    "EV-FL-3044",
+    "EV-FL-3045",
+    "EV-FL-3046",
+    "EV-FL-3047",
+    "EV-FL-3048",
+    "EV-FL-3049",
+    "EV-FL-3050",
+    "EV-FL-3051",
+    "EV-FL-3052",
+    "EV-FL-3053",
+    "EV-FL-3054",
+    "EV-FL-3055",
+    "EV-FL-3056",
+    "EV-FL-3057",
+    "EV-FL-3058",
+    "EV-FL-3059",
+    "EV-FL-3060",
+    "EV-FL-3061",
+    "EV-FL-3062",
+    "EV-FL-3063",
+    "EV-FL-3064",
+    "EV-FL-3065",
+    "EV-FL-3066",
+    "EV-FL-3067",
+    "EV-FL-3068",
+    "EV-FL-3069",
+    "EV-FL-3070",
+    "EV-FL-3071",
+    "EV-FL-3072",
+    "EV-FL-3073",
+    "EV-FL-3074",
+    "EV-FL-3075",
+    "EV-FL-3076",
+    "EV-FL-3077",
+    "EV-FL-3078",
+    "EV-FL-3079",
+    "EV-FL-3080",
+    "EV-FL-3081",
+    "EV-FL-3082",
+    "EV-FL-3083",
+    "EV-FL-3084",
+    "EV-FL-3085",
+    "EV-FL-3086",
+    "EV-FL-3087",
+    "EV-FL-3088",
+    "EV-FL-3089",
+    "EV-FL-3090",
+    "EV-FL-3091",
+    "EV-FL-3092",
+    "EV-FL-3093",
+    "EV-FL-3094",
+    "EV-FL-3095",
+    "EV-FL-3096"
+  ],
+  "ambientes_extremos": {
+    "EV-BIO-MONTANHA_VULCANICA": {
+      "nome": "Montanha vulcânica",
+      "novas_ids": [
+        "EV-FL-3001",
+        "EV-FL-3002",
+        "EV-FL-3003",
+        "EV-FL-3004",
+        "EV-FL-3005",
+        "EV-FL-3006"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-PICO_NEVADO": {
+      "nome": "Pico nevado",
+      "novas_ids": [
+        "EV-FL-3007",
+        "EV-FL-3008",
+        "EV-FL-3009",
+        "EV-FL-3010",
+        "EV-FL-3011",
+        "EV-FL-3012"
+      ],
+      "legadas_reaproveitadas_ids": [
+        "EV-FL-0495",
+        "EV-FL-0461"
+      ]
+    },
+    "EV-BIO-GELEIRA": {
+      "nome": "Geleira",
+      "novas_ids": [
+        "EV-FL-3013",
+        "EV-FL-3014",
+        "EV-FL-3015",
+        "EV-FL-3016",
+        "EV-FL-3017",
+        "EV-FL-3018"
+      ],
+      "legadas_reaproveitadas_ids": [
+        "EV-FL-0500",
+        "EV-FL-1443"
+      ]
+    },
+    "EV-BIO-BANQUISA_COSTEIRA": {
+      "nome": "Banquisa costeira",
+      "novas_ids": [
+        "EV-FL-3019",
+        "EV-FL-3020",
+        "EV-FL-3021",
+        "EV-FL-3022",
+        "EV-FL-3023",
+        "EV-FL-3024"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-GRUTA_INUNDADA": {
+      "nome": "Gruta inundada",
+      "novas_ids": [
+        "EV-FL-3025",
+        "EV-FL-3026",
+        "EV-FL-3027",
+        "EV-FL-3028",
+        "EV-FL-3029",
+        "EV-FL-3030"
+      ],
+      "legadas_reaproveitadas_ids": [
+        "EV-FL-0354",
+        "EV-FL-0356"
+      ]
+    },
+    "EV-BIO-ABISMO_SUBTERRANEO": {
+      "nome": "Abismo subterrâneo",
+      "novas_ids": [
+        "EV-FL-3031",
+        "EV-FL-3032",
+        "EV-FL-3033",
+        "EV-FL-3034",
+        "EV-FL-3035",
+        "EV-FL-3036"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-RIO_SUBTERRANEO": {
+      "nome": "Rio subterrâneo",
+      "novas_ids": [
+        "EV-FL-3037",
+        "EV-FL-3038",
+        "EV-FL-3039",
+        "EV-FL-3040",
+        "EV-FL-3041",
+        "EV-FL-3042"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-DESERTO_POLAR": {
+      "nome": "Deserto polar",
+      "novas_ids": [
+        "EV-FL-3043",
+        "EV-FL-3044",
+        "EV-FL-3045",
+        "EV-FL-3046",
+        "EV-FL-3047",
+        "EV-FL-3048"
+      ],
+      "legadas_reaproveitadas_ids": [
+        "EV-FL-0462",
+        "EV-FL-1441"
+      ]
+    },
+    "EV-BIO-CAVERNA_DE_GELO": {
+      "nome": "Caverna de gelo",
+      "novas_ids": [
+        "EV-FL-3049",
+        "EV-FL-3050",
+        "EV-FL-3051",
+        "EV-FL-3052",
+        "EV-FL-3053",
+        "EV-FL-3054"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-TUNEL_DE_LAVA_NATURAL": {
+      "nome": "Túnel de lava natural",
+      "novas_ids": [
+        "EV-FL-3055",
+        "EV-FL-3056",
+        "EV-FL-3057",
+        "EV-FL-3058",
+        "EV-FL-3059",
+        "EV-FL-3060"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-TALUDE_CONTINENTAL": {
+      "nome": "Talude continental",
+      "novas_ids": [
+        "EV-FL-3061",
+        "EV-FL-3062",
+        "EV-FL-3063",
+        "EV-FL-3064",
+        "EV-FL-3065",
+        "EV-FL-3066"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-OCEANO_MESOPELAGICO": {
+      "nome": "Oceano mesopelágico",
+      "novas_ids": [
+        "EV-FL-3067",
+        "EV-FL-3068",
+        "EV-FL-3069",
+        "EV-FL-3070",
+        "EV-FL-3071",
+        "EV-FL-3072"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-PLANICIE_ABISSAL": {
+      "nome": "Planície abissal",
+      "novas_ids": [
+        "EV-FL-3073",
+        "EV-FL-3074",
+        "EV-FL-3075",
+        "EV-FL-3076",
+        "EV-FL-3077",
+        "EV-FL-3078"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-FOSSA_OCEANICA": {
+      "nome": "Fossa oceânica",
+      "novas_ids": [
+        "EV-FL-3079",
+        "EV-FL-3080",
+        "EV-FL-3081",
+        "EV-FL-3082",
+        "EV-FL-3083",
+        "EV-FL-3084"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-DORSAL_OCEANICA": {
+      "nome": "Dorsal oceânica",
+      "novas_ids": [
+        "EV-FL-3085",
+        "EV-FL-3086",
+        "EV-FL-3087",
+        "EV-FL-3088",
+        "EV-FL-3089",
+        "EV-FL-3090"
+      ],
+      "legadas_reaproveitadas_ids": []
+    },
+    "EV-BIO-OCEANO_POLAR_SAZONAL": {
+      "nome": "Oceano polar sazonal",
+      "novas_ids": [
+        "EV-FL-3091",
+        "EV-FL-3092",
+        "EV-FL-3093",
+        "EV-FL-3094",
+        "EV-FL-3095",
+        "EV-FL-3096"
+      ],
+      "legadas_reaproveitadas_ids": []
+    }
+  },
+  "tipos_novos": {
+    "liquen": 9,
+    "graminea": 2,
+    "musgo": 9,
+    "trepadeira": 1,
+    "fungo": 22,
+    "erva": 6,
+    "flor": 5,
+    "arbusto": 1,
+    "junco": 2,
+    "alga": 5,
+    "consorcio_simbiotico": 34
+  },
+  "categorias_magicas_novas": {
+    "mundana": 48,
+    "latente": 32,
+    "excepcional": 16
+  },
+  "total_candidatos_ambientes_100": 100,
+  "sem_confirmar_ocorrencia": true
+}

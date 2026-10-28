@@ -1,0 +1,1029 @@
+{
+  "metadata": {
+    "schema": "everreach.manifestacoes_arcanas.v1",
+    "versao": "1.0.0",
+    "status": "vocabulario_candidato_nao_instanciado",
+    "quantidade": 56,
+    "sem_mecanicas_e_sem_rede": true
+  },
+  "enum_natureza": [
+    "visual",
+    "investigavel",
+    "potencial_mecanico_pendente"
+  ],
+  "manifestacoes": [
+    {
+      "id": "EV-ARC-MAN-0001",
+      "nome": "Cintilação nas nervuras das folhas",
+      "familia": "vegetal",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "flora_persistida",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0002",
+      "nome": "Anéis de luz entre raízes",
+      "familia": "vegetal",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "raizes_reais_confirmadas",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0003",
+      "nome": "Floração fora do ciclo habitual",
+      "familia": "vegetal",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "flora_com_fenologia_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0004",
+      "nome": "Pólen que desenha correntes arcanas",
+      "familia": "vegetal",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "flores_em_estado_reprodutivo",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0005",
+      "nome": "Sombras vegetais com cor alterada",
+      "familia": "vegetal",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "flora_persistida",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0006",
+      "nome": "Ressonância de copas ao vento",
+      "familia": "vegetal",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "arvores_e_vento_confirmados",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0007",
+      "nome": "Pulso luminoso em musgos reais",
+      "familia": "vegetal",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "musgos_persistidos",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0008",
+      "nome": "Reflexos pulsantes em cristais",
+      "familia": "mineral",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "cristais_reais_persistidos",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0009",
+      "nome": "Harmônicos em drusas minerais",
+      "familia": "mineral",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "drusas_reais_confirmadas",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0010",
+      "nome": "Veios de luz na pedra",
+      "familia": "mineral",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "afloramento_rochoso_confirmado",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0011",
+      "nome": "Mudança de matiz de uma formação mineral",
+      "familia": "mineral",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "formacao_mineral_persistida",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0012",
+      "nome": "Cristais que respondem à aproximação",
+      "familia": "mineral",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "cristais_reais_persistidos",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0013",
+      "nome": "Ondulações luminosas no solo",
+      "familia": "substrato",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "solo_ou_rocha_persistidos",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0014",
+      "nome": "Marcas geométricas efêmeras na pedra",
+      "familia": "substrato",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "rocha_exposta_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0015",
+      "nome": "Poeira suspensa em órbitas lentas",
+      "familia": "atmosferico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "poeira_ou_particulas_confirmadas",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0016",
+      "nome": "Raios luminosos sob névoa",
+      "familia": "nevoa",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "nevoa_real_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0017",
+      "nome": "Cortina de névoa de contornos anômalos",
+      "familia": "nevoa",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "nevoa_real_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0018",
+      "nome": "Faixas cintilantes sobre pradarias",
+      "familia": "atmosferico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "ar_com_particulas_confirmado",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0019",
+      "nome": "Bruma cromática sobre rocha fria",
+      "familia": "atmosferico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "condensacao_local_confirmada",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0020",
+      "nome": "Halo de luz entre nuvens",
+      "familia": "luz",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "nuvens_ou_aerossois_confirmados",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0021",
+      "nome": "Clarão breve sem relâmpago",
+      "familia": "luz",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "fonte_arcana_validada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0022",
+      "nome": "Luminescência de partículas na penumbra",
+      "familia": "luz",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "particulas_em_suspensao_confirmadas",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0023",
+      "nome": "Listras de luz ao longo de uma trilha",
+      "familia": "luz",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "solo_ou_trilha_real_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0024",
+      "nome": "Reflexos impossíveis na superfície da água",
+      "familia": "hidrico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "agua_real_persistida",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0025",
+      "nome": "Círculos de ressonância em água parada",
+      "familia": "hidrico",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "agua_parada_persistida",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0026",
+      "nome": "Gotas luminosas sobre uma nascente",
+      "familia": "hidrico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "nascente_real_confirmada",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0027",
+      "nome": "Espuma de cores alternadas",
+      "familia": "hidrico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "espuma_real_confirmada",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0028",
+      "nome": "Pulsações de brilho em água salobra",
+      "familia": "marinho",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "agua_salgada_ou_salobra_persistida",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0029",
+      "nome": "Filetes cintilantes nas correntes marítimas",
+      "familia": "marinho",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "corrente_maritima_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0030",
+      "nome": "Ecos em intervalos alternados",
+      "familia": "sonoro",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "cavidade_ou_paisagem_acustica_confirmada",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0031",
+      "nome": "Vibração harmônica da rocha",
+      "familia": "sonoro",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "superficie_rochosa_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0032",
+      "nome": "Murmúrios sem origem perceptível",
+      "familia": "sonoro",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "fonte_arcana_validada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0033",
+      "nome": "Silêncio localizado de curta duração",
+      "familia": "sonoro",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "fonte_arcana_validada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0034",
+      "nome": "Som deslocado entre penhascos",
+      "familia": "sonoro",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "relevo_escarpado_confirmado",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0035",
+      "nome": "Cristais com eco prolongado",
+      "familia": "sonoro",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "cristais_reais_persistidos",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0036",
+      "nome": "Filigranas de luz em fissuras geladas",
+      "familia": "gelo",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "gelo_persistido",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0037",
+      "nome": "Aurora ao nível da neve",
+      "familia": "gelo",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "superficie_nevada_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0038",
+      "nome": "Cintilação em bolhas presas no gelo",
+      "familia": "gelo",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "gelo_com_bolhas_confirmado",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0039",
+      "nome": "Fulgor sobre vapores quentes",
+      "familia": "calor",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "vapor_geotermico_confirmado",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0040",
+      "nome": "Ressonância térmica em basalto",
+      "familia": "calor",
+      "natureza": "investigavel",
+      "requisito_fisico_ou_arcano": "rocha_vulcanica_confirmada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0041",
+      "nome": "Faíscas arcanas sem combustão",
+      "familia": "calor",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "fonte_arcana_validada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0042",
+      "nome": "Distorção de contorno em espaço limitado",
+      "familia": "espaco",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0043",
+      "nome": "Fragmentos rochosos com peso alterado",
+      "familia": "gravidade",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0044",
+      "nome": "Gotas de água suspensas",
+      "familia": "gravidade",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0045",
+      "nome": "Contracorrente gravitacional localizada",
+      "familia": "gravidade",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0046",
+      "nome": "Descompasso temporal restrito",
+      "familia": "tempo",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0047",
+      "nome": "Repetição aparente de um instante",
+      "familia": "tempo",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0048",
+      "nome": "Zona de interferência arcana",
+      "familia": "supressao",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0049",
+      "nome": "Área de fluxo mágico enfraquecido",
+      "familia": "supressao",
+      "natureza": "potencial_mecanico_pendente",
+      "requisito_fisico_ou_arcano": "ancora_anomala_exata_persistida",
+      "intensidade_de_manifestacao_sugerida": "excepcional",
+      "permitida_em_lugares_naturais": false,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nao_definidos_validacao_futura",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0050",
+      "nome": "Sombras com atraso perceptível",
+      "familia": "percepcao",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "fonte_arcana_validada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0051",
+      "nome": "Camadas de horizonte parcialmente desalinhadas",
+      "familia": "percepcao",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "fonte_arcana_validada",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0052",
+      "nome": "Reflexos que acompanham movimentos depois",
+      "familia": "percepcao",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "superficie_refletora_persistida",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0053",
+      "nome": "Bordas de objetos com brilho residual",
+      "familia": "percepcao",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "objetos_fisicos_confirmados",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0054",
+      "nome": "Pulso luminoso sob o leito marinho",
+      "familia": "marinho",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "fundo_marinho_confirmado",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0055",
+      "nome": "Vibrações luminosas no coral existente",
+      "familia": "marinho",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "corais_persistidos",
+      "intensidade_de_manifestacao_sugerida": "moderada",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    },
+    {
+      "id": "EV-ARC-MAN-0056",
+      "nome": "Nuvem de minúsculas luzes no ar parado",
+      "familia": "atmosferico",
+      "natureza": "visual",
+      "requisito_fisico_ou_arcano": "particulas_em_suspensao_confirmadas",
+      "intensidade_de_manifestacao_sugerida": "sutil",
+      "permitida_em_lugares_naturais": true,
+      "necessita_fonte_arcana_persistida": true,
+      "origem_arcana_aceita": [
+        "ley_line_persistida",
+        "nexo_persistido",
+        "fenomeno_local_autorizado"
+      ],
+      "nao_criar_suporte_fisico": true,
+      "efeitos_mecanicos": "nenhum_automatico",
+      "distribuicao": "candidata_nao_e_spawn_ou_taxa_global"
+    }
+  ],
+  "contratos": {
+    "referencia": "IDs como propostas opcionais. Exigem fenomeno arcano persistido apropriado e evidencias fisicas reais.",
+    "sem_concessao_efeitos": "dano, XP, mana, teleporte, item, criatura ou recurso nao podem ser gerados pelo vocabulario",
+    "anomalias": "fontes EXATAS declaradas no arquetipo, nao por mero nexo"
+  }
+}

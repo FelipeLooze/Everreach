@@ -1,0 +1,209 @@
+{
+  "status": "APROVADO_COM_ALERTAS_SEMANTICOS",
+  "data": "2026-10-25",
+  "total_monstros": 500,
+  "total_saques": 1500,
+  "total_itens_preservados": 810,
+  "id_unicos": true,
+  "proficiencias_estrangeiras_invalidas": [],
+  "base_sha256": "95e1362179856355107da4a8ab9132723f3dc9ac6780bbce1163c8a099fd61d1",
+  "morfotipos_distribuicao": {
+    "mamifero": 224,
+    "inseto": 23,
+    "molusco": 11,
+    "ave": 54,
+    "anfibio": 14,
+    "flora_ou_fungo": 8,
+    "aracnideo": 26,
+    "reptil": 35,
+    "anelideo": 2,
+    "serpente": 28,
+    "crustaceo": 18,
+    "constructo": 5,
+    "humanoide": 15,
+    "amorfo": 2,
+    "espectral": 4,
+    "miriapode": 5,
+    "restos_animados": 1,
+    "fantastico_indefinido": 5,
+    "peixe": 20
+  },
+  "categorias_recursos": {
+    "apendice_ou_estrutura": 237,
+    "tegumento": 334,
+    "tecido_ou_orgao": 420,
+    "estrutura_nao_classificada": 193,
+    "secrecao_ou_glandula": 82,
+    "fibra_ou_producao": 48,
+    "pena_asa_ou_apendice": 90,
+    "estrutura_vegetal_ou_fungica": 16,
+    "objeto_portado_ou_ambiental": 50,
+    "residuo_ou_componente": 17,
+    "manifestacao_ou_residuo": 10,
+    "ninho_ou_ambiente": 3
+  },
+  "metodos_origem": {
+    "recolher": 194,
+    "esfolar": 310,
+    "butchering": 64,
+    "coletar": 49,
+    "extrair": 452,
+    "vasculhar": 48,
+    "filtrar": 3,
+    "capturar": 10,
+    "processar": 348,
+    "depenar": 17,
+    "vasculhar ninho": 2,
+    "tosquiar": 3
+  },
+  "alertas": {
+    "verificacao": 13,
+    "bloqueio": 1
+  },
+  "casos_a_revisar": [
+    {
+      "monstro_id": "EV-M2-04",
+      "monstro": "Cobra-Cobre",
+      "saque_id": "EV-M2-04-D2",
+      "item": "Bolsa de veneno",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-M3-11",
+      "monstro": "Centopeia Gume",
+      "saque_id": "EV-M3-11-D2",
+      "item": "Veneno diluído",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-M4-13",
+      "monstro": "Víbora de Prata",
+      "saque_id": "EV-M4-13-D2",
+      "item": "Bolsa de veneno lunar",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-M5-04",
+      "monstro": "Aranha Viúva-de-Brejo",
+      "saque_id": "EV-M5-04-D2",
+      "item": "Glândula de veneno",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-FAU-003",
+      "monstro": "Perdiz de Peito Vermelho",
+      "saque_id": "EV-FAU-003-D3",
+      "item": "Ovo de perdiz",
+      "gravidade": "verificacao",
+      "alertas": [
+        "exigir ninho, casca, ovo ou deposito realmente instanciado; sem criacao a partir do cadaver"
+      ]
+    },
+    {
+      "monstro_id": "EV-FAU-019",
+      "monstro": "Cobra de Barriga Amarela",
+      "saque_id": "EV-FAU-019-D3",
+      "item": "Bolsa de veneno intacta",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-FAU-025",
+      "monstro": "Escorpião de Rocha Pequeno",
+      "saque_id": "EV-FAU-025-D3",
+      "item": "Vesícula de veneno íntegra",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-FAU-042",
+      "monstro": "Vespa de Mandíbula Longa",
+      "saque_id": "EV-FAU-042-D1",
+      "item": "Cera de ninho",
+      "gravidade": "verificacao",
+      "alertas": [
+        "exigir ninho, casca, ovo ou deposito realmente instanciado; sem criacao a partir do cadaver"
+      ]
+    },
+    {
+      "monstro_id": "EV-FAU-043",
+      "monstro": "Serpente de Pescoço Largo",
+      "saque_id": "EV-FAU-043-D3",
+      "item": "Vesícula de veneno íntegra",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-FAU-049",
+      "monstro": "Escorpião de Pinças Dobradas",
+      "saque_id": "EV-FAU-049-D3",
+      "item": "Glândula de veneno íntegra",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-TRAD-210",
+      "monstro": "Víbora Marrom",
+      "saque_id": "EV-TRAD-210-D3",
+      "item": "Glândula de veneno intacta",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-TRAD-310",
+      "monstro": "Avestruz Selvagem",
+      "saque_id": "EV-TRAD-310-D3",
+      "item": "Casca de ovo abandonada",
+      "gravidade": "verificacao",
+      "alertas": [
+        "exigir ninho, casca, ovo ou deposito realmente instanciado; sem criacao a partir do cadaver"
+      ]
+    },
+    {
+      "monstro_id": "EV-TRAD-315",
+      "monstro": "Cobra Coral",
+      "saque_id": "EV-TRAD-315-D3",
+      "item": "Glândula de veneno preservada",
+      "gravidade": "verificacao",
+      "alertas": [
+        "confirmar glandula e composição; atenção a riscos de contaminação"
+      ]
+    },
+    {
+      "monstro_id": "EV-EXP-M3-50",
+      "monstro": "Raposa de Mandíbula Larga",
+      "saque_id": "EV-EXP-M3-50-D3",
+      "item": "Cálamo de falcão da geada",
+      "gravidade": "bloqueio",
+      "alertas": [
+        "estrutura de pena/asa deve ser observada nesta espécie",
+        "item rotulado com outra espécie (falcao): revisão obrigatória"
+      ]
+    }
+  ],
+  "sem_alteracao_de_saques_originais": true,
+  "sem_alteracao_de_ids": true,
+  "nao_implementado_ou_testado_no_backend": true
+}

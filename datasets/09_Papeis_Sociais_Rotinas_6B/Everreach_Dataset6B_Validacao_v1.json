@@ -1,0 +1,32 @@
+{
+  "dataset": "Everreach Dataset 6B",
+  "status": "aprovado_estruturalmente",
+  "quantidades": {
+    "total": 2200,
+    "papeis_sociais": 350,
+    "oficios_economicos_referenciados": 120,
+    "novos_papeis_nao_comerciais": 230,
+    "atividades": 1200,
+    "acoes_base": 240,
+    "variacoes_de_rotina": 650,
+    "rotinas_base": 130,
+    "familias_edificio_usadas": 50,
+    "dominios_externos": 10
+  },
+  "refs_validas": {
+    "oficios": true,
+    "modelos_edificio": true,
+    "povos": true,
+    "ids_internos": true
+  },
+  "ids_unicos": true,
+  "alertas": [
+    "Categorias idade são etapas de vida, não anos cronológicos universais.",
+    "Papel comercial exige emprego e estabelecimento instanciado e autorizado.",
+    "Locais sem correspondente no 6A ficam dependentes de ambiente e validação de área real.",
+    "Nem toda variante se aplica a todo NPC ou povoado: ativação depende de evento persistido.",
+    "Relações familiares derivam do sistema de laços, não do papel social.",
+    "Não foram feitos testes de integração com o backend do Everreach.",
+    "Dado proposto não produz alterações no mundo por si só."
+  ]
+}

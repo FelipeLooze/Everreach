@@ -1,0 +1,12 @@
+{
+  "pacote": "Everreach datasets ativos",
+  "versao_pacote": 24,
+  "base_herdada": "v23",
+  "dataset_locais_ativo": "13_Locais_Formacoes_Fantasticas/Everreach_Locais_Fantasticos_v2.json",
+  "vocabulario_manifestacoes_ativo": "13_Locais_Formacoes_Fantasticas/Everreach_Manifestacoes_Arcanas_v1.json",
+  "arquetipos_locais": 240,
+  "manifestacoes_arcanas": 56,
+  "sem_historicos": true,
+  "outros_datasets_preservados": true,
+  "nao_gera_ley_lines": true
+}

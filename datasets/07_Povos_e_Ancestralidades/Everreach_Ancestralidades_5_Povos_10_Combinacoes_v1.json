@@ -1,0 +1,457 @@
+{
+  "schema_version": "1.0",
+  "metadados": {
+    "titulo": "Everreach — Cinco povos e ancestralidades mistas",
+    "estado_proposta": "proposta",
+    "quantidade_povos": 5,
+    "compatibilidades_entre_povos": 10,
+    "escopo": "povos dos NPCs e jogadores; não altera classes, combate nem cânone de localidades",
+    "separacao": "especie, ancestralidade, aparencia, cultura, religiao, oficio e personalidade são dimensões diferentes"
+  },
+  "povos": [
+    {
+      "id": "EV-ESP-HUM",
+      "slug": "humano",
+      "nome": "Humano",
+      "nome_feminino": "humana",
+      "plural": "Humanos",
+      "plural_feminino": "humanas",
+      "origem": "especie_jogavel_e_civil",
+      "estado_proposta": "proposta",
+      "descricao_fisica": "Anatomia humanoide com ampla variedade de peles, cabelos, constituições e estaturas.",
+      "altura_adulta_cm_sugerida_nao_rigida": {
+        "min": 145,
+        "max": 205
+      },
+      "fases_etarias_anos_sugeridas": {
+        "crianca": {
+          "min": 0,
+          "max": 12
+        },
+        "adolescente": {
+          "min": 13,
+          "max": 17
+        },
+        "adulto": {
+          "min": 18,
+          "max": 64
+        },
+        "idoso": {
+          "min": 65,
+          "max": null
+        }
+      },
+      "tracos_fisicos_recomendados": [],
+      "restricoes": {
+        "personalidade_por_especie": false,
+        "oficios_proibidos_por_especie": [],
+        "religiao_obrigatoria": false,
+        "habilidades_gratuitas": false,
+        "cidade_exclusiva": false,
+        "classe_obrigatoria": false
+      },
+      "roupas_adaptadas_a_anatomia": true
+    },
+    {
+      "id": "EV-ESP-ELF",
+      "slug": "elfo",
+      "nome": "Elfo",
+      "nome_feminino": "elfa",
+      "plural": "Elfos",
+      "plural_feminino": "elfas",
+      "origem": "especie_jogavel_e_civil",
+      "estado_proposta": "proposta",
+      "descricao_fisica": "Orelhas naturalmente pontiagudas; formas físicas variadas e envelhecimento diferente do humano.",
+      "altura_adulta_cm_sugerida_nao_rigida": {
+        "min": 150,
+        "max": 205
+      },
+      "fases_etarias_anos_sugeridas": {
+        "crianca": {
+          "min": 0,
+          "max": 18
+        },
+        "adolescente": {
+          "min": 19,
+          "max": 44
+        },
+        "adulto": {
+          "min": 45,
+          "max": 199
+        },
+        "idoso": {
+          "min": 200,
+          "max": null
+        }
+      },
+      "tracos_fisicos_recomendados": [
+        "orelhas pontiagudas de formato variável"
+      ],
+      "restricoes": {
+        "personalidade_por_especie": false,
+        "oficios_proibidos_por_especie": [],
+        "religiao_obrigatoria": false,
+        "habilidades_gratuitas": false,
+        "cidade_exclusiva": false,
+        "classe_obrigatoria": false
+      },
+      "roupas_adaptadas_a_anatomia": true
+    },
+    {
+      "id": "EV-ESP-ANA",
+      "slug": "anao",
+      "nome": "Anão",
+      "nome_feminino": "anã",
+      "plural": "Anões",
+      "plural_feminino": "anãs",
+      "origem": "especie_jogavel_e_civil",
+      "estado_proposta": "proposta",
+      "descricao_fisica": "Constituição com centro de gravidade baixo, frequentemente compacta; barba não é obrigatória.",
+      "altura_adulta_cm_sugerida_nao_rigida": {
+        "min": 105,
+        "max": 155
+      },
+      "fases_etarias_anos_sugeridas": {
+        "crianca": {
+          "min": 0,
+          "max": 17
+        },
+        "adolescente": {
+          "min": 18,
+          "max": 34
+        },
+        "adulto": {
+          "min": 35,
+          "max": 129
+        },
+        "idoso": {
+          "min": 130,
+          "max": null
+        }
+      },
+      "tracos_fisicos_recomendados": [],
+      "restricoes": {
+        "personalidade_por_especie": false,
+        "oficios_proibidos_por_especie": [],
+        "religiao_obrigatoria": false,
+        "habilidades_gratuitas": false,
+        "cidade_exclusiva": false,
+        "classe_obrigatoria": false
+      },
+      "roupas_adaptadas_a_anatomia": true
+    },
+    {
+      "id": "EV-ESP-PEQ",
+      "slug": "pequenino",
+      "nome": "Pequenino",
+      "nome_feminino": "pequenina",
+      "plural": "Pequeninos",
+      "plural_feminino": "pequeninas",
+      "origem": "especie_jogavel_e_civil",
+      "estado_proposta": "proposta",
+      "descricao_fisica": "Povo de pequena estatura com proporções humanoides; pés e mãos variam individualmente.",
+      "altura_adulta_cm_sugerida_nao_rigida": {
+        "min": 78,
+        "max": 118
+      },
+      "fases_etarias_anos_sugeridas": {
+        "crianca": {
+          "min": 0,
+          "max": 12
+        },
+        "adolescente": {
+          "min": 13,
+          "max": 19
+        },
+        "adulto": {
+          "min": 20,
+          "max": 74
+        },
+        "idoso": {
+          "min": 75,
+          "max": null
+        }
+      },
+      "tracos_fisicos_recomendados": [],
+      "restricoes": {
+        "personalidade_por_especie": false,
+        "oficios_proibidos_por_especie": [],
+        "religiao_obrigatoria": false,
+        "habilidades_gratuitas": false,
+        "cidade_exclusiva": false,
+        "classe_obrigatoria": false
+      },
+      "roupas_adaptadas_a_anatomia": true
+    },
+    {
+      "id": "EV-ESP-GNO",
+      "slug": "gnomo",
+      "nome": "Gnomo",
+      "nome_feminino": "gnoma",
+      "plural": "Gnomos",
+      "plural_feminino": "gnomas",
+      "origem": "especie_jogavel_e_civil",
+      "estado_proposta": "proposta",
+      "descricao_fisica": "Povo de pequena estatura, de traços faciais e proporções muito diversos; não pressupõe afinidade com engenharia ou magia.",
+      "altura_adulta_cm_sugerida_nao_rigida": {
+        "min": 82,
+        "max": 128
+      },
+      "fases_etarias_anos_sugeridas": {
+        "crianca": {
+          "min": 0,
+          "max": 16
+        },
+        "adolescente": {
+          "min": 17,
+          "max": 29
+        },
+        "adulto": {
+          "min": 30,
+          "max": 139
+        },
+        "idoso": {
+          "min": 140,
+          "max": null
+        }
+      },
+      "tracos_fisicos_recomendados": [],
+      "restricoes": {
+        "personalidade_por_especie": false,
+        "oficios_proibidos_por_especie": [],
+        "religiao_obrigatoria": false,
+        "habilidades_gratuitas": false,
+        "cidade_exclusiva": false,
+        "classe_obrigatoria": false
+      },
+      "roupas_adaptadas_a_anatomia": true
+    }
+  ],
+  "pares_compatibilidade": [
+    {
+      "id": "EV-ANC-MIX-HUMANO-ELFO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-HUM",
+        "EV-ESP-ELF"
+      ],
+      "nome_descritivo_sugerido": "Meio-elfo",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-HUMANO-ANAO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-HUM",
+        "EV-ESP-ANA"
+      ],
+      "nome_descritivo_sugerido": "Meio-anão",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-HUMANO-PEQUENINO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-HUM",
+        "EV-ESP-PEQ"
+      ],
+      "nome_descritivo_sugerido": "Humano-pequenino",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-HUMANO-GNOMO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-HUM",
+        "EV-ESP-GNO"
+      ],
+      "nome_descritivo_sugerido": "Humano-gnomo",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-ELFO-ANAO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-ELF",
+        "EV-ESP-ANA"
+      ],
+      "nome_descritivo_sugerido": "Elfo-anão",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-ELFO-PEQUENINO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-ELF",
+        "EV-ESP-PEQ"
+      ],
+      "nome_descritivo_sugerido": "Elfo-pequenino",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-ELFO-GNOMO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-ELF",
+        "EV-ESP-GNO"
+      ],
+      "nome_descritivo_sugerido": "Elfo-gnomo",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-ANAO-PEQUENINO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-ANA",
+        "EV-ESP-PEQ"
+      ],
+      "nome_descritivo_sugerido": "Anão-pequenino",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-ANAO-GNOMO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-ANA",
+        "EV-ESP-GNO"
+      ],
+      "nome_descritivo_sugerido": "Anão-gnomo",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    },
+    {
+      "id": "EV-ANC-MIX-PEQUENINO-GNOMO",
+      "ancestralidades_pais_ids": [
+        "EV-ESP-PEQ",
+        "EV-ESP-GNO"
+      ],
+      "nome_descritivo_sugerido": "Pequenino-gnomo",
+      "compatibilidade_reprodutiva_proposta": true,
+      "possivel_gerar_descendencia": true,
+      "nova_especie_fixa": false,
+      "heranca_visual": "Traços dos dois ascendentes podem aparecer juntos, de forma desigual ou pouco visível; não combinar automaticamente todos os traços extremos.",
+      "idade_e_porte": "Gerar faixa individual coerente com hereditariedade e maturidade, sem calcular média automática.",
+      "cultura_independente": true,
+      "habilidades_automaticas": false,
+      "estado_proposta": "proposta"
+    }
+  ],
+  "representacao_individuo": {
+    "especie_base_id": "Para indivíduos sem ancestralidade mista, usar ID de uma das cinco espécies.",
+    "ancestralidade_mista": {
+      "modo": "componentes_persistidos",
+      "componentes_exemplo": [
+        {
+          "especie_id": "EV-ESP-HUM",
+          "fracao_genealogica": 0.5
+        },
+        {
+          "especie_id": "EV-ESP-ELF",
+          "fracao_genealogica": 0.5
+        }
+      ],
+      "nota": "Frações são informação de genealogia e não definem aparência ou atributos numéricos.",
+      "parentes_ids": "O parentesco deve ser vinculado aos NPCs reais quando conhecidos; nunca criado pelo narrador."
+    },
+    "identidade_cultural_id": "Independente de espécie; usar cultura/estilo regional existente.",
+    "idiomas": "Dependem de educação e histórico, não são concedidos automaticamente.",
+    "religiao_e_cura": "Independentes de espécie. Sacerdotes, herbalistas e druidas continuam papéis separados.",
+    "registro_de_nascimento": "Eventos de nascimento requerem relações e tempo autoritativos; não ocorrer automaticamente pela presença de pais compatíveis.",
+    "caracteristicas_visuais": "Armazenar seleção final por NPC; todos os traços são narrativos até implementação específica."
+  },
+  "descendencia_multigeracional": {
+    "permitida_com_validacao_do_backend": true,
+    "antepassados": "Usar linhagem persistida e pais verificados; não inferir parentesco por sobrenome, aparencia ou especie.",
+    "recombinacao": "Traços herdados variam; probabilidades reais e estatísticas são escopo de balanceamento futuro.",
+    "rotulos": "Meio-elfo e meio-anão são rótulos sociais/descritivos, não novas classes rígidas."
+  },
+  "bestas_e_inimigos_nao_jogaveis": [
+    {
+      "tipo": "goblin",
+      "classe": "monstro_do_bestiario",
+      "jogavel": false,
+      "gerar_como_morador_comum": false,
+      "ids_catalogados": [
+        "EV-M2-15",
+        "EV-M3-04",
+        "EV-M4-03",
+        "EV-M5-05",
+        "EV-TRAD-215",
+        "EV-TRAD-314",
+        "EV-TRAD-414",
+        "EV-TRAD-515"
+      ],
+      "observacao": "Goblins permanecem criaturas do bestiário; NPC pacífico excepcional depende de decisão explícita de cânone."
+    },
+    {
+      "tipo": "orc",
+      "classe": "monstro_do_bestiario",
+      "jogavel": false,
+      "gerar_como_morador_comum": false,
+      "ids_catalogados": [],
+      "observacao": "Orcs ficam reservados para o bestiário, sem registros desse tipo nos 250 monstros atuais."
+    }
+  ],
+  "integracao_sugerida": {
+    "selecionar_especie": "Somente o backend; respeitar composição populacional do povoado instanciado.",
+    "selecionar_ancestralidade": "Escolher uma das cinco espécies ou combinação existente; parentesco e reprodução requerem mundo persistido.",
+    "selecao_de_fenotipo": "Usar traços gerais e, opcionalmente, específicos de qualquer componente ancestral; validar anatomia e idade.",
+    "nome_e_sobrenome": "Pelo ambiente cultural, laços familiares e preferências individuais, nunca preso à espécie.",
+    "papel_social": "Independente da espécie; qualquer povo pode exercer qualquer ofício com as condições normais.",
+    "narrador": "Descreve fenótipo, sem definir genética, poderes ou inserir NPCs em grupos não autorizados.",
+    "sem_bonus_mecanico": "Este dataset não concede bônus de atributo, magias, proficiências ou descontos por origem."
+  }
+}

@@ -1,0 +1,279 @@
+{
+  "metadata": {
+    "schema": "everreach.locais.validacao.v2",
+    "data": "2026-10-27",
+    "tipo": "estrutural_e_contrato_nao_integracao_world_genesis",
+    "base": "v23"
+  },
+  "resumo": {
+    "arquetipos": 240,
+    "nivel_fantasia": {
+      "natural": 126,
+      "fantastico": 84,
+      "anomalo": 30
+    },
+    "afinidades": {
+      "nenhuma": 88,
+      "baixa": 54,
+      "moderada": 34,
+      "excepcional": 30,
+      "alta": 34
+    },
+    "relacoes": {
+      "independente": 120,
+      "favorecido_proximidade": 50,
+      "exige_condicao_arcana_especifica": 30,
+      "evita_energia_intensa": 6,
+      "favorecido_convergencia": 18,
+      "associado_nexo": 16
+    },
+    "dependentes": 30,
+    "com_manifestacoes": 152,
+    "manifestacoes_taxonomia": 56
+  },
+  "status": "aprovado",
+  "testes": {
+    "total": 44,
+    "aprovados": 44,
+    "lista": [
+      {
+        "verificacao": "240 arquetipos",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "240 IDs unicos",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "preservacao completa campos v1",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "nomes inalterados",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "raridade inalterada",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "descricoes originais inalteradas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "niveis fantasia inalterados",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "origem id sha",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "categorias originais preservadas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "manifestacoes ids unicos",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "manifestacoes descricoes unicas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "manifestacoes todas referenciadas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "todas manifestacoes com fonte persistida obrigatoria",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "sem geracao recursos",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "naturais continuam sem dependencia",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "fantasticos continuam sem dependencia",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "anomalias continuam bloqueadas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "30 anomalias exigem mesma fonte original",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "nenhuma anomalia desbloqueada por leylines genericas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "anomalas possuem manifestacao candidata",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "manifestacoes candidatas nao alteram fantasia base",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "raridade e afinidade separadas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "variacoes opcionais sem criar entidades",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "manifestacoes em variantes estao na lista da instancia",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "no duplicates per candidate list",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "relacoes enum consistente",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "afins enum consistente",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "locais que evitam intensidade nao recebem variacoes intensas",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "no physical coords",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "nexus not mandatory normal",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "CSV rows",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "original contracts intact",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: natural sem rede",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: fantastico sem rede",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: condicao exata anomalias",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: sem efeito item automaticamente",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: sem geracao de geografia arcana",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: sem alteracoes de pesos",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "cenario: sem manifes. gravidade nao canonica normal",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "todos os datasets anteriores presentes",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "demais datasets byte a byte preservados",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "sem historicos na pasta locais",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "zip geral integrity",
+        "aprovado": true,
+        "observacao": ""
+      },
+      {
+        "verificacao": "zip independente integrity",
+        "aprovado": true,
+        "observacao": ""
+      }
+    ]
+  },
+  "cenarios_conceituais": {
+    "natural_sem_ley_line": "permitido_se_world_genesis_fisico_autorizar",
+    "fantastico_sem_ley_line": "permitido_se_condicoes_originalmente_exigidas_autorizarem",
+    "floresta_natural_com_ley_line": "pode_ter_variante_opcional_se_flora_real_+_fonte_arcana_persistida",
+    "cristais_em_nexo_sem_cristais_reais": "nao_criar_cristais_automaticamente",
+    "anomalia_sem_fonte_id_exato": "bloqueado",
+    "anomalia_com_fonte_outra": "bloqueado",
+    "nexo_generico_sem_canon_anomalia": "bloqueado",
+    "manifestacao_visual": "nao_conceder_buffs",
+    "manifestacao_gravitacional_sem_canon": "bloqueado",
+    "raridade_inalterada": "confirmado"
+  },
+  "limites": [
+    "Nao executou os motores de Ley Lines, V4/T1 ou spawn do jogo",
+    "Elegibilidade semantica de manifestacoes requer validacao pelas condicoes do mundo",
+    "Nao define mana/dano/bonus/frequencias/porcentagens",
+    "Ids de origem anomalas herdados precisam de confirmacao canonica no backend"
+  ]
+}

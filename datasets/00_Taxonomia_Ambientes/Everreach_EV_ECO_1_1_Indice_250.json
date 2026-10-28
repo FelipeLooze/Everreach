@@ -1,0 +1,1794 @@
+{
+  "schema_version": "1.1.0",
+  "totais": {
+    "ambientes": 250,
+    "naturais": 100,
+    "construidos": 100,
+    "anomalos": 50,
+    "novos": 150,
+    "oceanicos_naturais": 8
+  },
+  "grupos_naturais": {
+    "florestas": 14,
+    "campos": 11,
+    "montanhas": 13,
+    "aridos": 10,
+    "agua_doce": 11,
+    "pantanos": 8,
+    "litorais": 10,
+    "frios": 8,
+    "subterraneo": 7,
+    "oceanos": 8
+  },
+  "grupos_construidos_novos": {
+    "povoamento": 10,
+    "producao": 10,
+    "agricultura": 10,
+    "transporte": 15,
+    "defesa": 10,
+    "comunidade": 10,
+    "ruinas": 10
+  },
+  "grupos_anomalos_novos": {
+    "mineral_arcano": 5,
+    "elemental": 5,
+    "espacial": 5,
+    "temporal": 5,
+    "biologico_arcano": 5,
+    "espiritual": 5,
+    "marinho_arcano": 5,
+    "astral": 5
+  },
+  "entradas": [
+    {
+      "id": "EV-BIO-FLORESTA_TEMPERADA",
+      "nome": "Floresta temperada",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_TROPICAL_UMIDA",
+      "nome": "Floresta tropical úmida",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_TROPICAL_SAZONAL",
+      "nome": "Floresta tropical sazonal",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_BOREAL",
+      "nome": "Floresta boreal",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CONIFERAS_MONTANAS",
+      "nome": "Coníferas montanas",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-BOSQUE_ABERTO",
+      "nome": "Bosque aberto",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-MATA_CILIAR",
+      "nome": "Mata ciliar",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_NEBULOSA",
+      "nome": "Floresta nebulosa",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CARVALHAL_ANTIGO",
+      "nome": "Carvalhal antigo",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-BOSQUE_ESPINHOSO_SECO",
+      "nome": "Bosque espinhoso seco",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-PRADARIA",
+      "nome": "Pradaria",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-ESTEPE",
+      "nome": "Estepe",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-SAVANA",
+      "nome": "Savana",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAMPO_FLORIDO",
+      "nome": "Campo florido",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-PASTAGEM_NATURAL",
+      "nome": "Pastagem natural",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAMPINA_ARBORIZADA",
+      "nome": "Campina arborizada",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAMPO_ALAGAVEL",
+      "nome": "Campo alagável",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAMPO_DE_ALTITUDE",
+      "nome": "Campo de altitude",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-COLINA_ARBORIZADA",
+      "nome": "Colina arborizada",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-COLINA_PEDREGOSA",
+      "nome": "Colina pedregosa",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-SERRA_GRANITICA",
+      "nome": "Serra granítica",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-ESCARPA_ROCHOSA",
+      "nome": "Escarpa rochosa",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-VALE_ALPINO",
+      "nome": "Vale alpino",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-PLANALTO_ALTO",
+      "nome": "Planalto alto",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-MONTANHA_VULCANICA",
+      "nome": "Montanha vulcânica",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-ENCOSTA_INSTAVEL",
+      "nome": "Encosta instável",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-PICO_NEVADO",
+      "nome": "Pico nevado",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-DESERTO_DUNAS",
+      "nome": "Deserto de dunas",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-DESERTO_PEDREGOSO",
+      "nome": "Deserto pedregoso",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-SEMIARIDO_ARBUSTIVO",
+      "nome": "Semiárido arbustivo",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-TERRAS_ARGILOSAS_ERODIDAS",
+      "nome": "Terras argilosas erodidas",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CANION_SECO",
+      "nome": "Cânion seco",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-SALINA_INTERIOR",
+      "nome": "Salina interior",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-OASIS",
+      "nome": "Oásis",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-RIO_LENTO",
+      "nome": "Rio de correnteza lenta",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-RIO_CORREDEIRAS",
+      "nome": "Rio de corredeiras",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-RIACHO",
+      "nome": "Riacho",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-NASCENTE",
+      "nome": "Nascente",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-LAGO_PROFUNDO",
+      "nome": "Lago profundo",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-LAGOA_RASA",
+      "nome": "Lagoa rasa",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CACHOEIRA",
+      "nome": "Cachoeira",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-DELTA_FLUVIAL",
+      "nome": "Delta fluvial",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-PANTANO_DOCE",
+      "nome": "Pântano de água doce",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-BREJO_TABOAS",
+      "nome": "Brejo de taboas",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-TURFEIRA",
+      "nome": "Turfeira",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-MANGUEZAL",
+      "nome": "Manguezal",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-VARZEA_FLUVIAL",
+      "nome": "Várzea fluvial",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CHARCO_SALOBRO",
+      "nome": "Charco salobro",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-PRAIA_ARENOSA",
+      "nome": "Praia arenosa",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-COSTA_ROCHOSA",
+      "nome": "Costa rochosa",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-DUNAS_COSTEIRAS",
+      "nome": "Dunas costeiras",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-FALESIA",
+      "nome": "Falésia",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-ESTUARIO",
+      "nome": "Estuário",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-RECIFE_RASO",
+      "nome": "Recife raso",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-ILHA_COSTEIRA",
+      "nome": "Ilha costeira",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-TUNDRA_HERBACEA",
+      "nome": "Tundra herbácea",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-TUNDRA_ARBUSTIVA",
+      "nome": "Tundra arbustiva",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAMPO_NEVE",
+      "nome": "Campo de neve",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-GELEIRA",
+      "nome": "Geleira",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-BANQUISA_COSTEIRA",
+      "nome": "Banquisa costeira",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAVERNA_CALCARIA",
+      "nome": "Caverna calcária",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAVERNA_BASALTICA",
+      "nome": "Caverna basáltica",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-GRUTA_INUNDADA",
+      "nome": "Gruta inundada",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-ABISMO_SUBTERRANEO",
+      "nome": "Abismo subterrâneo",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-CAVERNAS_SEDIMENTARES",
+      "nome": "Sistema de cavernas sedimentares",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_TEMPERADA_UMIDA",
+      "nome": "Floresta temperada úmida",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_DE_VARZEA_TROPICAL",
+      "nome": "Floresta de várzea tropical",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-FLORESTA_SUBALPINA",
+      "nome": "Floresta subalpina",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-CAMPO_ARBUSTIVO_MEDITERRANEO",
+      "nome": "Campo arbustivo de verão seco",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-CERRADO_ARBORIZADO",
+      "nome": "Savana arborizada seca",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-VEGETACAO_DUNAS_INTERIORES",
+      "nome": "Vegetação de dunas interiores",
+      "grupo": "natural",
+      "subgrupo": "campos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-VALE_GLACIAL",
+      "nome": "Vale glacial",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-MORENA_GLACIAL",
+      "nome": "Morena glacial",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-PLANALTO_CARSTICO",
+      "nome": "Planalto cárstico",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-DESERTO_FRIO",
+      "nome": "Deserto frio",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-PLANICIE_SALAR",
+      "nome": "Planície salina seca",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-LEQUE_ALUVIAL_SECO",
+      "nome": "Leque aluvial seco",
+      "grupo": "natural",
+      "subgrupo": "aridos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-MEANDRO_ABANDONADO",
+      "nome": "Meandro abandonado",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-LAGO_DE_CRATERA",
+      "nome": "Lago de cratera",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-RIO_SUBTERRANEO",
+      "nome": "Rio subterrâneo",
+      "grupo": "natural",
+      "subgrupo": "agua_doce",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-PANTANO_DE_ALTITUDE",
+      "nome": "Pântano de altitude",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-LAGUNA_COSTEIRA_SALOBRA",
+      "nome": "Laguna costeira salobra",
+      "grupo": "natural",
+      "subgrupo": "pantanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-RESTINGA_COSTEIRA",
+      "nome": "Restinga costeira",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-BAIA_ABRIGADA",
+      "nome": "Baía abrigada",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-PRADARIA_COSTEIRA",
+      "nome": "Pradaria costeira",
+      "grupo": "natural",
+      "subgrupo": "litorais",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-TRANSICAO_TAIGA_TUNDRA",
+      "nome": "Transição taiga-tundra",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-DESERTO_POLAR",
+      "nome": "Deserto polar",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-NEVE_SAZONAL_ALPINA",
+      "nome": "Campo de neve sazonal alpina",
+      "grupo": "natural",
+      "subgrupo": "frios",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-CAVERNA_DE_GELO",
+      "nome": "Caverna de gelo",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-TUNEL_DE_LAVA_NATURAL",
+      "nome": "Túnel de lava natural",
+      "grupo": "natural",
+      "subgrupo": "subterraneo",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-ENCOSTA_MARITIMA_NEBULOSA",
+      "nome": "Encosta marítima nebulosa",
+      "grupo": "natural",
+      "subgrupo": "montanhas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-BOSQUE_RIBEIRINHO_SECO",
+      "nome": "Bosque ribeirinho de região seca",
+      "grupo": "natural",
+      "subgrupo": "florestas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-OCEANO_ABERTO_SUPERFICIAL",
+      "nome": "Oceano aberto superficial",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-PLATAFORMA_CONTINENTAL_SUBMERSA",
+      "nome": "Plataforma continental submersa",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-TALUDE_CONTINENTAL",
+      "nome": "Talude continental",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-OCEANO_MESOPELAGICO",
+      "nome": "Oceano mesopelágico",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-PLANICIE_ABISSAL",
+      "nome": "Planície abissal",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-FOSSA_OCEANICA",
+      "nome": "Fossa oceânica",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-DORSAL_OCEANICA",
+      "nome": "Dorsal oceânica",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-BIO-OCEANO_POLAR_SAZONAL",
+      "nome": "Oceano polar sazonal",
+      "grupo": "natural",
+      "subgrupo": "oceanos",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ALDEIA_COMPACTA",
+      "nome": "Núcleo de aldeia",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-BAIRRO_COMERCIAL",
+      "nome": "Bairro de comércio",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-CELEIRO_ARMAZEM",
+      "nome": "Celeiro e armazém",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-HORTA_CULTIVADA",
+      "nome": "Horta cultivada",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-POMAR_MANEJADO",
+      "nome": "Pomar manejado",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-PASTAGEM_MANEJADA",
+      "nome": "Pastagem manejada",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-MOINHO_AGRICOLA",
+      "nome": "Moinho agrícola",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-CANAL_IRRIGACAO",
+      "nome": "Canal de irrigação",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-ESTRADA_RURAL",
+      "nome": "Estrada rural",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-PONTE",
+      "nome": "Ponte e acessos",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-PORTO_MERCANTIL",
+      "nome": "Porto mercantil",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-CAIS_RIBEIRINHO",
+      "nome": "Cais ribeirinho",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-PEDREIRA_ATIVA",
+      "nome": "Pedreira ativa",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-MINA_ESCAVADA",
+      "nome": "Mina escavada",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-RUINAS_HABITADAS",
+      "nome": "Ruínas reaproveitadas",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-RUINAS_ABANDONADAS",
+      "nome": "Ruínas abandonadas",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-TEMPLO_URBANO",
+      "nome": "Templo ou capela",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-SANTUARIO_RURAL",
+      "nome": "Santuário rural",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-CEMITERIO",
+      "nome": "Cemitério e mausoléus",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-TORRE_VIGIA",
+      "nome": "Torre de vigia",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-MURALHA_PORTAO",
+      "nome": "Muralha e portão",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-ACAMPAMENTO_TEMPORARIO",
+      "nome": "Acampamento temporário",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-GALERIA_ESCAVADA",
+      "nome": "Galeria artificial subterrânea",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-ESTALEIRO",
+      "nome": "Estaleiro",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-ESGOTO_URBANO",
+      "nome": "Galerias de esgoto",
+      "grupo": "construido",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-AMB-BAIRRO_RESIDENCIAL",
+      "nome": "Bairro residencial",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-VILA_PALICADA",
+      "nome": "Vila paliçada",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-MERCADO_COBERTO",
+      "nome": "Mercado coberto",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-PRACA_CENTRAL",
+      "nome": "Praça central",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CASA_DO_CONSELHO",
+      "nome": "Casa do conselho",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ESCOLA_COMUNITARIA",
+      "nome": "Escola comunitária",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-BIBLIOTECA_CIVICA",
+      "nome": "Biblioteca cívica",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CASA_DE_HOSPEDES",
+      "nome": "Casa de hóspedes",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-POSTO_MENSAGEIROS",
+      "nome": "Posto de mensageiros",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-POSTO_DE_SAUDE_COMUNITARIO",
+      "nome": "Posto comunitário de cuidados",
+      "grupo": "construido",
+      "subgrupo": "povoamento",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-FORJA_ATIVA",
+      "nome": "Forja ativa",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-OLARIA",
+      "nome": "Olaria",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CURTUME",
+      "nome": "Curtume",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TECELAGEM",
+      "nome": "Tecelagem",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-SERRARIA",
+      "nome": "Serraria",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-OFICINA_CARPINTARIA",
+      "nome": "Oficina de carpintaria",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-OFICINA_CARRUAGENS",
+      "nome": "Oficina de carruagens",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CERVEJARIA",
+      "nome": "Cervejaria",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TINTURARIA",
+      "nome": "Tinturaria",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-BOTICA_HERBAL",
+      "nome": "Botica herbal",
+      "grupo": "construido",
+      "subgrupo": "producao",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CAMPO_DE_CEREAIS",
+      "nome": "Campo de cereais",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-VINHEDO_MANEJADO",
+      "nome": "Vinhedo manejado",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-APIARIO",
+      "nome": "Apiário",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ESTUFA_AGRICOLA",
+      "nome": "Estufa agrícola",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CANTEIRO_IRRIGADO",
+      "nome": "Canteiro irrigado",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ARROZAL_ALAGADO",
+      "nome": "Arrozal alagado",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CRIATORIO_DE_AVES",
+      "nome": "Criatório de aves",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CURRAL_DE_CRIACAO",
+      "nome": "Curral de criação",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TANQUES_DE_PISCICULTURA",
+      "nome": "Tanques de piscicultura",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TERREIRO_DE_SECAGEM",
+      "nome": "Terreiro de secagem",
+      "grupo": "construido",
+      "subgrupo": "agricultura",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ENTREPOSTO_ESTRADA",
+      "nome": "Entreposto de estrada",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ESTACAO_DE_CARAVANAS",
+      "nome": "Estação de caravanas",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-FAROL_COSTEIRO",
+      "nome": "Farol costeiro",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CAIS_PESQUEIRO",
+      "nome": "Cais pesqueiro",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-DEPOSITO_FLUVIAL",
+      "nome": "Depósito fluvial",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-PONTILHAO",
+      "nome": "Pontilhão",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TRAVESSIA_DE_BALSA",
+      "nome": "Travessia de balsa",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ESTRADA_CALCADA",
+      "nome": "Estrada calçada",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-AQUEDUTO",
+      "nome": "Aqueduto",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CISTERNA_PUBLICA",
+      "nome": "Cisterna pública",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-FORTIM_FRONTEIRICO",
+      "nome": "Fortim fronteiriço",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CASERNA",
+      "nome": "Caserna",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TORRE_DE_SINAIS",
+      "nome": "Torre de sinais",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CAMPO_DE_TREINAMENTO",
+      "nome": "Campo de treinamento",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-POSTO_DE_ALFANDEGA",
+      "nome": "Posto de alfândega",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-MARCOS_DA_FRONTEIRA",
+      "nome": "Marcos de fronteira",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TRINCHEIRA_DEFENSIVA",
+      "nome": "Trincheira defensiva",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-REFUGIO_DE_MONTANHA",
+      "nome": "Refúgio de montanha",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ABRIGO_FORTIFICADO",
+      "nome": "Abrigo fortificado",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-MURALHA_DE_TERRA",
+      "nome": "Muralha de terra",
+      "grupo": "construido",
+      "subgrupo": "defesa",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-AULA_MONASTICA",
+      "nome": "Escola monástica",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CLAUSTRO",
+      "nome": "Claustro",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-HOSPICIO_DE_ERVAS",
+      "nome": "Hospício de ervas",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CASA_DE_BANHOS",
+      "nome": "Casa de banhos",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-SALA_DE_ASSEMBLEIA",
+      "nome": "Sala de assembleia",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-ANFITEATRO",
+      "nome": "Anfiteatro",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-JARDIM_MEMORIAL",
+      "nome": "Jardim memorial",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-POSTO_DE_RONDAS",
+      "nome": "Posto de rondas",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-OFICINA_COOPERATIVA",
+      "nome": "Oficina cooperativa",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-SALAO_DE_FESTAS",
+      "nome": "Salão de festas",
+      "grupo": "construido",
+      "subgrupo": "comunidade",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-RUINA_DE_PONTE",
+      "nome": "Ruína de ponte",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-FORTALEZA_ARRUINADA",
+      "nome": "Fortaleza arruinada",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TUNEL_COLAPSADO",
+      "nome": "Túnel colapsado",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-MINA_ABANDONADA",
+      "nome": "Mina abandonada",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-AQUEDUTO_ARRUINADO",
+      "nome": "Aqueduto arruinado",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-TORRE_ARRUINADA",
+      "nome": "Torre arruinada",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-VILA_ABANDONADA",
+      "nome": "Vila abandonada",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CATACUMBA_CONSTRUIDA",
+      "nome": "Catacumba construída",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-OBSERVATORIO_ANTIGO",
+      "nome": "Observatório antigo",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-DIQUE_ROMPIDO",
+      "nome": "Dique rompido",
+      "grupo": "construido",
+      "subgrupo": "ruinas",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-QUEBRA_MAR_DE_PEDRA",
+      "nome": "Quebra-mar de pedra",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-PLATAFORMA_DE_PESCA",
+      "nome": "Plataforma de pesca",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-DOCA_FLUTUANTE",
+      "nome": "Doca flutuante",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-PORTO_DE_CABOTAGEM",
+      "nome": "Porto de cabotagem",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-AMB-CANAL_NAVEGAVEL",
+      "nome": "Canal navegável",
+      "grupo": "construido",
+      "subgrupo": "transporte",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-FLORESTA_CRISTALINA",
+      "nome": "Floresta cristalina",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-BOSQUE_DOS_ECOS",
+      "nome": "Bosque dos ecos",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-CHARCO_LUMINESCENTE",
+      "nome": "Charco luminescente",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-NASCENTE_DE_MANA",
+      "nome": "Nascente de mana",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-LAGO_ESPELHADO",
+      "nome": "Lago espelhado",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-PENHASCO_SUSPENSO",
+      "nome": "Penhasco suspenso",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-GRUTA_RESSONANTE",
+      "nome": "Gruta ressonante",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-VALE_DE_CINZAS_ETERNAS",
+      "nome": "Vale de cinzas eternas",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-ILHA_ENCOBERTA",
+      "nome": "Ilha encoberta",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-RUINAS_DISTORCIDAS",
+      "nome": "Ruínas distorcidas",
+      "grupo": "anomalo",
+      "subgrupo": "herdado",
+      "origem": "EV-ECO-1"
+    },
+    {
+      "id": "EV-ANO-VEIO_DE_LUZ_INVERSA",
+      "nome": "Veio de luz inversa",
+      "grupo": "anomalo",
+      "subgrupo": "mineral_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-PEDREIRA_DE_ECO_DE_MANA",
+      "nome": "Pedreira de eco de mana",
+      "grupo": "anomalo",
+      "subgrupo": "mineral_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CRISTALARIO_VIVO",
+      "nome": "Cristalário vivo",
+      "grupo": "anomalo",
+      "subgrupo": "mineral_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-FISSURA_DE_RUNAS",
+      "nome": "Fissura de runas",
+      "grupo": "anomalo",
+      "subgrupo": "mineral_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-NASCENTE_DE_CINZA_AZUL",
+      "nome": "Nascente de cinza azul",
+      "grupo": "anomalo",
+      "subgrupo": "mineral_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CAMPO_DE_NEVE_ARDENTE",
+      "nome": "Campo de neve ardente",
+      "grupo": "anomalo",
+      "subgrupo": "elemental",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-TURFEIRA_CINTILANTE",
+      "nome": "Turfeira cintilante",
+      "grupo": "anomalo",
+      "subgrupo": "elemental",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-DESFILADEIRO_DE_RAIOS_LENTOS",
+      "nome": "Desfiladeiro de raios lentos",
+      "grupo": "anomalo",
+      "subgrupo": "elemental",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CAVERNA_DE_VENTO_PRESO",
+      "nome": "Caverna de vento preso",
+      "grupo": "anomalo",
+      "subgrupo": "elemental",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-MARGEM_DE_AGUA_SUSPENSA",
+      "nome": "Margem de água suspensa",
+      "grupo": "anomalo",
+      "subgrupo": "elemental",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-TRILHA_QUE_RETORNA",
+      "nome": "Trilha que retorna",
+      "grupo": "anomalo",
+      "subgrupo": "espacial",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-VALE_DO_HORIZONTE_PARTIDO",
+      "nome": "Vale do horizonte partido",
+      "grupo": "anomalo",
+      "subgrupo": "espacial",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-PONTE_SEM_MARGENS",
+      "nome": "Ponte sem margens",
+      "grupo": "anomalo",
+      "subgrupo": "espacial",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-BOSQUE_DAS_DISTANCIAS",
+      "nome": "Bosque das distâncias",
+      "grupo": "anomalo",
+      "subgrupo": "espacial",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-COLINA_DE_SOMBRA_DUPLA",
+      "nome": "Colina de sombra dupla",
+      "grupo": "anomalo",
+      "subgrupo": "espacial",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-RUINA_DE_CREPUSCULO_FIXO",
+      "nome": "Ruína de crepúsculo fixo",
+      "grupo": "anomalo",
+      "subgrupo": "temporal",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CAMPO_DE_ORVALHO_PERSISTENTE",
+      "nome": "Campo de orvalho persistente",
+      "grupo": "anomalo",
+      "subgrupo": "temporal",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-LAGO_DE_ESTACOES_CRUZADAS",
+      "nome": "Lago de estações cruzadas",
+      "grupo": "anomalo",
+      "subgrupo": "temporal",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-GRUTA_DE_PASSOS_TARDIOS",
+      "nome": "Gruta de passos tardios",
+      "grupo": "anomalo",
+      "subgrupo": "temporal",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CLAREIRA_DE_NOITE_INTERMITENTE",
+      "nome": "Clareira de noite intermitente",
+      "grupo": "anomalo",
+      "subgrupo": "temporal",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-POMAR_DE_RAIZES_MIGRANTES",
+      "nome": "Pomar de raízes migrantes",
+      "grupo": "anomalo",
+      "subgrupo": "biologico_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-BOSQUE_DE_FLORES_MURMURANTES",
+      "nome": "Bosque de flores murmurantes",
+      "grupo": "anomalo",
+      "subgrupo": "biologico_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-VALE_DE_MUSGO_DOURADO",
+      "nome": "Vale de musgo dourado",
+      "grupo": "anomalo",
+      "subgrupo": "biologico_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-PANTANO_DE_ESPOROS_LUMINOSOS",
+      "nome": "Pântano de esporos luminosos",
+      "grupo": "anomalo",
+      "subgrupo": "biologico_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-NINHO_DE_CRISTAIS_ORGANICOS",
+      "nome": "Ninho de cristais orgânicos",
+      "grupo": "anomalo",
+      "subgrupo": "biologico_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-RUA_DE_VOZES_RESIDUAIS",
+      "nome": "Rua de vozes residuais",
+      "grupo": "anomalo",
+      "subgrupo": "espiritual",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CRIPTA_DE_VELAS_FRIAS",
+      "nome": "Cripta de velas frias",
+      "grupo": "anomalo",
+      "subgrupo": "espiritual",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CAPELA_DE_SINOS_SILENTES",
+      "nome": "Capela de sinos silentes",
+      "grupo": "anomalo",
+      "subgrupo": "espiritual",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CAMPINA_DE_SOMBRAS_PERDIDAS",
+      "nome": "Campina de sombras perdidas",
+      "grupo": "anomalo",
+      "subgrupo": "espiritual",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CORREDOR_DAS_MEMORIAS",
+      "nome": "Corredor das memórias",
+      "grupo": "anomalo",
+      "subgrupo": "espiritual",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-MAR_DE_FOSFORESCENCIA_ARCANA",
+      "nome": "Mar de fosforescência arcana",
+      "grupo": "anomalo",
+      "subgrupo": "marinho_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-ABISMO_DO_CANTO_SILENCIOSO",
+      "nome": "Abismo do canto silencioso",
+      "grupo": "anomalo",
+      "subgrupo": "marinho_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-RECIFE_DE_VIDRO_VIVO",
+      "nome": "Recife de vidro vivo",
+      "grupo": "anomalo",
+      "subgrupo": "marinho_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-COLUNA_DE_AGUA_IMOVEL",
+      "nome": "Coluna de água imóvel",
+      "grupo": "anomalo",
+      "subgrupo": "marinho_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-ILHOTA_DE_NEVOA_PRATEADA",
+      "nome": "Ilhota de névoa prateada",
+      "grupo": "anomalo",
+      "subgrupo": "marinho_arcano",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-CRATERA_AZULADA",
+      "nome": "Cratera azulada",
+      "grupo": "anomalo",
+      "subgrupo": "astral",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-TORRE_DE_LUZ_ESTELAR",
+      "nome": "Torre de luz estelar",
+      "grupo": "anomalo",
+      "subgrupo": "astral",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-MIRANTE_DE_AURORA_INVERSA",
+      "nome": "Mirante de aurora inversa",
+      "grupo": "anomalo",
+      "subgrupo": "astral",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-ROCHA_DAS_CONSTELACOES",
+      "nome": "Rocha das constelações",
+      "grupo": "anomalo",
+      "subgrupo": "astral",
+      "origem": "EV-ECO-1.1"
+    },
+    {
+      "id": "EV-ANO-ILHAS_DE_POEIRA_CELESTE",
+      "nome": "Ilhas de poeira celeste",
+      "grupo": "anomalo",
+      "subgrupo": "astral",
+      "origem": "EV-ECO-1.1"
+    }
+  ]
+}

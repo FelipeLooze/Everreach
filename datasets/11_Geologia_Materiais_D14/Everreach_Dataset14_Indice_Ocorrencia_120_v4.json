@@ -1,0 +1,2301 @@
+{
+  "schema_version": "everreach.dataset14.indice_ocorrencia.v4",
+  "total": 120,
+  "materiais": [
+    {
+      "material_id": "EV-GEO-FAN-0001",
+      "nome": "Ferro",
+      "familia": "bases_comuns",
+      "classe_material": "metal",
+      "raridade_categoria": "comum",
+      "raridade_indice": 15,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 312750,
+      "dificuldade_localizacao_0_100": 24,
+      "exposicao_potencial_0_100": 43,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0001-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0002",
+      "nome": "Cobre",
+      "familia": "bases_comuns",
+      "classe_material": "metal",
+      "raridade_categoria": "comum",
+      "raridade_indice": 22,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 265500,
+      "dificuldade_localizacao_0_100": 26,
+      "exposicao_potencial_0_100": 37,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0002-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0003",
+      "nome": "Estanho",
+      "familia": "bases_comuns",
+      "classe_material": "metal",
+      "raridade_categoria": "comum",
+      "raridade_indice": 20,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 279000,
+      "dificuldade_localizacao_0_100": 25,
+      "exposicao_potencial_0_100": 39,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0003-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0004",
+      "nome": "Prata",
+      "familia": "bases_comuns",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 52,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 38829,
+      "dificuldade_localizacao_0_100": 44,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0004-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0005",
+      "nome": "Ouro",
+      "familia": "bases_comuns",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 65,
+      "geologia_modelo": "aluvião",
+      "biomas_candidatos_ids": [
+        "EV-BIO-RIO_CORREDEIRAS",
+        "EV-BIO-DELTA_FLUVIAL",
+        "EV-BIO-RIACHO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2204,
+      "dificuldade_localizacao_0_100": 46,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0005-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0006",
+      "nome": "Chumbo",
+      "familia": "bases_comuns",
+      "classe_material": "metal",
+      "raridade_categoria": "comum",
+      "raridade_indice": 20,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 279000,
+      "dificuldade_localizacao_0_100": 29,
+      "exposicao_potencial_0_100": 39,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0006-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0007",
+      "nome": "Sal-gema",
+      "familia": "bases_comuns",
+      "classe_material": "mineral",
+      "raridade_categoria": "comum",
+      "raridade_indice": 22,
+      "geologia_modelo": "evaporito",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SALINA_INTERIOR",
+        "EV-BIO-DESERTO_PEDREGOSO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 265500,
+      "dificuldade_localizacao_0_100": 19,
+      "exposicao_potencial_0_100": 57,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0007-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0008",
+      "nome": "Quartzo",
+      "familia": "bases_comuns",
+      "classe_material": "cristal",
+      "raridade_categoria": "comum",
+      "raridade_indice": 12,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 333000,
+      "dificuldade_localizacao_0_100": 25,
+      "exposicao_potencial_0_100": 45,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0008-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0009",
+      "nome": "Obsidiana",
+      "familia": "bases_comuns",
+      "classe_material": "rocha",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 47,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 46526,
+      "dificuldade_localizacao_0_100": 45,
+      "exposicao_potencial_0_100": 32,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0009-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0010",
+      "nome": "Carvão mineral",
+      "familia": "bases_comuns",
+      "classe_material": "combustivel",
+      "raridade_categoria": "comum",
+      "raridade_indice": 24,
+      "geologia_modelo": "sedimentar",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CANION_SECO",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 252000,
+      "dificuldade_localizacao_0_100": 25,
+      "exposicao_potencial_0_100": 37,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0010-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0011",
+      "nome": "Enxofre",
+      "familia": "bases_comuns",
+      "classe_material": "mineral",
+      "raridade_categoria": "comum",
+      "raridade_indice": 23,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 258750,
+      "dificuldade_localizacao_0_100": 31,
+      "exposicao_potencial_0_100": 39,
+      "fragmento": "permitido_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0011-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0012",
+      "nome": "Âmbar",
+      "familia": "bases_comuns",
+      "classe_material": "resina_fossil",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 45,
+      "geologia_modelo": "fossil",
+      "biomas_candidatos_ids": [
+        "EV-BIO-TURFEIRA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 49605,
+      "dificuldade_localizacao_0_100": 39,
+      "exposicao_potencial_0_100": 29,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0012-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0013",
+      "nome": "Mithril",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 88,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 54,
+      "dificuldade_localizacao_0_100": 66,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0013-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0014",
+      "nome": "Oricalco",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 93,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 41,
+      "dificuldade_localizacao_0_100": 71,
+      "exposicao_potencial_0_100": 8,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0014-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0015",
+      "nome": "Ferro Lunar",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 60,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2500,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 18,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0015-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0016",
+      "nome": "Cobre Rúnico",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 36,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 63461,
+      "dificuldade_localizacao_0_100": 44,
+      "exposicao_potencial_0_100": 27,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0016-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0017",
+      "nome": "Prata Sombria",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 64,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2263,
+      "dificuldade_localizacao_0_100": 57,
+      "exposicao_potencial_0_100": 16,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0017-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0018",
+      "nome": "Âmbarferro",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 50,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 41908,
+      "dificuldade_localizacao_0_100": 47,
+      "exposicao_potencial_0_100": 26,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0018-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0019",
+      "nome": "Verdálio",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "sedimentar",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CANION_SECO",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0019-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0020",
+      "nome": "Silvânio",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 63,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2322,
+      "dificuldade_localizacao_0_100": 44,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0020-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0021",
+      "nome": "Vesperálio",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 60,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2500,
+      "dificuldade_localizacao_0_100": 59,
+      "exposicao_potencial_0_100": 18,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0021-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0022",
+      "nome": "Alvorita",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 74,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1671,
+      "dificuldade_localizacao_0_100": 59,
+      "exposicao_potencial_0_100": 12,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0022-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0023",
+      "nome": "Cintilferro",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 47,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 46526,
+      "dificuldade_localizacao_0_100": 40,
+      "exposicao_potencial_0_100": 29,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0023-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0024",
+      "nome": "Arcanouro",
+      "familia": "metais_arcanos",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 84,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 65,
+      "dificuldade_localizacao_0_100": 67,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0024-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0025",
+      "nome": "Adamantita",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 97,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 84,
+      "exposicao_potencial_0_100": 1,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0025-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0026",
+      "nome": "Ferronita",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 77,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1493,
+      "dificuldade_localizacao_0_100": 61,
+      "exposicao_potencial_0_100": 19,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0026-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0027",
+      "nome": "Draconita",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 89,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 52,
+      "dificuldade_localizacao_0_100": 66,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0027-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0028",
+      "nome": "Ferro Estelar",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 88,
+      "geologia_modelo": "meteoritico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PLANALTO_ALTO",
+        "EV-BIO-DESERTO_PEDREGOSO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 54,
+      "dificuldade_localizacao_0_100": 62,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0028-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0029",
+      "nome": "Abissita",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 90,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 49,
+      "dificuldade_localizacao_0_100": 81,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0029-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0030",
+      "nome": "Gravítio",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 97,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 76,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0030-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0031",
+      "nome": "Ossífero",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 52,
+      "exposicao_potencial_0_100": 22,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0031-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0032",
+      "nome": "Nerválio",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 72,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1789,
+      "dificuldade_localizacao_0_100": 56,
+      "exposicao_potencial_0_100": 22,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0032-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0033",
+      "nome": "Bravita",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 72,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1789,
+      "dificuldade_localizacao_0_100": 59,
+      "exposicao_potencial_0_100": 22,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0033-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0034",
+      "nome": "Bastiálio",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 84,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 65,
+      "dificuldade_localizacao_0_100": 83,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0034-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0035",
+      "nome": "Ferro-Âncora",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 37,
+      "geologia_modelo": "litoral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-COSTA_ROCHOSA",
+        "EV-BIO-FALESIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 61921,
+      "dificuldade_localizacao_0_100": 32,
+      "exposicao_potencial_0_100": 55,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0035-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0036",
+      "nome": "Rochálio",
+      "familia": "metais_de_resistencia",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 74,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1671,
+      "dificuldade_localizacao_0_100": 60,
+      "exposicao_potencial_0_100": 21,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0036-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0037",
+      "nome": "Solarita",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 74,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1671,
+      "dificuldade_localizacao_0_100": 56,
+      "exposicao_potencial_0_100": 24,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0037-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0038",
+      "nome": "Glaciolita",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 60,
+      "geologia_modelo": "glacial",
+      "biomas_candidatos_ids": [
+        "EV-BIO-GELEIRA",
+        "EV-BIO-PICO_NEVADO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2500,
+      "dificuldade_localizacao_0_100": 43,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0038-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0039",
+      "nome": "Tempestita",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 86,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 60,
+      "dificuldade_localizacao_0_100": 71,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0039-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0040",
+      "nome": "Coração de Brasa",
+      "familia": "metais_elementais",
+      "classe_material": "nodulo",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 88,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 54,
+      "dificuldade_localizacao_0_100": 63,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0040-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0041",
+      "nome": "Ferrígneo",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 61,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2441,
+      "dificuldade_localizacao_0_100": 46,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0041-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0042",
+      "nome": "Ventálio",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "escarpa",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-CAMPO_DE_ALTITUDE"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 52,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0042-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0043",
+      "nome": "Marésio",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 67,
+      "geologia_modelo": "litoral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-COSTA_ROCHOSA",
+        "EV-BIO-FALESIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2086,
+      "dificuldade_localizacao_0_100": 46,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0043-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0044",
+      "nome": "Cinzálio",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 45,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 49605,
+      "dificuldade_localizacao_0_100": 40,
+      "exposicao_potencial_0_100": 34,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0044-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0045",
+      "nome": "Vulcanita",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 73,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1730,
+      "dificuldade_localizacao_0_100": 58,
+      "exposicao_potencial_0_100": 24,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0045-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0046",
+      "nome": "Troválio",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 68,
+      "geologia_modelo": "escarpa",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-CAMPO_DE_ALTITUDE"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2026,
+      "dificuldade_localizacao_0_100": 48,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0046-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0047",
+      "nome": "Pedrálio",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 43,
+      "geologia_modelo": "sedimentar",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CANION_SECO",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 52684,
+      "dificuldade_localizacao_0_100": 35,
+      "exposicao_potencial_0_100": 35,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0047-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0048",
+      "nome": "Estiálio",
+      "familia": "metais_elementais",
+      "classe_material": "metal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 77,
+      "geologia_modelo": "deserto",
+      "biomas_candidatos_ids": [
+        "EV-BIO-DESERTO_PEDREGOSO",
+        "EV-BIO-CANION_SECO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1493,
+      "dificuldade_localizacao_0_100": 58,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0048-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0049",
+      "nome": "Éterita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 72,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1789,
+      "dificuldade_localizacao_0_100": 65,
+      "exposicao_potencial_0_100": 13,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0049-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0050",
+      "nome": "Runita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 73,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1730,
+      "dificuldade_localizacao_0_100": 61,
+      "exposicao_potencial_0_100": 13,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0050-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0051",
+      "nome": "Cristalita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 38,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 60382,
+      "dificuldade_localizacao_0_100": 47,
+      "exposicao_potencial_0_100": 26,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0051-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0052",
+      "nome": "Arcanita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 90,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 49,
+      "dificuldade_localizacao_0_100": 71,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0052-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0053",
+      "nome": "Nulita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 90,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 49,
+      "dificuldade_localizacao_0_100": 77,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0053-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0054",
+      "nome": "Onirita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "gema",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 94,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 38,
+      "dificuldade_localizacao_0_100": 78,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0054-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0055",
+      "nome": "Astralita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 87,
+      "geologia_modelo": "meteoritico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PLANALTO_ALTO",
+        "EV-BIO-DESERTO_PEDREGOSO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 57,
+      "dificuldade_localizacao_0_100": 62,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0055-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0056",
+      "nome": "Aetherium",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 99,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 76,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0056-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0057",
+      "nome": "Ecosita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 65,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2204,
+      "dificuldade_localizacao_0_100": 61,
+      "exposicao_potencial_0_100": 16,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0057-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0058",
+      "nome": "Véurita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 59,
+      "exposicao_potencial_0_100": 14,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0058-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0059",
+      "nome": "Memorita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 89,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 52,
+      "dificuldade_localizacao_0_100": 75,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0059-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0060",
+      "nome": "Sintonita",
+      "familia": "cristais_e_gemas_arcanas",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 69,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1967,
+      "dificuldade_localizacao_0_100": 58,
+      "exposicao_potencial_0_100": 14,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0060-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0061",
+      "nome": "Aurorita",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 65,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2204,
+      "dificuldade_localizacao_0_100": 56,
+      "exposicao_potencial_0_100": 16,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0061-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0062",
+      "nome": "Glaciocristal",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 38,
+      "geologia_modelo": "glacial",
+      "biomas_candidatos_ids": [
+        "EV-BIO-GELEIRA",
+        "EV-BIO-PICO_NEVADO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 60382,
+      "dificuldade_localizacao_0_100": 35,
+      "exposicao_potencial_0_100": 39,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0062-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0063",
+      "nome": "Pirocristal",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 74,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1671,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 24,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0063-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0064",
+      "nome": "Fulminita",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 94,
+      "geologia_modelo": "escarpa",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-CAMPO_DE_ALTITUDE"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 38,
+      "dificuldade_localizacao_0_100": 64,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0064-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0065",
+      "nome": "Marécristal",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 60,
+      "geologia_modelo": "litoral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-COSTA_ROCHOSA",
+        "EV-BIO-FALESIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2500,
+      "dificuldade_localizacao_0_100": 49,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0065-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0066",
+      "nome": "Brumita",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 38,
+      "geologia_modelo": "pantano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PANTANO_DOCE",
+        "EV-BIO-TURFEIRA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 60382,
+      "dificuldade_localizacao_0_100": 29,
+      "exposicao_potencial_0_100": 41,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0066-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0067",
+      "nome": "Venturita",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 63,
+      "geologia_modelo": "escarpa",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-CAMPO_DE_ALTITUDE"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2322,
+      "dificuldade_localizacao_0_100": 52,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0067-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0068",
+      "nome": "Raizcristal",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 61,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2441,
+      "dificuldade_localizacao_0_100": 48,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0068-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0069",
+      "nome": "Prismalita",
+      "familia": "cristais_elementais",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 69,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1967,
+      "dificuldade_localizacao_0_100": 59,
+      "exposicao_potencial_0_100": 14,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0069-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0070",
+      "nome": "Mareolita",
+      "familia": "cristais_elementais",
+      "classe_material": "gema",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 38,
+      "geologia_modelo": "litoral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-COSTA_ROCHOSA",
+        "EV-BIO-FALESIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 60382,
+      "dificuldade_localizacao_0_100": 34,
+      "exposicao_potencial_0_100": 54,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0070-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0071",
+      "nome": "Cintilita",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 78,
+      "geologia_modelo": "escarpa",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-CAMPO_DE_ALTITUDE"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1434,
+      "dificuldade_localizacao_0_100": 56,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0071-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0072",
+      "nome": "Torrálita",
+      "familia": "cristais_elementais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 75,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1612,
+      "dificuldade_localizacao_0_100": 54,
+      "exposicao_potencial_0_100": 23,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0072-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0073",
+      "nome": "Umbrita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 64,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2263,
+      "dificuldade_localizacao_0_100": 56,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0073-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0074",
+      "nome": "Nocturita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 84,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 65,
+      "dificuldade_localizacao_0_100": 69,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0074-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0075",
+      "nome": "Solenium",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 82,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 70,
+      "dificuldade_localizacao_0_100": 71,
+      "exposicao_potencial_0_100": 9,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0075-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0076",
+      "nome": "Luminita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "cristal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 50,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 41908,
+      "dificuldade_localizacao_0_100": 48,
+      "exposicao_potencial_0_100": 18,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0076-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0077",
+      "nome": "Vesperita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 76,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1553,
+      "dificuldade_localizacao_0_100": 63,
+      "exposicao_potencial_0_100": 12,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0077-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0078",
+      "nome": "Penumbrita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 66,
+      "exposicao_potencial_0_100": 14,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0078-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0079",
+      "nome": "Eclipseita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "gema",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 84,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 65,
+      "dificuldade_localizacao_0_100": 69,
+      "exposicao_potencial_0_100": 4,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0079-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0080",
+      "nome": "Albalita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 79,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1375,
+      "dificuldade_localizacao_0_100": 62,
+      "exposicao_potencial_0_100": 10,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0080-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0081",
+      "nome": "Crepuscita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 69,
+      "geologia_modelo": "veio_arcano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ABISMO_SUBTERRANEO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1967,
+      "dificuldade_localizacao_0_100": 57,
+      "exposicao_potencial_0_100": 14,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0081-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0082",
+      "nome": "Véulita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "cristal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 93,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 41,
+      "dificuldade_localizacao_0_100": 72,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0082-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0083",
+      "nome": "Estelita",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 79,
+      "geologia_modelo": "meteoritico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PLANALTO_ALTO",
+        "EV-BIO-DESERTO_PEDREGOSO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1375,
+      "dificuldade_localizacao_0_100": 59,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0083-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0084",
+      "nome": "Sombrálio",
+      "familia": "materiais_de_luz_e_sombra",
+      "classe_material": "metal",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 85,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 62,
+      "dificuldade_localizacao_0_100": 79,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0084-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0085",
+      "nome": "Ressonita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 70,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1908,
+      "dificuldade_localizacao_0_100": 61,
+      "exposicao_potencial_0_100": 14,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0085-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0086",
+      "nome": "Pressurita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 61,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2441,
+      "dificuldade_localizacao_0_100": 62,
+      "exposicao_potencial_0_100": 8,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0086-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0087",
+      "nome": "Profundita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "muito_raro",
+      "raridade_indice": 88,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 54,
+      "dificuldade_localizacao_0_100": 84,
+      "exposicao_potencial_0_100": 3,
+      "fragmento": "excepcional_exige_evento_especifico_e_autorizacao",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0087-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0088",
+      "nome": "Estalorita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "cristal",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 37,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 61921,
+      "dificuldade_localizacao_0_100": 41,
+      "exposicao_potencial_0_100": 26,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0088-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0089",
+      "nome": "Labirintita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 64,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2263,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 16,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0089-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0090",
+      "nome": "Brumapedra",
+      "familia": "materiais_subterraneos",
+      "classe_material": "rocha",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 45,
+      "geologia_modelo": "pantano",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PANTANO_DOCE",
+        "EV-BIO-TURFEIRA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 49605,
+      "dificuldade_localizacao_0_100": 32,
+      "exposicao_potencial_0_100": 35,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0090-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0091",
+      "nome": "Pedrassombra",
+      "familia": "materiais_subterraneos",
+      "classe_material": "rocha",
+      "raridade_categoria": "raro",
+      "raridade_indice": 73,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1730,
+      "dificuldade_localizacao_0_100": 76,
+      "exposicao_potencial_0_100": 6,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0091-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0092",
+      "nome": "Lamelita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 43,
+      "geologia_modelo": "sedimentar",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CANION_SECO",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 52684,
+      "dificuldade_localizacao_0_100": 41,
+      "exposicao_potencial_0_100": 35,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0092-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0093",
+      "nome": "Colunita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 63,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2322,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 17,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0093-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0094",
+      "nome": "Veialita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 72,
+      "geologia_modelo": "veio_montanhoso",
+      "biomas_candidatos_ids": [
+        "EV-BIO-SERRA_GRANITICA",
+        "EV-BIO-ESCARPA_ROCHOSA",
+        "EV-BIO-COLINA_PEDREGOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1789,
+      "dificuldade_localizacao_0_100": 58,
+      "exposicao_potencial_0_100": 22,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0094-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0095",
+      "nome": "Geodrita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 78,
+      "geologia_modelo": "caverna",
+      "biomas_candidatos_ids": [
+        "EV-BIO-CAVERNA_CALCARIA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1434,
+      "dificuldade_localizacao_0_100": 67,
+      "exposicao_potencial_0_100": 11,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0095-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0096",
+      "nome": "Selferita",
+      "familia": "materiais_subterraneos",
+      "classe_material": "mineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 73,
+      "exposicao_potencial_0_100": 6,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0096-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0097",
+      "nome": "Seivita",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 61,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2441,
+      "dificuldade_localizacao_0_100": 47,
+      "exposicao_potencial_0_100": 25,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0097-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0098",
+      "nome": "Florálita",
+      "familia": "biominerais",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 79,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1375,
+      "dificuldade_localizacao_0_100": 52,
+      "exposicao_potencial_0_100": 17,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0098-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0099",
+      "nome": "Esporita",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 35,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 65000,
+      "dificuldade_localizacao_0_100": 26,
+      "exposicao_potencial_0_100": 38,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0099-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0100",
+      "nome": "Coralferro",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 72,
+      "geologia_modelo": "recifal",
+      "biomas_candidatos_ids": [
+        "EV-BIO-RECIFE_RASO",
+        "EV-BIO-COSTA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1789,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 24,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0100-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0101",
+      "nome": "Musgálio",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 35,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 65000,
+      "dificuldade_localizacao_0_100": 26,
+      "exposicao_potencial_0_100": 38,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0101-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0102",
+      "nome": "Ossilita",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 73,
+      "geologia_modelo": "fossil",
+      "biomas_candidatos_ids": [
+        "EV-BIO-TURFEIRA",
+        "EV-BIO-CAVERNAS_SEDIMENTARES"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1730,
+      "dificuldade_localizacao_0_100": 54,
+      "exposicao_potencial_0_100": 20,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0102-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0103",
+      "nome": "Mielcristal",
+      "familia": "biominerais",
+      "classe_material": "cristal",
+      "raridade_categoria": "raro",
+      "raridade_indice": 76,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1553,
+      "dificuldade_localizacao_0_100": 54,
+      "exposicao_potencial_0_100": 19,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0103-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0104",
+      "nome": "Raizarita",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 43,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 52684,
+      "dificuldade_localizacao_0_100": 36,
+      "exposicao_potencial_0_100": 32,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0104-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0105",
+      "nome": "Cascaferro",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "raro",
+      "raridade_indice": 76,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1553,
+      "dificuldade_localizacao_0_100": 55,
+      "exposicao_potencial_0_100": 19,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0105-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0106",
+      "nome": "Florcristal",
+      "familia": "biominerais",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 67,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 2086,
+      "dificuldade_localizacao_0_100": 49,
+      "exposicao_potencial_0_100": 24,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0106-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0107",
+      "nome": "Liquenita",
+      "familia": "biominerais",
+      "classe_material": "biomineral",
+      "raridade_categoria": "incomum",
+      "raridade_indice": 36,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 63461,
+      "dificuldade_localizacao_0_100": 34,
+      "exposicao_potencial_0_100": 38,
+      "fragmento": "condicional_com_fonte_e_desprendimento",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0107-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0108",
+      "nome": "Nectrita",
+      "familia": "biominerais",
+      "classe_material": "gema",
+      "raridade_categoria": "raro",
+      "raridade_indice": 71,
+      "geologia_modelo": "biomineral",
+      "biomas_candidatos_ids": [
+        "EV-BIO-FLORESTA_NEBULOSA",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1849,
+      "dificuldade_localizacao_0_100": 50,
+      "exposicao_potencial_0_100": 22,
+      "fragmento": "raro_exige_fonte_exposta_e_evento_comprovado",
+      "requer_canon_excepcional": false,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0108-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0109",
+      "nome": "Eternita",
+      "familia": "materiais_lendarios",
+      "classe_material": "metal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 95,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 80,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0109-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0110",
+      "nome": "Primórdio",
+      "familia": "materiais_lendarios",
+      "classe_material": "mineral",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 97,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 80,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0110-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0111",
+      "nome": "Ferro do Vazio",
+      "familia": "materiais_lendarios",
+      "classe_material": "metal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 95,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 78,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0111-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0112",
+      "nome": "Arcanita Primordial",
+      "familia": "materiais_lendarios",
+      "classe_material": "cristal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 95,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 72,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0112-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0113",
+      "nome": "Pedra do Primeiro Fogo",
+      "familia": "materiais_lendarios",
+      "classe_material": "nodulo",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 99,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 76,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0113-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0114",
+      "nome": "Astralouro",
+      "familia": "materiais_lendarios",
+      "classe_material": "metal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 100,
+      "geologia_modelo": "meteoritico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PLANALTO_ALTO",
+        "EV-BIO-DESERTO_PEDREGOSO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 66,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0114-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0115",
+      "nome": "Coração do Mundo",
+      "familia": "materiais_lendarios",
+      "classe_material": "nodulo",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 96,
+      "geologia_modelo": "veio_profundo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-CAVERNA_CALCARIA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 84,
+      "exposicao_potencial_0_100": 1,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0115-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0116",
+      "nome": "Crisolita Primeva",
+      "familia": "materiais_lendarios",
+      "classe_material": "gema",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 100,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 83,
+      "exposicao_potencial_0_100": 1,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0116-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0117",
+      "nome": "Nadirita",
+      "familia": "materiais_lendarios",
+      "classe_material": "cristal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 98,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 75,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0117-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0118",
+      "nome": "Zenitalita",
+      "familia": "materiais_lendarios",
+      "classe_material": "gema",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 98,
+      "geologia_modelo": "meteoritico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-PLANALTO_ALTO",
+        "EV-BIO-DESERTO_PEDREGOSO"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 66,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0118-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0119",
+      "nome": "Eonsita",
+      "familia": "materiais_lendarios",
+      "classe_material": "cristal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 97,
+      "geologia_modelo": "veio_anomalo",
+      "biomas_candidatos_ids": [
+        "EV-BIO-ABISMO_SUBTERRANEO",
+        "EV-BIO-ESCARPA_ROCHOSA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 81,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0119-OCO-01"
+    },
+    {
+      "material_id": "EV-GEO-FAN-0120",
+      "nome": "Fênixferro",
+      "familia": "materiais_lendarios",
+      "classe_material": "metal",
+      "raridade_categoria": "lendario",
+      "raridade_indice": 97,
+      "geologia_modelo": "vulcanico",
+      "biomas_candidatos_ids": [
+        "EV-BIO-MONTANHA_VULCANICA",
+        "EV-BIO-CAVERNA_BASALTICA"
+      ],
+      "intensidade_referencia_por_milhao_formacoes_elegiveis": 1,
+      "dificuldade_localizacao_0_100": 70,
+      "exposicao_potencial_0_100": 2,
+      "fragmento": "bloqueado_por_padrao_somente_evento_canonico_excepcional",
+      "requer_canon_excepcional": true,
+      "perfil_ocorrencia_id": "EV-GEO-FAN-0120-OCO-01"
+    }
+  ]
+}

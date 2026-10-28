@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.ids import generate_id
@@ -15,6 +15,8 @@ class Campaign(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
     world_seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    world_profile: Mapped[str | None] = mapped_column(String, nullable=True)
+    playable_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     world_time: Mapped["WorldTime"] = relationship(
         back_populates="campaign", uselist=False, cascade="all, delete-orphan"

@@ -64,6 +64,7 @@ def list_campaigns(db: Session = Depends(get_db)):
             id=campaign.id,
             name=campaign.name,
             created_at=campaign.created_at,
+            world_profile=campaign.world_profile,
             characters=characters_by_campaign[campaign.id],
         )
         for campaign in campaigns
@@ -72,7 +73,8 @@ def list_campaigns(db: Session = Depends(get_db)):
 
 @router.post("", response_model=CampaignResponse)
 def create_campaign_route(body: CampaignCreateRequest, db: Session = Depends(get_db)) -> Campaign:
-    campaign = create_campaign(db, body.name)
+    campaign = create_campaign(db, body.name, world_seed=body.world_seed)
+    campaign.world_profile = body.world_profile
     db.commit()
     db.refresh(campaign)
     return campaign
@@ -132,6 +134,14 @@ def start_world(
     character = db.get(Character, character_id)
     if character is None or character.campaign_id != campaign_id:
         raise HTTPException(status_code=404, detail="Personagem não encontrado nesta campanha")
+
+    if campaign.world_profile in ('world_genesis_ap1_v1', 'world_genesis_ap1_tp1_wgs1_v1', 'world_genesis_ap1_tp1_wgs1_v2', 'world_genesis_ap1_tp1_wgs2_v1', 'world_genesis_ap1_tp1_wgs2_v2', 'world_genesis_ap1_tp1_wgs2_v3', 'world_genesis_ap1_tp1_wgs2_v4', 'world_genesis_ap1_tp1_wgs2_v5', 'world_genesis_ap1_tp1_wgs3_v1'):
+        from app.game.world.genesis.playable import start_playable
+        try:
+            return start_playable(db, campaign, character, llm_service)
+        except ValueError as exc:
+            db.rollback()
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     region = db.query(Region).filter(Region.campaign_id == campaign_id).first()
     if region is None:

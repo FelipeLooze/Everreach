@@ -8,6 +8,8 @@ import { StatusBar } from "@/components/StatusBar";
 import { CharacterSheetPanel } from "@/features/character/CharacterSheetPanel";
 import { CombatPanel } from "@/features/combat/CombatPanel";
 import { ActionInput } from "@/features/game/ActionInput";
+import { VegetationNearby } from '@/features/game/VegetationNearby';
+import type { PlantAction, PlantObservation } from '@/types/game';
 import { GameSidebar } from "@/features/game/GameSidebar";
 import { NarrativeLog, type NarrativeEntry } from "@/features/game/NarrativeLog";
 import { RegenerateNarrative } from "@/features/game/RegenerateNarrative";
@@ -53,6 +55,11 @@ export function GameScreen() {
   });
   const [actionError, setActionError] = useState<string | null>(null);
   const [techniques, setTechniques] = useState<CharacterTechnique[]>([]);
+  const [plants, setPlants] = useState<PlantObservation[]>([]);
+
+  useEffect(() => {
+    setPlants([]);
+  }, [campaignId, characterId, state?.location?.id]);
 
   useEffect(() => {
     if (!state || !campaignId || !characterId) return;
@@ -83,12 +90,16 @@ export function GameScreen() {
     return <p>Nenhuma campanha ativa. Comece uma nova primeiro.</p>;
   }
 
-  const handleAction = async (text: string, techniqueId?: string) => {
+  const handleAction = async (text: string, techniqueId?: string, plantAction?: PlantAction, formationAction?: { kind: "inspect" | "interact" }) => {
     setEntries((prev) => [...prev, { id: nextId(), kind: "player", text }]);
     setSubmitting(true);
     setActionError(null);
     try {
-      const result = await postAction(campaignId, characterId, text, techniqueId);
+      const result = await postAction(campaignId, characterId, text, techniqueId, plantAction, formationAction);
+      const vegetation = result.plant_result;
+      if (vegetation?.individuals) setPlants(vegetation.individuals);
+      else if (vegetation?.individual_id && vegetation.parts) setPlants(current => current.map(p => p.individual_id === vegetation.individual_id ? vegetation as PlantObservation : p));
+      else setPlants([]);
       setState(result.state);
       setUndoStatus({
         available: true,
@@ -165,6 +176,7 @@ export function GameScreen() {
     setActionError(null);
     try {
       const result = await undoLastAction(campaignId, characterId, reason);
+      setPlants([]);
       setState(result.state);
       const story = await getStoryLog(campaignId, characterId);
       setStoryEntries(story.entries);
@@ -203,6 +215,13 @@ export function GameScreen() {
           )}
           {worldStarted && (
             <>
+              {(state?.world_profile === 'world_genesis_ap1_v1' || state?.world_profile === 'world_genesis_ap1_tp1_wgs1_v1' || state?.world_profile === 'world_genesis_ap1_tp1_wgs1_v2' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v1' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v2' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v3' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v4' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v5' || state?.world_profile === 'world_genesis_ap1_tp1_wgs3_v1') && state?.location?.type !== 'genesis_formation_interior' && <VegetationNearby plants={plants} inventory={state.inventory} busy={submitting || undoing} onAction={handleAction} />}
+              {(state?.world_profile === 'world_genesis_ap1_tp1_wgs1_v1' || state?.world_profile === 'world_genesis_ap1_tp1_wgs1_v2' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v1' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v2' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v3' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v4' || state?.world_profile === 'world_genesis_ap1_tp1_wgs2_v5' || state?.world_profile === 'world_genesis_ap1_tp1_wgs3_v1') && state?.location?.type?.startsWith('genesis_formation') && (
+                <div className="formation-actions">
+                  <button disabled={submitting || undoing} onClick={() => handleAction("Examino este local natural.", undefined, undefined, {kind:"inspect"})}>Inspecionar formação</button>
+                  <button disabled={submitting || undoing} onClick={() => handleAction("Interajo com a formação.", undefined, undefined, {kind:"interact"})}>Interagir com a formação</button>
+                </div>
+              )}
               {entries.some((entry) => entry.kind === "narrator") && (
                 <div className="narrative-revision-actions">
                   <RegenerateNarrative

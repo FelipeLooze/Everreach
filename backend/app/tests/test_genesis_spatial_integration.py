@@ -241,10 +241,12 @@ def test_coverage_database_contract_rejects_missing_owner(db_session):
 
 
 def test_spherical_migration_preserves_populated_v1_save_and_roundtrips(tmp_path):
+    from pathlib import Path
     path = tmp_path / "legacy_sphere_upgrade.db"
     env = {**os.environ, "DATABASE_URL": f"sqlite:///{path.as_posix()}"}
     def alembic(command, revision):
         subprocess.run([sys.executable, "-m", "alembic", command, revision],
+                       cwd=Path(__file__).resolve().parents[2],
                        env=env, check=True, capture_output=True, text=True)
     alembic("upgrade", "h16h1c2d3e4f")
     config = WorldConfig()
@@ -257,10 +259,12 @@ def test_spherical_migration_preserves_populated_v1_save_and_roundtrips(tmp_path
                      ("old", 0, 0, json.dumps(legacy_sector(7, config, SectorKey(0, 0))), '{"event":"keep"}'))
         before = {table: conn.execute(f"SELECT * FROM {table}").fetchall()
                   for table in ("campaigns", "genesis_worlds", "genesis_sectors")}
+        columns = {table: ','.join(r[1] for r in conn.execute(f'PRAGMA table_info({table})')) for table in before}
     alembic("upgrade", "head")
     with sqlite3.connect(path) as conn:
         for table, rows in before.items():
-            assert conn.execute(f"SELECT * FROM {table}").fetchall() == rows
+            assert conn.execute(f"SELECT {columns[table]} FROM {table}").fetchall() == rows
+        assert conn.execute("SELECT world_profile,playable_state FROM campaigns WHERE id='old'").fetchone()==(None,None)
         for table in ("genesis_sphere_sectors", "location_spatial_anchors", "entity_spatial_coverages"):
             assert conn.execute(f"SELECT count(*) FROM {table}").fetchone() == (0,)
     # Exercise actual migrated schema through the same ORM services as runtime.

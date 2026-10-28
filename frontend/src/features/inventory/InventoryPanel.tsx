@@ -6,8 +6,9 @@ import type { Inventory, InventoryItem } from "@/types/game";
 
 const formatWeight = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
+    ...(value > 0 && value < 0.1
+      ? { maximumSignificantDigits: 3 }
+      : { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
   }).format(value);
 
 const equipmentSlotLabels = {

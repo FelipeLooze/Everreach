@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -161,20 +162,22 @@ def test_additive_migration_preserves_legacy_save(tmp_path):
 
     path = tmp_path / "legacy.db"
     env = {**os.environ, "DATABASE_URL": f"sqlite:///{path.as_posix()}"}
+    backend_root = Path(__file__).parents[2]
     def migrate(target):
         subprocess.run([sys.executable, "-m", "alembic", "upgrade", target],
-                       env=env, check=True, capture_output=True, text=True)
+                       cwd=backend_root, env=env, check=True, capture_output=True, text=True)
     migrate("g15g1b2c3d4e")
     with sqlite3.connect(path) as connection:
         connection.execute("INSERT INTO campaigns (id, name, world_seed, created_at) "
                            "VALUES ('legacy', 'Keep', 42, '2026-10-25 00:00:00')")
-        before = connection.execute("SELECT * FROM campaigns").fetchall()
+        before = connection.execute("SELECT id, name, world_seed, created_at FROM campaigns").fetchall()
     migrate("head")
     with sqlite3.connect(path) as connection:
-        assert connection.execute("SELECT * FROM campaigns").fetchall() == before
+        assert connection.execute("SELECT id, name, world_seed, created_at FROM campaigns").fetchall() == before
+        assert connection.execute("SELECT world_profile, playable_state FROM campaigns WHERE id='legacy'").fetchone() == (None, None)
         assert connection.execute("SELECT count(*) FROM genesis_worlds").fetchone() == (0,)
         assert connection.execute("SELECT count(*) FROM genesis_sectors").fetchone() == (0,)
     subprocess.run([sys.executable, "-m", "alembic", "downgrade", "g15g1b2c3d4e"],
-                   env=env, check=True, capture_output=True, text=True)
+                   cwd=backend_root, env=env, check=True, capture_output=True, text=True)
     with sqlite3.connect(path) as connection:
-        assert connection.execute("SELECT * FROM campaigns").fetchall() == before
+        assert connection.execute("SELECT id, name, world_seed, created_at FROM campaigns").fetchall() == before

@@ -31,6 +31,7 @@ from app.core.enums import (
 from app.core.logging import current_narrative_request_id, get_logger, with_narrative_request_id
 from app.core.ids import generate_id
 from app.db.models.character import Character
+from app.db.models.campaign import Campaign
 from app.db.models.item import ItemInstance
 from app.db.models.location import (
     CharacterLocationDiscovery,
@@ -329,6 +330,15 @@ def resolve_action(
             and _known_request_of(db, campaign_id, character, active_npc) is not None
         ):
             intent = replace(intent, type=ActionIntentType.TALK, target=None, person_ref=None)
+        # WGS1's local formation entrances use ordinary, character-known
+        # LocationConnection edges. Resolve explicit movement against that
+        # graph before trusting a generic parser target (which may collapse
+        # "Entro na galeria interior" to a cardinal direction).
+        campaign = db.get(Campaign, campaign_id)
+        if (campaign is not None and campaign.world_profile in ("world_genesis_ap1_tp1_wgs1_v1", "world_genesis_ap1_tp1_wgs1_v2")):
+            route_target = _resolve_movement_target(db, character, text)
+            if route_target is not None:
+                intent = replace(intent, type=ActionIntentType.MOVE, target=route_target.name)
     logger.info("resolved intent=%s target=%r for character=%s", intent.type, intent.target, character_id)
 
     dead_creature_ids_before = {
@@ -1297,10 +1307,20 @@ def _apply_intent(
         # place name in passing while addressing a person): every
         # confirmed live failure was the Intent Parser classifying clear
         # movement phrasing as FREEFORM instead of MOVE.
+        if _is_explicit_wait(intent.raw_text or ""):
+            # Intent providers can fall back to FREEFORM when unavailable.
+            # A clearly phrased, bounded wait already has canonical duration
+            # rules below; route it there so the world clock and lazy systems
+            # receive the requested interval instead of the one-minute default.
+            intent = replace(intent, type=ActionIntentType.WAIT)
+        elif _is_explicit_rest(intent.raw_text or ""):
+            # Explicit recovery remains usable when the optional intent LLM is
+            # disabled; dispatch to the existing REST authority and rules.
+            intent = replace(intent, type=ActionIntentType.REST)
         movement_target = _resolve_movement_target(db, character, intent.raw_text)
-        if movement_target is not None:
+        if intent.type == ActionIntentType.FREEFORM and movement_target is not None:
             intent = replace(intent, type=ActionIntentType.MOVE, target=movement_target.name)
-        elif _LOOK_AROUND_PATTERN.search(_strip_accents(intent.raw_text or "").casefold()):
+        elif intent.type == ActionIntentType.FREEFORM and _LOOK_AROUND_PATTERN.search(_strip_accents(intent.raw_text or "").casefold()):
             intent = replace(intent, type=ActionIntentType.EXAMINE, target=None)
     if intent.type == ActionIntentType.MOVE:
         summary, minutes = _handle_move(db, campaign_id, character, intent)
@@ -1582,6 +1602,25 @@ def _strip_accents(text: str) -> str:
     return "".join(char for char in unicodedata.normalize("NFKD", text) if not unicodedata.combining(char))
 
 
+def _known_genesis_route_target(db, character, text):
+    """Resolve an observed TP1 edge by direction/name, including region seams."""
+    from app.db.models.location import CharacterConnectionDiscovery
+    current = db.get(Location, character.location_id) if character.location_id else None
+    if current is None or current.genesis_site is None:
+        return None
+    routes = (db.query(LocationConnection, Location)
+        .join(Location, Location.id == LocationConnection.to_location_id)
+        .join(CharacterConnectionDiscovery, CharacterConnectionDiscovery.connection_id == LocationConnection.id)
+        .filter(LocationConnection.from_location_id == current.id,
+                LocationConnection.active.is_(True),
+                CharacterConnectionDiscovery.character_id == character.id).all())
+    normalized = _strip_accents(text or '').casefold()
+    matches = [loc for edge,loc in routes if edge.spatial_contract and any(
+        re.search(rf'\b{re.escape(_strip_accents(label).casefold())}\b', normalized)
+        for label in (edge.direction,loc.name) if label)]
+    return matches[0] if len(matches) == 1 else None
+
+
 def _resolve_movement_target(db: Session, character: Character, raw_text: str) -> Location | None:
     """Phase 24J.3 — a deterministic backstop for clear movement phrasing
     ("Logan vai em direção à estalagem", "Logan chega à estalagem",
@@ -1604,6 +1643,10 @@ def _resolve_movement_target(db: Session, character: Character, raw_text: str) -
     text_no_accents = _strip_accents(raw_text).casefold()
     if not _MOVEMENT_PHRASE_PATTERN.search(text_no_accents):
         return None
+
+    physical_destination = _known_genesis_route_target(db, character, raw_text)
+    if physical_destination is not None:
+        return physical_destination
 
     candidates = (
         db.query(Location)
@@ -1712,7 +1755,8 @@ def _handle_move(db: Session, campaign_id: str, character: Character, intent: In
     # praça central" resolved the right target in _resolve_movement_target
     # but then failed here with a "no path connects" error, because this
     # query separately re-resolved the name to the wrong location.
-    destination = _known_destination_query(Location.name == intent.target)
+    destination = (_known_genesis_route_target(db, character, intent.target)
+                   or _known_destination_query(Location.name == intent.target))
 
     # The Intent Parser itself sometimes classifies MOVE directly (bypassing
     # _resolve_movement_target's backstop entirely) with a generic
@@ -2363,6 +2407,28 @@ _WAIT_UNTIL = (
 _WAIT_NUMBERS = {"uma": 1, "um": 1, "duas": 2, "dois": 2, "tres": 3, "quatro": 4, "cinco": 5,
                  "seis": 6, "sete": 7, "oito": 8, "nove": 9, "dez": 10, "onze": 11, "doze": 12}
 _MAX_WAIT_MINUTES = 16 * 60
+_WAIT_VERB = re.compile(r"\b(?:espero|esperar|espera|aguardo|aguardar|aguarde|fico esperando|passo o tempo)\b")
+_REST_VERB = re.compile(
+    r"^\s*(?:(?:eu\s+)?(?:descanso|repouso|durmo)|"
+    r"(?:vou|preciso|quero|devo|posso)\s+(?:descansar|repousar|dormir)|"
+    r"(?:descansar|repousar|dormir)\b)"
+)
+
+
+def _is_explicit_wait(text: str) -> bool:
+    plain = _strip_accents(text).casefold()
+    if not _WAIT_VERB.search(plain):
+        return False
+    duration = re.search(r"\b(?:meia hora|\d{1,2}|" + "|".join(_WAIT_NUMBERS) + r")\s+(?:hora|horas|minuto|minutos)\b", plain)
+    until = re.search(r"\b(?:ate|por)\b", plain) and any(re.search(pattern, plain) for pattern, _ in _WAIT_UNTIL)
+    return bool(duration or until)
+
+
+def _is_explicit_rest(text: str) -> bool:
+    plain = _strip_accents(text).casefold()
+    if re.search(r"\b(?:nao|nunca|sem)\b", plain):
+        return False
+    return bool(_REST_VERB.search(plain))
 
 
 def _wait_minutes(text: str, hour: int, minute: int) -> int:
@@ -2807,13 +2873,19 @@ def _handle_examine(
             + "; ".join(result.features)
         )
 
+    if result.signals:
+        lines.append(
+            "Indícios geográficos próximos: "
+            + "; ".join(result.signals)
+        )
+
     if result.routes:
         lines.append(
             "Rotas perceptíveis: "
             + "; ".join(result.routes)
         )
 
-    if not result.features and not result.routes:
+    if not result.features and not result.routes and not result.signals:
         lines.append(
             "Nenhum elemento adicional registrado pelo backend é perceptível."
         )

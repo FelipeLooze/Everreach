@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     String,
     UniqueConstraint,
 )
@@ -31,6 +32,7 @@ class Location(Base):
     parent_location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.id"), nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, default="generic")
+    genesis_site: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     x: Mapped[int] = mapped_column(Integer, default=0)
     y: Mapped[int] = mapped_column(Integer, default=0)
     description: Mapped[str] = mapped_column(String, default="")
@@ -65,6 +67,7 @@ class LocationConnection(Base):
     danger: Mapped[int] = mapped_column(Integer, default=0)
     travel_time_modifier: Mapped[float] = mapped_column(Float, default=1.0)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    spatial_contract: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class LocationFeature(Base):

@@ -97,7 +97,7 @@ describe("CampaignSetupPage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
 
-    await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Nova Jornada"));
+    await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Nova Jornada", "legacy", undefined));
     expect(mocks.createCharacter).toHaveBeenCalledWith(
       "campaign_new",
       "Nova Heroína",
@@ -105,6 +105,55 @@ describe("CampaignSetupPage", () => {
     );
     expect(mocks.setSession).toHaveBeenCalledWith("campaign_new", "char_new");
     expect(await screen.findByText("Tela do jogo")).toBeInTheDocument();
+  });
+
+  it("permite escolher explicitamente o perfil experimental e uma seed", async () => {
+    mocks.listCampaigns.mockResolvedValue([]);
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    fireEvent.change(screen.getByLabelText("Nome da campanha"), { target: { value: "AP1" } });
+    fireEvent.change(screen.getByLabelText("Nome do personagem"), { target: { value: "Exploradora" } });
+    fireEvent.change(screen.getByLabelText("Perfil de mundo"), { target: { value: "world_genesis_ap1_v1" } });
+    fireEvent.change(screen.getByLabelText("Seed opcional"), { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+
+    await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("AP1", "world_genesis_ap1_v1", 42));
+  });
+
+  it("permite criar uma campanha com o perfil WGS2.3.1", async () => {
+    mocks.listCampaigns.mockResolvedValue([]);
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    fireEvent.change(screen.getByLabelText("Nome da campanha"), { target: { value: "Ecologia" } });
+    fireEvent.change(screen.getByLabelText("Nome do personagem"), { target: { value: "Exploradora" } });
+    fireEvent.change(screen.getByLabelText("Perfil de mundo"), { target: { value: "world_genesis_ap1_tp1_wgs2_v4" } });
+    fireEvent.change(screen.getByLabelText("Seed opcional"), { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Ecologia", "world_genesis_ap1_tp1_wgs2_v4", 42));
+  });
+
+  it("permite criar uma campanha com a identidade WGS2.4", async () => {
+    mocks.listCampaigns.mockResolvedValue([]);
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    fireEvent.change(screen.getByLabelText("Nome da campanha"), { target: { value: "Variedade" } });
+    fireEvent.change(screen.getByLabelText("Nome do personagem"), { target: { value: "Exploradora" } });
+    fireEvent.change(screen.getByLabelText("Perfil de mundo"), { target: { value: "world_genesis_ap1_tp1_wgs2_v5" } });
+    fireEvent.change(screen.getByLabelText("Seed opcional"), { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Variedade", "world_genesis_ap1_tp1_wgs2_v5", 42));
+  });
+
+  it("permite criar uma campanha experimental WGS3.1", async () => {
+    mocks.listCampaigns.mockResolvedValue([]);
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    fireEvent.change(screen.getByLabelText("Nome da campanha"), { target: { value: "Hidrografia" } });
+    fireEvent.change(screen.getByLabelText("Nome do personagem"), { target: { value: "Exploradora" } });
+    fireEvent.change(screen.getByLabelText("Perfil de mundo"), { target: { value: "world_genesis_ap1_tp1_wgs3_v1" } });
+    fireEvent.change(screen.getByLabelText("Seed opcional"), { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "CRIAR PERSONAGEM" }));
+    await waitFor(() => expect(mocks.createCampaign).toHaveBeenCalledWith("Hidrografia", "world_genesis_ap1_tp1_wgs3_v1", 42));
   });
 
   it("permite selecionar uma única afinidade profissional de background", async () => {

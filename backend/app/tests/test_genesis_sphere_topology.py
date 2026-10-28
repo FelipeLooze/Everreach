@@ -23,7 +23,7 @@ def test_invalid_configuration(kwargs):
         SphereConfig(**kwargs)
 
 
-@pytest.mark.parametrize("data", [{}, {"config_version": 4}, {"config_version": True},
+@pytest.mark.parametrize("data", [{}, {"config_version": 5}, {"config_version": True},
                                   {"config_version": 2, "generator_version": 999}])
 def test_configuration_dispatch_fails_closed(data):
     with pytest.raises(ValueError):

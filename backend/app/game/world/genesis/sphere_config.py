@@ -38,4 +38,7 @@ def parse_config(data: dict) -> WorldConfig | SphereConfig:
     if version == 3:
         from .formation_config import FormationConfig
         return FormationConfig.model_validate(data)
+    if version == 4:
+        from .formation_v4 import FormationConfigV4
+        return FormationConfigV4.model_validate(data)
     raise ValueError(f"Unsupported world configuration version: {version}")

@@ -23,6 +23,16 @@ class Plate:
         return asdict(self)
 
 
+def plate_from_center(seed: int, slot: int, center: tuple[int, int, int], continental_crust_ppm: int) -> Plate:
+    """Frozen V3 geological marks, shared by both nucleation policies."""
+    raw_axis = tuple(coordinate_seed(seed, 3, "rotation_axis", slot, i)%2001-1000 for i in range(3))
+    axis = unit_direction(SurfacePoint(*(raw_axis if any(raw_axis) else (1, 0, 0))))
+    return Plate(slot, center, axis,
+        coordinate_seed(seed, 3, "crust", slot)%1_000_000 < continental_crust_ppm,
+        20+coordinate_seed(seed, 3, "crust_age", slot)%221,
+        10+coordinate_seed(seed, 3, "drift_speed", slot)%91)
+
+
 def nucleate_plates(seed: int, config: FormationConfig) -> tuple[Plate, ...]:
     radius, scale = config.radius_m, plate_scale_m(config.radius_m)
     # Expected population from physical area/density; no requested plate count.
@@ -40,10 +50,5 @@ def nucleate_plates(seed: int, config: FormationConfig) -> tuple[Plate, ...]:
         u = 128+coordinate_seed(seed, 3, "site_u", slot)%768
         v = 128+coordinate_seed(seed, 3, "site_v", slot)%768
         center = unit_direction(face_point(face, x*1024+u, y*1024+v, n*1024))
-        raw_axis = tuple(coordinate_seed(seed, 3, "rotation_axis", slot, i)%2001-1000 for i in range(3))
-        axis = unit_direction(SurfacePoint(*(raw_axis if any(raw_axis) else (1, 0, 0))))
-        plates.append(Plate(slot, center, axis,
-            coordinate_seed(seed, 3, "crust", slot)%1_000_000 < config.continental_crust_ppm,
-            20+coordinate_seed(seed, 3, "crust_age", slot)%221,
-            10+coordinate_seed(seed, 3, "drift_speed", slot)%91))
+        plates.append(plate_from_center(seed, slot, center, config.continental_crust_ppm))
     return tuple(plates)

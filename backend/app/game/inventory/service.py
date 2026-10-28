@@ -88,6 +88,8 @@ def add_item(
             db.query(ItemInstance)
             .filter(
                 ItemInstance.definition_id == item.id,
+                ItemInstance.unit_weight_override.is_(None),
+                ItemInstance.weight_authority.is_(None),
                 ItemInstance.location_type == ItemLocationType.CHARACTER.value,
                 ItemInstance.location_ref == character_id,
                 ItemInstance.quality == quality.value,

@@ -2,6 +2,26 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.db.models.campaign import Campaign, WorldTime
+from app.db.models.world_hydrology import GenesisHydrologyPlan, GenesisHydrologySector
+from app.db.models.world_hydrology_regional import GenesisHydrologyRefinement, GenesisHydrologyRegion
+from app.db.models.world_climate import GenesisClimatePlan, GenesisClimateSector
+from app.db.models.world_water import GenesisWaterPlan, GenesisWaterSector
+from app.db.models.world_terrain import GenesisTerrainPlan, GenesisTerrainTile
+from app.db.models.world_hydro_geometry import GenesisHydroGeometryPlan, GenesisHydroGeometryEvidence
+from app.db.models.world_water_reconciliation import (GenesisWaterReconciliation, GenesisWaterDomain,
+    GenesisWaterRevision, GenesisWaterReconciliationEvidence, GenesisWaterTransfer)
+from app.db.models.world_practical_hydrology import (GenesisPracticalHydrology, GenesisLocalWaterAccount, GenesisPracticalCapacityUse)
+from app.db.models.world_geology import GenesisGeologyPlan, GenesisGeologicalUnit, GenesisMineralDeposit
+from app.db.models.world_geology_regional import GenesisRegionalGeology,GenesisRegionalFormation,GenesisRegionalSource
+from app.db.models.world_environment import GenesisEnvironmentPlan,GenesisEnvironmentPoint
+from app.db.models.world_natural_formations import (GenesisFormationCandidate,
+    GenesisNaturalFormation, GenesisLocalWaterBody, GenesisFormationCoverageCell)
+from app.db.models.world_plant_resources import GenesisPlantResources
+from app.db.models.world_vegetation_lifecycle import GenesisVegetationLife,GenesisLivingPopulation,GenesisVegetationLifeEvent
+from app.db.models.world_vegetation_renewal import GenesisVegetationRenewal,GenesisRenewingPopulation
+from app.db.models.world_vegetation_sexual import GenesisVegetationSexualPolicy
+from app.db.models.world_vegetation import (GenesisPlantAction,GenesisPlantIndividual,
+    GenesisVegetationCommunity,GenesisVegetationPlan)
 from app.db.models.world_genesis import GenesisSector, GenesisWorld
 from app.db.models.world_spatial import EntitySpatialCoverage, GenesisSphereSector, LocationSpatialAnchor
 from app.db.models.action_checkpoint import ActionCheckpoint
@@ -130,7 +150,17 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
         return False
 
     # Spatial bindings point at legacy entities; remove before their parents.
-    for model in (EntitySpatialCoverage, LocationSpatialAnchor, GenesisSphereSector):
+    for model in (GenesisVegetationSexualPolicy,GenesisRenewingPopulation,GenesisVegetationRenewal,GenesisVegetationLifeEvent,GenesisLivingPopulation,GenesisVegetationLife,
+                  GenesisPlantAction,GenesisPlantIndividual,GenesisVegetationCommunity,GenesisPlantResources,GenesisVegetationPlan,
+                  GenesisEnvironmentPoint,GenesisEnvironmentPlan,
+                  GenesisRegionalSource,GenesisMineralDeposit,GenesisRegionalFormation,GenesisRegionalGeology,
+                  GenesisGeologicalUnit, GenesisGeologyPlan,
+                  GenesisPracticalCapacityUse, GenesisLocalWaterAccount, GenesisPracticalHydrology,
+                  GenesisWaterTransfer, GenesisWaterRevision, GenesisWaterReconciliationEvidence,
+                  GenesisWaterDomain, GenesisWaterReconciliation, GenesisHydroGeometryEvidence, GenesisHydroGeometryPlan,
+                  GenesisTerrainTile, GenesisTerrainPlan, GenesisWaterSector, GenesisWaterPlan, GenesisClimateSector, GenesisClimatePlan,
+                  GenesisHydrologyRegion, GenesisHydrologyRefinement, GenesisHydrologySector, GenesisHydrologyPlan,
+                  EntitySpatialCoverage, LocationSpatialAnchor, GenesisSphereSector):
         db.query(model).filter(model.campaign_id == campaign_id).delete(synchronize_session=False)
 
     db.query(ActionCheckpoint).filter(
@@ -155,6 +185,10 @@ def delete_campaign(db: Session, campaign_id: str) -> bool:
 
     region_ids = [row[0] for row in db.query(Region.id).filter(Region.campaign_id == campaign_id).all()]
     location_ids = [row[0] for row in db.query(Location.id).filter(Location.region_id.in_(region_ids)).all()]
+    db.query(GenesisLocalWaterBody).filter(GenesisLocalWaterBody.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(GenesisFormationCoverageCell).filter(GenesisFormationCoverageCell.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(GenesisFormationCandidate).filter(GenesisFormationCandidate.campaign_id == campaign_id).delete(synchronize_session=False)
+    db.query(GenesisNaturalFormation).filter(GenesisNaturalFormation.campaign_id == campaign_id).delete(synchronize_session=False)
     character_ids = [row[0] for row in db.query(Character.id).filter(Character.campaign_id == campaign_id).all()]
     quest_ids = [row[0] for row in db.query(Quest.id).filter(Quest.region_id.in_(region_ids)).all()]
     objective_ids = [row[0] for row in db.query(QuestObjective.id).filter(QuestObjective.quest_id.in_(quest_ids)).all()]

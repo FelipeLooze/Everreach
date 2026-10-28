@@ -1,0 +1,31 @@
+{
+  "profile": "world_genesis_ap1_tp1_wgs3_v1",
+  "controlled": {
+    "seed": 42,
+    "selection_forced_only_in_fixture": true,
+    "source_key": "971bf7633e7e2245842ca312b618c5702b3ebe7b592def9ca013d8204f6c8c10",
+    "available_litres_after_restart": 12000,
+    "observed_inspected_interacted_returned_revisited": true,
+    "public_map_coordinate_leaks": false,
+    "collection_enabled": false,
+    "start_seconds": 18.792,
+    "first_movement_seconds": 1.317
+  },
+  "organic": [
+    {
+      "seed": 7,
+      "nearby_water_source_found": false,
+      "start_seconds": 33.480,
+      "first_movement_seconds": 2.357
+    },
+    {
+      "seed": 2026,
+      "nearby_water_source_found": false,
+      "start_seconds": 33.297,
+      "first_movement_seconds": 2.174
+    }
+  ],
+  "database": "temporary SQLite",
+  "server": "Uvicorn",
+  "llm_enabled": false
+}

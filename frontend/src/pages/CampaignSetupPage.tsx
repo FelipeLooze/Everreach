@@ -15,6 +15,8 @@ export function CampaignSetupPage() {
   const setSession = useGameStore((state) => state.setSession);
   const [menu, setMenu] = useState<"main" | "play" | "create" | "campaigns" | "settings">("main");
   const [campaignName, setCampaignName] = useState("");
+  const [worldProfile, setWorldProfile] = useState('legacy');
+  const [worldSeed, setWorldSeed] = useState('');
   const [characterName, setCharacterName] = useState("");
   const [earthProfession, setEarthProfession] = useState<EarthProfession | "">("");
   const [campaigns, setCampaigns] = useState<CampaignWithCharacters[]>([]);
@@ -43,7 +45,7 @@ export function CampaignSetupPage() {
     setBusy(true);
     setError(null);
     try {
-      const campaign = await createCampaign(campaignName.trim());
+      const campaign = await createCampaign(campaignName.trim(), worldProfile, worldSeed ? Number(worldSeed) : undefined);
       const character = await createCharacter(
         campaign.id,
         characterName.trim(),
@@ -118,6 +120,26 @@ export function CampaignSetupPage() {
           </button>
 
           <h2>Nova jornada</h2>
+          <label>Perfil de mundo
+            <select value={worldProfile} onChange={event => setWorldProfile(event.target.value)} disabled={busy}>
+              <option value="legacy">Jornada clássica</option>
+              <option value="world_genesis_ap1_v1">World Genesis — expedição experimental</option>
+              <option value="world_genesis_ap1_tp1_wgs1_v1">World Genesis — expedição com formações naturais v1</option>
+              <option value="world_genesis_ap1_tp1_wgs1_v2">World Genesis — expedição WGS1 contextual v2 (experimental)</option>
+              <option value="world_genesis_ap1_tp1_wgs2_v1">World Genesis — expansão WGS2 de formações (experimental)</option>
+              <option value="world_genesis_ap1_tp1_wgs2_v2">World Genesis — formações WGS2 multissetoriais (experimental)</option>
+              <option value="world_genesis_ap1_tp1_wgs2_v3">World Genesis — WGS2 com microambientes locais Vg2 (experimental)</option>
+              <option value="world_genesis_ap1_tp1_wgs2_v4">World Genesis — WGS2 com microambientes consistentes (experimental)</option>
+              <option value="world_genesis_ap1_tp1_wgs2_v5">World Genesis — WGS2 com identidade de lugares (experimental)</option>
+              <option value="world_genesis_ap1_tp1_wgs3_v1">World Genesis — WGS3 com água local explorável (experimental)</option>
+            </select>
+          </label>
+          {worldProfile !== 'legacy' && <>
+            <p>Exploração vegetal em um ponto físico persistente. Inclui tesoura de campo e instrução básica de coleta. Viagens planetárias e fauna ambiental ainda não integradas.</p>
+            <label>Seed opcional
+              <input type="number" min="0" max={Number.MAX_SAFE_INTEGER} value={worldSeed} onChange={event => setWorldSeed(event.target.value)} disabled={busy} />
+            </label>
+          </>}
 
           <label>
             Nome da campanha

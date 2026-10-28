@@ -28,7 +28,7 @@ def generate_sector(plan: FormationPlan, key: CellKey) -> dict:
     geology = [[sample_at(plan, face_point(key.face, key.x*intervals+x, key.y*intervals+y,
                                           2**key.level*intervals)) for x in range(intervals+1)]
                                           for y in range(intervals+1)]
-    return {"generator_version": 3, "plan_signature": plan.signature,
+    return {"generator_version": config.generator_version, "plan_signature": plan.signature,
             "cell": [key.face, key.level, key.x, key.y], "sample_intervals": intervals,
             "sea_level_m": config.sea_level_m, "elevation_m": [[s["elevation_m"] for s in row] for row in geology],
             "geology": geology}

@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw
 from .formation_geography import sample_at
 from .formation_plan import FormationPlan, indexed_cell
 from .sphere_topology import face_point
+from .sphere_area import rectangle_solid_angle
 
 FACE_NAMES = ("+X", "-X", "+Y", "-Y", "+Z (north)", "-Z (south)")
 
@@ -39,6 +40,7 @@ def write_preview(plan: FormationPlan, output: Path, face_size: int = 96) -> dic
     minimum, maximum, local_land, mismatch = 10**9, -10**9, 0, 0
     dominant = {}
     mechanisms = {}
+    area_land, area_mismatch, area_total = 0.0, 0.0, 0.0
     for face in range(6):
         origin = (pad+(face%3)*(face_size+pad), header+(face//3)*(face_size+28))
         for name, panel in panels.items():
@@ -51,6 +53,11 @@ def write_preview(plan: FormationPlan, output: Path, face_size: int = 96) -> dic
                 minimum, maximum = min(minimum, z), max(maximum, z)
                 local_land += z >= plan.config.sea_level_m
                 mismatch += sample["identity"]["resolution_mismatch"]
+                area = rectangle_solid_angle(2*x/face_size-1, 2*y/face_size-1,
+                                             2*(x+1)/face_size-1, 2*(y+1)/face_size-1)
+                area_total += area
+                area_land += area*(z >= plan.config.sea_level_m)
+                area_mismatch += area*sample["identity"]["resolution_mismatch"]
                 pixel = (origin[0]+x, origin[1]+face_size-1-y)
                 panels["terrain"].putpixel(pixel, terrain_color(z, plan.config.sea_level_m))
                 component = plan.component_at(p)
@@ -76,19 +83,22 @@ def write_preview(plan: FormationPlan, output: Path, face_size: int = 96) -> dic
         if any(dominant.get((face, nx, ny), slot) != slot for nx, ny in ((x+1, y), (x, y+1))):
             origin = (pad+(face%3)*(face_size+pad), header+(face//3)*(face_size+28))
             panels["tectonics"].putpixel((origin[0]+x, origin[1]+face_size-1-y), (240, 221, 160))
-    summary = {"seed": plan.seed, "generator_version": 3, "signature": plan.signature,
+    summary = {"seed": plan.seed, "generator_version": plan.config.generator_version, "signature": plan.signature,
                "config": plan.config.model_dump(mode="json"), "scale": plan.to_dict()["scale"],
                "plate_count": len(plan.plates), "landmass_count_macro": sum(c.kind == "landmass" for c in plan.components),
                "water_body_count_macro": sum(c.kind == "water_body" for c in plan.components),
                "height_range_m": [minimum, maximum], "preview_land_fraction": local_land/(6*face_size**2),
                "macro_disagreement_fraction": mismatch/(6*face_size**2), "sampled_mechanisms": mechanisms,
+               "weighted_land_fraction": area_land/area_total,
+               "weighted_macro_disagreement_fraction": area_mismatch/area_total,
+               "solid_angle_sum": area_total, "coverage_method": "exact_cell_solid_angle_center_classification",
                "face_size": face_size, "elapsed_seconds": round(time.perf_counter()-start, 3)}
     captions = {"terrain": "Elevation: deep blue < 0 m; sand lowlands; brown/white high relief.",
                 "components": "MACRO identities. Yellow = local land/water differs from macro cell.",
                 "tectonics": "Red: convergence; cyan: divergence. Gold: plate edges (not barriers)."}
     for name, panel in panels.items():
         draw = ImageDraw.Draw(panel)
-        draw.text((pad, 8), f"EVERREACH / FORMATION V3 / {name.upper()} / seed {plan.seed}", fill=(245, 247, 250))
+        draw.text((pad, 8), f"EVERREACH / FORMATION V{plan.config.generator_version} / {name.upper()} / seed {plan.seed}", fill=(245, 247, 250))
         draw.text((pad, 23), f"R={plan.config.radius_m/1000:g} km | plates={len(plan.plates)} | OFFLINE DEV ONLY", fill=(170, 185, 203))
         # Two short lines fit even in compact contact sheets.
         caption = captions[name]

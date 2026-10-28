@@ -39,6 +39,9 @@ def ensure_location_materialized(db: Session, location: Location) -> Location:
     tavern/blacksmith/...) get a Tier 3 interior child materialized
     alongside them, if one doesn't already exist. Anything else is
     returned unchanged."""
+    if location.genesis_site is not None:
+        from .genesis.territory import prepare_site
+        return prepare_site(db, location)
     if location.materialization_tier == 2 and location.type in MINOR_SETTLEMENT_TYPES:
         _materialize_minor_settlement(db, location)
         location.materialization_tier = 1

@@ -96,7 +96,7 @@ def test_the_hunter_is_in_the_forest_by_day(db_session):
 
 
 def test_waiting_passes_the_time_the_player_asked_for():
-    from app.game.engine import _wait_minutes
+    from app.game.engine import _is_explicit_wait, _wait_minutes
 
     assert _wait_minutes("Espero um pouco", 10, 0) == 15
     assert _wait_minutes("Espero até o fim da tarde, observando o movimento", 10, 0) == 8 * 60
@@ -104,6 +104,21 @@ def test_waiting_passes_the_time_the_player_asked_for():
     assert _wait_minutes("espero meia hora", 10, 0) == 30
     assert _wait_minutes("Espero até o amanhecer", 22, 30) == 7 * 60 + 30
     assert _wait_minutes("Fico esperando até a noite", 18, 30) == 30
+
+
+    assert _is_explicit_wait("Espero 16 horas.")
+    assert _is_explicit_wait("Aguardo até o amanhecer.")
+    assert not _is_explicit_wait("Espero que a chuva pare.")
+
+
+def test_explicit_rest_survives_disabled_intent_provider_without_negation():
+    from app.game.engine import _is_explicit_rest
+
+    assert _is_explicit_rest("Eu descanso.")
+    assert _is_explicit_rest("Preciso repousar para recuperar as forças.")
+    assert _is_explicit_rest("Vou dormir.")
+    assert not _is_explicit_rest("Não descanso agora.")
+    assert not _is_explicit_rest("Procuro um lugar de descanso.")
 
 
 def test_an_unmet_npc_is_never_named_to_the_narrator(db_session):

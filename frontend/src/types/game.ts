@@ -1,4 +1,5 @@
 export interface Campaign {
+  world_profile?: string | null;
   id: string;
   name: string;
   created_at: string;
@@ -94,6 +95,7 @@ export interface CombatEncounterSummary {
 }
 
 export interface GameState {
+  world_profile?: string | null;
   character: Character;
   region: RegionSummary | null;
   location: LocationSummary | null;
@@ -108,12 +110,40 @@ export interface GameState {
 }
 
 export interface ActionResponse {
+  plant_result?: PlantResult | null;
+  formation_result?: { name: string; features: string[]; dimensions: { horizontal_span_m: number; vertical_span_m: number }; water?: { stored_litres: number; capacity_litres: number } | null } | null;
   narrative: string;
   narrator_unavailable: boolean;
   mechanical_summary: string;
   intent_type: string;
   warnings: string[];
   state: GameState;
+}
+
+export interface PlantAction {
+  kind: 'look' | 'observe' | 'harvest' | 'remove';
+  individual_id?: string;
+  part_id?: string;
+  quantity?: number;
+  tool_instance_id?: string;
+}
+
+export interface PlantObservation {
+  individual_id: string;
+  name: string | null;
+  kind: string;
+  height_cm: number;
+  maturity?: string;
+  alive: boolean;
+  identified: boolean;
+  parts: {part_id: string; part: string; remaining: number; available_now: boolean;
+    reason: string | null; unit_mass_mg: number | null; per_action_max: number | null}[];
+}
+
+export interface PlantResult extends Partial<PlantObservation> {
+  individuals?: PlantObservation[];
+  quantity?: number;
+  exported_mass_mg?: number;
 }
 
 export interface WorldStartResponse {

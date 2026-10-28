@@ -3,7 +3,8 @@ import type { Campaign, CampaignWithCharacters, Character, WorldStartResponse } 
 
 export const listCampaigns = () => api.get<CampaignWithCharacters[]>("/campaigns");
 
-export const createCampaign = (name: string) => api.post<Campaign>("/campaigns", { name });
+export const createCampaign = (name: string, worldProfile = 'legacy', worldSeed?: number) =>
+  api.post<Campaign>("/campaigns", { name, world_profile: worldProfile, world_seed: worldSeed ?? null });
 
 export type EarthProfession = "CHEF" | "FARMER" | "CARPENTER" | "BLACKSMITH";
 

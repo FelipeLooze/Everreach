@@ -54,3 +54,7 @@ Thumbs.db
 
 # Local launcher runtime state (PIDs, logs, generated shortcut icon)
 .runtime/
+
+# Generated World Genesis benchmarks, previews and temporary databases.
+# Keep curated summaries with git add -f when a report requires one.
+/artifacts/*/

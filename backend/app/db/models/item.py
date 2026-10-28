@@ -136,6 +136,9 @@ class ItemInstance(Base):
         nullable=True,
     )
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # Frozen lot-specific mass. Old objects retain definition-based weight.
+    unit_weight_override: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weight_authority: Mapped[str | None] = mapped_column(String, nullable=True)
     quality: Mapped[str] = mapped_column(String, default="STANDARD", nullable=False)
     durability_current: Mapped[float | None] = mapped_column(Float, nullable=True)
     durability_max: Mapped[float | None] = mapped_column(Float, nullable=True)

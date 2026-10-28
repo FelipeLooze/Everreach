@@ -1,8 +1,29 @@
-from typing import Annotated
+from typing import Annotated,Literal
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import BaseModel, StringConstraints,ConfigDict,Field,model_validator
 
 from app.schemas.game_state import GameStateResponse
+
+
+class PlantActionRequest(BaseModel):
+    model_config=ConfigDict(extra="forbid",strict=True)
+    kind: Literal["look","observe","harvest","remove"]
+    individual_id: str|None=Field(default=None,max_length=100)
+    part_id: str|None=Field(default=None,max_length=100)
+    quantity: int=Field(default=1,ge=1,le=10000)
+    tool_instance_id: str|None=Field(default=None,max_length=100)
+
+    @model_validator(mode="after")
+    def target(self):
+        if self.kind!="look" and not self.individual_id:raise ValueError("A materialized individual is required")
+        if self.kind=="harvest" and (not self.part_id or not self.tool_instance_id):raise ValueError("Part and actual tool required")
+        if self.kind=="remove" and not self.tool_instance_id:raise ValueError("Actual tool required")
+        return self
+
+
+class FormationActionRequest(BaseModel):
+    model_config=ConfigDict(extra="forbid", strict=True)
+    kind: Literal["inspect","interact"]
 
 
 class ActionRequest(BaseModel):
@@ -20,6 +41,13 @@ class ActionRequest(BaseModel):
         str,
         StringConstraints(strip_whitespace=True, min_length=1, max_length=100),
     ] | None = None
+    plant_action: PlantActionRequest|None=None
+    formation_action: FormationActionRequest|None=None
+
+    @model_validator(mode="after")
+    def one_action(self):
+        if sum(x is not None for x in (self.plant_action,self.formation_action,self.technique_id)) > 1:raise ValueError("Choose one structured action")
+        return self
 
 
 class ActionResponse(BaseModel):
@@ -29,6 +57,8 @@ class ActionResponse(BaseModel):
     intent_type: str
     warnings: list[str]
     state: GameStateResponse
+    plant_result: dict|None=None
+    formation_result: dict|None=None
 
 
 class ActionUndoStatusResponse(BaseModel):

@@ -19,6 +19,10 @@ O mundo existe independentemente dela e continua mudando mesmo sem a presença d
 O backend é a autoridade sobre o estado e as regras do mundo. O serviço de LLM configurado
 escreve a narração, mas não altera o banco nem decide resultados mecânicos.
 
+O World Genesis segue a [política de game design AP1](docs/world-genesis-gameplay-policy.md):
+exploração, variedade e consequências persistentes orientam as decisões; realismo científico
+é usado quando melhora o jogo. Novos perfis não alteram automaticamente campanhas existentes.
+
 ## Estrutura
 
 ```text

@@ -59,7 +59,7 @@ def list_container_contents(db: Session, container_id: str) -> list[ItemInstance
     )
 
 
-def get_item_own_weight(db: Session, instance: ItemInstance) -> float:
+def get_item_unit_weight(db: Session, instance: ItemInstance) -> float:
     definition = db.get(ItemDefinition, instance.definition_id)
     if definition is None:
         raise ContainerError("Item instance has no definition.")
@@ -68,7 +68,18 @@ def get_item_own_weight(db: Session, instance: ItemInstance) -> float:
         if instance.material_id is not None
         else None
     )
-    return definition.base_weight * instance.quantity * material_weight_factor(material)
+    override=instance.unit_weight_override
+    if override is not None:
+        if not isfinite(override) or override<=0 or not instance.weight_authority:
+            raise ContainerError("Invalid authoritative lot weight")
+        return override
+    if instance.weight_authority is not None:
+        raise ContainerError("Lot weight authority has no weight")
+    return definition.base_weight * material_weight_factor(material)
+
+
+def get_item_own_weight(db: Session, instance: ItemInstance) -> float:
+    return get_item_unit_weight(db,instance)*instance.quantity
 
 
 def get_item_total_weight(db: Session, instance: ItemInstance) -> float:

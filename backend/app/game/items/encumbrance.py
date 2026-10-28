@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass,replace
 from math import isfinite
 
 from sqlalchemy.orm import Session
@@ -106,4 +106,11 @@ def get_carried_weight(db: Session, character_id: str) -> float:
 
 def get_character_encumbrance(db: Session, character_id: str) -> EncumbranceSnapshot:
     strength = get_character_attribute(db, character_id, CharacterAttributeKey.STRENGTH)
-    return calculate_encumbrance(get_carried_weight(db, character_id), strength.value)
+    weight=get_carried_weight(db,character_id)
+    result=calculate_encumbrance(weight,strength.value)
+    from app.game.inventory.service import list_inventory
+    if any(e.unit_weight_override is not None for e in list_inventory(db,character_id)):
+        # Keep the original capacity/tier rules, while avoiding rounding a
+        # positive sub-gram botanical lot (or its contribution to load) to zero.
+        return replace(result,total_weight=weight,load_ratio=weight/result.carrying_capacity)
+    return result

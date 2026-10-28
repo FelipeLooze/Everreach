@@ -231,7 +231,13 @@ def move_character(
     # settlement) gets deep-materialized the moment something actually
     # requires its detail to exist — here, the character arriving. A
     # no-op for anything already Tier 1.
-    destination = ensure_location_materialized(db, destination)
+    from app.game.world.genesis.territory import validate_travel
+    try:
+        validate_travel(db, campaign_id, connection)
+        if destination.genesis_site is None:
+            destination = ensure_location_materialized(db, destination)
+    except ValueError as exc:
+        raise TravelError(str(exc)) from exc
 
     try:
         pace = TravelPace(pace)
@@ -263,6 +269,15 @@ def move_character(
         raise TravelError(
             "Você está cansado demais para percorrer essa rota nesse ritmo."
     )
+
+    if destination.genesis_site is not None:
+        try:
+            # The engine may catch TravelError and commit the attempted action.
+            # A failed preparation must therefore roll back its own new rows.
+            with db.begin_nested():
+                destination = ensure_location_materialized(db, destination)
+        except ValueError as exc:
+            raise TravelError(str(exc)) from exc
 
     risk = roll_travel_incident(
         connection,

@@ -1,0 +1,1736 @@
+{
+  "method": "500 km walk along exact adjacent TP1 east-neighbor cells, measured by spherical cell-center distance; no barrier/E1 checks; raw candidates only. Seam continuity is covered by topology regression tests.",
+  "targets_km": [
+    5,
+    20,
+    50,
+    100,
+    500
+  ],
+  "results": [
+    {
+      "seed": 42,
+      "radius_m": 31855000,
+      "v1": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 14,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 7,
+          "EV-LOC-0042": 2,
+          "EV-LOC-0050": 1,
+          "EV-LOC-0236": 4
+        },
+        "spacing_km": {
+          "min": 1.94,
+          "median": 13.61,
+          "max": 221.14
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0036": 2
+            }
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0236": 1
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 14,
+            "types": {
+              "EV-LOC-0036": 7,
+              "EV-LOC-0236": 4,
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 2
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 56,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 14,
+          "EV-LOC-0042": 4,
+          "EV-LOC-0050": 33,
+          "EV-LOC-0068": 2,
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 0.49,
+          "median": 5.83,
+          "max": 39.86
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0042": 2,
+              "EV-LOC-0050": 2
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 8,
+            "types": {
+              "EV-LOC-0042": 2,
+              "EV-LOC-0050": 5,
+              "EV-LOC-0036": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 56,
+            "types": {
+              "EV-LOC-0042": 4,
+              "EV-LOC-0050": 33,
+              "EV-LOC-0036": 14,
+              "EV-LOC-0236": 3,
+              "EV-LOC-0068": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "radius_m": 31855000,
+      "v1": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 15,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 4,
+          "EV-LOC-0042": 3,
+          "EV-LOC-0050": 2,
+          "EV-LOC-0068": 3,
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 1.46,
+          "median": 27.22,
+          "max": 77.28
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1
+            }
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0036": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 15,
+            "types": {
+              "EV-LOC-0050": 2,
+              "EV-LOC-0042": 3,
+              "EV-LOC-0236": 3,
+              "EV-LOC-0036": 4,
+              "EV-LOC-0068": 3
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 53,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 13,
+          "EV-LOC-0042": 6,
+          "EV-LOC-0050": 23,
+          "EV-LOC-0068": 8,
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 0.49,
+          "median": 6.32,
+          "max": 41.8
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0036": 1
+            }
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 5,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0042": 2
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 9,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0042": 4,
+              "EV-LOC-0050": 2
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 53,
+            "types": {
+              "EV-LOC-0036": 13,
+              "EV-LOC-0042": 6,
+              "EV-LOC-0050": 23,
+              "EV-LOC-0068": 8,
+              "EV-LOC-0236": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "radius_m": 31855000,
+      "v1": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 13,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 2,
+          "EV-LOC-0050": 3,
+          "EV-LOC-0068": 4,
+          "EV-LOC-0236": 4
+        },
+        "spacing_km": {
+          "min": 0.97,
+          "median": 32.07,
+          "max": 110.34
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0236": 2,
+              "EV-LOC-0068": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 13,
+            "types": {
+              "EV-LOC-0236": 4,
+              "EV-LOC-0068": 4,
+              "EV-LOC-0036": 2,
+              "EV-LOC-0050": 3
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 45,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 8,
+          "EV-LOC-0042": 3,
+          "EV-LOC-0050": 24,
+          "EV-LOC-0068": 8,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 0.49,
+          "median": 5.83,
+          "max": 53.95
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0050": 4
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 7,
+            "types": {
+              "EV-LOC-0050": 6,
+              "EV-LOC-0036": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 45,
+            "types": {
+              "EV-LOC-0050": 24,
+              "EV-LOC-0036": 8,
+              "EV-LOC-0068": 8,
+              "EV-LOC-0236": 2,
+              "EV-LOC-0042": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 2026,
+      "radius_m": 31855000,
+      "v1": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 13,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 3,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 2,
+          "EV-LOC-0068": 2,
+          "EV-LOC-0236": 5
+        },
+        "spacing_km": {
+          "min": 1.94,
+          "median": 38.88,
+          "max": 62.7
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0036": 1,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0068": 1
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 5,
+            "types": {
+              "EV-LOC-0036": 1,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0068": 1,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0050": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 13,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0236": 5,
+              "EV-LOC-0068": 2,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0050": 2
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 55,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 12,
+          "EV-LOC-0042": 4,
+          "EV-LOC-0050": 27,
+          "EV-LOC-0068": 8,
+          "EV-LOC-0236": 4
+        },
+        "spacing_km": {
+          "min": 0.49,
+          "median": 5.83,
+          "max": 35.48
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 2
+            }
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 7,
+            "types": {
+              "EV-LOC-0050": 6,
+              "EV-LOC-0236": 1
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 10,
+            "types": {
+              "EV-LOC-0050": 6,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0036": 2,
+              "EV-LOC-0042": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 55,
+            "types": {
+              "EV-LOC-0050": 27,
+              "EV-LOC-0236": 4,
+              "EV-LOC-0036": 12,
+              "EV-LOC-0042": 4,
+              "EV-LOC-0068": 8
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 12345,
+      "radius_m": 31855000,
+      "v1": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 11,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 2,
+          "EV-LOC-0042": 2,
+          "EV-LOC-0050": 2,
+          "EV-LOC-0236": 5
+        },
+        "spacing_km": {
+          "min": 4.86,
+          "median": 38.39,
+          "max": 119.08
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0236": 2
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 11,
+            "types": {
+              "EV-LOC-0236": 5,
+              "EV-LOC-0036": 2,
+              "EV-LOC-0050": 2,
+              "EV-LOC-0042": 2
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 1029,
+        "face_transitions": 0,
+        "candidate_count": 61,
+        "route_km": 500.12,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 13,
+          "EV-LOC-0042": 3,
+          "EV-LOC-0050": 33,
+          "EV-LOC-0068": 7,
+          "EV-LOC-0236": 5
+        },
+        "spacing_km": {
+          "min": 0.49,
+          "median": 5.35,
+          "max": 52.01
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 10,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0050": 1
+            }
+          },
+          "20": {
+            "cells": 41,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 2
+            }
+          },
+          "50": {
+            "cells": 102,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0050": 3
+            }
+          },
+          "100": {
+            "cells": 205,
+            "candidates": 16,
+            "types": {
+              "EV-LOC-0050": 9,
+              "EV-LOC-0036": 3,
+              "EV-LOC-0068": 2,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 1028,
+            "candidates": 61,
+            "types": {
+              "EV-LOC-0050": 33,
+              "EV-LOC-0036": 13,
+              "EV-LOC-0068": 7,
+              "EV-LOC-0042": 3,
+              "EV-LOC-0236": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 42,
+      "radius_m": 63710000,
+      "v1": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 10,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 4,
+          "EV-LOC-0042": 2,
+          "EV-LOC-0050": 1,
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 3.89,
+          "median": 24.3,
+          "max": 148.74
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0036": 1
+            }
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0036": 2
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 10,
+            "types": {
+              "EV-LOC-0036": 4,
+              "EV-LOC-0236": 3,
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 2
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 21,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 7,
+          "EV-LOC-0042": 2,
+          "EV-LOC-0050": 12
+        },
+        "spacing_km": {
+          "min": 0.97,
+          "median": 15.55,
+          "max": 68.05
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0042": 1
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0042": 2,
+              "EV-LOC-0050": 2
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 21,
+            "types": {
+              "EV-LOC-0042": 2,
+              "EV-LOC-0050": 12,
+              "EV-LOC-0036": 7
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "radius_m": 63710000,
+      "v1": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 8,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 1,
+          "EV-LOC-0042": 2,
+          "EV-LOC-0050": 1,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 8.75,
+          "median": 54.44,
+          "max": 147.76
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 8,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 2,
+              "EV-LOC-0236": 3,
+              "EV-LOC-0036": 1,
+              "EV-LOC-0068": 1
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 24,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 6,
+          "EV-LOC-0042": 5,
+          "EV-LOC-0050": 11,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 1
+        },
+        "spacing_km": {
+          "min": 0.97,
+          "median": 13.61,
+          "max": 83.6
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0036": 1
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 5,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0042": 2
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 24,
+            "types": {
+              "EV-LOC-0036": 6,
+              "EV-LOC-0042": 5,
+              "EV-LOC-0050": 11,
+              "EV-LOC-0068": 1,
+              "EV-LOC-0236": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "radius_m": 63710000,
+      "v1": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 5,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 1,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 6.8,
+          "median": 49.58,
+          "max": 220.67
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 5,
+            "types": {
+              "EV-LOC-0236": 3,
+              "EV-LOC-0068": 1,
+              "EV-LOC-0036": 1
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 19,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 5,
+          "EV-LOC-0050": 11,
+          "EV-LOC-0068": 2,
+          "EV-LOC-0236": 1
+        },
+        "spacing_km": {
+          "min": 0.97,
+          "median": 17.5,
+          "max": 72.91
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0050": 4
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 19,
+            "types": {
+              "EV-LOC-0050": 11,
+              "EV-LOC-0036": 5,
+              "EV-LOC-0068": 2,
+              "EV-LOC-0236": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 2026,
+      "radius_m": 63710000,
+      "v1": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 8,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 2,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 2,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 3.89,
+          "median": 44.72,
+          "max": 125.4
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0036": 1,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0068": 1
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 8,
+            "types": {
+              "EV-LOC-0036": 2,
+              "EV-LOC-0236": 2,
+              "EV-LOC-0068": 1,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0050": 2
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 28,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 7,
+          "EV-LOC-0042": 3,
+          "EV-LOC-0050": 12,
+          "EV-LOC-0068": 4,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 0.97,
+          "median": 11.67,
+          "max": 70.97
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0050": 1
+            }
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0050": 3
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 7,
+            "types": {
+              "EV-LOC-0050": 6,
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 28,
+            "types": {
+              "EV-LOC-0050": 12,
+              "EV-LOC-0236": 2,
+              "EV-LOC-0036": 7,
+              "EV-LOC-0042": 3,
+              "EV-LOC-0068": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 12345,
+      "radius_m": 63710000,
+      "v1": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 4,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0236": 4
+        },
+        "spacing_km": {
+          "min": 73.88,
+          "median": 115.68,
+          "max": 238.17
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 4,
+            "types": {
+              "EV-LOC-0236": 4
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 515,
+        "face_transitions": 0,
+        "candidate_count": 29,
+        "route_km": 500.64,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 7,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 16,
+          "EV-LOC-0068": 3,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 0.97,
+          "median": 9.72,
+          "max": 104.02
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 5,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 20,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 2
+            }
+          },
+          "50": {
+            "cells": 51,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 2
+            }
+          },
+          "100": {
+            "cells": 102,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0050": 3
+            }
+          },
+          "500": {
+            "cells": 514,
+            "candidates": 29,
+            "types": {
+              "EV-LOC-0050": 16,
+              "EV-LOC-0036": 7,
+              "EV-LOC-0068": 3,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0236": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 42,
+      "radius_m": 127420000,
+      "v1": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 7,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 3,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 1,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 7.78,
+          "median": 42.77,
+          "max": 297.47
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0036": 1
+            }
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0036": 2
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 7,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0236": 2,
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 11,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 2,
+          "EV-LOC-0042": 2,
+          "EV-LOC-0050": 7
+        },
+        "spacing_km": {
+          "min": 1.94,
+          "median": 27.22,
+          "max": 87.49
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0042": 1
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 11,
+            "types": {
+              "EV-LOC-0042": 2,
+              "EV-LOC-0050": 7,
+              "EV-LOC-0036": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 0,
+      "radius_m": 127420000,
+      "v1": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 6,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 1,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 1,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 17.5,
+          "median": 66.1,
+          "max": 206.09
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 6,
+            "types": {
+              "EV-LOC-0050": 1,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0236": 2,
+              "EV-LOC-0036": 1,
+              "EV-LOC-0068": 1
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 12,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 3,
+          "EV-LOC-0042": 4,
+          "EV-LOC-0050": 5
+        },
+        "spacing_km": {
+          "min": 3.89,
+          "median": 21.39,
+          "max": 167.21
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0036": 1
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 12,
+            "types": {
+              "EV-LOC-0036": 3,
+              "EV-LOC-0042": 4,
+              "EV-LOC-0050": 5
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "radius_m": 127420000,
+      "v1": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 3,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 2
+        },
+        "spacing_km": {
+          "min": 85.55,
+          "median": 99.16,
+          "max": 99.16
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 0,
+            "types": {}
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0236": 2,
+              "EV-LOC-0068": 1
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 10,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 1,
+          "EV-LOC-0050": 7,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 1
+        },
+        "spacing_km": {
+          "min": 1.94,
+          "median": 40.83,
+          "max": 95.27
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 0,
+            "types": {}
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 10,
+            "types": {
+              "EV-LOC-0050": 7,
+              "EV-LOC-0036": 1,
+              "EV-LOC-0068": 1,
+              "EV-LOC-0236": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 2026,
+      "radius_m": 127420000,
+      "v1": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 5,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 1,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 1,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 1
+        },
+        "spacing_km": {
+          "min": 7.78,
+          "median": 23.33,
+          "max": 157.49
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 0,
+            "types": {}
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 0,
+            "types": {}
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 5,
+            "types": {
+              "EV-LOC-0036": 1,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0068": 1,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0050": 1
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 12,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 2,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 7,
+          "EV-LOC-0068": 1,
+          "EV-LOC-0236": 1
+        },
+        "spacing_km": {
+          "min": 1.94,
+          "median": 25.28,
+          "max": 141.93
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0050": 1
+            }
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0050": 3
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 12,
+            "types": {
+              "EV-LOC-0050": 7,
+              "EV-LOC-0236": 1,
+              "EV-LOC-0036": 2,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0068": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "seed": 12345,
+      "radius_m": 127420000,
+      "v1": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 3,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0236": 3
+        },
+        "spacing_km": {
+          "min": 147.76,
+          "median": 231.37,
+          "max": 231.37
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 0,
+            "types": {}
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0236": 1
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 3,
+            "types": {
+              "EV-LOC-0236": 3
+            }
+          }
+        }
+      },
+      "v2_raw_pre_context": {
+        "cells": 258,
+        "face_transitions": 0,
+        "candidate_count": 16,
+        "route_km": 501.62,
+        "stride_m": 0,
+        "candidate_types": {
+          "EV-LOC-0036": 3,
+          "EV-LOC-0042": 1,
+          "EV-LOC-0050": 9,
+          "EV-LOC-0068": 2,
+          "EV-LOC-0236": 1
+        },
+        "spacing_km": {
+          "min": 1.94,
+          "median": 11.67,
+          "max": 130.27
+        },
+        "distance_buckets": {
+          "5": {
+            "cells": 2,
+            "candidates": 0,
+            "types": {}
+          },
+          "20": {
+            "cells": 10,
+            "candidates": 1,
+            "types": {
+              "EV-LOC-0050": 1
+            }
+          },
+          "50": {
+            "cells": 25,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 2
+            }
+          },
+          "100": {
+            "cells": 51,
+            "candidates": 2,
+            "types": {
+              "EV-LOC-0050": 2
+            }
+          },
+          "500": {
+            "cells": 257,
+            "candidates": 16,
+            "types": {
+              "EV-LOC-0050": 9,
+              "EV-LOC-0036": 3,
+              "EV-LOC-0068": 2,
+              "EV-LOC-0042": 1,
+              "EV-LOC-0236": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

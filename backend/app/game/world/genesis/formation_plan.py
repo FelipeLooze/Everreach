@@ -32,7 +32,7 @@ class FormationPlan:
         return self.components[self.labels[cell_index(key)]]
 
     def to_dict(self) -> dict:
-        return {"kind": "plate_formation_v3", "seed": self.seed,
+        return {"kind": f"plate_formation_v{self.config.generator_version}", "seed": self.seed,
                 "config": self.config.model_dump(mode="json"), "signature": self.signature,
                 "scale": calibrated_scale(self.config), "plates": [p.to_dict() for p in self.plates],
                 "labels": list(self.labels), "components": [vars(c).copy() for c in self.components]}
@@ -85,7 +85,11 @@ def identify_components(seed: int, config: FormationConfig, land: tuple[bool, ..
 
 @lru_cache(maxsize=2)
 def build_plan(seed: int, config: FormationConfig) -> FormationPlan:
-    plates = nucleate_plates(seed, config)
+    if config.generator_version == 4:
+        from .formation_v4 import nucleate_plates_v4
+        plates = nucleate_plates_v4(seed, config)
+    else:
+        plates = nucleate_plates(seed, config)
     count = 6*4**config.macro_level
     land = tuple(evaluate(seed, config, plates, cell_center(indexed_cell(i, config.macro_level)),
                           causes=False)["elevation_m"] >= config.sea_level_m for i in range(count))
@@ -95,7 +99,7 @@ def build_plan(seed: int, config: FormationConfig) -> FormationPlan:
 
 def load_plan(data: dict, seed: int, config: FormationConfig) -> FormationPlan:
     """Load the persisted authority; never rebuild a saved plan while loading."""
-    if (data.get("kind") != "plate_formation_v3" or data.get("seed") != seed or
+    if (data.get("kind") != f"plate_formation_v{config.generator_version}" or data.get("seed") != seed or
             data.get("config") != config.model_dump(mode="json") or data.get("signature") != _signature(seed, config)):
         raise ValueError("Formation plan does not match its pinned seed/configuration")
     count = 6*4**config.macro_level

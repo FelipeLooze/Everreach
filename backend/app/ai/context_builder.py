@@ -608,6 +608,11 @@ def _regional_context_lines(db: Session, character) -> list[str]:
     location = db.get(Location, character.location_id)
     if location is None or location.subregion_id is None:
         return []
+    if location.genesis_site is not None:
+        from app.game.world.genesis.local_water import current_place_fact
+        description = current_place_fact(db, character.campaign_id, location.id) or location.description
+        return ['LOCAL PHYSICAL CONTEXT', description,
+                'Describe only confirmed observations here. Do not infer a regional biome, settlement, species or danger from an unexplored destination.']
     subregion = db.get(Subregion, location.subregion_id)
     if subregion is None:
         return []
@@ -626,6 +631,9 @@ def _local_economy_context_lines(db: Session, character) -> list[str]:
     inventing that judgment itself."""
     if character.location_id is None:
         return []
+    location = db.get(Location, character.location_id)
+    if location is not None and location.genesis_site is not None:
+        return []  # An uninhabited field site supplies no settlement economy evidence.
     wealth_band = get_settlement_wealth(db, character.location_id)
     gold_is_routine = gold_circulates_normally(wealth_band)
     return [
@@ -799,8 +807,10 @@ def _build_input_canon_check(
     if not player_input or state.location is None:
         return ["- no persistent-world claim to audit"]
     normalized_input = _normalized(player_input)
+    from app.game.world.genesis.local_water import current_place_fact
+    local_description = current_place_fact(db, state.character.campaign_id, state.location.id) or state.location.description
     available_facts = " ".join(
-        [state.location.description]
+        [local_description]
         + [fact.statement for fact in npc_facts]
         + [fact.statement for fact in player_facts]
     )
@@ -1805,6 +1815,12 @@ def build_narrative_context(
         if state.location is not None
         else []
     )
+    if state.location is not None:
+        from app.game.world.genesis.local_water import current_place_fact
+        water_fact = current_place_fact(db, state.campaign_id, state.location.id)
+        if water_fact is not None:
+            from types import SimpleNamespace
+            features = [SimpleNamespace(name="Fonte local", description=water_fact)]
 
     known_location_lines = _location_discovery_lines(
         db,

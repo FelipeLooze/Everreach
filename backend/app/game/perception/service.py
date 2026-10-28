@@ -40,6 +40,7 @@ class PerceptionResult:
     location_name_known: bool = True
     features: list[str] = field(default_factory=list)
     routes: list[str] = field(default_factory=list)
+    signals: list[str] = field(default_factory=list)
     discovered_locations: list[str] = field(default_factory=list)
     discovered_connections: list[str] = field(default_factory=list)
 
@@ -56,6 +57,32 @@ def observe_surroundings(
     if location is None:
         raise ValueError("Localização atual não encontrada.")
 
+    if location.genesis_site is not None:
+        from app.game.world.genesis.territory import prepare_site
+        from app.game.world.genesis.environment.service import query_environment
+        from app.game.world.genesis.sphere_topology import SurfacePoint
+        prepare_site(db, location)
+        # Validate the actual current point; E1 potential is not established flora.
+        query_environment(db, character.campaign_id, SurfacePoint(*location.genesis_site['point']))
+        from app.db.models.campaign import Campaign
+        from app.game.world.genesis.local_formations import nearby_signals
+        campaign = db.get(Campaign, character.campaign_id)
+        wgs1_signals = nearby_signals(db, campaign, location) if campaign is not None else []
+        micro_facts = []
+        if campaign is not None and campaign.world_profile in ("world_genesis_ap1_tp1_wgs2_v3", "world_genesis_ap1_tp1_wgs2_v4", "world_genesis_ap1_tp1_wgs2_v5", "world_genesis_ap1_tp1_wgs3_v1"):
+            if campaign.world_profile in ("world_genesis_ap1_tp1_wgs2_v4", "world_genesis_ap1_tp1_wgs2_v5", "world_genesis_ap1_tp1_wgs3_v1"):
+                from app.game.world.genesis.vegetation.service import context, microenvironment_context
+                local = microenvironment_context(db, campaign.id, context(db, campaign.id), SurfacePoint(*location.genesis_site["point"]))
+            else:
+                from app.game.world.genesis.vegetation.microhabitat import resolve
+                local = resolve(db, campaign.id, SurfacePoint(*location.genesis_site["point"]))
+            if local is not None and "reduced_solar_exposure" in local["features"]:
+                micro_facts.append("A área apresenta sombra local." if campaign.world_profile in ("world_genesis_ap1_tp1_wgs2_v4", "world_genesis_ap1_tp1_wgs2_v5", "world_genesis_ap1_tp1_wgs3_v1")
+                    else "Sombra local: uma depressão protegida reduz a exposição solar.")
+    else:
+        wgs1_signals = []
+        micro_facts = []
+
     features = (
         db.query(LocationFeature)
         .filter(
@@ -65,6 +92,18 @@ def observe_surroundings(
         .order_by(LocationFeature.name)
         .all()
     )
+    water_facts = None
+    if location.genesis_site is not None and campaign is not None and campaign.world_profile == "world_genesis_ap1_tp1_wgs3_v1":
+        from app.db.models.world_natural_formations import GenesisNaturalFormation
+        from app.game.world.genesis.local_water import contract
+        source = db.query(GenesisNaturalFormation).filter_by(location_id=location.id).one_or_none()
+        if source is None and location.parent_location_id:
+            source = db.query(GenesisNaturalFormation).filter_by(location_id=location.parent_location_id).one_or_none()
+        if source is not None and source.archetype_id == "EV-LOC-0068":
+            state = contract(db, source)
+            water_facts = (["Há água visível numa fissura da formação. Fluxo e potabilidade não foram confirmados."]
+                           if state["physical_water_present"] else
+                           ["A fissura da nascente está visível, sem água neste estoque local."])
 
     connections = (
         db.query(LocationConnection)
@@ -80,10 +119,11 @@ def observe_surroundings(
     result = PerceptionResult(
         location_name=location.name,
         location_name_known=_explicit_name_known(player_facts, location.name),
-        features=[
+        features=(water_facts if water_facts is not None else [
             f"{feature.name}: {feature.description}"
             for feature in features
-        ],
+        ]) + micro_facts,
+        signals=wgs1_signals,
     )
 
     for connection in connections:
@@ -112,9 +152,11 @@ def observe_surroundings(
             else "um local desconhecido"
         )
 
+        distance_label = (f"aproximadamente {round(connection.spatial_contract['metres'])} m"
+                          if connection.spatial_contract else f"distância {connection.distance:g}")
         result.routes.append(
             f"{direction}: {connection_type_label_pt(connection.connection_type)} para "
-            f"{destination_label} (distância {connection.distance:g})"
+            f"{destination_label} ({distance_label})"
         )
 
         if connection_changed:

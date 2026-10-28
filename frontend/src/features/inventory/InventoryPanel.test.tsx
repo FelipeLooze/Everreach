@@ -65,6 +65,18 @@ describe("InventoryPanel", () => {
     expect(card).toHaveTextContent("4,5 de peso");
   });
 
+  it("mantém visível o peso positivo de uma pequena parte vegetal", async () => {
+    const previous = await mocks.getInventory();
+    mocks.getInventory.mockResolvedValue({
+      ...previous,
+      items: [{ ...previous.items[0], name: "Pétalas", quantity: 1, unit_weight: 0.000169, total_weight: 0.000169 }],
+      total_weight: 0.000169,
+    });
+    render(<InventoryPanel campaignId="campaign_1" characterId="char_1" />);
+    expect(await screen.findByText(/Peso: 0,000169 \/ 25,0/)).toBeInTheDocument();
+    expect((await screen.findByText("Pétalas")).closest(".inventory-item-card")).toHaveTextContent("0,000169 de peso");
+  });
+
   it("continua mostrando a capacidade quando o inventário está vazio", async () => {
     mocks.getInventory.mockResolvedValue({
       items: [],

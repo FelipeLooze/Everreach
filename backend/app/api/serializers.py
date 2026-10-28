@@ -6,6 +6,7 @@ from app.game.game_state import GameStateSnapshot
 from app.game.knowledge.service import explicitly_knows_name
 from app.game.discovery.service import location_display_name, place_label
 from app.schemas.character import CharacterResponse
+from app.db.models.campaign import Campaign
 from app.schemas.game_state import (
     ActiveQuestSummary,
     CombatEncounterSummary,
@@ -68,6 +69,7 @@ def to_game_state_response(
     )
 
     return GameStateResponse(
+        world_profile=db.get(Campaign, state.campaign_id).world_profile,
         character=CharacterResponse.model_validate(state.character),
         region=(
             RegionSummary(

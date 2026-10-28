@@ -67,6 +67,7 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "character_recoveries",
             "item_combat_profiles",
             "item_instances",
+            "genesis_formation_candidates",
             "item_equipment_profiles",
             "item_weapon_profiles",
             "item_armor_profiles",
@@ -85,6 +86,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
         item_instance_columns = {
             item["name"] for item in inspect(engine).get_columns("item_instances")
         }
+        candidate_columns={item["name"] for item in inspect(engine).get_columns("genesis_formation_candidates")}
+        assert candidate_columns=={"id","campaign_id","stable_key","archetype_id","generator_version","status","decision"}
         item_instance_checks = {
             item["name"]
             for item in inspect(engine).get_check_constraints("item_instances")
@@ -171,6 +174,8 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
             "owner_type",
             "owner_ref",
             "equipped_slot",
+            "unit_weight_override",
+            "weight_authority",
         } == item_instance_columns
         assert "ck_item_instance_quantity_positive" in item_instance_checks
         assert "ck_item_instance_quality" in item_instance_checks
@@ -644,15 +649,31 @@ def test_alembic_builds_a_readable_sqlite_database_from_scratch(tmp_path, monkey
 
         with Session(engine) as session:
             campaign = create_campaign(session, "Banco migrado")
+            from app.game.character.service import create_character
+            from app.game.inventory.service import add_item
+            character = create_character(session, campaign.id, "Inventário smoke")
+            instance = add_item(session, character.id, "Ração smoke", 2, base_weight=0.25)
             session.commit()
             campaign_id = campaign.id
+            character_id = character.id
+            instance_id = instance.id
 
         with Session(engine) as session:
             from app.db.models.campaign import Campaign
+            from app.db.models.character import Character
+            from app.db.models.item import ItemInstance
 
             stored = session.get(Campaign, campaign_id)
             assert stored is not None
             assert stored.name == "Banco migrado"
+            stored_character = session.get(Character, character_id)
+            stored_item = session.get(ItemInstance, instance_id)
+            assert stored_character is not None and stored_character.campaign_id == campaign_id
+            assert stored_item is not None and stored_item.quantity == 2
+            assert stored_item.location_type == "CHARACTER"
+            assert stored_item.location_ref == character_id
+            assert stored_item.unit_weight_override is None
+            assert stored_item.weight_authority is None
 
         command.downgrade(config, "base")
         assert "campaigns" not in set(inspect(engine).get_table_names())

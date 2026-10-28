@@ -72,7 +72,8 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
             if entry.material_id is not None
             else None
         )
-        unit_weight = item.base_weight * material_weight_factor(material)
+        from app.game.items.containers import get_item_unit_weight
+        unit_weight = get_item_unit_weight(db,entry)
         item_visual = build_item_visual_spec(db, entry.id)
         items.append(
             InventoryItemResponse(
@@ -101,8 +102,8 @@ def get_inventory(campaign_id: str, character_id: str, db: Session = Depends(get
                 contained_in_item_instance_id=(parent.id if parent else None),
                 contained_in_name=(parent_definition.name if parent_definition else None),
                 equipped=entry.equipped,
-                unit_weight=round(unit_weight, 3),
-                total_weight=round(unit_weight * entry.quantity, 3),
+                unit_weight=unit_weight if entry.unit_weight_override is not None else round(unit_weight, 3),
+                total_weight=unit_weight*entry.quantity if entry.unit_weight_override is not None else round(unit_weight * entry.quantity, 3),
                 equipped_slot=entry.equipped_slot,
                 accessibility=resolve_item_accessibility(db, entry),
                 allowed_slots=(

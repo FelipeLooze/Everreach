@@ -103,6 +103,7 @@ class CombatEncounterSummary(BaseModel):
 
 
 class GameStateResponse(BaseModel):
+    world_profile: str | None = None
     character: CharacterResponse
     region: RegionSummary | None
     location: LocationSummary | None

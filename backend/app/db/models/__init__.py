@@ -1,6 +1,26 @@
 from app.db.models.boundary_barrier import BoundaryBarrier
+from .world_plant_resources import GenesisPlantResources
+from .world_vegetation_lifecycle import GenesisVegetationLife,GenesisLivingPopulation,GenesisVegetationLifeEvent
+from .world_vegetation_renewal import GenesisVegetationRenewal,GenesisRenewingPopulation
+from .world_vegetation_sexual import GenesisVegetationSexualPolicy
+from .world_vegetation import (GenesisVegetationPlan,GenesisVegetationCommunity,GenesisPlantIndividual,
+    GenesisPlantAction,GenesisBotanicalToolCertificate)
 from app.db.models.world_genesis import GenesisSector, GenesisWorld
+from app.db.models.world_hydrology import GenesisHydrologyPlan, GenesisHydrologySector
+from app.db.models.world_hydrology_regional import GenesisHydrologyRefinement, GenesisHydrologyRegion
+from app.db.models.world_climate import GenesisClimatePlan, GenesisClimateSector
+from app.db.models.world_water import GenesisWaterPlan, GenesisWaterSector
+from app.db.models.world_terrain import GenesisTerrainPlan, GenesisTerrainTile
+from app.db.models.world_hydro_geometry import GenesisHydroGeometryPlan, GenesisHydroGeometryEvidence
+from app.db.models.world_water_reconciliation import (GenesisWaterReconciliation, GenesisWaterDomain,
+    GenesisWaterRevision, GenesisWaterReconciliationEvidence, GenesisWaterTransfer)
+from app.db.models.world_practical_hydrology import (GenesisPracticalHydrology, GenesisLocalWaterAccount, GenesisPracticalCapacityUse)
+from app.db.models.world_geology import GenesisGeologyPlan, GenesisGeologicalUnit, GenesisMineralDeposit
+from app.db.models.world_geology_regional import GenesisRegionalGeology,GenesisRegionalFormation,GenesisRegionalSource
+from app.db.models.world_environment import GenesisEnvironmentPlan,GenesisEnvironmentPoint
 from app.db.models.world_spatial import EntitySpatialCoverage, GenesisSphereSector, LocationSpatialAnchor
+from app.db.models.world_natural_formations import (GenesisFormationCandidate,
+    GenesisNaturalFormation, GenesisLocalWaterBody, GenesisFormationCoverageCell)
 from app.db.models.action_checkpoint import ActionCheckpoint
 from app.db.models.boundary_route import BoundaryRoute
 from app.db.models.business import Business
@@ -142,6 +162,34 @@ from app.db.models.tool import ItemToolProfile
 from app.db.models.weapon import ItemWeaponProfile
 
 __all__ = [
+    "GenesisEnvironmentPlan",
+    "GenesisEnvironmentPoint",
+    "GenesisRegionalGeology",
+    "GenesisRegionalFormation",
+    "GenesisRegionalSource",
+    "GenesisGeologyPlan",
+    "GenesisGeologicalUnit",
+    "GenesisMineralDeposit",
+    "GenesisWaterPlan",
+    "GenesisTerrainPlan",
+    "GenesisHydroGeometryPlan",
+    "GenesisWaterReconciliation",
+    "GenesisPracticalHydrology",
+    "GenesisLocalWaterAccount",
+    "GenesisPracticalCapacityUse",
+    "GenesisWaterDomain",
+    "GenesisWaterRevision",
+    "GenesisWaterReconciliationEvidence",
+    "GenesisWaterTransfer",
+    "GenesisHydroGeometryEvidence",
+    "GenesisTerrainTile",
+    "GenesisWaterSector",
+    "GenesisClimatePlan",
+    "GenesisClimateSector",
+    "GenesisHydrologyRefinement",
+    "GenesisHydrologyRegion",
+    "GenesisHydrologyPlan",
+    "GenesisHydrologySector",
     "EntitySpatialCoverage",
     "GenesisSphereSector",
     "LocationSpatialAnchor",
@@ -209,6 +257,10 @@ __all__ = [
     "Location",
     "LocationConnection",
     "LocationFeature",
+    "GenesisNaturalFormation",
+    "GenesisFormationCoverageCell",
+    "GenesisLocalWaterBody",
+    "GenesisFormationCandidate",
     "Memory",
     "MaterialDefinition",
     "Notice",
@@ -271,4 +323,10 @@ __all__ = [
     "VisualIdentity",
     "VisualGenerationRequest",
     "VisualAsset",
+    "GenesisVegetationPlan",
+    "GenesisPlantResources",
+    "GenesisVegetationCommunity",
+    "GenesisPlantIndividual",
+    "GenesisPlantAction",
+    "GenesisBotanicalToolCertificate",
 ]
